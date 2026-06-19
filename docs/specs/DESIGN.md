@@ -130,6 +130,8 @@ The platform pipeline is split into a localized syntactic layer and a cross-refe
 
 ## 5. Proposed Technology Stack Options
 
+The main app will run in Tauri.
+
 * **Frontend Interface & Interaction Canvas:** * *Option A (High-Performance Web):* Electron or Tauri shell deploying **React Flow / Svelte Flow** backed by the **ELK (Eclipse Layout Kernel)** engine for deterministic, clean structural layouts.
 * *Option B (Native Hardware Bound):* Native desktop shell engineered in **Rust** leveraging **Bevy Engine** or **Slint** using custom WebGPU fragments for instant canvas rendering across millions of nodes.
 

@@ -15,7 +15,7 @@ myFunction(/*argumentName=*/true);
 
 * Prefer return-early (`return` or `continue`) instead of nesting blocks.
 
-* Do not make files longer than 200 lines.
+* Do not make source code files longer than 200 lines.
 
 * Do not make functions longer than 30 lines.
 
