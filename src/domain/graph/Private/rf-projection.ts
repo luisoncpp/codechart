@@ -35,7 +35,7 @@ export function projectGraph(
 
   // Parents must precede children in React Flow's node array.
   const nodes: RFNode[] = [...sortByDepth(groupNodes, index), ...moduleNodes];
-  return { nodes, edges: graph.edges.map(edge) };
+  return { nodes, edges: graph.edges.map((e) => edge(e, moduleById)) };
 }
 
 function relativePosition(box: LayoutBox, index: BoxIndex) {
@@ -85,14 +85,23 @@ function moduleNode(
   };
 }
 
-function edge(e: Edge): RFEdgeT {
+function edge(e: Edge, moduleById: Map<string, ModuleNode>): RFEdgeT {
   return {
     id: e.id,
     source: e.source,
     target: e.target,
     type: "default",
-    data: { isViolation: e.isViolation, kind: e.kind },
+    data: { isViolation: e.isViolation, kind: e.kind, ...groupTarget(e, moduleById) },
   };
+}
+
+/** Idea 2: an external import of a facade anchors on the group border, not the box. */
+function groupTarget(e: Edge, moduleById: Map<string, ModuleNode>) {
+  const target = moduleById.get(e.target);
+  if (!target?.isFacade || !target.groupId) return {};
+  const source = moduleById.get(e.source);
+  if (source?.groupId === target.groupId) return {}; // internal edge: keep box anchor
+  return { groupTargetId: target.groupId };
 }
 
 function depth(box: LayoutBox, index: BoxIndex): number {

@@ -20,6 +20,11 @@ export interface ModuleNodeData extends Record<string, unknown> {
 export interface EdgeData extends Record<string, unknown> {
   isViolation: boolean;
   kind: string;
+  /**
+   * When set, the edge enters a facade from outside its group, so the canvas
+   * anchors its arrow on this group's border instead of the facade box (Idea 2).
+   */
+  groupTargetId?: string;
 }
 
 export type GroupRFNode = Node<GroupNodeData, "group">;

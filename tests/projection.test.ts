@@ -53,6 +53,29 @@ describe("GraphProjector → React Flow models", () => {
     const group = nodes.find((n) => n.type === "group");
     expect(group?.data.color).toMatch(/^#/);
   });
+
+  it("retargets external facade in-edges to the group border (Idea 2)", () => {
+    const facade = graph.modules.find((m) => m.isFacade && m.groupId)!;
+    const external = graph.edges.find((e) => {
+      const src = graph.modules.find((m) => m.id === e.source);
+      return e.target === facade.id && src?.groupId !== facade.groupId;
+    })!;
+    const { edges } = projectGraph(graph, layout);
+    const projected = edges.find((e) => e.id === external.id)!;
+    expect(projected.data?.groupTargetId).toBe(facade.groupId);
+  });
+
+  it("leaves internal (same-group) facade edges anchored on the box", () => {
+    const internal = graph.edges.find((e) => {
+      const src = graph.modules.find((m) => m.id === e.source);
+      const tgt = graph.modules.find((m) => m.id === e.target);
+      return tgt?.isFacade && src?.groupId && src.groupId === tgt.groupId;
+    });
+    if (!internal) return; // golden may have none; assertion is conditional
+    const { edges } = projectGraph(graph, layout);
+    const projected = edges.find((e) => e.id === internal.id)!;
+    expect(projected.data?.groupTargetId).toBeUndefined();
+  });
 });
 
 describe("selectors", () => {

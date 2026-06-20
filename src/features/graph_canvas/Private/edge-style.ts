@@ -18,13 +18,24 @@ export function edgeRole(edge: RFEdgeT, selectedId: string | null): EdgeRole {
   return "neutral";
 }
 
-/** Apply the sample's edge aesthetic: solid arrows, selection-aware import/export coloring. */
+/**
+ * Single-level focus dimming: the selected module's own edges stay opaque; every
+ * other edge sits at one quiet level — whether or not a selection is active — so
+ * context stays legible instead of nearly disappearing.
+ */
+export function edgeOpacity(role: EdgeRole): number {
+  return role === "neutral" ? 0.45 : 1;
+}
+
+/** Apply the sample's edge aesthetic + focus dimming (floating routing). */
 export function styleEdge(edge: RFEdgeT, selectedId: string | null): RFEdgeT {
   const role = edgeRole(edge, selectedId);
   const color = COLOR[role];
+  const focused = role !== "neutral";
   return {
     ...edge,
+    type: "floating",
     markerEnd: { type: MarkerType.ArrowClosed, color, width: 14, height: 14 },
-    style: { stroke: color, strokeWidth: role === "neutral" ? 1.5 : 2 },
+    style: { stroke: color, strokeWidth: focused ? 2 : 1.2, opacity: edgeOpacity(role) },
   };
 }

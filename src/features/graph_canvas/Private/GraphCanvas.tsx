@@ -5,6 +5,7 @@ import "./graph-canvas.css";
 import { projectGraph, type RFNode } from "../../../domain/graph";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { nodeTypes } from "./node-types";
+import { edgeTypes } from "./edge-types";
 import { styleEdge } from "./edge-style";
 import { FitView } from "./FitView";
 import { GraphCanvasController } from "./graph-canvas-controller";
@@ -43,6 +44,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         colorMode="light"
         onNodeClick={(_e, node) => controller.onNodeClick(node)}
         onPaneClick={() => controller.onPaneClick()}

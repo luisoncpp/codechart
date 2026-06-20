@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import goldenGraph from "./fixtures/golden/project-graph.json";
-import { GraphCanvas, edgeRole } from "../src/features/graph_canvas";
+import { GraphCanvas, edgeRole, styleEdge } from "../src/features/graph_canvas";
 import { InspectionPanel } from "../src/features/inspection_panel";
 import { GraphSessionStore } from "../src/state/graph-session";
 import { ElkLayoutEngine } from "../src/domain/layout";
@@ -82,6 +82,36 @@ describe("edgeRole (selection-aware coloring)", () => {
     expect(edgeRole({ ...rfEdge, data: { isViolation: true, kind: "import" } }, src)).toBe(
       "import",
     );
+  });
+});
+
+describe("styleEdge (focus + context dimming)", () => {
+  const src = graph.edges[0].source;
+  const tgt = graph.edges[0].target;
+  const rfEdge = {
+    id: "e",
+    source: src,
+    target: tgt,
+    data: { isViolation: false, kind: "import" },
+  };
+
+  it("routes every edge through the floating edge type", () => {
+    expect(styleEdge(rfEdge, null).type).toBe("floating");
+  });
+
+  it("keeps the selected module's own edges fully opaque", () => {
+    expect(styleEdge(rfEdge, src).style?.opacity).toBe(1);
+  });
+
+  it("dims unrelated edges to one quiet level — selected or not", () => {
+    const baseline = styleEdge(rfEdge, null).style?.opacity;
+    const whileFocusing = styleEdge(rfEdge, "no-such-id").style?.opacity;
+    expect(baseline).toBe(0.45);
+    expect(whileFocusing).toBe(0.45); // single level, not a deeper fade
+  });
+
+  it("keeps arrowheads on every edge (no de-arrowing)", () => {
+    expect(styleEdge(rfEdge, "no-such-id").markerEnd).toBeDefined();
   });
 });
 

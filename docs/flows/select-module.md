@@ -8,7 +8,8 @@
    3. `useGraphSession` (subscribed to `selection-changed`) re-renders subscribers.
    4. `GraphCanvas` re-maps nodes with `selected: n.id === selectedId` → blue outline on the node,
       and re-styles edges via `styleEdge(edge, selectedId)` → imports (out of selected) red, exports
-      (into selected) blue.
+      (into selected) blue, while **every unrelated edge stays at the one quiet dim level**
+      (`edgeOpacity`, 0.45) so the selected edges pop without the rest vanishing.
    5. `InspectionPanel` reads `selectedId` + `graph`, runs selectors (`findModule`, `groupOf`,
       `importsOf`, `importedBy`, `diagnosticsFor`) and renders details.
 4. **Reads** — store `graph`, `selectedId`.
