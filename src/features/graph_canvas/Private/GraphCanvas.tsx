@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ReactFlow, ReactFlowProvider, Background, Controls } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import "./graph-canvas.css";
 import { projectGraph, type RFNode } from "../../../domain/graph";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { nodeTypes } from "./node-types";

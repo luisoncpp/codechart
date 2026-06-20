@@ -22,7 +22,9 @@ parent-relative offsets by subtracting the parent box when it needs `parentNode`
 1. `elk-input.ts` `buildElkGraph` — `ProjectGraph` → hierarchical `ElkNode`:
    - Groups become compound nodes nested by `parentId`; modules become leaf nodes under their
      `groupId` (ungrouped nodes sit at the root). Children are **sorted by id** for determinism.
-   - Leaf size + spacing/padding come from `PRESETS` (deterministic; no randomness). Edges are
+   - Leaf size + spacing/padding come from `PRESETS` (deterministic; no randomness). The group's
+     **top** padding is `groupPadding + groupHeaderHeight` so the rendered header (graph-canvas) has
+     reserved room and modules never overlap the group label. Edges are
      attached at the root with `elk.hierarchyHandling=INCLUDE_CHILDREN` so cross-group edges route.
 2. `elk.layout()` (elkjs `layered`, direction RIGHT) computes parent-relative coords + group sizes.
 3. `absolute-coords.ts` `toLayoutedGraph` — walks the result, accumulates offsets into absolute

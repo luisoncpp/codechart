@@ -28,7 +28,10 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 
 - **Group node:** colored 2px border + translucent fill (`color + "14"` alpha), uppercase header with
   optional icon glyph + label. Color from `GroupNode.color`, else a deterministic palette hash
-  (`colors.ts`).
+  (`colors.ts`). `graph-canvas.css` strips React Flow's default node chrome (border/padding/bg) so the
+  custom view's border is the **only** border — no double outline, no inset gap.
+- **Header room:** the layout reserves vertical space for the header via `groupHeaderHeight` added to
+  the group's ELK top padding (see `layout.md`), so module boxes never overlap the group label.
 - **Module node:** white card; facade → dark 2px border + `★`; selected → blue outline; compact 11px label, ellipsised.
 - **Edge:** solid grey arrow (`import`); red + thicker when `isViolation` (Phase 8 turns these on).
 - **Icons:** sparing, name → glyph map (`icon-map.tsx`); unknown names render no glyph.

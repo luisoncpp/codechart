@@ -5,7 +5,8 @@ import type { ProjectGraph } from "../../graph";
 export const PRESETS = {
   moduleWidth: 160,
   moduleHeight: 44,
-  groupPadding: 24,
+  groupPadding: 12,
+  groupHeaderHeight: 30,
   nodeSpacing: 32,
   layerSpacing: 56,
 } as const;
@@ -19,7 +20,7 @@ const ROOT_OPTIONS: Record<string, string> = {
 };
 
 const GROUP_OPTIONS: Record<string, string> = {
-  "elk.padding": `[top=${PRESETS.groupPadding},left=${PRESETS.groupPadding},bottom=${PRESETS.groupPadding},right=${PRESETS.groupPadding}]`,
+  "elk.padding": `[top=${PRESETS.groupPadding + PRESETS.groupHeaderHeight},left=${PRESETS.groupPadding},bottom=${PRESETS.groupPadding},right=${PRESETS.groupPadding}]`,
 };
 
 /** Builds the hierarchical ELK graph from a `ProjectGraph` (deterministic, sorted). */
