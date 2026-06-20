@@ -2,6 +2,15 @@
 
 ## Implemented
 
+**Phase 2 — TypeScript language adapter (Rust)** is complete.
+
+- `LanguageAdapter` trait + `ParsedModule`/`ParsedImport`/`CommentBlock` data + `registry_for(ext)` / `registry_for_path` in `src-tauri/src/language_adapter/`. TS/TSX impl uses tree-sitter (`tree-sitter` 0.24 + `tree-sitter-typescript` 0.23), kept private behind the trait.
+- Extracts every TDD §7 import form (default, named w/ alias, namespace, `import type`, side-effect, mixed), re-exports (`export … from`, `export type`, `export *`), local exported symbols, and raw comment blocks. Single ordered top-level walk → deterministic output.
+- `semantic_comments::parse_annotations(text)` parses `@Architecture(...)` blocks → `Annotation` (quote-aware, partial/malformed-safe). Decoupled from the adapter (no tree-sitter dep); used in Phase 10.
+- CLI `parse` subcommand (from repo root): `cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- parse <file.ts|tsx>` prints imports + re-exports + exported symbols + annotations. (`codechart-cli` is a `[[bin]]` of the `codechart` package, not a workspace package — use `--bin`, not `-p`.)
+- Tests: 15 adapter tests (every import/export form, JSX/TSX, MemoryProjectSource end-to-end, unsupported-ext) + 8 annotation tests (full/partial/malformed/multiple/quoted-comma). All 46 Rust lib tests + `npm run check` pass; clippy clean.
+- Promoted to [architecture/language-adapter.md](../architecture/language-adapter.md).
+
 **Phase 1 — Contract + golden fixture** is complete (North Star locked).
 
 - `ProjectGraphBuilder::build()` now returns `Result<ProjectGraph, BuildError>`, enforcing the five §2.2 invariants (sibling overlap / group-tree, multi-group membership, foreign facade, dangling edge, non-deterministic ids). Validation lives in `contract/validate.rs`.
@@ -31,7 +40,7 @@
 
 ## Next
 
-**Phase 2 — TypeScript language adapter (Rust)**: extract imports/exports/comment ranges from real `.ts/.tsx` files; parse `@Architecture` annotations.
+**Phase 3 — Config + grouping (Rust)**: discover/parse co-located `*.group.md` files (`project_config`); assign modules to the nested group tree with facades, rejecting overlap (`grouping`).
 
 ## Design artifacts
 

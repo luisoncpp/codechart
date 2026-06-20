@@ -27,8 +27,12 @@ These artifacts exist *before* feature work and anchor the whole project:
 3. **The sample image** — `sample-img/img1.png` is the North Star **visual** (Phase 6 acceptance gate).
 4. **Mock-first frontend** — UI builds against the golden JSON via `MockAnalysisClient`, so frontend
    progresses before the Rust pipeline is finished (and vice versa).
-5. **Per-phase dev CLI** — `cargo run -p codechart-cli -- <parse|groups|analyze> <path>` prints
-   intermediate output, so parsing/grouping/edges are inspectable with no UI.
+5. **Per-phase dev CLI** — from the repo root,
+   `cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- <parse|groups|analyze> <path>`
+   prints intermediate output, so parsing/grouping/edges are inspectable with no UI. (The crate lives
+   in `src-tauri/`; `codechart-cli` is a `[[bin]]` of the `codechart` package, not its own workspace
+   package — so `--bin codechart-cli`, **not** `-p codechart-cli`. Paths stay repo-relative thanks to
+   `--manifest-path`.)
 6. **Screenshots** — saved after the canvas exists, compared run-to-run to catch visual drift.
 
 **Anti-derail rule:** a phase is not "done" until its tests pass *and* its checkpoint output has been
@@ -84,7 +88,7 @@ the expected graph (module count, edges, groups, the planted unresolved import) 
 
 **Tests:** snippet fixtures → expected `ParsedModule` (import lists, export names) covering every §7
 import form; annotation parsing incl. malformed/partial blocks; fed via `MemoryProjectSource` (no disk).
-**Checkpoint:** `cargo run -p codechart-cli -- parse tests/fixtures/ts-basic-project/<file>.tsx` prints
+**Checkpoint:** `cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- parse tests/fixtures/ts-basic-project/<file>.tsx` prints
 extracted imports + annotations; user confirms the import list matches the file.
 
 ---
@@ -111,7 +115,7 @@ filter on folder ownership; cross-folder pull made disjoint by the owner's `excl
 (two groups claim one module) → `configError` + rejection**; nested `*.group.md` and explicit
 `groups` ref both set `parentId`; facade default vs explicit; unmatched-file fallback;
 no-group-files folder inference.
-**Checkpoint:** `cargo run -p codechart-cli -- groups tests/fixtures/ts-basic-project` prints the group
+**Checkpoint:** `cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- groups tests/fixtures/ts-basic-project` prints the group
 tree; user confirms it matches the grouping in the golden fixture.
 
 ---
@@ -131,7 +135,7 @@ Phases 8–9.)*
 
 **Tests:** resolver matrix (extensionless, explicit ext, index files, package → external); unresolved
 → diagnostic; partial-results (one broken file ⇒ graph still produced + 1 diagnostic).
-**Checkpoint (⭐ critical):** `cargo run -p codechart-cli -- analyze tests/fixtures/ts-basic-project` is
+**Checkpoint (⭐ critical):** `cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- analyze tests/fixtures/ts-basic-project` is
 **diffed against `golden/project-graph.json`** — must match exactly. This single assertion validates the
 entire backend. If it fails, the backend is derailed; fix before touching the UI.
 
