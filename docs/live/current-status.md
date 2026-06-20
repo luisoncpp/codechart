@@ -2,6 +2,14 @@
 
 ## Implemented
 
+**Phase 5 — ELK layout (TS)** is complete.
+
+- `domain/layout` deep module: public `LayoutEngine` interface + `ElkLayoutEngine` + `LayoutedGraph`/`LayoutBox` types behind `index.ts`; elkjs (`elkjs` 0.11) stays private. `layout(graph) -> LayoutedGraph` returns **absolute** boxes (`{id, parentId, x, y, width, height}`) for groups + modules plus overall `width`/`height`.
+- Pipeline (private): `elk-input.ts` builds a hierarchical `ElkNode` (groups → compound nodes nested by `parentId`, modules → leaves under `groupId`, ungrouped at root; children sorted by id; sizes/spacing from `PRESETS`; edges at root with `hierarchyHandling=INCLUDE_CHILDREN`) → elkjs `layered`/RIGHT → `absolute-coords.ts` flattens parent-relative coords to absolute, splitting groups from modules by id set.
+- Tests: 4 `tests/layout.test.ts` against the golden model — module nests inside its group, sibling groups don't overlap, all coords finite + positive size, deterministic across runs. All 7 vitest + lint + typecheck pass.
+- Checkpoint: `npx vite-node scripts/dump-layout.ts [out.svg]` dumps the golden layout to SVG; eyeballed — `app` nests core/services/ui, `shared` + ungrouped `main.ts` sit outside, every module nests in its group, nothing overlaps.
+- Promoted to [architecture/layout.md](../architecture/layout.md). No new flow doc: layout is a pure synchronous transform with no multi-file sequence to trace.
+
 **Phase 4 — References + diagnostics + `analyze_project` (Rust)** is complete — ⭐ backend gate passed.
 
 - `references` deep module: `resolve_references(parsed) -> ResolvedReferences { edges, diagnostics }`, pure. Resolves relative imports/re-exports (extensionless `.ts/.tsx`, explicit ext, `index.ts/tsx` — `resolve.rs`) into solid `import` edges; unresolvable relatives → `unresolvedImport` warnings (no ghost edge in M1); package (non-relative) specifiers are external metadata (no edge, no diagnostic). Edge id `${source}->${target}:import:${ordinal}`, sorted by `(source,target)` with a per-pair ordinal. Drift (`isViolation`, Phase 8) and soft/dashed edges (Phase 9) reserved, not yet emitted.
@@ -58,7 +66,7 @@
 
 ## Next
 
-**Phase 5 — ELK layout (TS)**: `domain/layout` `LayoutEngine` + `ElkLayoutEngine` (`elkjs`, nested compound nodes) producing non-overlapping coordinates against the golden model. Backend (Phases 1–4) is now complete; the two remaining gates are Phase 6 (visual) and Phase 7 (wire end-to-end).
+**Phase 6 — Render canvas: the sample aesthetic** (⭐ visual gate): `features/graph_canvas` (React Flow) consuming the `ProjectGraph` + `LayoutedGraph` — colored group containers, module/facade nodes, solid import edges, matching `sample-img/img1.png`. Plus `GraphSessionStore`/`GraphProjector` + inspection panel. Backend (1–4) and layout (5) are done; Phase 6 (visual) and Phase 7 (wire end-to-end) remain.
 
 ## Design artifacts
 

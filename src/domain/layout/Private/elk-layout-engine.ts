@@ -1,11 +1,16 @@
-import { ProjectGraph } from "../../graph";
+import ELK from "elkjs/lib/elk.bundled.js";
+import type { ProjectGraph } from "../../graph";
+import type { LayoutEngine, LayoutedGraph } from "./layout-types";
+import { buildElkGraph } from "./elk-input";
+import { toLayoutedGraph } from "./absolute-coords";
 
-export interface LayoutEngine {
-  layout(graph: ProjectGraph): Promise<ProjectGraph>;
-}
-
+/** ELK-backed nested layout. ELK details stay private behind this class. */
 export class ElkLayoutEngine implements LayoutEngine {
-  async layout(graph: ProjectGraph) {
-    return graph;
+  private readonly elk = new ELK();
+
+  async layout(graph: ProjectGraph): Promise<LayoutedGraph> {
+    const groupIds = new Set(graph.groups.map((g) => g.id));
+    const result = await this.elk.layout(buildElkGraph(graph));
+    return toLayoutedGraph(result, groupIds);
   }
 }
