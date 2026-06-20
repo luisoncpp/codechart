@@ -8,3 +8,4 @@ Covers only what's already implemented. For architecture docs of not implemented
 |------|-----------|-------|
 | [contract.md](./contract.md) | `ProjectGraph` contract + `ProjectGraphBuilder` invariants | The IPC data shape; golden-fixture North Star |
 | [language-adapter.md](./language-adapter.md) | `LanguageAdapter` seam (TS adapter) + `semantic_comments` | One file → `ParsedModule`; `@Architecture` parsing |
+| [config-grouping.md](./config-grouping.md) | `project_config` (`*.group.md`) + `grouping` (`resolve_groups`) | Files + config → nested group tree, facades, configErrors |

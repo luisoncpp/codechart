@@ -2,6 +2,15 @@
 
 ## Implemented
 
+**Phase 3 — Config + grouping (Rust)** is complete.
+
+- `project_config` deep module: `discover_group_defs(source)` walks a `ProjectSource`, parses every co-located `*.group.md` (YAML frontmatter + markdown body) into `GroupDef`, and turns parse failures into per-file `configError` diagnostics (partial results). `parse_group_def(path, content)` is the pure single-file core; defaults (id from folder, label humanized, `descriptionShort` from first body paragraph) and forgiving YAML (all fields optional, unknown keys ignored) live in the private `parse.rs`.
+- `grouping` deep module: `resolve_groups(files, defs) -> ResolvedGroups { groups, module_group, facades, diagnostics }`, pure + deterministic. Membership sources (folder ownership default, glob/`/regex/` `match`, explicit `files`) minus the `exclude` filter (`claim.rs`); overlap (a module claimed by ≥2 groups) → `configError:overlap:<module>`, no precedence. ParentId from explicit `groups` refs (win) or directory nesting (`nesting.rs`). Facades default to `index.ts/tsx` or explicit (unknown → `configError:facade:…`). No-config fallback infers `folder:<dir>` groups (`infer.rs`).
+- `FsProjectSource::list_files` now does a real recursive walk (repo-relative POSIX paths, ignore-default dirs skipped) so the CLI can scan a project.
+- CLI `groups` subcommand: `cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- groups tests/fixtures/ts-basic-project` prints the nested tree (members + facades) + ungrouped files. Verified to match the golden grouping: `app` nests `core`/`services`/`ui`, `shared` pulls `core/todo.ts` + `services/types.ts` cross-folder, `src/main.ts` ungrouped, one facade per group, 0 diagnostics.
+- Tests: 9 `project_config` (full/minimal/malformed frontmatter, body→annotation, discover) + 14 `grouping` (each membership source, regex, exclude-as-filter, cross-folder cede, overlap, nesting, facade default/explicit/unknown, fallback, folder inference, end-to-end vs golden). All 68 Rust lib tests pass; clippy clean.
+- Promoted to [architecture/config-grouping.md](../architecture/config-grouping.md). Fixed a latent golden bug surfaced here (recorded in [lessons-learned](../lessons-learned/group-body-becomes-descriptionlong-verbatim.md)): the golden's `app.descriptionLong` had a hyphen where the source body has an em-dash — corrected so all five group bodies now match byte-for-byte (the Phase 4 exact diff will pass).
+
 **Phase 2 — TypeScript language adapter (Rust)** is complete.
 
 - `LanguageAdapter` trait + `ParsedModule`/`ParsedImport`/`CommentBlock` data + `registry_for(ext)` / `registry_for_path` in `src-tauri/src/language_adapter/`. TS/TSX impl uses tree-sitter (`tree-sitter` 0.24 + `tree-sitter-typescript` 0.23), kept private behind the trait.
