@@ -2,6 +2,15 @@
 
 ## Implemented
 
+**Phase 4 — References + diagnostics + `analyze_project` (Rust)** is complete — ⭐ backend gate passed.
+
+- `references` deep module: `resolve_references(parsed) -> ResolvedReferences { edges, diagnostics }`, pure. Resolves relative imports/re-exports (extensionless `.ts/.tsx`, explicit ext, `index.ts/tsx` — `resolve.rs`) into solid `import` edges; unresolvable relatives → `unresolvedImport` warnings (no ghost edge in M1); package (non-relative) specifiers are external metadata (no edge, no diagnostic). Edge id `${source}->${target}:import:${ordinal}`, sorted by `(source,target)` with a per-pair ordinal. Drift (`isViolation`, Phase 8) and soft/dashed edges (Phase 9) reserved, not yet emitted.
+- `diagnostics` module (thin): `parse_error(path,msg)` constructor + `merge(groups)` (flatten, sort by id, dedup) for deterministic final output.
+- `analysis::analyze_project(source, root) -> Result<ProjectGraph, BuildError>` composes Phases 2–4 behind one seam: discover group defs → parse sources (partial results: a read/parse failure → `parseError`, file dropped, rest still builds) → `resolve_groups` → `resolve_references` → build `ModuleNode`s (`nodes.rs`: id=path, label=basename, language from ext, group/facade from grouping, loc + first `@Architecture` annotation) → through `ProjectGraphBuilder` (enforces the five §2.2 invariants).
+- CLI `analyze` subcommand: `cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- analyze tests/fixtures/ts-basic-project` prints the full `ProjectGraph` JSON (5 groups, 13 modules, 20 edges, 1 diagnostic).
+- Tests: 10 `references` (resolver matrix: extensionless/explicit/tsx/index/parent, package-is-external, unresolved→diagnostic, edge id + ordinal) + 3 `analysis` (⭐ `analyze_matches_the_golden_fixture` exact diff vs golden, partial-results via an unreadable file → `parseError`, unresolved-import end-to-end). All 80 Rust lib tests + `npm run check` pass.
+- Promoted to [architecture/references-analysis.md](../architecture/references-analysis.md).
+
 **Phase 3 — Config + grouping (Rust)** is complete.
 
 - `project_config` deep module: `discover_group_defs(source)` walks a `ProjectSource`, parses every co-located `*.group.md` (YAML frontmatter + markdown body) into `GroupDef`, and turns parse failures into per-file `configError` diagnostics (partial results). `parse_group_def(path, content)` is the pure single-file core; defaults (id from folder, label humanized, `descriptionShort` from first body paragraph) and forgiving YAML (all fields optional, unknown keys ignored) live in the private `parse.rs`.
@@ -49,7 +58,7 @@
 
 ## Next
 
-**Phase 3 — Config + grouping (Rust)**: discover/parse co-located `*.group.md` files (`project_config`); assign modules to the nested group tree with facades, rejecting overlap (`grouping`).
+**Phase 5 — ELK layout (TS)**: `domain/layout` `LayoutEngine` + `ElkLayoutEngine` (`elkjs`, nested compound nodes) producing non-overlapping coordinates against the golden model. Backend (Phases 1–4) is now complete; the two remaining gates are Phase 6 (visual) and Phase 7 (wire end-to-end).
 
 ## Design artifacts
 

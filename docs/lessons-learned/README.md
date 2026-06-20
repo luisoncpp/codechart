@@ -25,3 +25,4 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 | [single-parent-collapses-overlap-invariants.md](./single-parent-collapses-overlap-invariants.md) | A single `groupId`/`parentId` makes 2 of 5 graph invariants structural | 2026-06-19 |
 | [tree-sitter-crate-version-pairing.md](./tree-sitter-crate-version-pairing.md) | tree-sitter runtime/grammar crate versions + 0.24 API shape for new adapters | 2026-06-19 |
 | [group-body-becomes-descriptionlong-verbatim.md](./group-body-becomes-descriptionlong-verbatim.md) | `*.group.md` body → `descriptionLong` byte-for-byte; copy golden annotation text from the file (em-dash bug, fixed) | 2026-06-19 |
+| [tree-sitter-error-tolerant-no-parse-error.md](./tree-sitter-error-tolerant-no-parse-error.md) | Malformed source never yields a `ParseError`; test the `parseError` path via a read failure | 2026-06-20 |

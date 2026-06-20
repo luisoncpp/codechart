@@ -1,12 +1,12 @@
 // Dev CLI: inspect intermediate analysis output with no UI.
 //
-//   codechart-cli parse  <file.ts|tsx>   — print imports + annotations
-//   codechart-cli groups <project-dir>   — print the resolved group tree
-//
-// `analyze` lands in Phase 4.
+//   codechart-cli parse   <file.ts|tsx>   — print imports + annotations
+//   codechart-cli groups  <project-dir>   — print the resolved group tree
+//   codechart-cli analyze <project-dir>   — print the full ProjectGraph as JSON
 
 use std::process::ExitCode;
 
+use codechart_lib::analysis::analyze_project;
 use codechart_lib::grouping::{resolve_groups, ResolvedGroups};
 use codechart_lib::language_adapter::{registry_for_path, ParsedImport, ParsedModule};
 use codechart_lib::project_config::{discover_group_defs, is_group_file};
@@ -18,9 +18,26 @@ fn main() -> ExitCode {
     match args.get(1).map(String::as_str) {
         Some("parse") => run_parse(args.get(2).map(String::as_str)),
         Some("groups") => run_groups(args.get(2).map(String::as_str)),
+        Some("analyze") => run_analyze(args.get(2).map(String::as_str)),
         Some(other) => fail(&format!("unknown subcommand: {other}")),
-        None => fail("usage: codechart-cli <parse|groups> <path>"),
+        None => fail("usage: codechart-cli <parse|groups|analyze> <path>"),
     }
+}
+
+fn run_analyze(path: Option<&str>) -> ExitCode {
+    let Some(path) = path else {
+        return fail("usage: codechart-cli analyze <project-dir>");
+    };
+    let source = FsProjectSource::new(path);
+    let graph = match analyze_project(&source, path) {
+        Ok(graph) => graph,
+        Err(e) => return fail(&format!("analysis failed: {e:?}")),
+    };
+    match serde_json::to_string_pretty(&graph) {
+        Ok(json) => println!("{json}"),
+        Err(e) => return fail(&format!("serialization failed: {e}")),
+    }
+    ExitCode::SUCCESS
 }
 
 fn fail(message: &str) -> ExitCode {

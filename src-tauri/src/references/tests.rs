@@ -1,0 +1,95 @@
+use super::*;
+use crate::language_adapter::ImportKind;
+
+/// Build a `ParsedModule` at `path` importing each given specifier.
+fn module(path: &str, specifiers: &[&str]) -> ParsedModule {
+    let imports = specifiers
+        .iter()
+        .map(|s| ParsedImport {
+            specifier: (*s).to_string(),
+            kind: ImportKind::Named,
+            names: vec![],
+            is_type_only: false,
+            is_reexport: false,
+        })
+        .collect();
+    ParsedModule { path: path.to_string(), imports, ..Default::default() }
+}
+
+fn edge_targets(parsed: &[ParsedModule]) -> Vec<(String, String)> {
+    resolve_references(parsed)
+        .edges
+        .into_iter()
+        .map(|e| (e.source, e.target))
+        .collect()
+}
+
+#[test]
+fn resolves_extensionless_relative_import() {
+    let parsed = vec![module("src/a.ts", &["./b"]), module("src/b.ts", &[])];
+    assert_eq!(edge_targets(&parsed), [("src/a.ts".into(), "src/b.ts".into())]);
+}
+
+#[test]
+fn resolves_explicit_extension() {
+    let parsed = vec![module("src/a.ts", &["./b.ts"]), module("src/b.ts", &[])];
+    assert_eq!(edge_targets(&parsed), [("src/a.ts".into(), "src/b.ts".into())]);
+}
+
+#[test]
+fn resolves_tsx_extensionless() {
+    let parsed = vec![module("src/a.ts", &["./b"]), module("src/b.tsx", &[])];
+    assert_eq!(edge_targets(&parsed), [("src/a.ts".into(), "src/b.tsx".into())]);
+}
+
+#[test]
+fn resolves_index_file_of_a_folder() {
+    let parsed = vec![module("src/main.ts", &["./ui"]), module("src/ui/index.ts", &[])];
+    assert_eq!(edge_targets(&parsed), [("src/main.ts".into(), "src/ui/index.ts".into())]);
+}
+
+#[test]
+fn resolves_parent_relative_import() {
+    let parsed = vec![
+        module("src/ui/app.tsx", &["../core"]),
+        module("src/core/index.ts", &[]),
+    ];
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/ui/app.tsx".into(), "src/core/index.ts".into())]
+    );
+}
+
+#[test]
+fn package_import_is_external_metadata() {
+    let parsed = vec![module("src/a.ts", &["react"])];
+    let refs = resolve_references(&parsed);
+    assert!(refs.edges.is_empty(), "no edge for a package import");
+    assert!(refs.diagnostics.is_empty(), "no diagnostic for a package import");
+}
+
+#[test]
+fn unresolvable_relative_import_becomes_a_diagnostic() {
+    let parsed = vec![module("src/a.ts", &["./missing"])];
+    let refs = resolve_references(&parsed);
+    assert!(refs.edges.is_empty());
+    assert_eq!(refs.diagnostics.len(), 1);
+    let diag = &refs.diagnostics[0];
+    assert_eq!(diag.kind, DiagnosticKind::UnresolvedImport);
+    assert_eq!(diag.id, "unresolved:src/a.ts:./missing");
+    assert_eq!(diag.unresolved_target.as_deref(), Some("./missing"));
+}
+
+#[test]
+fn edge_id_carries_kind_and_ordinal() {
+    let parsed = vec![module("src/a.ts", &["./b"]), module("src/b.ts", &[])];
+    let edges = resolve_references(&parsed).edges;
+    assert_eq!(edges[0].id, "src/a.ts->src/b.ts:import:0");
+}
+
+#[test]
+fn duplicate_edge_gets_incrementing_ordinal() {
+    let parsed = vec![module("src/a.ts", &["./b", "./b"]), module("src/b.ts", &[])];
+    let ids: Vec<String> = resolve_references(&parsed).edges.into_iter().map(|e| e.id).collect();
+    assert_eq!(ids, ["src/a.ts->src/b.ts:import:0", "src/a.ts->src/b.ts:import:1"]);
+}
