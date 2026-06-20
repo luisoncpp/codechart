@@ -23,6 +23,20 @@ pub enum BuildError {
     NondeterministicId(String),
 }
 
+impl std::fmt::Display for BuildError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SiblingOverlap(d) => write!(f, "invalid group tree: {d}"),
+            Self::MultiGroupMembership(d) => write!(f, "unknown module group: {d}"),
+            Self::ForeignFacade(d) => write!(f, "invalid facade: {d}"),
+            Self::DanglingEdge(d) => write!(f, "dangling edge: {d}"),
+            Self::NondeterministicId(d) => write!(f, "non-unique id: {d}"),
+        }
+    }
+}
+
+impl std::error::Error for BuildError {}
+
 pub fn validate(
     groups: &[GroupNode],
     modules: &[ModuleNode],

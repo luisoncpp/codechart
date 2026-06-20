@@ -2,6 +2,14 @@
 
 ## Implemented
 
+**Phase 7 — Wire end-to-end on a real project** is complete — **MVP Milestone 1 functionally done.**
+
+- Rust IPC: `tauri_api::analyze_project(path) -> Result<ProjectGraph, String>` builds an `FsProjectSource` over the chosen folder and runs the Phase 4 pipeline; the path is used as both the fs root and the graph `root`. `BuildError` now implements `Display`/`Error` so failures cross IPC as readable strings. Registered in `lib.rs` (replaces the `get_sample_graph` stub); `tauri-plugin-dialog` added (+ `dialog:default` capability) for the native folder picker.
+- Frontend: `createTauriAnalysisClient` calls `invoke("analyze_project", { path })`. `App` now wires the **Tauri** client (no more mock in production). `ProjectLoaderPanel` rebuilt around a folder picker: **Open folder…** → `pickFolder()` (Tauri directory dialog, injectable for tests) → `loadProject(path)`; **Reload** re-runs the last path; per-phase status text for idle / loading / ready / empty / failed. Auto-load of `/sample` removed — the app starts `idle`.
+- Tests: 2 Rust `tauri_api` (⭐ command on the fixture reproduces the golden model with `root` patched to the path; missing folder → empty graph) bring Rust to 82. Frontend `ProjectLoaderPanel` state-machine tests (idle prompt, pick→summary, cancel stays idle) using an injected picker + `MockAnalysisClient` — 27 vitest pass; lint + typecheck clean.
+- Flow: [open-project.md](../flows/open-project.md) (UI front of [analyze-project](../flows/analyze-project.md)). Lesson: [analyze-command-root-equals-path.md](../lessons-learned/analyze-command-root-equals-path.md).
+- Checkpoint: in `npm run tauri dev`, pick the sample folder → live diagram; pick an arbitrary TS repo → graph + diagnostics without crashing; Reload is layout-stable. (Native-dialog/IPC path is exercised in the desktop runtime, not jsdom.)
+
 **Phase 6 — Render canvas + inspection (TS)** is complete — ⭐ visual gate passed.
 
 - `domain/graph` projection: pure `projectGraph(graph, layout)` → `ProjectedGraph {nodes, edges}` (React Flow models). Group/module layout boxes → typed nodes with **parent-relative** positions, parents before children; group color from `GroupNode.color` else a deterministic palette hash. Plus selectors (`findModule`, `groupOf`, `importsOf`, `importedBy`, `diagnosticsFor`).
@@ -76,7 +84,11 @@
 
 ## Next
 
-**Phase 6 — Render canvas: the sample aesthetic** (⭐ visual gate): `features/graph_canvas` (React Flow) consuming the `ProjectGraph` + `LayoutedGraph` — colored group containers, module/facade nodes, solid import edges, matching `sample-img/img1.png`. Plus `GraphSessionStore`/`GraphProjector` + inspection panel. Backend (1–4) and layout (5) are done; Phase 6 (visual) and Phase 7 (wire end-to-end) remain.
+**MVP Milestone 1 is functionally complete** (Phases 0–7). Remaining are the additive fast-follows on the same contract — no rework:
+
+- **Phase 8 — Architecture drift detection**: private-group/facade rules → `isViolation` edges (red) + `architectureViolation` diagnostics; the fixture already plants one (`ui/TodoList → core/store`).
+- **Phase 9 — Dashed/soft edges**: event/context/pub-sub classifier → `soft` edges.
+- **Phase 10 — Semantic zoom (L0/L1/L2) + `@Architecture` metadata rendering.**
 
 ## Design artifacts
 

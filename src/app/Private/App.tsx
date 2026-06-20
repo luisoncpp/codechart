@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { createMockAnalysisClient } from "../../ipc/analysis-client";
+import { createTauriAnalysisClient } from "../../ipc/analysis-client";
 import { ElkLayoutEngine } from "../../domain/layout";
 import { GraphSessionStore, useGraphSession } from "../../state/graph-session";
 import { ProjectLoaderPanel } from "../../features/project_loader";
@@ -9,7 +9,7 @@ import { InspectionPanel } from "../../features/inspection_panel";
 export function App() {
   const store = useMemo(
     /*build session store*/ () =>
-      new GraphSessionStore(createMockAnalysisClient(), new ElkLayoutEngine()),
+      new GraphSessionStore(createTauriAnalysisClient(), new ElkLayoutEngine()),
     [],
   );
   const session = useGraphSession(store);

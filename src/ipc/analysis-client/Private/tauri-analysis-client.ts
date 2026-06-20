@@ -2,10 +2,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { ProjectGraph } from "../../../domain/graph";
 import { AnalysisClient } from "../index";
 
+/** Calls the Rust `analyze_project` command over Tauri IPC for a real folder. */
 export function createTauriAnalysisClient(): AnalysisClient {
   return {
-    async analyzeProject(): Promise<ProjectGraph> {
-      return invoke<ProjectGraph>("get_sample_graph");
+    async analyzeProject(path: string): Promise<ProjectGraph> {
+      return invoke<ProjectGraph>("analyze_project", { path });
     },
   };
 }

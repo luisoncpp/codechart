@@ -13,7 +13,8 @@ pub mod tauri_api;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![tauri_api::get_sample_graph])
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![tauri_api::analyze_project])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

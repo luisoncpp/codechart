@@ -1,29 +1,16 @@
-use crate::contract::{GroupNode, ModuleMetrics, ModuleNode, ProjectGraph};
+use crate::analysis::analyze_project as run_analysis;
+use crate::contract::ProjectGraph;
+use crate::project_source::FsProjectSource;
 
+/// Analyze the project rooted at `path` (a user-chosen folder) and return the
+/// `ProjectGraph`. The path is used both as the filesystem root and as the
+/// graph's recorded `root`. Build failures surface as a string error so the
+/// frontend's `failed` session phase can show them.
 #[tauri::command]
-pub fn get_sample_graph() -> ProjectGraph {
-    ProjectGraph {
-        version: 1,
-        root: "/sample".into(),
-        groups: vec![GroupNode {
-            id: "core".into(),
-            label: "Core".into(),
-            parent_id: None,
-            color: Some("#3b82f6".into()),
-            facade_module_ids: vec!["src/index.ts".into()],
-            ..Default::default()
-        }],
-        modules: vec![ModuleNode {
-            id: "src/index.ts".into(),
-            path: "src/index.ts".into(),
-            label: "index.ts".into(),
-            language: crate::contract::Language::TypeScript,
-            group_id: Some("core".into()),
-            is_facade: true,
-            metrics: ModuleMetrics { loc: 12, ..Default::default() },
-            annotation: None,
-        }],
-        edges: vec![],
-        diagnostics: vec![],
-    }
+pub fn analyze_project(path: String) -> Result<ProjectGraph, String> {
+    let source = FsProjectSource::new(&path);
+    run_analysis(&source, &path).map_err(|e| e.to_string())
 }
+
+#[cfg(test)]
+mod tests;
