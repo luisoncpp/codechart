@@ -1,35 +1,15 @@
+import goldenGraph from "../../../../tests/fixtures/golden/project-graph.json";
 import { ProjectGraph } from "../../../domain/graph";
 import { AnalysisClient } from "../index";
 
+/**
+ * Returns the golden fixture so the whole UI runs with zero Rust.
+ * Drives the Phase 6 visual gate (render the sample side-by-side).
+ */
 export function createMockAnalysisClient(): AnalysisClient {
   return {
     async analyzeProject(): Promise<ProjectGraph> {
-      return {
-        version: 1,
-        root: "/mock",
-        groups: [
-          {
-            id: "core",
-            label: "Core",
-            parentId: null,
-            color: "#3b82f6",
-            facadeModuleIds: ["src/index.ts"],
-          },
-        ],
-        modules: [
-          {
-            id: "src/index.ts",
-            path: "src/index.ts",
-            label: "index.ts",
-            language: "typescript",
-            groupId: "core",
-            isFacade: true,
-            metrics: { loc: 5 },
-          },
-        ],
-        edges: [],
-        diagnostics: [],
-      };
+      return goldenGraph as unknown as ProjectGraph;
     },
   };
 }

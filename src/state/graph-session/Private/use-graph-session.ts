@@ -6,8 +6,9 @@ export function useGraphSession(store: GraphSessionStore) {
 
   useEffect(() => {
     const listener = () => setTick((t) => t + 1);
-    store.on("phase-changed", listener);
-    return () => store.off("phase-changed", listener);
+    const events = ["phase-changed", "selection-changed"];
+    events.forEach((e) => store.on(e, listener));
+    return () => events.forEach((e) => store.off(e, listener));
   }, [store]);
 
   return store;

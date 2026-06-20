@@ -2,6 +2,16 @@
 
 ## Implemented
 
+**Phase 6 — Render canvas + inspection (TS)** is complete — ⭐ visual gate passed.
+
+- `domain/graph` projection: pure `projectGraph(graph, layout)` → `ProjectedGraph {nodes, edges}` (React Flow models). Group/module layout boxes → typed nodes with **parent-relative** positions, parents before children; group color from `GroupNode.color` else a deterministic palette hash. Plus selectors (`findModule`, `groupOf`, `importsOf`, `importedBy`, `diagnosticsFor`).
+- `GraphSessionStore` extended: now also computes/owns the `LayoutedGraph` (via an injected `LayoutEngine` on load — `empty` phase keeps `layout=null`) and `selectedId`; emits `selection-changed` alongside `phase-changed`.
+- `features/graph_canvas` (React Flow `@xyflow/react` 12): custom `group` node (colored container + uppercase header + icon glyph) and `module` node (white card, `★` facade, blue selected outline), solid grey import edges (red+thick when `isViolation`, stubbed for Phase 8), `colorMode="light"`, `FitView` refit via `useNodesInitialized`. `GraphCanvasController` adapts node/pane clicks → `store.select`. Only React-Flow-aware module.
+- `features/inspection_panel`: selected module's path, group, facade status, language, LOC, imports, imported-by, diagnostics.
+- `app` wires `createMockAnalysisClient()` (now returns the **golden fixture** — runs the whole UI with zero Rust) + `ElkLayoutEngine` into the store; loader bar over canvas + panel when `ready`.
+- Tests: 6 projection + 7 store (no-DOM: load/empty/failed phases, layout computed, selection emit/dedup/clear) + 5 canvas/inspection (node count, edge layer mounts, click selects, imports/imported-by shown) + updated smoke. All 25 vitest + lint + typecheck + 80 Rust pass. jsdom React Flow gotchas recorded in [lessons-learned](../lessons-learned/react-flow-jsdom-testing.md).
+- Checkpoint (⭐): dev server screenshot compared side-by-side with `sample-img/img1.png` — nested colored containers with uppercase headers + icons, white facade-starred module cards, solid import arrows on a light canvas read the same. Promoted to [architecture/graph-canvas.md](../architecture/graph-canvas.md); new flow [select-module.md](../flows/select-module.md).
+
 **Phase 5 — ELK layout (TS)** is complete.
 
 - `domain/layout` deep module: public `LayoutEngine` interface + `ElkLayoutEngine` + `LayoutedGraph`/`LayoutBox` types behind `index.ts`; elkjs (`elkjs` 0.11) stays private. `layout(graph) -> LayoutedGraph` returns **absolute** boxes (`{id, parentId, x, y, width, height}`) for groups + modules plus overall `width`/`height`.

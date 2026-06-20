@@ -42,3 +42,4 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | File | Scope |
 |------|-------|
 | [analyze-project.md](./analyze-project.md) | Folder → `ProjectGraph`: the full backend pipeline (parse → group → resolve → build) |
+| [select-module.md](./select-module.md) | Click a module on the canvas → selection → inspection panel (pure UI state) |
