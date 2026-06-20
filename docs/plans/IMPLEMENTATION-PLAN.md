@@ -93,12 +93,24 @@ extracted imports + annotations; user confirms the import list matches the file.
 
 **Goal:** turn files + a config into the nested group tree with facades.
 
-- `project_config` loader/validator (globs, regex, explicit lists, group references; defaults when
-  absent; **folder inference** as the no-config fallback). Invalid config → `configError` diagnostic.
-- `grouping`: assign modules to nested groups, designate facade(s), **reject sibling overlap**.
+- `project_config`: discover co-located `*.group.md` files; parse YAML frontmatter (id, label,
+  color, icon, facades, descriptionShort; membership via `match`/`files`/`groups`/`exclude`;
+  root-only `ignore`) + markdown body; validate. Body + frontmatter → `GroupNode.annotation` (TDD §7).
+  Bad frontmatter → `configError` diagnostic (per file, partial results).
+- `grouping`: assign modules by the membership sources (TDD §7) — **folder ownership** (default),
+  **globs/regex** (`match`), **explicit file lists** (`files`), **group references** (`groups`, which
+  roll up children) — then subtract `exclude`. **Claims must be disjoint: any module claimed by two
+  groups is an overlap → `configError` + builder rejection (no precedence)**; cross-cutting pulls
+  require the owner to cede via `exclude`. **Nesting (`parentId`)** from the directory tree *or*
+  explicit `groups` refs; designate facade(s) (default `index.ts`/`index.tsx`); **folder inference**
+  when no `*.group.md` exists.
 
-**Tests:** each match-rule type; nesting depth; folder-inference fallback; facade designation; overlap
-rejection; unmatched-file fallback; valid/missing/invalid config cases.
+**Tests:** frontmatter parse (full/minimal/malformed); body→annotation; **each membership source**
+(folder ownership, glob, regex, explicit file, group reference) + combinations; `exclude` as a
+filter on folder ownership; cross-folder pull made disjoint by the owner's `exclude`; **overlap
+(two groups claim one module) → `configError` + rejection**; nested `*.group.md` and explicit
+`groups` ref both set `parentId`; facade default vs explicit; unmatched-file fallback;
+no-group-files folder inference.
 **Checkpoint:** `cargo run -p codechart-cli -- groups tests/fixtures/ts-basic-project` prints the group
 tree; user confirms it matches the grouping in the golden fixture.
 

@@ -1,0 +1,364 @@
+{
+  "version": 1,
+  "root": "tests/fixtures/ts-basic-project",
+  "groups": [
+    {
+      "id": "app",
+      "label": "Application",
+      "parentId": null,
+      "color": "#64748b",
+      "facadeModuleIds": [],
+      "annotation": {
+        "descriptionShort": "Todo application",
+        "descriptionLong": "Top-level container composed from the core, services, and ui groups via group references (not folder ownership), so it claims no leaf module directly - src/main.ts stays ungrouped. Demonstrates membership-by-group-reference and explicit nesting.",
+        "icon": "app-window"
+      }
+    },
+    {
+      "id": "core",
+      "label": "Core",
+      "parentId": "app",
+      "color": "#7c3aed",
+      "facadeModuleIds": ["src/core/index.ts"],
+      "annotation": {
+        "descriptionShort": "Domain types & state",
+        "descriptionLong": "Domain model and in-memory state for todos. Pure logic with no I/O or UI. Code outside this group must go through the facade (index.ts); store, todo, and validate are private.",
+        "icon": "cube"
+      }
+    },
+    {
+      "id": "services",
+      "label": "Services",
+      "parentId": "app",
+      "color": "#0ea5e9",
+      "facadeModuleIds": ["src/services/index.ts"],
+      "annotation": {
+        "descriptionShort": "Data access",
+        "descriptionLong": "Data access layer. Wraps network calls behind http.ts so the rest of the app never calls fetch directly. Exposes fetchTitles through the facade (index.ts).",
+        "icon": "plug"
+      }
+    },
+    {
+      "id": "shared",
+      "label": "Shared",
+      "parentId": null,
+      "color": "#f59e0b",
+      "facadeModuleIds": [],
+      "annotation": {
+        "descriptionShort": "Cross-cutting types",
+        "descriptionLong": "Cross-cutting type modules pulled from multiple folders: services/types.ts via a glob (`match`) and core/todo.ts via an explicit `files` entry. The core and services groups cede these files via `exclude`, so claims stay disjoint (no overlap). Declares no facade, so its members are public to every group (drift detection never flags imports into it).",
+        "icon": "share"
+      }
+    },
+    {
+      "id": "ui",
+      "label": "UI",
+      "parentId": "app",
+      "color": "#22c55e",
+      "facadeModuleIds": ["src/ui/index.ts"],
+      "annotation": {
+        "descriptionShort": "React components",
+        "descriptionLong": "React components that render todos. Depends on core and services through their facades. The TodoList component intentionally bypasses the core facade to demonstrate drift detection.",
+        "icon": "layout"
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "src/core/index.ts",
+      "path": "src/core/index.ts",
+      "label": "index.ts",
+      "language": "typescript",
+      "groupId": "core",
+      "isFacade": true,
+      "metrics": { "loc": 3 }
+    },
+    {
+      "id": "src/core/store.ts",
+      "path": "src/core/store.ts",
+      "label": "store.ts",
+      "language": "typescript",
+      "groupId": "core",
+      "isFacade": false,
+      "metrics": { "loc": 21 }
+    },
+    {
+      "id": "src/core/todo.ts",
+      "path": "src/core/todo.ts",
+      "label": "todo.ts",
+      "language": "typescript",
+      "groupId": "shared",
+      "isFacade": false,
+      "metrics": { "loc": 9 }
+    },
+    {
+      "id": "src/core/validate.ts",
+      "path": "src/core/validate.ts",
+      "label": "validate.ts",
+      "language": "typescript",
+      "groupId": "core",
+      "isFacade": false,
+      "metrics": { "loc": 5 }
+    },
+    {
+      "id": "src/main.ts",
+      "path": "src/main.ts",
+      "label": "main.ts",
+      "language": "typescript",
+      "groupId": null,
+      "isFacade": false,
+      "metrics": { "loc": 9 }
+    },
+    {
+      "id": "src/services/api.ts",
+      "path": "src/services/api.ts",
+      "label": "api.ts",
+      "language": "typescript",
+      "groupId": "services",
+      "isFacade": false,
+      "metrics": { "loc": 11 }
+    },
+    {
+      "id": "src/services/http.ts",
+      "path": "src/services/http.ts",
+      "label": "http.ts",
+      "language": "typescript",
+      "groupId": "services",
+      "isFacade": false,
+      "metrics": { "loc": 6 },
+      "annotation": {
+        "type": "Module",
+        "group": "services",
+        "descriptionShort": "HTTP transport",
+        "descriptionLong": "Single choke point for network access; services depend on this, not fetch.",
+        "icon": "globe"
+      }
+    },
+    {
+      "id": "src/services/index.ts",
+      "path": "src/services/index.ts",
+      "label": "index.ts",
+      "language": "typescript",
+      "groupId": "services",
+      "isFacade": true,
+      "metrics": { "loc": 2 }
+    },
+    {
+      "id": "src/services/types.ts",
+      "path": "src/services/types.ts",
+      "label": "types.ts",
+      "language": "typescript",
+      "groupId": "shared",
+      "isFacade": false,
+      "metrics": { "loc": 5 }
+    },
+    {
+      "id": "src/ui/App.tsx",
+      "path": "src/ui/App.tsx",
+      "label": "App.tsx",
+      "language": "tsx",
+      "groupId": "ui",
+      "isFacade": false,
+      "metrics": { "loc": 11 }
+    },
+    {
+      "id": "src/ui/TodoItem.tsx",
+      "path": "src/ui/TodoItem.tsx",
+      "label": "TodoItem.tsx",
+      "language": "tsx",
+      "groupId": "ui",
+      "isFacade": false,
+      "metrics": { "loc": 5 }
+    },
+    {
+      "id": "src/ui/TodoList.tsx",
+      "path": "src/ui/TodoList.tsx",
+      "label": "TodoList.tsx",
+      "language": "tsx",
+      "groupId": "ui",
+      "isFacade": false,
+      "metrics": { "loc": 14 }
+    },
+    {
+      "id": "src/ui/index.ts",
+      "path": "src/ui/index.ts",
+      "label": "index.ts",
+      "language": "typescript",
+      "groupId": "ui",
+      "isFacade": true,
+      "metrics": { "loc": 3 }
+    }
+  ],
+  "edges": [
+    {
+      "id": "src/core/index.ts->src/core/store.ts:import:0",
+      "source": "src/core/index.ts",
+      "target": "src/core/store.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/core/index.ts->src/core/todo.ts:import:0",
+      "source": "src/core/index.ts",
+      "target": "src/core/todo.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/core/index.ts->src/core/validate.ts:import:0",
+      "source": "src/core/index.ts",
+      "target": "src/core/validate.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/core/store.ts->src/core/todo.ts:import:0",
+      "source": "src/core/store.ts",
+      "target": "src/core/todo.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/core/validate.ts->src/core/todo.ts:import:0",
+      "source": "src/core/validate.ts",
+      "target": "src/core/todo.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/main.ts->src/core/index.ts:import:0",
+      "source": "src/main.ts",
+      "target": "src/core/index.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/main.ts->src/ui/index.ts:import:0",
+      "source": "src/main.ts",
+      "target": "src/ui/index.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/services/api.ts->src/services/http.ts:import:0",
+      "source": "src/services/api.ts",
+      "target": "src/services/http.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/services/api.ts->src/services/types.ts:import:0",
+      "source": "src/services/api.ts",
+      "target": "src/services/types.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/services/index.ts->src/services/api.ts:import:0",
+      "source": "src/services/index.ts",
+      "target": "src/services/api.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/services/index.ts->src/services/types.ts:import:0",
+      "source": "src/services/index.ts",
+      "target": "src/services/types.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/ui/App.tsx->src/core/index.ts:import:0",
+      "source": "src/ui/App.tsx",
+      "target": "src/core/index.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/ui/App.tsx->src/services/index.ts:import:0",
+      "source": "src/ui/App.tsx",
+      "target": "src/services/index.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/ui/App.tsx->src/ui/TodoList.tsx:import:0",
+      "source": "src/ui/App.tsx",
+      "target": "src/ui/TodoList.tsx",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/ui/TodoItem.tsx->src/core/index.ts:import:0",
+      "source": "src/ui/TodoItem.tsx",
+      "target": "src/core/index.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/ui/TodoList.tsx->src/core/store.ts:import:0",
+      "source": "src/ui/TodoList.tsx",
+      "target": "src/core/store.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/ui/TodoList.tsx->src/ui/TodoItem.tsx:import:0",
+      "source": "src/ui/TodoList.tsx",
+      "target": "src/ui/TodoItem.tsx",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/ui/index.ts->src/ui/App.tsx:import:0",
+      "source": "src/ui/index.ts",
+      "target": "src/ui/App.tsx",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/ui/index.ts->src/ui/TodoItem.tsx:import:0",
+      "source": "src/ui/index.ts",
+      "target": "src/ui/TodoItem.tsx",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/ui/index.ts->src/ui/TodoList.tsx:import:0",
+      "source": "src/ui/index.ts",
+      "target": "src/ui/TodoList.tsx",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    }
+  ],
+  "diagnostics": [
+    {
+      "id": "unresolved:src/services/api.ts:./cache",
+      "severity": "warning",
+      "kind": "unresolvedImport",
+      "message": "Cannot resolve import \"./cache\" from src/services/api.ts",
+      "moduleId": "src/services/api.ts",
+      "unresolvedTarget": "./cache"
+    }
+  ]
+}

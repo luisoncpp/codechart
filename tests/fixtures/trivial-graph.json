@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "root": "/sample",
+  "groups": [
+    {
+      "id": "core",
+      "label": "Core",
+      "parentId": null,
+      "color": "#3b82f6",
+      "facadeModuleIds": ["src/index.ts"]
+    }
+  ],
+  "modules": [
+    {
+      "id": "src/index.ts",
+      "path": "src/index.ts",
+      "label": "index.ts",
+      "language": "typescript",
+      "groupId": "core",
+      "isFacade": true,
+      "metrics": { "loc": 12 }
+    }
+  ],
+  "edges": [],
+  "diagnostics": []
+}

@@ -30,7 +30,8 @@
   `GraphSessionStore` class with a thin adapter hook; semantic zoom as a *pure projection*;
   per-phase dev-CLI checkpoints.
 - **From GPT:** diagnostics-as-product (D5) with partial results; explicit parser/resolver
-  rules and ignore defaults (§7); the concrete `codechart.config.json` shape; the
+  rules and ignore defaults (§7); the per-group config concept (later reshaped into co-located
+  `*.group.md` files, §7); the
   `index.ts`/`Private/` deep-module folder convention; the `ProjectSession` state machine and
   the `InspectionPanel` (imported-by list); the edge-kind table that reserves dashed/soft and
   violation edges from day one.
@@ -192,8 +193,8 @@ private sibling. Pure modules take data in, return data out.
 | `language_adapter` | **Seam.** Parse one file → local facts | `trait LanguageAdapter`, `ParsedModule`, `registry_for(ext)` | ✅ | tree-sitter |
 | `language_adapter::typescript` (private) | TS/TSX impl: imports, re-exports, exported symbols, comment ranges | (none — only the trait) | ✅ | tree-sitter-typescript |
 | `semantic_comments` | Parse `@Architecture(...)` blocks → `Annotation` | `parse_annotations(text)` | ✅ | — |
-| `project_config` | Load + validate `codechart.config.json` (schema/loader/matcher/validation private) | `ProjectConfig`, `load_config(root)` | ✅ | serde, glob |
-| `grouping` | Assign modules → nested groups, designate facades, reject sibling overlap, fall back to folder inference | `resolve_groups(files, config)` | ✅ | contract, project_config |
+| `project_config` | Discover + parse + validate co-located `*.group.md` files (frontmatter + body); schema/loader/matcher/validation private | `GroupDef`, `load_group_defs(root)` | ✅ | serde, serde_yaml, glob |
+| `grouping` | Assign modules → nested groups, designate facades, reject sibling overlap, fall back to folder inference | `resolve_groups(files, group_defs)` | ✅ | contract, project_config |
 | `references` | Resolve imports → edges; classify kind; pair emit/listen tokens; flag drift | `resolve_references(parsed, groups)` | ✅ | contract |
 | `diagnostics` | Normalize warnings/errors into `Diagnostic`s | `DiagnosticSink` | ✅ | contract |
 | `analysis` | **Facade.** Compose the above; partial results on per-file failure | `analyze_project(source, config) -> ProjectGraph` | ✅ | all the above |
@@ -259,20 +260,78 @@ graph nodes. An unresolvable relative import becomes an `unresolvedImport` diagn
 
 **Ignore defaults:** `.git/**`, `node_modules/**`, `dist/**`, `build/**`, `.next/**`, `coverage/**`.
 
-**Config (`codechart.config.json`, optional):** the analyzer works with no config (folder
-inference) and improves with it.
+**Group definitions (`*.group.md`, optional, co-located):** the analyzer works with **no**
+group files (folder inference) and improves with them. A group is declared by a single
+`*.group.md` file **placed in the folder it describes**. This decentralizes configuration (one
+group = one file, living next to its code) and gives each group an arbitrarily long prose section
+for documentation — replacing the old single centralized `codechart.config.json`.
 
-```json
-{
-  "groups": [
-    { "id": "frontend", "label": "Frontend", "color": "blue",
-      "match": ["src/**"], "facades": ["src/index.ts"] }
-  ],
-  "ignore": ["node_modules/**", "dist/**", "build/**"]
-}
+A `*.group.md` file is **YAML frontmatter (metadata) + markdown body (documentation)**:
+
+```markdown
+---
+id: core                 # optional; default = derived from folder path
+label: Core              # optional; default = humanized folder name
+color: "#7c3aed"         # optional; hex string (GroupNode.color)
+icon: cube               # optional
+facades:                 # optional; default = index.ts/index.tsx in this folder
+  - index.ts
+descriptionShort: Domain types & state   # optional; default = first body paragraph
+# membership fields (match / files / groups / exclude) — see below; omit for folder ownership
+---
+
+# Core
+
+Free-form markdown describing the group's responsibility, invariants, and design
+notes. This body is the group's living documentation — as long as you like.
 ```
 
-Match rules support globs, regex, explicit file lists, and references to other group ids.
+**Membership — a group claims modules via one or more *source* rules, plus a filter.** The three
+membership **sources** are `match`, `files`, and `groups` (a group's member set is their union).
+When **no** source is present, the group defaults to **folder ownership**. `exclude` is not a
+source — it is a filter subtracted from whatever the sources (or folder ownership) produced, so a
+group may use `exclude` on its own while keeping folder ownership.
+
+| Field | Kind | Mechanism | Example |
+|-------|------|-----------|---------|
+| *(none)* | source (default) | **Folder ownership** — the file's folder + all subfolders, minus any subtree owned by a nested `*.group.md` | — |
+| `match` | source | **Globs / regex** — glob by default; a `/…/`-delimited entry is a regex over the repo-relative path | `["src/ui/**", "/\\.view\\.tsx$/"]` |
+| `files` | source | **Explicit file list** — individual modules by path | `["app.tsx", "../shared/bus.ts"]` |
+| `groups` | source | **References to other groups** — names child group ids; each becomes a child (sets its `parentId`) and its members roll up into this group | `["ui", "state"]` |
+| `exclude` | filter | **Carve-out** — globs removed from this group's set | `["**/legacy/**"]` |
+
+**Claims must be disjoint — overlap is an error, never silently resolved (§2.2 #1, #2).** A module
+may be claimed by **at most one** group. If two groups' rules both claim a module (including a
+`files`/`match` rule reaching into a folder another group owns), that is an **overlap**: a
+`configError` diagnostic, rejected by `ProjectGraphBuilder` as sibling overlap. There is **no
+precedence** that picks a winner. To move a module into a cross-cutting group, the owning group must
+**cede it explicitly** with `exclude` (or narrow its own source rules). A `groups` reference never
+makes a module a *direct* member of the parent — it only rolls up through the child — so it does not
+create overlap.
+
+**Nesting (`parentId`)** is set by *either* the directory tree (a group's parent is the nearest
+ancestor folder with a `*.group.md`) *or* an explicit `groups` reference from a parent — explicit
+references take precedence when both apply.
+
+**Top-level / root groups (optional):** groups form a *forest* — any group with no parent (no
+ancestor `*.group.md` and not referenced by another group's `groups`) is a top-level root, and
+there may be several (e.g. an aggregate `app` plus a cross-cutting `shared`). A root-placed
+`*.group.md` may also carry project-wide settings in frontmatter — notably `ignore` (extra ignore
+globs, merged with the built-in defaults above).
+
+**Facade-less = public:** a group that designates **no facade** (empty/absent `facades`) is treated
+as fully public — every member is importable from anywhere and drift detection (§10) never flags
+imports into it. This is the intended mode for cross-cutting/shared groups assembled via
+`match`/`files`. A group *with* a facade keeps its non-facade members private (the §10 bypass rule).
+
+**Body → `Annotation`:** the markdown body and `descriptionShort`/`icon` populate the group's
+`GroupNode.annotation` (`descriptionLong` = body, `descriptionShort` = frontmatter or first
+paragraph). **No contract change** — `GroupNode.annotation` already exists (§3).
+
+**Paths** in `facades`/`match`/`files` are resolved relative to the `*.group.md` file's folder
+(use `../` to reach outside it); ids stay repo-relative POSIX paths per §3.1. Invalid frontmatter
+(bad YAML, unknown facade, unknown `groups` id, membership tie) → a per-file `configError`
+diagnostic; the rest of the graph still builds (partial-results discipline).
 
 ---
 
@@ -297,7 +356,7 @@ src-tauri/src/
   project_source/      # trait + Fs + Memory
   language_adapter/    # trait + registry; typescript/ (private impl)
   semantic_comments/
-  project_config/      # schema / loader / matcher / validation
+  project_config/      # *.group.md discovery / frontmatter+body parse / matcher / validation
   grouping/
   references/
   diagnostics/
@@ -328,7 +387,9 @@ tests/fixtures/
   still builds from imports + config alone.
 - **Drift detection** lives entirely in `references`: an edge crossing a macro-group boundary into a
   non-facade module sets `isViolation=true` and emits an `architectureViolation` diagnostic. No
-  separate subsystem.
+  separate subsystem. **Exception — facade-less groups are public** (§7): a target whose group
+  designates no facade never counts as a violation, so cross-cutting/shared groups don't generate
+  false positives.
 - **Performance posture (MVP):** React Flow handles low-thousands of nodes; L0 collapse keeps the
   visible set small. Virtualization / WebGPU is a later milestone behind the `LayoutEngine` + canvas
   seam — not built now, not blocked.

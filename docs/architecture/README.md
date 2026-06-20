@@ -6,3 +6,4 @@ Covers only what's already implemented. For architecture docs of not implemented
 
 | File | Subsystem | Notes |
 |------|-----------|-------|
+| [contract.md](./contract.md) | `ProjectGraph` contract + `ProjectGraphBuilder` invariants | The IPC data shape; golden-fixture North Star |
