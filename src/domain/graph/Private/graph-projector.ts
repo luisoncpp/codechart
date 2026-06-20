@@ -1,4 +1,4 @@
-import { ProjectGraph } from "../index";
+import type { ProjectGraph } from "../ProjectGraph";
 
 export function projectGraphSummary(graph: ProjectGraph) {
   return {

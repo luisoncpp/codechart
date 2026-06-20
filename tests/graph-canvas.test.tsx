@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import goldenGraph from "./fixtures/golden/project-graph.json";
-import { GraphCanvas } from "../src/features/graph_canvas";
+import { GraphCanvas, edgeRole } from "../src/features/graph_canvas";
 import { InspectionPanel } from "../src/features/inspection_panel";
 import { GraphSessionStore } from "../src/state/graph-session";
 import { ElkLayoutEngine } from "../src/domain/layout";
@@ -49,6 +49,39 @@ describe("GraphCanvas", () => {
     const node = container.querySelector(`[data-id="${facade.id}"]`)!;
     fireEvent.click(node);
     expect(store.getSelectedId()).toBe(facade.id);
+  });
+});
+
+describe("edgeRole (selection-aware coloring)", () => {
+  const src = graph.edges[0].source;
+  const tgt = graph.edges[0].target;
+  const rfEdge = {
+    id: "e",
+    source: src,
+    target: tgt,
+    data: { isViolation: false, kind: "import" },
+  };
+
+  it("marks edges leaving the selected module as imports (red)", () => {
+    expect(edgeRole(rfEdge, src)).toBe("import");
+  });
+
+  it("marks edges entering the selected module as exports (blue)", () => {
+    expect(edgeRole(rfEdge, tgt)).toBe("export");
+  });
+
+  it("falls back to neutral when the edge does not touch the selection", () => {
+    expect(edgeRole(rfEdge, "no-such-id")).toBe("neutral");
+  });
+
+  it("is neutral when nothing is selected", () => {
+    expect(edgeRole(rfEdge, null)).toBe("neutral");
+  });
+
+  it("selection role wins over a violation edge", () => {
+    expect(edgeRole({ ...rfEdge, data: { isViolation: true, kind: "import" } }, src)).toBe(
+      "import",
+    );
   });
 });
 

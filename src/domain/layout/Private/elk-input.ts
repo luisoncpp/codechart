@@ -12,9 +12,14 @@ export const PRESETS = {
 } as const;
 
 const ROOT_OPTIONS: Record<string, string> = {
+  "elk.algorithm": "rectpacking",
+  "elk.aspectRatio": "1.6",
+  "elk.spacing.nodeNode": String(PRESETS.nodeSpacing),
+};
+
+const GROUP_LAYOUT_OPTIONS: Record<string, string> = {
   "elk.algorithm": "layered",
   "elk.direction": "RIGHT",
-  "elk.hierarchyHandling": "INCLUDE_CHILDREN",
   "elk.spacing.nodeNode": String(PRESETS.nodeSpacing),
   "elk.layered.spacing.nodeNodeBetweenLayers": String(PRESETS.layerSpacing),
 };
@@ -31,7 +36,7 @@ export function buildElkGraph(graph: ProjectGraph): ElkNode {
   const build = (parentId: string | null): ElkNode[] => {
     const groups = (childGroups.get(parentId) ?? []).map((id) => ({
       id,
-      layoutOptions: GROUP_OPTIONS,
+      layoutOptions: { ...GROUP_LAYOUT_OPTIONS, ...GROUP_OPTIONS },
       children: build(id),
     }));
     const modules = (modulesByGroup.get(parentId) ?? []).map((id) => ({

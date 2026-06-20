@@ -76,6 +76,13 @@ describe("ElkLayoutEngine (golden model)", () => {
     }
   });
 
+  it("packs top-level groups compactly rather than sprawling horizontally", async () => {
+    const result = await new ElkLayoutEngine().layout(graph);
+    // rectpacking at the root targets a screen-like aspect ratio; guard against
+    // regressing to the old single layered row (which was ~4.7:1 wide).
+    expect(result.width / result.height).toBeLessThan(2.5);
+  });
+
   it("is deterministic across runs", async () => {
     const a = await new ElkLayoutEngine().layout(graph);
     const b = await new ElkLayoutEngine().layout(graph);

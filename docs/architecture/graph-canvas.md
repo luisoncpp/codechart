@@ -34,6 +34,11 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   the group's ELK top padding (see `layout.md`), so module boxes never overlap the group label.
 - **Module node:** white card; facade → dark 2px border + `★`; selected → blue outline; compact 11px label, ellipsised.
 - **Edge:** solid grey arrow (`import`); red + thicker when `isViolation` (Phase 8 turns these on).
+- **Selection-aware edges:** when a module is selected, `edgeRole(edge, selectedId)` colors edges by
+  role relative to it — edges leaving it (`source === selectedId`, its imports) render **red**, edges
+  entering it (`target === selectedId`, its exports / imported-by) render **blue**. Selection wins over
+  `isViolation`. Coloring lives in `edge-style.ts` (`GraphCanvas` passes `selectedId` per render); the
+  pure `edgeRole` is the testable seam (edges don't render under jsdom).
 - **Icons:** sparing, name → glyph map (`icon-map.tsx`); unknown names render no glyph.
 
 ## Invariants to preserve

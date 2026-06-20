@@ -24,9 +24,13 @@ parent-relative offsets by subtracting the parent box when it needs `parentNode`
      `groupId` (ungrouped nodes sit at the root). Children are **sorted by id** for determinism.
    - Leaf size + spacing/padding come from `PRESETS` (deterministic; no randomness). The group's
      **top** padding is `groupPadding + groupHeaderHeight` so the rendered header (graph-canvas) has
-     reserved room and modules never overlap the group label. Edges are
-     attached at the root with `elk.hierarchyHandling=INCLUDE_CHILDREN` so cross-group edges route.
-2. `elk.layout()` (elkjs `layered`, direction RIGHT) computes parent-relative coords + group sizes.
+     reserved room and modules never overlap the group label.
+   - **Two algorithms by depth:** the **root** uses `rectpacking` (`elk.aspectRatio=1.6`) so
+     top-level groups + ungrouped modules pack into a compact, screen-shaped 2D grid instead of one
+     long horizontal row. **Each group** uses `layered` (direction RIGHT) internally so its modules
+     keep dependency flow. Edges are attached at the root but no algorithm routes them — React Flow
+     draws edges itself from node positions, so dropping ELK's cross-group routing costs nothing.
+2. `elk.layout()` computes parent-relative coords + group sizes (rectpacking root, layered groups).
 3. `absolute-coords.ts` `toLayoutedGraph` — walks the result, accumulates offsets into absolute
    boxes, and splits groups from modules via the group-id set.
 
@@ -35,6 +39,7 @@ parent-relative offsets by subtracting the parent box when it needs `parentNode`
 - Every module box is geometrically inside its group box.
 - Sibling group boxes (same `parentId`) never overlap.
 - Every box has finite coords and positive size.
+- Top-level packing stays compact (overall `width / height < 2.5`), not a horizontal row.
 - Deterministic: two runs of the same graph produce identical output.
 
 ## Checkpoint

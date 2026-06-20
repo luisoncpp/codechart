@@ -35,7 +35,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
     ...n,
     selected: n.id === selectedId,
   }));
-  const edges = projected.edges.map(styleEdge);
+  const edges = projected.edges.map((e) => styleEdge(e, selectedId));
 
   return (
     <ReactFlowProvider>
