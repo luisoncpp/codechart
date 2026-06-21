@@ -143,8 +143,8 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
     spot in the box's x-column that stays **clear of every sibling box above it** — collision-checked, not
     blindly pinned to the top (a module ELK placed up there blocks it; the box stops just below). Floored
     at the group content top (`groupPadding + groupHeaderHeight`). `textAlign: left` (React Flow's node
-    default is centered). World units at `DESC_BOX.fontSize` (18) — sized like a module label, not
-    counter-scaled.
+    default is centered). World units at `DESC_BOX.fontSize` (22, = `LABEL_FIT.maxFont`) — reads at the
+    same scale as the module filenames, not counter-scaled.
   - **L1.5+ (`showLong`):** same box shows `descriptionLong` (falls back to `descriptionShort`).
   - **Reserved layout space (packed, not a band):** `elk-input` injects a **real leaf box** per annotated
     group (`descriptionBoxId(groupId)`) into the group's layered flow, sized by `descriptionBoxSize(text)`

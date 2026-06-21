@@ -56,17 +56,18 @@ export function fitLabelFontSize(label: string, width: number, height: number): 
  *  module box, but from prose length instead of a symbol grid). World units;
  *  `GroupNodeView` renders the text at `fontSize` so the box always fits it. */
 export const DESC_BOX = {
-  /** Sized to read like a module label (those grow to ~22px), not body text. */
-  fontSize: 18,
+  /** Matches the module label's max size (`LABEL_FIT.maxFont`) so the prose reads
+   *  at the same scale as the filenames around it, not like fine print. */
+  fontSize: 22,
   /** Sans-serif glyph advance at `fontSize` (generous so text rarely clips). */
-  charWidth: 9.4,
-  lineHeight: 24,
+  charWidth: 11.5,
+  lineHeight: 29,
   padding: 12,
   /** Never narrower/shorter than a comfortable module-box footprint. */
-  minWidth: 180,
+  minWidth: 200,
   minHeight: MODULE_BOX.minHeight,
   /** Cap the width so long prose wraps into a box-like shape, not a wide banner. */
-  maxWidth: 340,
+  maxWidth: 400,
 } as const;
 
 /** Footprint that fits `text` at `DESC_BOX.fontSize`: width capped so prose wraps
