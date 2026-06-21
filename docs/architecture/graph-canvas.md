@@ -34,8 +34,16 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   custom view's border is the **only** border — no double outline, no inset gap.
 - **Header room:** the layout reserves vertical space for the header via `groupHeaderHeight` added to
   the group's ELK top padding (see `layout.md`), so module boxes never overlap the group label.
-- **Module node:** white card; facade → dark 2px border + `★`; selected → blue outline; compact 11px label, ellipsised.
+- **Module node:** card tinted to its **owning group's color** (matches the sample) — `color` text +
+  `color + "1a"` fill + `color` border (2px facade w/ `★`, else 1px); selected → blue outline; compact
+  11px **monospace** label (matches the sample's bracketed filenames; text darkened ~55% toward black
+  for legibility), ellipsised. Group headers use a bold uppercase **sans-serif** stack. Projection
+  copies the group color onto each grouped module's `data.color`
+  (group `color` ?? `colorForGroup` hash); ungrouped modules fall back to slate `#64748b`.
 - **Edge:** solid grey arrow (`import`); red + thicker when `isViolation` (Phase 8 turns these on).
+  Edges are **display-only** (no `onEdgeClick`/hover handlers), so `graph-canvas.css` sets
+  `pointer-events: none` on `.react-flow__edge` — React Flow's invisible edge interaction path would
+  otherwise swallow a `pointerdown` and break pan-by-drag that starts on an edge.
 - **Edge routing (floating, no ELK routing):** ELK never routes edges — `FloatingEdge` draws them.
   Each endpoint floats to the border **facing the other node** (`borderAnchor`) instead of a fixed
   handle, so a node's out-edges fan across its border rather than sharing one right-side point

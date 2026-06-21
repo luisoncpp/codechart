@@ -23,6 +23,8 @@ export function GroupNodeView({ data }: NodeProps<GroupRFNode>) {
           gap: 6,
           padding: "4px 10px",
           fontSize: 12,
+          fontFamily:
+            'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
           fontWeight: 700,
           letterSpacing: 0.4,
           textTransform: "uppercase",

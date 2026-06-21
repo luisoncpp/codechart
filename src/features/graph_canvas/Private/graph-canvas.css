@@ -8,3 +8,10 @@
   background: transparent;
   box-shadow: none;
 }
+
+/* Edges are display-only (no onEdgeClick); let pointer events fall through to
+   the pane so a drag starting on an edge pans the canvas instead of being
+   swallowed by React Flow's invisible edge interaction path. */
+.react-flow__edge {
+  pointer-events: none;
+}

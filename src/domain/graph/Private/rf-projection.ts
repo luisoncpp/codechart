@@ -33,6 +33,13 @@ export function projectGraph(
     .filter((box) => moduleById.has(box.id))
     .map((box) => moduleNode(moduleById.get(box.id)!, box, index));
 
+  // A module tints/outlines to match its owning group's color.
+  for (const node of moduleNodes) {
+    const groupId = node.parentId;
+    if (!groupId) continue;
+    node.data.color = groupById.get(groupId)?.color ?? colorForGroup(groupId);
+  }
+
   // Parents must precede children in React Flow's node array.
   const nodes: RFNode[] = [...sortByDepth(groupNodes, index), ...moduleNodes];
   return { nodes, edges: graph.edges.map((e) => edge(e, moduleById)) };

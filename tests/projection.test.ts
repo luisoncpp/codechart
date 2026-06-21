@@ -54,6 +54,13 @@ describe("GraphProjector → React Flow models", () => {
     expect(group?.data.color).toMatch(/^#/);
   });
 
+  it("tints a grouped module with its owning group's color", () => {
+    const { nodes } = projectGraph(graph, layout);
+    const child = nodes.find((n) => n.type === "module" && n.parentId)!;
+    const parent = nodes.find((n) => n.id === child.parentId)!;
+    expect(child.data.color).toBe(parent.data.color);
+  });
+
   it("retargets external facade in-edges to the group border (Idea 2)", () => {
     const facade = graph.modules.find((m) => m.isFacade && m.groupId)!;
     const external = graph.edges.find((e) => {

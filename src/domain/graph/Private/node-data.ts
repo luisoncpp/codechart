@@ -14,6 +14,8 @@ export interface ModuleNodeData extends Record<string, unknown> {
   isFacade: boolean;
   language: Language;
   icon?: string;
+  /** Color of the owning group, so the box tints/outlines to match it. */
+  color?: string;
 }
 
 /** Data carried by an import edge. */
