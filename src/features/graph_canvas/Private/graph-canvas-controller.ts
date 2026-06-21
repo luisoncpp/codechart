@@ -1,3 +1,4 @@
+import type React from "react";
 import type { Node } from "@xyflow/react";
 import { levelFromZoom } from "../../../domain/graph";
 import type { GraphSessionStore } from "../../../state/graph-session";
@@ -9,7 +10,7 @@ import type { GraphSessionStore } from "../../../state/graph-session";
 export class GraphCanvasController {
   constructor(private store: GraphSessionStore) {}
 
-  onNodeClick(node: Node) {
+  onNodeClick(node: Node, event: React.MouseEvent) {
     if (node.type === "symbol") {
       this.store.select(node.parentId ?? null);
       return;
@@ -18,10 +19,14 @@ export class GraphCanvasController {
       this.store.select(node.id);
       return;
     }
-    // Collapsed groups are edge endpoints (L0 overview); select like a module.
-    if (node.type === "group" && node.data?.collapsed) {
-      this.store.select(node.id);
+    if (node.type !== "group") return;
+    // The header's collapse/expand button: single-click toggles just this group.
+    if ((event.target as HTMLElement).closest("[data-group-toggle]")) {
+      this.store.toggleGroup(node.id);
+      return;
     }
+    // Collapsed groups are edge endpoints (L0 overview); select like a module.
+    if (node.data?.collapsed) this.store.select(node.id);
   }
 
   /** Double-click a group to collapse/expand just it (per-group override). */

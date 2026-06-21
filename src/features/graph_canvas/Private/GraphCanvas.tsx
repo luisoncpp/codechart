@@ -73,7 +73,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           colorMode="light"
-          onNodeClick={(_e, node) => controller.onNodeClick(node)}
+          onNodeClick={(e, node) => controller.onNodeClick(node, e)}
           onNodeDoubleClick={(_e, node) => controller.onNodeDoubleClick(node)}
           onPaneClick={() => controller.onPaneClick()}
           onMoveEnd={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}

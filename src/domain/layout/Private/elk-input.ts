@@ -2,11 +2,12 @@ import type { ElkNode, ElkExtendedEdge } from "elkjs/lib/elk-api";
 import { symbolBoxId, type ProjectGraph } from "../../graph";
 import type { LayoutOptions } from "./layout-types";
 import { SYMBOL_BOX, symbolBoxWidth } from "./symbol-box-metrics";
+import { moduleBoxSize } from "./module-box-metrics";
 
 /** Deterministic layout presets (TDD §"layout presets"). */
 export const PRESETS = {
-  moduleWidth: 160,
-  moduleHeight: 44,
+  moduleWidth: 120,
+  moduleHeight: 90,
   /** Minimum footprint for each exported-symbol box (grows with label length). */
   symbolWidth: SYMBOL_BOX.minWidth,
   symbolHeight: SYMBOL_BOX.height,
@@ -44,7 +45,7 @@ const GROUP_OPTIONS: Record<string, string> = {
 
 const MODULE_COMPOUND_OPTIONS: Record<string, string> = {
   "elk.algorithm": "rectpacking",
-  "elk.aspectRatio": "1.35",
+  // elk.aspectRatio is set per-node to the box's clamped aspect (see moduleElkNode).
   "elk.spacing.nodeNode": "4",
   "elk.padding": `[top=${PRESETS.moduleHeaderHeight + PRESETS.moduleSymbolPadding},left=${PRESETS.moduleSymbolPadding},bottom=${PRESETS.moduleSymbolPadding},right=${PRESETS.moduleSymbolPadding}]`,
 };
@@ -63,7 +64,10 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
     );
     const modules = (modulesByGroup.get(parentId) ?? []).map((id) => {
       const mod = moduleById.get(id)!;
-      return moduleElkNode(id, mod.exportedSymbols, moduleWidth, moduleHeight);
+      const fit = moduleBoxSize(mod.label, mod.exportedSymbols);
+      const width = Math.max(moduleWidth, fit.width);
+      const height = Math.max(moduleHeight, fit.height);
+      return moduleElkNode(id, mod.exportedSymbols, width, height);
     });
     return [...groups, ...modules];
   };
@@ -88,7 +92,15 @@ function moduleElkNode(
   }
   return {
     id: moduleId,
-    layoutOptions: MODULE_COMPOUND_OPTIONS,
+    // Pin the compound footprint to the aspect-clamped size (`moduleBoxSize`):
+    // the minimum holds the box at that size and the inner packing targets the
+    // same aspect, so symbol boxes stay inside the chosen viewport.
+    layoutOptions: {
+      ...MODULE_COMPOUND_OPTIONS,
+      "elk.aspectRatio": (fallbackWidth / fallbackHeight).toFixed(3),
+      "elk.nodeSize.constraints": "NODE_LABELS MINIMUM_SIZE",
+      "elk.nodeSize.minimum": `(${fallbackWidth},${fallbackHeight})`,
+    },
     children: symbols.map((name) => ({
       id: symbolBoxId(moduleId, name),
       width: symbolBoxWidth(name),

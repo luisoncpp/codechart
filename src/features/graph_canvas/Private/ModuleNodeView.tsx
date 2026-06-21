@@ -76,7 +76,14 @@ function Header({
           ★
         </span>
       )}
-      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <span
+        style={{
+          overflow: "hidden",
+          overflowWrap: "anywhere",
+          wordBreak: "break-word",
+          textAlign: detail ? "left" : "center",
+        }}
+      >
         {data.label}
       </span>
     </div>

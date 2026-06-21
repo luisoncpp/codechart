@@ -37,7 +37,8 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 - **Module node:** card tinted to its **owning group's color** (matches the sample) — `color` text +
   `color + "1a"` fill + `color` border (2px facade w/ `★`, else 1px); selected → blue outline; compact
   11px **monospace** label (matches the sample's bracketed filenames; text darkened ~55% toward black
-  for legibility), ellipsised. Group headers use a bold uppercase **sans-serif** stack. Projection
+  for legibility). The filename **wraps across multiple lines** (`overflowWrap/wordBreak`, no ellipsis);
+  the box is sized to fit it (see **Module box sizing**). Group headers use a bold uppercase **sans-serif** stack. Projection
   copies the group color onto each grouped module's `data.color`
   (group `color` ?? `colorForGroup` hash); ungrouped modules fall back to slate `#64748b`.
 - **Edge:** solid grey arrow (`import`); red + thicker when `isViolation` (a facade bypass, emitted
@@ -98,6 +99,21 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
   everything; L2 keeps L1's node set but each module box renders a **source snippet** (first 12 lines,
   monospace). The store seeds the default collapse set per level, and `toggleGroup`/`collapse`/`expand`
   layer per-group overrides on top.
+- **Module box sizing:** `moduleBoxSize(label, symbols)` (`domain/layout/Private/module-box-metrics.ts`,
+  pure, shared constants in `MODULE_BOX`) sizes every module to fit its content — the wrapped filename plus
+  the packed exported-symbol grid — then **clamps it to a screen-like aspect window: never wider than 4:3,
+  never taller than 4:5** (growing the deficient dimension, never shrinking). The box is treated as a fixed
+  *viewport* — richer zoomed-in content (symbols at L1.5, source/MD at L2) lives inside and scrolls — so a
+  predictable, well-proportioned footprint matters more than hugging content. The symbol footprint is sized
+  from the symbols' **total area** at a target aspect (`symbolContentSize`), *not* a worst-case
+  `sqrt(N)×maxWidth` grid — so a symbol-heavy module (e.g. an `ipc.ts` with ~80 long export names) stays
+  compact (~800px) instead of ballooning past 1800px with mostly-empty space. The base `120×90` sits exactly
+  at the 4:3 edge and is the floor; `PRESETS.module{Width,Height}` match it. `moduleElkNode` pins the
+  compound (symbol) footprint to this size via `elk.nodeSize.minimum` **and** sets the inner rectpacking
+  `elk.aspectRatio` to the same clamped ratio, so symbol boxes stay inside the chosen viewport instead of
+  stretching it wide. Sizing uses the L1 font (11px, the largest the label is drawn), so it also fits the
+  smaller 9px detail label. The `keeps every module box within the 4:5–4:3 aspect window` layout test
+  guards the end-to-end guarantee through ELK.
 - **Layout sizing:** `LayoutEngine.layout(graph, {moduleWidth, moduleHeight, collapsedGroupSizes})` —
   L2 uses larger boxes so snippets fit. A **collapsed (childless) group keeps its expanded footprint**:
   the store captures every group's box size from the full (uncollapsed) layout into
@@ -126,6 +142,11 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
   headers grow and dominate, module labels shrink with their boxes and always fit. `InspectionPanel` gains a
   `MetadataSection` (`This module` + `Group` annotation: type / short / long), rendering nothing when
   neither side is annotated (graceful fallback, TDD §10). `icon-map` covers the fixture's icon names.
+- **Collapse/expand affordance:** every group renders a real `ToggleButton` (chevron `▾`/`▸`) tagged
+  `data-group-toggle`. `GraphCanvasController.onNodeClick` inspects the click target (`closest("[data-group-toggle]")`)
+  and calls `store.toggleGroup` on a single click; double-clicking anywhere on the group still toggles via
+  `onNodeDoubleClick`. Keep the `data-group-toggle` attribute — it's how the controller distinguishes a
+  toggle click from a select/body click without threading a callback through the pure projection.
 
 Store surface (TDD §5.1): `getZoomLevel`, `getReducedGraph`, `getCollapsedGroupIds`, `getSourceCache`,
 `setZoomLevel`, `expandGroup`/`collapseGroup`/`toggleGroup`; emits `zoom-changed` + `layout-changed`.

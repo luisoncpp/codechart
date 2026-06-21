@@ -40,11 +40,36 @@ export function GroupNodeView({ data }: NodeProps<GroupRFNode>) {
 function ExpandedHeader({ data, scale }: { data: GroupNodeData; scale: number }) {
   const glyph = iconGlyph(data.icon);
   return (
-    <div style={headerStyle(data.color, scale)} title="Double-click to collapse / expand">
-      <span aria-hidden>▾</span>
+    <div style={headerStyle(data.color, scale)}>
+      <ToggleButton color={data.color} scale={scale} collapsed={false} />
       {glyph && <span aria-hidden>{glyph}</span>}
       <span>{data.label}</span>
     </div>
+  );
+}
+
+/** The collapse/expand affordance. Click is handled by the canvas controller,
+ *  which detects the `data-group-toggle` target on the node and toggles the
+ *  group (single click here, or double-click anywhere on the group). */
+function ToggleButton({
+  color,
+  scale,
+  collapsed,
+}: {
+  color: string;
+  scale: number;
+  collapsed: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      data-group-toggle
+      aria-label={collapsed ? "Expand group" : "Collapse group"}
+      title={collapsed ? "Expand" : "Collapse"}
+      style={toggleButtonStyle(color, scale)}
+    >
+      {collapsed ? "▸" : "▾"}
+    </button>
   );
 }
 
@@ -63,9 +88,9 @@ function CollapsedCard({ data, scale }: { data: GroupNodeData; scale: number }) 
         padding: 16,
         gap: 8 * scale,
       }}
-      title="Double-click to expand"
     >
       <div style={cardLabelStyle(data.color, scale)}>
+        <ToggleButton color={data.color} scale={scale} collapsed />
         {glyph && <span aria-hidden>{glyph}</span>}
         <span>{data.label}</span>
       </div>
@@ -88,6 +113,24 @@ function headerStyle(color: string, scale: number) {
     letterSpacing: 0.4,
     textTransform: "uppercase" as const,
     color,
+  };
+}
+
+function toggleButtonStyle(color: string, scale: number) {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 16 * scale,
+    height: 16 * scale,
+    padding: 0,
+    border: "none",
+    borderRadius: 4 * scale,
+    background: "transparent",
+    color,
+    fontSize: 11 * scale,
+    lineHeight: 1,
+    cursor: "pointer",
   };
 }
 
