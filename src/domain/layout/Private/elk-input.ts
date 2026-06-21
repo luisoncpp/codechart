@@ -1,7 +1,6 @@
 import type { ElkNode, ElkExtendedEdge } from "elkjs/lib/elk-api";
-import type { ProjectGraph } from "../../graph";
+import { symbolBoxId, type ProjectGraph } from "../../graph";
 import type { LayoutOptions } from "./layout-types";
-import { symbolBoxId } from "../../graph/Private/symbol-id";
 import { SYMBOL_BOX, symbolBoxWidth } from "./symbol-box-metrics";
 
 /** Deterministic layout presets (TDD §"layout presets"). */
