@@ -83,14 +83,21 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
              ──projectGraph(reduced, layout, renderOpts)─▶ React Flow models
 ```
 
-- `projectForZoom` (`domain/graph/Private/zoom-projection.ts`, pure): drops modules + nested groups
-  under a collapsed group; **re-routes** edges whose endpoint was hidden onto the outermost collapsed
-  ancestor group box; drops self-loops; dedups (a violation among the merged edges survives). A
-  collapsed group stays as a visible empty container. `topLevelGroupIds` = the L0 default collapse set;
-  `levelFromZoom(factor)` maps the scroll zoom factor to 0/1/2 (`<0.55 / <1.7 / ≥1.7`).
-- **Levels:** L0 collapses all top-level groups; L1 expands everything; L2 keeps L1's node set but each
-  module box renders a **source snippet** (first 12 lines, monospace). The store seeds the default
-  collapse set per level, and `toggleGroup`/`collapse`/`expand` layer per-group overrides on top.
+- `projectForZoom` (`domain/graph/Private/zoom-projection.ts`, pure): drops modules under a
+  collapsed group; keeps every collapsed group box visible (nested groups are not absorbed into a
+  parent); **re-routes** edges whose endpoint was hidden onto the nearest collapsed ancestor group
+  box; drops self-loops, **group↔ancestor-group edges** (a group nested at any depth inside the
+  other — not just the direct parent), and dedups (a violation among
+  the merged edges survives). A collapsed group stays
+  as a visible empty container. `projectGraph` also filters module/symbol nodes under collapsed groups
+  so nothing flashes while async re-layout catches up. The store calls `syncReduced()` synchronously
+  on every collapse change before emitting `zoom-changed`. `allGroupIds` = the L0 default collapse set
+  (every group); `topLevelGroupIds` remains for parentless roots. `levelFromZoom(factor)` maps the
+  scroll zoom factor to 0/1/2 (`<0.55 / <1.7 / ≥1.7`).
+- **Levels:** L0 collapses every group (all boxes stay visible, modules hidden); L1 expands
+  everything; L2 keeps L1's node set but each module box renders a **source snippet** (first 12 lines,
+  monospace). The store seeds the default collapse set per level, and `toggleGroup`/`collapse`/`expand`
+  layer per-group overrides on top.
 - **Layout sizing:** `LayoutEngine.layout(graph, {moduleWidth, moduleHeight, collapsedGroupSizes})` —
   L2 uses larger boxes so snippets fit. A **collapsed (childless) group keeps its expanded footprint**:
   the store captures every group's box size from the full (uncollapsed) layout into

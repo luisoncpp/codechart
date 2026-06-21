@@ -15,8 +15,11 @@ export { symbolBoxId, symbolNameFromId } from "./Private/symbol-id";
 export { inferSymbolKind, type SymbolKind } from "./Private/symbol-kind";
 export {
   projectForZoom,
+  allGroupIds,
   topLevelGroupIds,
   levelFromZoom,
+  isModuleExpanded,
+  groupParentMap,
   type ZoomLevel,
 } from "./Private/zoom-projection";
 export type {

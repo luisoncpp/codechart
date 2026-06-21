@@ -87,18 +87,45 @@ describe("GraphSessionStore semantic zoom", () => {
     expect(store.getReducedGraph()?.modules.length).toBe(graph.modules.length);
   });
 
-  it("L0 seeds the top-level collapse set and shrinks the visible graph", async () => {
+  it("L0 seeds the all-group collapse set and shrinks the visible graph", async () => {
     const store = newStore(clientReturning(graph));
     await store.loadProject("/x");
     const zoomed = vi.fn();
     store.on("zoom-changed", zoomed);
-    const done = nextLayout(store);
     store.setZoomLevel(0);
     expect(zoomed).toHaveBeenCalledOnce();
-    expect([...store.getCollapsedGroupIds()].sort()).toEqual(["app", "shared"]);
-    await done;
+    expect([...store.getCollapsedGroupIds()].sort()).toEqual([
+      "app",
+      "core",
+      "services",
+      "shared",
+      "ui",
+    ]);
     // Only the ungrouped main.ts survives the collapse.
     expect(store.getReducedGraph()?.modules.length).toBe(1);
+    expect(store.getReducedGraph()?.groups.map((g) => g.id).sort()).toEqual([
+      "app",
+      "core",
+      "services",
+      "shared",
+      "ui",
+    ]);
+  });
+
+  it("L0↔L1 keeps every group box at the same footprint (projection-only)", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    const atL1 = new Map(
+      store.getLayout()!.groups.map((g) => [g.id, { x: g.x, y: g.y, width: g.width, height: g.height }]),
+    );
+    store.setZoomLevel(0);
+    for (const g of store.getLayout()!.groups) {
+      expect(atL1.get(g.id)).toEqual({ x: g.x, y: g.y, width: g.width, height: g.height });
+    }
+    store.setZoomLevel(1);
+    for (const g of store.getLayout()!.groups) {
+      expect(atL1.get(g.id)).toEqual({ x: g.x, y: g.y, width: g.width, height: g.height });
+    }
   });
 
   it("toggleGroup flips a single group's collapse state", async () => {
@@ -166,7 +193,7 @@ describe("GraphSessionStore semantic zoom", () => {
     expect(expanded).toBeDefined();
 
     const done = nextLayout(store);
-    store.setZoomLevel(0);
+    store.collapseGroup("app");
     await done;
 
     const collapsed = boxOf("app");
@@ -177,14 +204,8 @@ describe("GraphSessionStore semantic zoom", () => {
   it("setZoomLevel back to L1 restores the full graph", async () => {
     const store = newStore(clientReturning(graph));
     await store.loadProject("/x");
-    await new Promise<void>((r) => {
-      store.once("layout-changed", () => r());
-      store.setZoomLevel(0);
-    });
-    await new Promise<void>((r) => {
-      store.once("layout-changed", () => r());
-      store.setZoomLevel(1);
-    });
+    store.setZoomLevel(0);
+    store.setZoomLevel(1);
     expect(store.getReducedGraph()?.modules.length).toBe(graph.modules.length);
   });
 });

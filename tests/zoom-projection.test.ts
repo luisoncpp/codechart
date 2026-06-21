@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import goldenGraph from "./fixtures/golden/project-graph.json";
 import {
   projectForZoom,
+  allGroupIds,
   topLevelGroupIds,
   levelFromZoom,
 } from "../src/domain/graph";
@@ -23,8 +24,20 @@ describe("levelFromZoom", () => {
 });
 
 describe("topLevelGroupIds", () => {
-  it("returns the parentless groups (the L0 collapse set)", () => {
+  it("returns the parentless groups", () => {
     expect(topLevelGroupIds(graph).sort()).toEqual(["app", "shared"]);
+  });
+});
+
+describe("allGroupIds", () => {
+  it("returns every group (the L0 collapse set)", () => {
+    expect(allGroupIds(graph).sort()).toEqual([
+      "app",
+      "core",
+      "services",
+      "shared",
+      "ui",
+    ]);
   });
 });
 
@@ -41,6 +54,205 @@ describe("projectForZoom", () => {
     expect(reduced.modules.map((m) => m.id)).toEqual(["src/main.ts"]); // only ungrouped survives
     // app + shared remain as boxes; nested core/services/ui disappear.
     expect(reduced.groups.map((g) => g.id).sort()).toEqual(["app", "shared"]);
+  });
+
+  it("collapsing every group keeps all group boxes visible at L0", () => {
+    const reduced = projectForZoom(graph, new Set(allGroupIds(graph)));
+    expect(reduced.modules.map((m) => m.id)).toEqual(["src/main.ts"]);
+    expect(reduced.groups.map((g) => g.id).sort()).toEqual([
+      "app",
+      "core",
+      "services",
+      "shared",
+      "ui",
+    ]);
+  });
+
+  it("drops parent↔child group edges when every group is collapsed at L0", () => {
+    const inferred: ProjectGraph = {
+      version: 1,
+      root: "x",
+      groups: [
+        {
+          id: "folder:src",
+          label: "Src",
+          parentId: null,
+          facadeModuleIds: ["src/index.ts"],
+        },
+        {
+          id: "folder:src/core",
+          label: "Core",
+          parentId: "folder:src",
+          facadeModuleIds: ["src/core/index.ts"],
+        },
+      ],
+      modules: [
+        {
+          id: "src/index.ts",
+          path: "src/index.ts",
+          label: "index.ts",
+          language: "typescript",
+          groupId: "folder:src",
+          isFacade: true,
+          metrics: { loc: 1 },
+          exportedSymbols: [],
+        },
+        {
+          id: "src/core/store.ts",
+          path: "src/core/store.ts",
+          label: "store.ts",
+          language: "typescript",
+          groupId: "folder:src/core",
+          isFacade: false,
+          metrics: { loc: 1 },
+          exportedSymbols: [],
+        },
+      ],
+      edges: [
+        {
+          id: "src/core/store.ts->src/index.ts:import:0",
+          source: "src/core/store.ts",
+          target: "src/index.ts",
+          kind: "import",
+          trigger: "import",
+          isViolation: false,
+        },
+      ],
+      diagnostics: [],
+    };
+    const reduced = projectForZoom(inferred, new Set(allGroupIds(inferred)));
+    expect(
+      reduced.edges.some(
+        (e) =>
+          (e.source === "folder:src/core" && e.target === "folder:src") ||
+          (e.source === "folder:src" && e.target === "folder:src/core"),
+      ),
+    ).toBe(false);
+  });
+
+  it("drops group↔grandparent group edges when every group is collapsed at L0", () => {
+    const inferred: ProjectGraph = {
+      version: 1,
+      root: "x",
+      groups: [
+        { id: "folder:src", label: "Src", parentId: null, facadeModuleIds: [] },
+        {
+          id: "folder:src/core",
+          label: "Core",
+          parentId: "folder:src",
+          facadeModuleIds: [],
+        },
+        {
+          id: "folder:src/core/db",
+          label: "Db",
+          parentId: "folder:src/core",
+          facadeModuleIds: ["src/core/db/index.ts"],
+        },
+      ],
+      modules: [
+        {
+          id: "src/index.ts",
+          path: "src/index.ts",
+          label: "index.ts",
+          language: "typescript",
+          groupId: "folder:src",
+          isFacade: true,
+          metrics: { loc: 1 },
+          exportedSymbols: [],
+        },
+        {
+          id: "src/core/db/conn.ts",
+          path: "src/core/db/conn.ts",
+          label: "conn.ts",
+          language: "typescript",
+          groupId: "folder:src/core/db",
+          isFacade: false,
+          metrics: { loc: 1 },
+          exportedSymbols: [],
+        },
+      ],
+      edges: [
+        {
+          id: "src/core/db/conn.ts->src/index.ts:import:0",
+          source: "src/core/db/conn.ts",
+          target: "src/index.ts",
+          kind: "import",
+          trigger: "import",
+          isViolation: false,
+        },
+      ],
+      diagnostics: [],
+    };
+    // db→src collapses to folder:src/core/db → folder:src (grandparent).
+    const reduced = projectForZoom(inferred, new Set(allGroupIds(inferred)));
+    expect(
+      reduced.edges.some(
+        (e) =>
+          (e.source === "folder:src/core/db" && e.target === "folder:src") ||
+          (e.source === "folder:src" && e.target === "folder:src/core/db"),
+      ),
+    ).toBe(false);
+  });
+
+  it("collapsing inferred folder groups hides every grouped module at L0", () => {
+    const inferred: ProjectGraph = {
+      version: 1,
+      root: "x",
+      groups: [
+        {
+          id: "folder:src",
+          label: "Src",
+          parentId: null,
+          facadeModuleIds: [],
+        },
+        {
+          id: "folder:src/core",
+          label: "Core",
+          parentId: "folder:src",
+          facadeModuleIds: ["src/core/index.ts"],
+        },
+      ],
+      modules: [
+        {
+          id: "src/main.ts",
+          path: "src/main.ts",
+          label: "main.ts",
+          language: "typescript",
+          groupId: "folder:src",
+          isFacade: false,
+          metrics: { loc: 1 },
+          exportedSymbols: [],
+        },
+        {
+          id: "src/core/index.ts",
+          path: "src/core/index.ts",
+          label: "index.ts",
+          language: "typescript",
+          groupId: "folder:src/core",
+          isFacade: true,
+          metrics: { loc: 1 },
+          exportedSymbols: [],
+        },
+        {
+          id: "src/core/store.ts",
+          path: "src/core/store.ts",
+          label: "store.ts",
+          language: "typescript",
+          groupId: "folder:src/core",
+          isFacade: false,
+          metrics: { loc: 1 },
+          exportedSymbols: [],
+        },
+      ],
+      edges: [],
+      diagnostics: [],
+    };
+    const reduced = projectForZoom(inferred, new Set(allGroupIds(inferred)));
+    expect(reduced.modules).toHaveLength(0);
+    expect(reduced.groups.map((g) => g.id).sort()).toEqual([
+      "folder:src",
+      "folder:src/core",
+    ]);
   });
 
   it("re-routes an edge into a collapsed group's private module onto the group box", () => {

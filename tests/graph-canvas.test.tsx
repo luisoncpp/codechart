@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import goldenGraph from "./fixtures/golden/project-graph.json";
 import { GraphCanvas, edgeRole, styleEdge } from "../src/features/graph_canvas";
-import { projectForZoom, topLevelGroupIds } from "../src/domain/graph";
+import { projectForZoom, allGroupIds } from "../src/domain/graph";
 import { InspectionPanel } from "../src/features/inspection_panel";
 import { GraphSessionStore } from "../src/state/graph-session";
 import { ElkLayoutEngine } from "../src/domain/layout";
@@ -79,10 +79,7 @@ describe("GraphCanvas", () => {
   });
 
   it("clicking a collapsed group at L0 selects it in the store", async () => {
-    await new Promise<void>((resolve) => {
-      store.once("layout-changed", () => resolve());
-      store.setZoomLevel(0);
-    });
+    store.setZoomLevel(0);
     const { container } = render(<GraphCanvas store={store} />);
     await waitFor(() =>
       expect(container.querySelector(`[data-id="app"]`)).toBeTruthy(),
@@ -153,18 +150,18 @@ describe("styleEdge (focus + context dimming)", () => {
   });
 
   it("keeps a collapsed group's in/out edges fully opaque at L0", () => {
-    const reduced = projectForZoom(graph, new Set(topLevelGroupIds(graph)));
-    const touchingApp = reduced.edges.find(
-      (e) => e.source === "app" || e.target === "app",
+    const reduced = projectForZoom(graph, new Set(allGroupIds(graph)));
+    const touchingCore = reduced.edges.find(
+      (e) => e.source === "core" || e.target === "core",
     );
-    expect(touchingApp).toBeDefined();
+    expect(touchingCore).toBeDefined();
     const rfEdge = {
-      id: touchingApp!.id,
-      source: touchingApp!.source,
-      target: touchingApp!.target,
+      id: touchingCore!.id,
+      source: touchingCore!.source,
+      target: touchingCore!.target,
       data: { isViolation: false, kind: "import" },
     };
-    expect(styleEdge(rfEdge, "app").style?.opacity).toBe(1);
+    expect(styleEdge(rfEdge, "core").style?.opacity).toBe(1);
     expect(styleEdge(rfEdge, "no-such-id").style?.opacity).toBe(0.45);
   });
 

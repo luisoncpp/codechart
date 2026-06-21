@@ -359,10 +359,13 @@ symbol box at L1.5.
 
 ### Levels
 
-- **L0 (bird's eye):** render only top-level groups; collapse each to its facade(s). Edges whose
-  endpoint is a private module inside a collapsed group **re-route to that group's facade**.
-  Collapsed groups keep their **expanded footprint** (captured from the full layout) — they shrink in
-  *content*, not in box size.
+- **L0 (bird's eye):** collapse every group to its description card; **all group boxes stay
+  visible** (including nested groups such as `core`, `services`, `ui` — not only parentless roots).
+  Modules disappear under their collapsed group. Edges whose endpoint is a private module inside a
+  collapsed group **re-route to that group's box** (the nearest collapsed ancestor). Edges between
+  a group and its **direct parent** are dropped (nested boxes are already visually contained).
+  Collapsed groups keep their **expanded footprint** (captured from the full layout) — they shrink in *content*, not
+  in box size.
 - **L1 (architectural):** expand groups → modules + intra-group edges visible. Each module shows its
   filename only, centered inside its **full** footprint (counter-scaled with camera zoom so labels stay
   legible when zoomed out — same technique as collapsed groups).
@@ -398,7 +401,7 @@ user's scroll wheel changes the camera.
 
 | RF type | When visible | Role |
 |---------|--------------|------|
-| `group` | always (when not graph-reduced away) | Container; collapsed at L0 shows description card |
+| `group` | always (when not graph-reduced away) | Container; collapsed at L0 shows description card for every group |
 | `module` | L1+ | Fixed-size container; label at L1, small header + children at L1.5+ |
 | `symbol` | L1.5+ | One box per exported symbol; `extent: 'parent'`; click selects parent module |
 
@@ -450,9 +453,9 @@ tests/fixtures/
   designates no facade never counts as a violation, so cross-cutting/shared groups don't generate
   false positives.
 - **Performance posture (MVP):** React Flow handles low-thousands of nodes; L0 collapse keeps the
-  visible set small; symbol boxes add one leaf per exported name inside each module (fixed size,
-  packed at layout time). Virtualization / WebGPU is a later milestone behind the `LayoutEngine` + canvas
-  seam — not built now, not blocked.
+  visible module count small while every group box remains on the canvas; symbol boxes add one leaf per
+  exported name inside each module (fixed size, packed at layout time). Virtualization / WebGPU is a
+  later milestone behind the `LayoutEngine` + canvas seam — not built now, not blocked.
 
 ---
 

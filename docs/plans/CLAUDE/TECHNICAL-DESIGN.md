@@ -182,9 +182,10 @@ Each is a Rust module with a thin `pub` surface (the "index.ts" rule mapped to R
 
 Rendering reads `zoomLevel` from the store and chooses a level-of-detail projection of the same model:
 
-- **L0 (Bird's eye):** render only top-level groups; collapse each to its facade. Edges whose endpoint
-  is a private module inside a collapsed group **re-route to that group's `facadeModuleId`**. This is a
-  pure projection function `project(model, collapsedGroupIds)` → render model — unit-testable.
+- **L0 (Bird's eye):** collapse every group to its description card; all group boxes stay visible
+  (including nested groups). Edges whose endpoint is a private module inside a collapsed group
+  **re-route to that group's box** (nearest collapsed ancestor). This is a pure projection function
+  `project(model, collapsedGroupIds)` → render model — unit-testable.
 - **L1 (Architectural):** expand focused groups → modules + intra-group edges visible.
 - **L2 (Implementation):** node bounding box renders a syntax-highlighted snippet (deferred — needs the
   adapter to return source ranges, already in `ParsedModule`).

@@ -2,7 +2,7 @@ import { AnalysisClient } from "../../../ipc/analysis-client";
 import {
   ProjectGraph,
   projectForZoom,
-  topLevelGroupIds,
+  allGroupIds,
   type ZoomLevel,
 } from "../../../domain/graph";
 import { LayoutEngine, LayoutedGraph, LayoutOptions } from "../../../domain/layout";
@@ -49,19 +49,17 @@ export class GraphSessionStore extends EventEmitter {
     this.emit("selection-changed");
   }
 
-  /** Switch detail level. Only L0↔L1 changes collapse (and re-layout); L1+ is projection-only. */
+  /** Switch detail level. Collapse state updates for L0; layout stays fixed (projection-only). */
   setZoomLevel(level: ZoomLevel) {
     if (level === this.zoomLevel) return;
     const prev = this.zoomLevel;
     this.zoomLevel = level;
-    const wasL0 = prev === 0;
     const isL0 = level === 0;
     this.collapsedGroupIds =
-      isL0 && this.graph ? new Set(topLevelGroupIds(this.graph)) : new Set();
+      isL0 && this.graph ? new Set(allGroupIds(this.graph)) : new Set();
+    this.syncReduced();
     this.emit("zoom-changed");
-    if (wasL0 !== isL0) {
-      void this.recomputeLayout();
-    } else if (level === 2 && prev !== 2) {
+    if (level === 2 && prev !== 2) {
       void this.fetchSources();
     }
   }
@@ -74,6 +72,7 @@ export class GraphSessionStore extends EventEmitter {
     if (collapse === this.collapsedGroupIds.has(id)) return;
     if (collapse) this.collapsedGroupIds.add(id);
     else this.collapsedGroupIds.delete(id);
+    this.syncReduced();
     this.emit("zoom-changed");
     void this.recomputeLayout();
   }
@@ -108,6 +107,12 @@ export class GraphSessionStore extends EventEmitter {
     this.expandedGroupSizes = new Map();
     this.reduced = null;
     this.layout = null;
+  }
+
+  /** Keep the reduced graph in sync before async layout catches up. */
+  private syncReduced() {
+    if (!this.graph) return;
+    this.reduced = projectForZoom(this.graph, new Set(this.collapsedGroupIds));
   }
 
   /** Reduce for the collapse state and (re)lay it out. Guarded so a stale async

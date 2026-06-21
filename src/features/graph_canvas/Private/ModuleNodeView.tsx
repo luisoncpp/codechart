@@ -20,7 +20,7 @@ function darken(hex: string, factor = 0.55): string {
 export function ModuleNodeView({ data, selected }: NodeProps<ModuleRFNode>) {
   const color = data.color ?? "#64748b";
   const textColor = darken(color);
-  const detail = data.showSymbols || data.snippet;
+  const detail = data.showSymbols || !!data.snippet;
   const scale = useZoomCounterScale();
   return (
     <div
@@ -28,7 +28,7 @@ export function ModuleNodeView({ data, selected }: NodeProps<ModuleRFNode>) {
       title={data.descriptionShort ?? data.label}
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
-      {data.snippet && <Snippet source={data.snippet} color={color} />}
+      {data.snippet && <Snippet source={data.snippet} />}
       <Header data={data} textColor={textColor} detail={detail} scale={detail ? 1 : scale} />
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
@@ -85,7 +85,7 @@ function Header({
   );
 }
 
-function Snippet({ source, color }: { source: string; color: string }) {
+function Snippet({ source }: { source: string }) {
   const text = source.split("\n").slice(0, SNIPPET_LINES).join("\n");
   return (
     <pre

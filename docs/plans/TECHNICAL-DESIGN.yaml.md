@@ -574,7 +574,7 @@ columns:
   - Level
   - Behavior
 rows:
-  - ["**L0 (bird's eye)**", "Render only top-level groups; collapse each to its facade(s). Edges whose endpoint is a private module inside a collapsed group **re-route to that group's facade**."]
+  - ["**L0 (bird's eye)**", "Collapse every group to its description card; **all group boxes stay visible** (including nested groups). Modules under a collapsed group disappear. Edges whose endpoint is a private module inside a collapsed group **re-route to that group's box** (nearest collapsed ancestor). **Parent↔child group edges are dropped.**"]
   - ["**L1 (architectural)**", "Expand focused groups → modules + intra-group edges visible."]
   - ["**L2 (implementation)**", "Node box renders a syntax-highlighted snippet (uses adapter source ranges already captured in `ParsedModule`)."]
 ```

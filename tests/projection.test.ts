@@ -6,6 +6,7 @@ import {
   projectGraph,
   importsOf,
   importedBy,
+  allGroupIds,
 } from "../src/domain/graph";
 import type { ProjectGraph } from "../src/domain/graph";
 
@@ -100,6 +101,13 @@ describe("render options (Phase 10 metadata + zoom)", () => {
     expect(core?.data.collapsed).toBe(true);
     const ui = nodes.find((n) => n.id === "ui");
     expect(ui?.data.collapsed).toBe(false);
+  });
+
+  it("hides modules under a collapsed group even when the layout still has their boxes", () => {
+    const collapsed = new Set(allGroupIds(graph));
+    const { nodes } = projectGraph(graph, layout, { collapsedGroupIds: collapsed });
+    const modules = nodes.filter((n) => n.type === "module");
+    expect(modules.map((n) => n.id)).toEqual(["src/main.ts"]);
   });
 
   it("attaches a source snippet to a module when provided", () => {

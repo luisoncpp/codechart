@@ -5,6 +5,7 @@ import type { ProjectGraph } from "../ProjectGraph";
 import type { GroupNode } from "../GroupNode";
 import type { ModuleNode } from "../ModuleNode";
 import type { Edge } from "../Edge";
+import { groupParentMap, isModuleExpanded } from "./zoom-projection";
 import type {
   GroupRFNode,
   ModuleRFNode,
@@ -39,16 +40,23 @@ export function projectGraph(
   }
   const groupById = new Map(graph.groups.map((g) => [g.id, g]));
   const moduleById = new Map(graph.modules.map((m) => [m.id, m]));
+  const collapsed = options?.collapsedGroupIds;
+  const parentOf = groupParentMap(graph);
+  const moduleVisible = (m: ModuleNode) =>
+    !collapsed?.size || isModuleExpanded(m.groupId, collapsed, parentOf);
 
-  const ctx: ProjectionCtx = { index, options };
+  const ctx: ProjectionCtx = { index, options, moduleVisible };
   const groupNodes = layout.groups
     .filter((box) => groupById.has(box.id))
     .map((box) => groupNode(groupById.get(box.id)!, box, ctx));
   const moduleNodes = layout.modules
     .filter((box) => moduleById.has(box.id))
+    .filter((box) => moduleVisible(moduleById.get(box.id)!))
     .map((box) => moduleNode(moduleById.get(box.id)!, box, ctx));
   const symbolNodes = options?.showSymbols
-    ? layout.symbols.map((box) => symbolNode(box, moduleById, ctx))
+    ? layout.symbols
+        .filter((box) => !box.parentId || moduleVisible(moduleById.get(box.parentId)!))
+        .map((box) => symbolNode(box, moduleById, ctx))
     : [];
 
   // A module tints/outlines to match its owning group's color.
@@ -79,6 +87,7 @@ export function projectGraph(
 interface ProjectionCtx {
   index: BoxIndex;
   options?: RenderOptions;
+  moduleVisible: (m: ModuleNode) => boolean;
 }
 
 function relativePosition(box: LayoutBox, index: BoxIndex) {
