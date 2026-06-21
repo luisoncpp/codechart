@@ -1,17 +1,10 @@
-import { Handle, Position, useStore, type NodeProps } from "@xyflow/react";
+import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { GroupRFNode, GroupNodeData } from "../../../domain/graph";
 import { iconGlyph } from "./icon-map";
+import { useZoomCounterScale } from "./use-zoom-counter-scale";
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
-
-/** Counter-scale factor so collapsed content stays readable as the camera zooms
- *  out. Clamped 1–2.4× — at the L0 band (~0.5×) text lands at a constant, legible
- *  on-screen size; at 1:1 it reads as a normal card. */
-function useZoomCounterScale(): number {
-  const zoom = useStore((s) => s.transform[2]);
-  return Math.min(2.4, Math.max(1, 1 / zoom));
-}
 
 /** Colored container with a header icon + label — the sample's group boxes.
  *  A collapsed group (semantic zoom) shows a readable card with its annotation. */

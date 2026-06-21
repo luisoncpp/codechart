@@ -3,11 +3,16 @@ import type { LayoutBox, LayoutedGraph } from "./layout-types";
 
 /**
  * Flattens an ELK result (parent-relative coords) into absolute boxes,
- * splitting groups from modules via `groupIds`.
+ * splitting groups, modules, and symbol leaves via id sets.
  */
-export function toLayoutedGraph(root: ElkNode, groupIds: Set<string>): LayoutedGraph {
+export function toLayoutedGraph(
+  root: ElkNode,
+  groupIds: Set<string>,
+  moduleIds: Set<string>,
+): LayoutedGraph {
   const groups: LayoutBox[] = [];
   const modules: LayoutBox[] = [];
+  const symbols: LayoutBox[] = [];
 
   const walk = (node: ElkNode, parentId: string | null, ox: number, oy: number) => {
     for (const child of node.children ?? []) {
@@ -21,11 +26,13 @@ export function toLayoutedGraph(root: ElkNode, groupIds: Set<string>): LayoutedG
         width: child.width ?? 0,
         height: child.height ?? 0,
       };
-      (groupIds.has(child.id) ? groups : modules).push(box);
+      if (groupIds.has(child.id)) groups.push(box);
+      else if (moduleIds.has(child.id)) modules.push(box);
+      else symbols.push(box);
       walk(child, child.id, x, y);
     }
   };
 
   walk(root, /*parentId=*/ null, /*ox=*/ 0, /*oy=*/ 0);
-  return { groups, modules, width: root.width ?? 0, height: root.height ?? 0 };
+  return { groups, modules, symbols, width: root.width ?? 0, height: root.height ?? 0 };
 }

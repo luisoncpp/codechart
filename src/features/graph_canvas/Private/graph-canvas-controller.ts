@@ -10,6 +10,10 @@ export class GraphCanvasController {
   constructor(private store: GraphSessionStore) {}
 
   onNodeClick(node: Node) {
+    if (node.type === "symbol") {
+      this.store.select(node.parentId ?? null);
+      return;
+    }
     if (node.type === "module") {
       this.store.select(node.id);
       return;

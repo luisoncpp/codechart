@@ -114,7 +114,7 @@ describe("GraphSessionStore semantic zoom", () => {
     await done2;
   });
 
-  it("L1.5 uses larger module boxes but does not fetch source", async () => {
+  it("L1.5 reveals symbol boxes without re-layout (footprint unchanged)", async () => {
     const client: AnalysisClient = {
       analyzeProject: async () => graph,
       readModuleSource: async () => {
@@ -124,13 +124,21 @@ describe("GraphSessionStore semantic zoom", () => {
     const store = newStore(client);
     await store.loadProject("/x");
     const defaultBox = store.getLayout()?.modules.find((m) => m.id === "src/main.ts");
-    const done = nextLayout(store);
     store.setZoomLevel(1.5);
-    await done;
     const symbolBox = store.getLayout()?.modules.find((m) => m.id === "src/main.ts");
-    expect(symbolBox!.width).toBeGreaterThan(defaultBox!.width);
-    expect(symbolBox!.height).toBeGreaterThan(defaultBox!.height);
+    expect(symbolBox).toEqual(defaultBox);
     expect(store.getSourceCache().size).toBe(0);
+  });
+
+  it("L2 reuses the same module footprint as L1 (only projection changes)", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    const at1 = store.getLayout()?.modules.find((m) => m.id === "src/main.ts");
+    const done2 = nextLayout(store);
+    store.setZoomLevel(2);
+    await done2;
+    const at2 = store.getLayout()?.modules.find((m) => m.id === "src/main.ts");
+    expect(at2).toEqual(at1);
   });
 
   it("L2 lazily fetches and caches module source", async () => {

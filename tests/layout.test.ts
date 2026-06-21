@@ -3,6 +3,7 @@ import goldenGraph from "./fixtures/golden/project-graph.json";
 import { ElkLayoutEngine } from "../src/domain/layout";
 import type { LayoutBox, LayoutedGraph } from "../src/domain/layout";
 import type { ProjectGraph } from "../src/domain/graph";
+import { symbolBoxWidth, SYMBOL_BOX } from "../src/domain/layout/Private/symbol-box-metrics";
 
 const graph = goldenGraph as ProjectGraph;
 
@@ -25,7 +26,7 @@ function overlaps(a: LayoutBox, b: LayoutBox): boolean {
 }
 
 function allBoxes(g: LayoutedGraph): LayoutBox[] {
-  return [...g.groups, ...g.modules];
+  return [...g.groups, ...g.modules, ...g.symbols];
 }
 
 describe("ElkLayoutEngine (golden model)", () => {
@@ -34,6 +35,7 @@ describe("ElkLayoutEngine (golden model)", () => {
 
     expect(result.groups).toHaveLength(graph.groups.length);
     expect(result.modules).toHaveLength(graph.modules.length);
+    expect(result.symbols.length).toBeGreaterThan(0);
     for (const box of allBoxes(result)) {
       for (const v of [box.x, box.y, box.width, box.height]) {
         expect(Number.isFinite(v)).toBe(true);
@@ -52,6 +54,18 @@ describe("ElkLayoutEngine (golden model)", () => {
       const group = groupById.get(m.parentId);
       expect(group, `group ${m.parentId} for ${m.id}`).toBeDefined();
       expect(contains(group!, m), `module ${m.id} inside ${m.parentId}`).toBe(true);
+    }
+  });
+
+  it("nests every symbol box inside its module box", async () => {
+    const result = await new ElkLayoutEngine().layout(graph);
+    const moduleById = new Map(result.modules.map((m) => [m.id, m]));
+
+    for (const s of result.symbols) {
+      expect(s.parentId).toBeTruthy();
+      const module = moduleById.get(s.parentId!);
+      expect(module, `module ${s.parentId} for ${s.id}`).toBeDefined();
+      expect(contains(module!, s), `symbol ${s.id} inside ${s.parentId}`).toBe(true);
     }
   });
 
@@ -87,5 +101,21 @@ describe("ElkLayoutEngine (golden model)", () => {
     const a = await new ElkLayoutEngine().layout(graph);
     const b = await new ElkLayoutEngine().layout(graph);
     expect(b).toEqual(a);
+  });
+});
+
+describe("symbolBoxWidth", () => {
+  it("keeps short names at the minimum footprint", () => {
+    expect(symbolBoxWidth("getJson")).toBe(SYMBOL_BOX.minWidth);
+  });
+
+  it("grows for long camelCase export names", () => {
+    expect(symbolBoxWidth("exportStagingController")).toBeGreaterThan(SYMBOL_BOX.minWidth);
+    expect(symbolBoxWidth("exportStagingController")).toBeLessThanOrEqual(SYMBOL_BOX.maxWidth);
+  });
+
+  it("caps extremely long names", () => {
+    const long = "resolveStagingBasketKeysByProjectIdentifier";
+    expect(symbolBoxWidth(long)).toBe(SYMBOL_BOX.maxWidth);
   });
 });

@@ -1,4 +1,5 @@
 import type { LayoutBox, LayoutedGraph } from "../../layout";
+import { symbolNameFromId } from "./symbol-id";
 import type { ProjectGraph } from "../ProjectGraph";
 import type { GroupNode } from "../GroupNode";
 import type { ModuleNode } from "../ModuleNode";
@@ -6,6 +7,7 @@ import type { Edge } from "../Edge";
 import type {
   GroupRFNode,
   ModuleRFNode,
+  SymbolRFNode,
   ProjectedGraph,
   RFEdgeT,
   RFNode,
@@ -18,7 +20,7 @@ type BoxIndex = Map<string, LayoutBox>;
  *  lazily-fetched source snippets to show in module boxes at L2. */
 export interface RenderOptions {
   collapsedGroupIds?: Set<string>;
-  /** When true, module boxes list exported symbols (L1.5). */
+  /** When true, symbol child boxes are emitted (L1.5+). */
   showSymbols?: boolean;
   /** moduleId → source; presence (at L2) turns on the in-box snippet. */
   snippets?: Map<string, string>;
@@ -31,7 +33,7 @@ export function projectGraph(
   options?: RenderOptions,
 ): ProjectedGraph {
   const index: BoxIndex = new Map();
-  for (const box of [...layout.groups, ...layout.modules]) {
+  for (const box of [...layout.groups, ...layout.modules, ...layout.symbols]) {
     index.set(box.id, box);
   }
   const groupById = new Map(graph.groups.map((g) => [g.id, g]));
@@ -44,6 +46,9 @@ export function projectGraph(
   const moduleNodes = layout.modules
     .filter((box) => moduleById.has(box.id))
     .map((box) => moduleNode(moduleById.get(box.id)!, box, ctx));
+  const symbolNodes = options?.showSymbols
+    ? layout.symbols.map((box) => symbolNode(box, moduleById, ctx))
+    : [];
 
   // A module tints/outlines to match its owning group's color.
   for (const node of moduleNodes) {
@@ -51,9 +56,21 @@ export function projectGraph(
     if (!groupId) continue;
     node.data.color = groupById.get(groupId)?.color ?? colorForGroup(groupId);
   }
+  for (const node of symbolNodes) {
+    const module = node.parentId ? moduleById.get(node.parentId) : undefined;
+    if (!module) continue;
+    const groupId = module.groupId;
+    node.data.color =
+      (groupId ? groupById.get(groupId)?.color : undefined) ??
+      colorForGroup(groupId ?? module.id);
+  }
 
   // Parents must precede children in React Flow's node array.
-  const nodes: RFNode[] = [...sortByDepth(groupNodes, index), ...moduleNodes];
+  const nodes: RFNode[] = [
+    ...sortByDepth(groupNodes, index),
+    ...moduleNodes,
+    ...symbolNodes,
+  ];
   return { nodes, edges: graph.edges.map((e) => edge(e, moduleById)) };
 }
 
@@ -96,12 +113,14 @@ function moduleNode(
   box: LayoutBox,
   ctx: ProjectionCtx,
 ): ModuleRFNode {
+  const showSymbols = ctx.options?.showSymbols ?? false;
   return {
     id: module.id,
     type: "module",
     position: relativePosition(box, ctx.index),
     width: box.width,
     height: box.height,
+    style: { width: box.width, height: box.height },
     ...(module.groupId ? { parentId: module.groupId } : {}),
     data: {
       label: module.label,
@@ -109,8 +128,32 @@ function moduleNode(
       language: module.language,
       icon: module.annotation?.icon,
       descriptionShort: module.annotation?.descriptionShort,
-      symbols: ctx.options?.showSymbols ? module.exportedSymbols : undefined,
+      showSymbols,
       snippet: ctx.options?.snippets?.get(module.id),
+    },
+  };
+}
+
+function symbolNode(
+  box: LayoutBox,
+  moduleById: Map<string, ModuleNode>,
+  ctx: ProjectionCtx,
+): SymbolRFNode {
+  const moduleId = box.parentId;
+  if (!moduleId || !moduleById.has(moduleId)) {
+    throw new Error(`symbol ${box.id} has no parent module`);
+  }
+  return {
+    id: box.id,
+    type: "symbol",
+    position: relativePosition(box, ctx.index),
+    width: box.width,
+    height: box.height,
+    style: { width: box.width, height: box.height },
+    parentId: moduleId,
+    extent: "parent",
+    data: {
+      label: symbolNameFromId(box.id),
     },
   };
 }

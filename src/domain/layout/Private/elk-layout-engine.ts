@@ -10,7 +10,8 @@ export class ElkLayoutEngine implements LayoutEngine {
 
   async layout(graph: ProjectGraph, options?: LayoutOptions): Promise<LayoutedGraph> {
     const groupIds = new Set(graph.groups.map((g) => g.id));
+    const moduleIds = new Set(graph.modules.map((m) => m.id));
     const result = await this.elk.layout(buildElkGraph(graph, options));
-    return toLayoutedGraph(result, groupIds);
+    return toLayoutedGraph(result, groupIds, moduleIds);
   }
 }

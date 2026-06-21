@@ -11,6 +11,7 @@ export type { ProjectGraph } from "./ProjectGraph";
 export type { Severity } from "./Severity";
 export { projectGraphSummary } from "./Private/graph-projector";
 export { projectGraph, type RenderOptions } from "./Private/rf-projection";
+export { symbolBoxId, symbolNameFromId } from "./Private/symbol-id";
 export {
   projectForZoom,
   topLevelGroupIds,
@@ -21,9 +22,11 @@ export type {
   ProjectedGraph,
   GroupNodeData,
   ModuleNodeData,
+  SymbolNodeData,
   EdgeData,
   GroupRFNode,
   ModuleRFNode,
+  SymbolRFNode,
   RFNode,
   RFEdgeT,
 } from "./Private/node-data";

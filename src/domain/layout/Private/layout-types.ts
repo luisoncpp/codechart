@@ -15,6 +15,8 @@ export interface LayoutBox {
 export interface LayoutedGraph {
   groups: LayoutBox[];
   modules: LayoutBox[];
+  /** Exported-symbol boxes nested inside their module (fixed footprint). */
+  symbols: LayoutBox[];
   /** Overall diagram bounds. */
   width: number;
   height: number;

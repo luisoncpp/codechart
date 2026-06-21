@@ -11,9 +11,9 @@ export function topLevelGroupIds(graph: ProjectGraph): string[] {
 
 /** Map React Flow's continuous zoom factor to a discrete detail level. */
 export function levelFromZoom(factor: number): ZoomLevel {
-  if (factor < 0.55) return 0;
-  if (factor < 1.1) return 1;
-  if (factor < 1.7) return 1.5;
+  if (factor < 0.45) return 0;
+  if (factor < 0.9) return 1;
+  if (factor < 3.5) return 1.5;
   return 2;
 }
 

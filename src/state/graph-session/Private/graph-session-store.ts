@@ -10,12 +10,6 @@ import { EventEmitter } from "./event-emitter";
 
 export type SessionPhase = "idle" | "loading" | "ready" | "failed" | "empty";
 
-/** Medium module boxes at L1.5 so exported symbols fit. */
-const L1_5_LAYOUT: LayoutOptions = { moduleWidth: 200, moduleHeight: 88 };
-
-/** Larger module boxes at L2 so a source snippet fits. */
-const L2_LAYOUT: LayoutOptions = { moduleWidth: 260, moduleHeight: 168 };
-
 export class GraphSessionStore extends EventEmitter {
   private phase: SessionPhase = "idle";
   private graph: ProjectGraph | null = null;
@@ -55,16 +49,21 @@ export class GraphSessionStore extends EventEmitter {
     this.emit("selection-changed");
   }
 
-  /** Switch detail level: re-seed the default collapse set, then re-layout. */
+  /** Switch detail level. Only L0↔L1 changes collapse (and re-layout); L1+ is projection-only. */
   setZoomLevel(level: ZoomLevel) {
     if (level === this.zoomLevel) return;
+    const prev = this.zoomLevel;
     this.zoomLevel = level;
+    const wasL0 = prev === 0;
+    const isL0 = level === 0;
     this.collapsedGroupIds =
-      level === 0 && this.graph
-        ? new Set(topLevelGroupIds(this.graph))
-        : new Set();
+      isL0 && this.graph ? new Set(topLevelGroupIds(this.graph)) : new Set();
     this.emit("zoom-changed");
-    void this.recomputeLayout();
+    if (wasL0 !== isL0) {
+      void this.recomputeLayout();
+    } else if (level === 2 && prev !== 2) {
+      void this.fetchSources();
+    }
   }
 
   collapseGroup = (id: string) => this.toggleGroup(id, /*collapse=*/ true);
@@ -120,8 +119,6 @@ export class GraphSessionStore extends EventEmitter {
     const reduced = projectForZoom(graph, new Set(this.collapsedGroupIds));
     if (this.zoomLevel === 2) await this.ensureSources(reduced.modules);
     const opts: LayoutOptions = {
-      ...(this.zoomLevel === 1.5 ? L1_5_LAYOUT : {}),
-      ...(this.zoomLevel === 2 ? L2_LAYOUT : {}),
       collapsedGroupSizes: this.expandedGroupSizes,
     };
     const layout = await this.layoutEngine.layout(reduced, opts);
@@ -129,6 +126,14 @@ export class GraphSessionStore extends EventEmitter {
     this.reduced = reduced;
     this.layout = layout;
     this.captureExpandedSizes(layout);
+    this.emit("layout-changed");
+  }
+
+  /** L2 source fetch without a full re-layout (footprint is zoom-independent). */
+  private async fetchSources() {
+    const modules = this.reduced?.modules;
+    if (!modules) return;
+    await this.ensureSources(modules);
     this.emit("layout-changed");
   }
 

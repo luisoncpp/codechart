@@ -1,10 +1,10 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { ModuleRFNode, ModuleNodeData } from "../../../domain/graph";
 import { iconGlyph } from "./icon-map";
+import { useZoomCounterScale } from "./use-zoom-counter-scale";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 const SNIPPET_LINES = 12;
-const SYMBOL_LINES = 6;
 
 /** Darken a #rrggbb color toward black so label text reads clearly. */
 function darken(hex: string, factor = 0.55): string {
@@ -16,66 +16,72 @@ function darken(hex: string, factor = 0.55): string {
   return `#${ch(16)}${ch(8)}${ch(0)}`;
 }
 
-/** A single module box: compact card, symbols at L1.5, or a code card at L2. */
+/** Module container: label-only at L1; symbol children appear inside at L1.5+. */
 export function ModuleNodeView({ data, selected }: NodeProps<ModuleRFNode>) {
   const color = data.color ?? "#64748b";
   const textColor = darken(color);
-  const detail = data.snippet ? "source" : data.symbols ? "symbols" : "label";
+  const detail = data.showSymbols || data.snippet;
+  const scale = useZoomCounterScale();
   return (
     <div
       style={cardStyle(color, textColor, data.isFacade, selected, detail)}
       title={data.descriptionShort ?? data.label}
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
-      <Header data={data} textColor={textColor} />
-      {data.symbols && <SymbolList symbols={data.symbols} color={color} />}
       {data.snippet && <Snippet source={data.snippet} color={color} />}
+      <Header data={data} textColor={textColor} detail={detail} scale={detail ? 1 : scale} />
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
   );
 }
 
-function Header({ data, textColor }: { data: ModuleNodeData; textColor: string }) {
+function Header({
+  data,
+  textColor,
+  detail,
+  scale,
+}: {
+  data: ModuleNodeData;
+  textColor: string;
+  detail: boolean;
+  scale: number;
+}) {
   const glyph = iconGlyph(data.icon);
+  const base = {
+    display: "flex" as const,
+    alignItems: "center",
+    gap: 4 * scale,
+    flexShrink: 0,
+    overflow: "hidden",
+    fontSize: (detail ? 9 : 11) * scale,
+    lineHeight: 1.15,
+    pointerEvents: "none" as const,
+    zIndex: 1,
+  };
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4, overflow: "hidden" }}>
+    <div
+      style={
+        detail
+          ? { ...base, position: "relative", padding: "2px 4px 0" }
+          : {
+              ...base,
+              position: "absolute",
+              inset: 0,
+              justifyContent: "center",
+              padding: "0 8px",
+            }
+      }
+    >
       {glyph && <span aria-hidden>{glyph}</span>}
-      {data.isFacade && <span aria-hidden style={{ color: textColor }}>★</span>}
+      {data.isFacade && (
+        <span aria-hidden style={{ color: textColor, fontSize: 9 * scale }}>
+          ★
+        </span>
+      )}
       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {data.label}
       </span>
     </div>
-  );
-}
-
-function SymbolList({ symbols, color }: { symbols: string[]; color: string }) {
-  const visible = symbols.slice(0, SYMBOL_LINES);
-  const overflow = symbols.length - visible.length;
-  return (
-    <ul
-      style={{
-        flex: 1,
-        margin: "6px 0 0",
-        padding: "4px 6px",
-        listStyle: "none",
-        fontSize: 9,
-        lineHeight: 1.45,
-        color: "#1e293b",
-        background: "#ffffff",
-        border: `1px solid ${color}40`,
-        borderRadius: 4,
-        overflow: "hidden",
-      }}
-    >
-      {visible.map((name) => (
-        <li key={name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {name}
-        </li>
-      ))}
-      {overflow > 0 && (
-        <li style={{ color: "#64748b", fontStyle: "italic" }}>+{overflow} more</li>
-      )}
-    </ul>
   );
 }
 
@@ -84,17 +90,18 @@ function Snippet({ source, color }: { source: string; color: string }) {
   return (
     <pre
       style={{
-        flex: 1,
-        margin: "6px 0 0",
-        padding: 6,
-        fontSize: 9,
+        position: "absolute",
+        inset: 0,
+        margin: 0,
+        padding: "22px 6px 6px",
+        fontSize: 8,
         lineHeight: 1.35,
         color: "#1e293b",
-        background: "#ffffff",
-        border: `1px solid ${color}40`,
-        borderRadius: 4,
+        background: "#ffffffcc",
+        border: "none",
         overflow: "hidden",
         whiteSpace: "pre",
+        pointerEvents: "none",
       }}
     >
       {text}
@@ -107,21 +114,17 @@ function cardStyle(
   textColor: string,
   isFacade: boolean,
   selected: boolean,
-  detail: "label" | "symbols" | "source",
+  detail: boolean,
 ) {
   return {
+    position: "relative" as const,
     width: "100%",
     height: "100%",
     boxSizing: "border-box" as const,
-    display: "flex",
-    flexDirection: "column" as const,
-    justifyContent: detail === "label" ? "center" : "flex-start",
-    padding: detail === "label" ? "0 8px" : 8,
-    fontSize: 11,
     fontFamily:
       'ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace',
     color: textColor,
-    background: `${color}1a`,
+    background: detail ? `${color}0d` : `${color}1a`,
     borderRadius: 6,
     border: `${isFacade ? 2 : 1}px solid ${color}`,
     outline: selected ? "2px solid #2563eb" : "none",

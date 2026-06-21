@@ -25,12 +25,10 @@ interface GraphCanvasProps {
   store: GraphSessionStore;
 }
 
-/** Clamp the post-fit zoom into the active level's band (see FitView). */
+/** Initial fit only — camera zoom is free after load (Google Maps style). */
 function fitOptionsForLevel(level: ZoomLevel): FitViewOptions {
-  if (level === 0) return { padding: 0.18, maxZoom: 0.5 };
-  if (level === 1.5) return { padding: 0.1, minZoom: 1.1, maxZoom: 1.65 };
-  if (level === 2) return { padding: 0.1, minZoom: 1.8 };
-  return { padding: 0.12, minZoom: 0.6, maxZoom: 1.05 };
+  if (level === 0) return { padding: 0.18, maxZoom: 0.45 };
+  return { padding: 0.12 };
 }
 
 export function GraphCanvas({ store }: GraphCanvasProps) {
@@ -49,7 +47,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
       if (!graph || !layout) return null;
       const options: RenderOptions = {
         collapsedGroupIds: session.getCollapsedGroupIds(),
-        showSymbols: level === 1.5,
+        showSymbols: level >= 1.5,
         snippets: level === 2 ? session.getSourceCache() : undefined,
       };
       return projectGraph(graph, layout, options);
@@ -81,8 +79,8 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
           onMoveEnd={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}
           fitView
           fitViewOptions={fitOptions}
-          minZoom={0.3}
-          maxZoom={3}
+          minZoom={0.15}
+          maxZoom={12}
           proOptions={{ hideAttribution: true }}
           nodesDraggable={false}
           nodesConnectable={false}

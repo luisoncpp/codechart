@@ -216,20 +216,21 @@ folder (implementation). External code imports only the nearest `index.ts`.
 | Module | Responsibility | Public surface | Notes |
 |--------|----------------|----------------|-------|
 | `domain/graph` | Generated contract types + `GraphProjector` (→ React Flow models) + selectors + contract test | types, `GraphProjector`, selectors | No analysis; pure projection |
-| `domain/layout` | **Seam.** `ProjectGraph` → `LayoutedGraph` (positions/sizes), nested + non-overlapping | `interface LayoutEngine`, `ElkLayoutEngine` | Deterministic for a given graph; ELK details stay private |
+| `domain/layout` | **Seam.** `ProjectGraph` → `LayoutedGraph` (positions/sizes), nested + non-overlapping; modules with symbols are compound nodes whose symbol leaves pack via ELK `rectpacking` | `interface LayoutEngine`, `ElkLayoutEngine` | Deterministic for a given graph; ELK details stay private; footprints are zoom-independent |
 | `ipc/analysis-client` | **Seam.** Get a `ProjectGraph` for a project | `interface AnalysisClient`, `TauriAnalysisClient`, `MockAnalysisClient` (fixtures) | Mock runs the whole UI with zero Rust |
 | `state/graph-session` | App state as a **class** (guidelines: classes over hooks) | `GraphSessionStore` (EventEmitter) + `useGraphSession` adapter | Holds model, layout, session phase, selection, zoom, config path |
-| `features/graph_canvas` | React Flow rendering: custom group/module/facade nodes, solid/dashed/violation edges, colors, icons, semantic zoom (§8) | `<GraphCanvas />`, `GraphCanvasController` | The only React-Flow-aware module |
+| `features/graph_canvas` | React Flow rendering: custom group/module/**symbol** nodes, solid/dashed/violation edges, colors, icons, semantic zoom (§8) | `<GraphCanvas />`, `GraphCanvasController` | The only React-Flow-aware module |
 | `features/inspection_panel` | Details for the selection: path, group, facade status, imports, **imported-by**, diagnostics, metadata | `<InspectionPanel />` | UX surface that makes the graph explain itself |
 | `features/project_loader` | Folder picker + session states (idle/loading/ready/failed/empty) | `<ProjectLoaderPanel />` | Drives `GraphSessionStore` |
 | `app` | Composition root: wires client → store → canvas + panels | `<App />` | Thin |
 
 ### 5.1 Key class: `GraphSessionStore`
 
-- **Owns:** current `ProjectGraph`, computed `LayoutedGraph`, **session phase**
+- **Owns:** current `ProjectGraph`, computed `LayoutedGraph` (includes **symbol boxes** nested under modules), **session phase**
   (`idle | loading | ready | failed | empty`), `zoomLevel (0|1|1.5|2)`, `selection`, config path.
 - **Emits:** `session-changed`, `model-changed`, `layout-changed`, `selection-changed`, `zoom-changed`.
 - **Methods:** `loadProject(path)`, `setZoomLevel(n)`, `select(id)`, `expandGroup(id)`/`collapseGroup(id)`.
+- **Layout vs zoom:** layout runs on load and on **group collapse** changes only. Switching L1 ↔ L1.5 ↔ L2 is **projection-only** (footprints stay fixed); only L0 ↔ L1 changes the collapsed set and triggers re-layout. L2 lazily fetches source without re-layout.
 - **Why a class:** derivation is explicit and free of React side effects; `useGraphSession` is a 1:1
   adapter that subscribes to events and triggers re-render. No business logic in hooks (per guidelines).
 
@@ -338,26 +339,71 @@ diagnostic; the rest of the graph still builds (partial-results discipline).
 
 ## 8. Semantic zoom & facade re-routing (post-MVP, designed now)
 
-Rendering reads `zoomLevel` and applies a **pure projection** `project(model, collapsedGroupIds)`
-→ render model (the underlying `ProjectGraph` stays immutable per analysis run). Scroll zoom maps
-to a discrete level via `levelFromZoom(factor)` (`<0.55` → L0, `<1.1` → L1, `<1.7` → L1.5, `≥1.7`
-→ L2).
+Semantic zoom follows a **Google Maps** model: every box has a **fixed geographic footprint** in
+layout space; the **camera** zooms in and out; detail layers are **revealed by zoom level**, not by
+resizing nodes. Groups and modules do not change their layout dimensions when you scroll — only what
+gets projected into them changes (like seeing cities inside a country).
+
+Rendering reads `zoomLevel` and applies a **pure projection** over two steps:
+
+```
+ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced ProjectGraph
+             ──LayoutEngine.layout(reduced)─────────────▶ LayoutedGraph {groups, modules, symbols}
+             ──projectGraph(reduced, layout, renderOpts)▶ React Flow models
+```
+
+The underlying `ProjectGraph` stays immutable per analysis run. Scroll zoom maps to a discrete level
+via `levelFromZoom(factor)` (`<0.45` → L0, `<0.9` → L1, `<3.5` → L1.5, `≥3.5` → L2). The canvas
+allows continuous camera zoom **0.15×–12×** so the user can scroll in far enough to read every
+symbol box at L1.5.
+
+### Levels
 
 - **L0 (bird's eye):** render only top-level groups; collapse each to its facade(s). Edges whose
   endpoint is a private module inside a collapsed group **re-route to that group's facade**.
-- **L1 (architectural):** expand focused groups → modules + intra-group edges visible. Module boxes
-  show the filename only.
-- **L1.5 (symbol view):** same node set as L1; each module box lists its `exportedSymbols` (up to
-  six names, with overflow). Symbols are analysis-time data from the language adapter — no extra
-  IPC fetch. Layout uses medium boxes (between L1 compact and L2 snippet size).
-- **L2 (implementation):** node box renders a source snippet (first 12 lines, monospace). Source
-  is **lazy-fetched** via `AnalysisClient.readModuleSource` and cached in the store; file bodies
-  are not part of the `ProjectGraph` contract.
+  Collapsed groups keep their **expanded footprint** (captured from the full layout) — they shrink in
+  *content*, not in box size.
+- **L1 (architectural):** expand groups → modules + intra-group edges visible. Each module shows its
+  filename only, centered inside its **full** footprint (counter-scaled with camera zoom so labels stay
+  legible when zoomed out — same technique as collapsed groups).
+- **L1.5 (symbol view):** same layout footprint as L1. Each `exportedSymbols` entry becomes its own
+  **child box** (`SymbolNodeView`) nested under the module via React Flow `parentId`. Symbol boxes are
+  laid out once by ELK `rectpacking` inside the module compound node (not a vertical in-box list).
+  Symbol ids use `${moduleId}::${symbolName}`. Symbols are analysis-time data — no extra IPC fetch.
+- **L2 (implementation):** same footprint and visible symbol boxes as L1.5; the module container
+  additionally shows a **source snippet** (first 12 lines, monospace). Source is **lazy-fetched** via
+  `AnalysisClient.readModuleSource` and cached in the store; file bodies are not part of the
+  `ProjectGraph` contract.
+
+### Fixed footprints (layout rules)
+
+| Node | Size rule |
+|------|-----------|
+| Module (no symbols) | Compact leaf: 160×44 (`PRESETS.moduleWidth/Height`) |
+| Module (with symbols) | Compound ELK node; outer box sized to pack all symbol children + header padding |
+| Symbol box | Fixed leaf: 84×20 per symbol (`PRESETS.symbolWidth/Height`) |
+| Collapsed group | Reuses captured expanded size, else fallback card (`collapsedGroupWidth/Height`) |
+
+**Re-layout** runs on project load and on **group collapse/expand** only (seq-guarded). L1 ↔ L1.5 ↔
+L2 changes `renderOpts` (`showSymbols`, `snippets`) without touching `LayoutedGraph`. This keeps
+module and symbol positions stable while the camera moves — the core Google Maps guarantee.
 
 Per-group `expandGroup` / `collapseGroup` overrides layer on top of each level's default collapse
-set. Re-layout is seq-guarded so rapid scrolling cannot apply a stale layout. Programmatic
-`fitView` runs once per project load only — refitting on level change would feed back into
-`levelFromZoom` and oscillate (see `docs/lessons-learned/scroll-zoom-relayout-autofit-feedback.md`).
+set. Programmatic `fitView` runs **once per project load** only — refitting on level change would
+feed back into `levelFromZoom` and oscillate (see
+`docs/lessons-learned/scroll-zoom-relayout-autofit-feedback.md`). After the initial fit, only the
+user's scroll wheel changes the camera.
+
+### Projection node types
+
+| RF type | When visible | Role |
+|---------|--------------|------|
+| `group` | always (when not graph-reduced away) | Container; collapsed at L0 shows description card |
+| `module` | L1+ | Fixed-size container; label at L1, small header + children at L1.5+ |
+| `symbol` | L1.5+ | One box per exported symbol; `extent: 'parent'`; click selects parent module |
+
+Edge routing (facade re-targeting to group borders) is unchanged from the original design; edges
+anchor on layout `width`/`height`, not DOM-measured size, so in-box detail cannot inflate endpoints.
 
 ---
 
@@ -404,7 +450,8 @@ tests/fixtures/
   designates no facade never counts as a violation, so cross-cutting/shared groups don't generate
   false positives.
 - **Performance posture (MVP):** React Flow handles low-thousands of nodes; L0 collapse keeps the
-  visible set small. Virtualization / WebGPU is a later milestone behind the `LayoutEngine` + canvas
+  visible set small; symbol boxes add one leaf per exported name inside each module (fixed size,
+  packed at layout time). Virtualization / WebGPU is a later milestone behind the `LayoutEngine` + canvas
   seam — not built now, not blocked.
 
 ---
@@ -415,7 +462,7 @@ tests/fixtures/
 |--------------------|-----------------|
 | Architecture drift / red violation edges (§3.1) | `references` (flag + diagnostic) — Phase 8, near-term |
 | Dashed/soft edges: events, context, pub/sub (§2.4) | `references` (new classifier) — Phase 9 |
-| Semantic zoom L0/L1/L1.5/L2 (§3.3) | pure `project()` in `graph_canvas` — Phase 10 |
+| Semantic zoom L0/L1/L1.5/L2 (§3.3, §8) | `projectForZoom` + `projectGraph` render layers + compound module layout — Phase 10 |
 | Narrative diff visualizer (§3.4) | diff input to `analyze_project` + render overlay |
 | Git time-travel (§3.5) | new `ProjectSource` over git revisions |
 | Activity heatmaps (§3.5) | extra `ModuleNode.metrics` + render layer |

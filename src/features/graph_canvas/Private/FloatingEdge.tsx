@@ -48,5 +48,9 @@ export function FloatingEdge({ id, source, target, data, markerEnd, style }: Edg
 
 function boxOf(node: InternalNode<Node>): Box {
   const { x, y } = node.internals.positionAbsolute;
-  return { x, y, width: node.measured.width ?? 0, height: node.measured.height ?? 0 };
+  // Prefer the layout footprint over DOM measurement so edges stay aligned
+  // when in-box detail (symbols, snippets) would otherwise inflate the node.
+  const width = node.width ?? node.measured.width ?? 0;
+  const height = node.height ?? node.measured.height ?? 0;
+  return { x, y, width, height };
 }

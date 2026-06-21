@@ -22,10 +22,16 @@ export interface ModuleNodeData extends Record<string, unknown> {
   color?: string;
   /** Annotation one-liner (Phase 10 metadata). */
   descriptionShort?: string;
-  /** Exported symbol names shown in-box at L1.5. */
-  symbols?: string[];
+  /** True when symbol child boxes are visible (L1.5+). */
+  showSymbols?: boolean;
   /** Source snippet shown in-box at L2 (lazily fetched). */
   snippet?: string;
+}
+
+/** Data carried by an exported-symbol box nested under a module. */
+export interface SymbolNodeData extends Record<string, unknown> {
+  label: string;
+  color?: string;
 }
 
 /** Data carried by an import edge. */
@@ -41,7 +47,8 @@ export interface EdgeData extends Record<string, unknown> {
 
 export type GroupRFNode = Node<GroupNodeData, "group">;
 export type ModuleRFNode = Node<ModuleNodeData, "module">;
-export type RFNode = GroupRFNode | ModuleRFNode;
+export type SymbolRFNode = Node<SymbolNodeData, "symbol">;
+export type RFNode = GroupRFNode | ModuleRFNode | SymbolRFNode;
 export type RFEdgeT = RFEdge<EdgeData>;
 
 /** A `ProjectGraph` + layout projected into React Flow models. */

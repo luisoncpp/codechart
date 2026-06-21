@@ -1,11 +1,18 @@
 import type { ElkNode, ElkExtendedEdge } from "elkjs/lib/elk-api";
 import type { ProjectGraph } from "../../graph";
 import type { LayoutOptions } from "./layout-types";
+import { symbolBoxId } from "../../graph/Private/symbol-id";
+import { SYMBOL_BOX, symbolBoxWidth } from "./symbol-box-metrics";
 
 /** Deterministic layout presets (TDD §"layout presets"). */
 export const PRESETS = {
   moduleWidth: 160,
   moduleHeight: 44,
+  /** Minimum footprint for each exported-symbol box (grows with label length). */
+  symbolWidth: SYMBOL_BOX.minWidth,
+  symbolHeight: SYMBOL_BOX.height,
+  moduleSymbolPadding: 6,
+  moduleHeaderHeight: 20,
   groupPadding: 12,
   groupHeaderHeight: 30,
   nodeSpacing: 32,
@@ -36,10 +43,18 @@ const GROUP_OPTIONS: Record<string, string> = {
   "elk.padding": `[top=${PRESETS.groupPadding + PRESETS.groupHeaderHeight},left=${PRESETS.groupPadding},bottom=${PRESETS.groupPadding},right=${PRESETS.groupPadding}]`,
 };
 
+const MODULE_COMPOUND_OPTIONS: Record<string, string> = {
+  "elk.algorithm": "rectpacking",
+  "elk.aspectRatio": "1.35",
+  "elk.spacing.nodeNode": "4",
+  "elk.padding": `[top=${PRESETS.moduleHeaderHeight + PRESETS.moduleSymbolPadding},left=${PRESETS.moduleSymbolPadding},bottom=${PRESETS.moduleSymbolPadding},right=${PRESETS.moduleSymbolPadding}]`,
+};
+
 /** Builds the hierarchical ELK graph from a `ProjectGraph` (deterministic, sorted). */
 export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): ElkNode {
   const childGroups = byParent(graph);
   const modulesByGroup = byGroup(graph);
+  const moduleById = new Map(graph.modules.map((m) => [m.id, m]));
   const moduleWidth = options?.moduleWidth ?? PRESETS.moduleWidth;
   const moduleHeight = options?.moduleHeight ?? PRESETS.moduleHeight;
 
@@ -47,11 +62,10 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
     const groups = (childGroups.get(parentId) ?? []).map((id) =>
       groupElkNode(id, build(id), options?.collapsedGroupSizes),
     );
-    const modules = (modulesByGroup.get(parentId) ?? []).map((id) => ({
-      id,
-      width: moduleWidth,
-      height: moduleHeight,
-    }));
+    const modules = (modulesByGroup.get(parentId) ?? []).map((id) => {
+      const mod = moduleById.get(id)!;
+      return moduleElkNode(id, mod.exportedSymbols, moduleWidth, moduleHeight);
+    });
     return [...groups, ...modules];
   };
 
@@ -60,6 +74,27 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
     layoutOptions: ROOT_OPTIONS,
     children: build(null),
     edges: buildEdges(graph),
+  };
+}
+
+/** Modules with symbols are compound nodes: symbol boxes pack inside a fixed footprint. */
+function moduleElkNode(
+  moduleId: string,
+  symbols: string[],
+  fallbackWidth: number,
+  fallbackHeight: number,
+): ElkNode {
+  if (symbols.length === 0) {
+    return { id: moduleId, width: fallbackWidth, height: fallbackHeight };
+  }
+  return {
+    id: moduleId,
+    layoutOptions: MODULE_COMPOUND_OPTIONS,
+    children: symbols.map((name) => ({
+      id: symbolBoxId(moduleId, name),
+      width: symbolBoxWidth(name),
+      height: PRESETS.symbolHeight,
+    })),
   };
 }
 
