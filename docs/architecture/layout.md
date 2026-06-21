@@ -26,7 +26,7 @@ parent-relative offsets by subtracting the parent box when it needs `parentNode`
      **top** padding is `groupPadding + groupHeaderHeight` so the rendered header (graph-canvas) has
      reserved room and modules never overlap the group label.
    - **In-body description box:** an **annotated** group gets a real leaf child (`descriptionBoxId`)
-     injected into its layered flow, sized by `descriptionBoxSize(text)` (content-fit, like
+     injected into its layered flow, sized by `descriptionBoxSize(short, long)` (content-fit, like
      `moduleBoxSize`), pinned top-left (`layerConstraint: FIRST` + `considerModelOrder`;
      `separateConnectedComponents=false` so all-disconnected groups still honor model order). ELK packs
      the modules around it. These boxes are returned separately as `LayoutedGraph.descriptions` (not in

@@ -57,15 +57,16 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
 }
 
 /** Description drawn directly in the group (no box) at the layout-reserved box
- *  geometry, so modules pack around it. L1 shows the short text; L1.5+ (`showLong`)
- *  prefers the long text. The box is sized (by `descriptionBoxSize`) to fit the long
- *  text at `DESC_BOX.fontSize`, so neither variant truncates. */
+ *  geometry, so modules pack around it. L1 shows the short text at the larger
+ *  `l1FontSize`; L1.5+ (`showLong`) shows the long text at the smaller `fontSize`.
+ *  The box fits both (`descriptionBoxSize`), so neither variant truncates. */
 function GroupDescription({ data }: { data: GroupNodeData }) {
   const text =
     (data.showLong ? data.descriptionLong : undefined) ?? data.descriptionShort;
   if (!text || !data.descriptionBox) return null;
+  const font = data.showLong ? DESC_BOX.fontSize : DESC_BOX.l1FontSize;
   return (
-    <p style={bandDescriptionStyle(darken(data.color), data.descriptionBox)} title={text}>
+    <p style={bandDescriptionStyle(darken(data.color), data.descriptionBox, font)} title={text}>
       {text}
     </p>
   );
@@ -231,12 +232,12 @@ function cardDescriptionStyle(color: string, scale: number, lines: number) {
 /** In-group description, drawn at the layout-reserved box geometry (parent-relative).
  *  Projection has already raised `y` to the highest collision-free spot in the box's
  *  column (ELK centers a short column, so the reserved slot floats mid-group). World
- *  units at `DESC_BOX.fontSize` (the size the box was packed for, so it never
- *  truncates) — sized like a module label, not counter-scaled. `textAlign: left`
- *  overrides React Flow's centered node default. */
+ *  units at `font` (the box is packed to fit both fonts, so it never truncates) —
+ *  not counter-scaled. `textAlign: left` overrides React Flow's centered node default. */
 function bandDescriptionStyle(
   color: string,
   box: { x: number; y: number; width: number; height: number },
+  font: number,
 ) {
   return {
     position: "absolute" as const,
@@ -247,10 +248,10 @@ function bandDescriptionStyle(
     boxSizing: "border-box" as const,
     padding: DESC_BOX.padding,
     margin: 0,
-    fontSize: DESC_BOX.fontSize,
+    fontSize: font,
     fontFamily: SANS,
     fontWeight: 500,
-    lineHeight: DESC_BOX.lineHeight / DESC_BOX.fontSize,
+    lineHeight: DESC_BOX.lineRatio,
     textAlign: "left" as const,
     color,
     overflow: "hidden",

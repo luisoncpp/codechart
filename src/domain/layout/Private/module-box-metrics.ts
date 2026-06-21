@@ -53,34 +53,47 @@ export function fitLabelFontSize(label: string, width: number, height: number): 
 }
 
 /** Typography + footprint for a group's in-body description box (sized like a
- *  module box, but from prose length instead of a symbol grid). World units;
- *  `GroupNodeView` renders the text at `fontSize` so the box always fits it. */
+ *  module box, but from prose length instead of a symbol grid). World units.
+ *  Two fonts: the L1 short blurb reads large (like the filenames); the denser
+ *  L1.5 long prose stays smaller so the box doesn't balloon. The box is packed
+ *  to fit *both* (`descriptionBoxSize`), so neither variant truncates. */
 export const DESC_BOX = {
-  /** Matches the module label's max size (`LABEL_FIT.maxFont`) so the prose reads
-   *  at the same scale as the filenames around it, not like fine print. */
-  fontSize: 22,
-  /** Sans-serif glyph advance at `fontSize` (generous so text rarely clips). */
-  charWidth: 11.5,
-  lineHeight: 29,
+  /** L1.5 long prose + box sizing — kept modest so annotated groups stay compact. */
+  fontSize: 16,
+  /** L1 short blurb — matches the module label's max (`LABEL_FIT.maxFont`) so it
+   *  reads at the same scale as the filenames, not like fine print. */
+  l1FontSize: 22,
+  /** Sans-serif glyph advance / line height as ratios of the font in use. */
+  charRatio: 0.52,
+  lineRatio: 1.33,
   padding: 12,
   /** Never narrower/shorter than a comfortable module-box footprint. */
-  minWidth: 200,
+  minWidth: 180,
   minHeight: MODULE_BOX.minHeight,
   /** Cap the width so long prose wraps into a box-like shape, not a wide banner. */
-  maxWidth: 400,
+  maxWidth: 340,
 } as const;
 
-/** Footprint that fits `text` at `DESC_BOX.fontSize`: width capped so prose wraps
- *  into a module-box-like shape (taller, not a banner), floored at the base. */
-export function descriptionBoxSize(text: string): { width: number; height: number } {
-  const contentW = text.length * DESC_BOX.charWidth + 2 * DESC_BOX.padding;
+/** Footprint that fits the long prose (at `fontSize`) **and** the short blurb (at
+ *  the larger `l1FontSize`), so neither L1 nor L1.5 truncates. Width capped so prose
+ *  wraps into a module-box-like shape; floored at the base. */
+export function descriptionBoxSize(
+  shortText: string,
+  longText: string,
+): { width: number; height: number } {
+  const long = boxFor(longText, DESC_BOX.fontSize);
+  const short = boxFor(shortText, DESC_BOX.l1FontSize);
+  return { width: Math.max(long.width, short.width), height: Math.max(long.height, short.height) };
+}
+
+function boxFor(text: string, font: number): { width: number; height: number } {
+  const charWidth = font * DESC_BOX.charRatio;
+  const lineHeight = font * DESC_BOX.lineRatio;
+  const contentW = text.length * charWidth + 2 * DESC_BOX.padding;
   const width = Math.max(DESC_BOX.minWidth, Math.min(DESC_BOX.maxWidth, Math.ceil(contentW)));
-  const charsPerLine = Math.max(1, Math.floor((width - 2 * DESC_BOX.padding) / DESC_BOX.charWidth));
+  const charsPerLine = Math.max(1, Math.floor((width - 2 * DESC_BOX.padding) / charWidth));
   const lines = Math.max(1, Math.ceil(text.length / charsPerLine));
-  const height = Math.max(
-    DESC_BOX.minHeight,
-    Math.ceil(lines * DESC_BOX.lineHeight + 2 * DESC_BOX.padding),
-  );
+  const height = Math.max(DESC_BOX.minHeight, Math.ceil(lines * lineHeight + 2 * DESC_BOX.padding));
   return { width, height };
 }
 

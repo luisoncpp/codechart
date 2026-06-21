@@ -9,10 +9,6 @@ export function descriptionBoxId(groupId: string): string {
   return `${groupId}::__description__`;
 }
 
-/** The text the description box must hold (long preferred — it shows at L1.5). */
-function descriptionText(group: GroupNode): string | undefined {
-  return group.annotation?.descriptionLong ?? group.annotation?.descriptionShort;
-}
 
 /** Deterministic layout presets (TDD §"layout presets"). */
 export const PRESETS = {
@@ -80,11 +76,12 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
   // groups (those that have other children); a collapsed group renders its own card.
   const withDescription = (groupId: string, children: ElkNode[]): ElkNode[] => {
     if (children.length === 0) return children;
-    const text = descriptionText(groupById.get(groupId)!);
-    if (!text) return children;
+    const ann = groupById.get(groupId)!.annotation;
+    const short = ann?.descriptionShort;
+    if (!short) return children;
     const desc: ElkNode = {
       id: descriptionBoxId(groupId),
-      ...descriptionBoxSize(text),
+      ...descriptionBoxSize(short, ann.descriptionLong ?? short),
       // Pin to the first (leftmost) layer + first model-order slot → top-left corner.
       layoutOptions: { "elk.layered.layering.layerConstraint": "FIRST" },
     };

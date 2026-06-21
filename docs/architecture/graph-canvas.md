@@ -143,17 +143,20 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
     spot in the box's x-column that stays **clear of every sibling box above it** — collision-checked, not
     blindly pinned to the top (a module ELK placed up there blocks it; the box stops just below). Floored
     at the group content top (`groupPadding + groupHeaderHeight`). `textAlign: left` (React Flow's node
-    default is centered). World units at `DESC_BOX.fontSize` (22, = `LABEL_FIT.maxFont`) — reads at the
+    default is centered). World units at `DESC_BOX.l1FontSize` (22, = `LABEL_FIT.maxFont`) — reads at the
     same scale as the module filenames, not counter-scaled.
-  - **L1.5+ (`showLong`):** same box shows `descriptionLong` (falls back to `descriptionShort`).
+  - **L1.5+ (`showLong`):** same box shows `descriptionLong` (falls back to `descriptionShort`) at the
+    smaller `DESC_BOX.fontSize` (16): the long prose is denser, so a modest font keeps the box compact
+    while L1's short blurb still reads large. The two fonts are independent on purpose.
   - **Reserved layout space (packed, not a band):** `elk-input` injects a **real leaf box** per annotated
-    group (`descriptionBoxId(groupId)`) into the group's layered flow, sized by `descriptionBoxSize(text)`
-    (the *same* content-fit philosophy as `moduleBoxSize` — width capped, height grown to fit the prose at
-    the render font, so it never truncates). ELK then **packs the modules around it** instead of wasting a
-    full-width strip. The box is pinned to the group's top-left via `layerConstraint: FIRST` +
-    `considerModelOrder` + `separateConnectedComponents=false` (the last so an all-disconnected group like
-    `shared` still honors model order). It carries `descriptionLong ?? descriptionShort` so the box fits
-    the largest text shown. The layout splits these into `LayoutedGraph.descriptions` (a sibling of
+    group (`descriptionBoxId(groupId)`) into the group's layered flow, sized by
+    `descriptionBoxSize(short, long)` (the *same* content-fit philosophy as `moduleBoxSize` — width
+    capped, height grown to fit the prose, so it never truncates). It's packed to fit **both** the long
+    text at `fontSize` *and* the short blurb at the larger `l1FontSize` (union of the two), so neither
+    level overflows. ELK then **packs the modules around it** instead of wasting a full-width strip. The
+    box is pinned to the group's top-left via `layerConstraint: FIRST` + `considerModelOrder` +
+    `separateConnectedComponents=false` (the last so an all-disconnected group like `shared` still honors
+    model order). The layout splits these into `LayoutedGraph.descriptions` (a sibling of
     `modules`/`symbols`); `rf-projection` stashes each one's parent-relative geometry into the owning
     group's `descriptionBox` and emits **no** node for it. Collapsed groups get no box (they render their
     own card).
