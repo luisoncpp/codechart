@@ -18,7 +18,7 @@ describe("ProjectGraph contract", () => {
 
     expect(graph.groups).toHaveLength(5);
     expect(graph.modules).toHaveLength(13);
-    expect(graph.edges).toHaveLength(21);
+    expect(graph.edges).toHaveLength(22);
     expect(graph.diagnostics).toHaveLength(2);
     const kinds = graph.diagnostics.map((d) => d.kind);
     expect(kinds).toContain("unresolvedImport");
@@ -33,12 +33,16 @@ describe("ProjectGraph contract", () => {
     );
     expect(bypass?.isViolation).toBe(true);
 
-    // Planted event seam → a single soft (dashed) edge, store → App (Phase 9).
+    // Soft (dashed) edges: the planted event seam store → App (Phase 9) plus the
+    // interface seam App → store (detected via the shared ITodoStore interface).
     const soft = graph.edges.filter((e) => e.kind === "soft");
-    expect(soft).toHaveLength(1);
-    expect(soft[0].source).toBe("src/core/store.ts");
-    expect(soft[0].target).toBe("src/ui/App.tsx");
-    expect(soft[0].trigger).toBe("event:todos:changed");
+    expect(soft).toHaveLength(2);
+    const event = soft.find((e) => e.trigger === "event:todos:changed");
+    expect(event?.source).toBe("src/core/store.ts");
+    expect(event?.target).toBe("src/ui/App.tsx");
+    const seam = soft.find((e) => e.trigger.startsWith("interface:"));
+    expect(seam?.source).toBe("src/ui/App.tsx");
+    expect(seam?.target).toBe("src/core/store.ts");
 
     const annotated = graph.modules.find((m) => m.id === "src/services/http.ts");
     expect(annotated?.annotation).toBeDefined();

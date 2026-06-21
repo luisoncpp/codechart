@@ -1,5 +1,6 @@
 import type { ElkNode, ElkExtendedEdge } from "elkjs/lib/elk-api";
 import type { ProjectGraph } from "../../graph";
+import type { LayoutOptions } from "./layout-types";
 
 /** Deterministic layout presets (TDD §"layout presets"). */
 export const PRESETS = {
@@ -9,6 +10,9 @@ export const PRESETS = {
   groupHeaderHeight: 30,
   nodeSpacing: 32,
   layerSpacing: 56,
+  /** A collapsed (childless) group still needs a visible box. */
+  collapsedGroupWidth: 150,
+  collapsedGroupHeight: 56,
 } as const;
 
 const ROOT_OPTIONS: Record<string, string> = {
@@ -29,20 +33,18 @@ const GROUP_OPTIONS: Record<string, string> = {
 };
 
 /** Builds the hierarchical ELK graph from a `ProjectGraph` (deterministic, sorted). */
-export function buildElkGraph(graph: ProjectGraph): ElkNode {
+export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): ElkNode {
   const childGroups = byParent(graph);
   const modulesByGroup = byGroup(graph);
+  const moduleWidth = options?.moduleWidth ?? PRESETS.moduleWidth;
+  const moduleHeight = options?.moduleHeight ?? PRESETS.moduleHeight;
 
   const build = (parentId: string | null): ElkNode[] => {
-    const groups = (childGroups.get(parentId) ?? []).map((id) => ({
-      id,
-      layoutOptions: { ...GROUP_LAYOUT_OPTIONS, ...GROUP_OPTIONS },
-      children: build(id),
-    }));
+    const groups = (childGroups.get(parentId) ?? []).map((id) => groupElkNode(id, build(id)));
     const modules = (modulesByGroup.get(parentId) ?? []).map((id) => ({
       id,
-      width: PRESETS.moduleWidth,
-      height: PRESETS.moduleHeight,
+      width: moduleWidth,
+      height: moduleHeight,
     }));
     return [...groups, ...modules];
   };
@@ -52,6 +54,22 @@ export function buildElkGraph(graph: ProjectGraph): ElkNode {
     layoutOptions: ROOT_OPTIONS,
     children: build(null),
     edges: buildEdges(graph),
+  };
+}
+
+/** A group node; a collapsed (childless) group gets a fixed visible size. */
+function groupElkNode(id: string, children: ElkNode[]): ElkNode {
+  if (children.length === 0) {
+    return {
+      id,
+      width: PRESETS.collapsedGroupWidth,
+      height: PRESETS.collapsedGroupHeight,
+    };
+  }
+  return {
+    id,
+    layoutOptions: { ...GROUP_LAYOUT_OPTIONS, ...GROUP_OPTIONS },
+    children,
   };
 }
 

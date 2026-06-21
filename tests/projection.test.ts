@@ -85,6 +85,31 @@ describe("GraphProjector → React Flow models", () => {
   });
 });
 
+describe("render options (Phase 10 metadata + zoom)", () => {
+  it("threads annotation descriptionShort into group node data", () => {
+    const { nodes } = projectGraph(graph, layout);
+    const core = nodes.find((n) => n.id === "core");
+    expect(core?.data.descriptionShort).toBe("Domain types & state");
+  });
+
+  it("marks a group collapsed when it is in the collapsed set", () => {
+    const { nodes } = projectGraph(graph, layout, {
+      collapsedGroupIds: new Set(["core"]),
+    });
+    const core = nodes.find((n) => n.id === "core");
+    expect(core?.data.collapsed).toBe(true);
+    const ui = nodes.find((n) => n.id === "ui");
+    expect(ui?.data.collapsed).toBe(false);
+  });
+
+  it("attaches a source snippet to a module when provided", () => {
+    const snippets = new Map([["src/services/http.ts", "export const x = 1;"]]);
+    const { nodes } = projectGraph(graph, layout, { snippets });
+    const http = nodes.find((n) => n.id === "src/services/http.ts");
+    expect(http?.data.snippet).toBe("export const x = 1;");
+  });
+});
+
 describe("selectors", () => {
   it("imports/imported-by are inverse views of the edge list", () => {
     const target = graph.edges[0].target;

@@ -9,6 +9,14 @@ export class EventEmitter {
     this.listeners.set(event, list);
   }
 
+  once(event: string, listener: Listener) {
+    const wrapper = () => {
+      this.off(event, wrapper);
+      listener();
+    };
+    this.on(event, wrapper);
+  }
+
   off(event: string, listener: Listener) {
     const list = this.listeners.get(event) ?? [];
     this.listeners.set(

@@ -8,5 +8,8 @@ export function createTauriAnalysisClient(): AnalysisClient {
     async analyzeProject(path: string): Promise<ProjectGraph> {
       return invoke<ProjectGraph>("analyze_project", { path });
     },
+    async readModuleSource(root: string, path: string): Promise<string> {
+      return invoke<string>("read_module_source", { root, path });
+    },
   };
 }

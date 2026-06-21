@@ -132,6 +132,26 @@ describe("InspectionPanel", () => {
     expect(screen.getByText(/Select a module/)).toBeInTheDocument();
   });
 
+  it("renders @Architecture metadata for an annotated module (Phase 10)", async () => {
+    const store = await readyStore();
+    store.select("src/services/http.ts"); // the fixture's annotated module
+    render(<InspectionPanel store={store} />);
+    expect(screen.getByText("Architecture")).toBeInTheDocument();
+    expect(screen.getByText("HTTP transport")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Single choke point for network access/),
+    ).toBeInTheDocument();
+  });
+
+  it("omits the Architecture section for a module with no annotation", async () => {
+    const store = await readyStore();
+    store.select("src/ui/TodoItem.tsx"); // no annotation, and its group has one
+    render(<InspectionPanel store={store} />);
+    // The group (ui) is annotated, so the section shows the group block but the
+    // module has no "This module" block.
+    expect(screen.queryByText(/^This module/)).not.toBeInTheDocument();
+  });
+
   it("explains the facade bypass on the violating module (Phase 8)", async () => {
     const store = await readyStore();
     const violation = graph.edges.find((e) => e.isViolation)!;
@@ -165,7 +185,10 @@ describe("soft edges (Phase 9)", () => {
     render(<InspectionPanel store={store} />);
 
     const events = screen.getByText(/^Events/).closest("div")!;
-    expect(within(events).getByText(new RegExp(soft.target))).toBeInTheDocument();
+    // store.ts emits to App.tsx (the event seam line).
+    expect(
+      within(events).getByText(new RegExp(`emits → ${soft.target}`)),
+    ).toBeInTheDocument();
 
     const imports = screen.getByText(/^Imports/).closest("div")!;
     expect(within(imports).queryByText(soft.target)).not.toBeInTheDocument();

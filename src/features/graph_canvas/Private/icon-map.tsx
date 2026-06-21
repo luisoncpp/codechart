@@ -10,6 +10,11 @@ const ICONS: Record<string, string> = {
   panel: "🪟",
   dialog: "💬",
   sidebar: "📑",
+  "app-window": "🖥️",
+  plug: "🔌",
+  share: "🔗",
+  layout: "🧩",
+  globe: "🌐",
 };
 
 export function iconGlyph(name: string | undefined): string | null {

@@ -10,7 +10,13 @@ export type { ModuleNode } from "./ModuleNode";
 export type { ProjectGraph } from "./ProjectGraph";
 export type { Severity } from "./Severity";
 export { projectGraphSummary } from "./Private/graph-projector";
-export { projectGraph } from "./Private/rf-projection";
+export { projectGraph, type RenderOptions } from "./Private/rf-projection";
+export {
+  projectForZoom,
+  topLevelGroupIds,
+  levelFromZoom,
+  type ZoomLevel,
+} from "./Private/zoom-projection";
 export type {
   ProjectedGraph,
   GroupNodeData,

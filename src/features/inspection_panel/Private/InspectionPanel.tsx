@@ -9,6 +9,7 @@ import {
 } from "../../../domain/graph";
 import { EdgeList } from "./EdgeList";
 import { EventList } from "./EventList";
+import { MetadataSection } from "./MetadataSection";
 
 interface InspectionPanelProps {
   store: GraphSessionStore;
@@ -39,6 +40,7 @@ export function InspectionPanel({ store }: InspectionPanelProps) {
         <Row label="Language" value={module.language} />
         <Row label="LOC" value={String(module.metrics.loc)} />
       </dl>
+      <MetadataSection module={module} group={group} />
       <EdgeList title="Imports" edges={importsOf(graph, module.id)} field="target" />
       <EdgeList
         title="Imported by"

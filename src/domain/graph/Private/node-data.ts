@@ -6,6 +6,10 @@ export interface GroupNodeData extends Record<string, unknown> {
   label: string;
   color: string;
   icon?: string;
+  /** Annotation one-liner shown under the header (Phase 10 metadata). */
+  descriptionShort?: string;
+  /** True when this group is rendered collapsed (semantic zoom). */
+  collapsed?: boolean;
 }
 
 /** Data carried by a custom module node. */
@@ -16,6 +20,10 @@ export interface ModuleNodeData extends Record<string, unknown> {
   icon?: string;
   /** Color of the owning group, so the box tints/outlines to match it. */
   color?: string;
+  /** Annotation one-liner (Phase 10 metadata). */
+  descriptionShort?: string;
+  /** Source snippet shown in-box at L2 (lazily fetched). */
+  snippet?: string;
 }
 
 /** Data carried by an import edge. */

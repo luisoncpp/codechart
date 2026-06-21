@@ -1,6 +1,6 @@
 use crate::contract::ProjectGraph;
 
-use super::analyze_project;
+use super::{analyze_project, read_module_source};
 
 const FIXTURE_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/ts-basic-project");
 
@@ -30,4 +30,19 @@ fn command_on_a_missing_folder_yields_an_empty_graph() {
         analyze_project(format!("{FIXTURE_DIR}/does-not-exist")).expect("builds an empty graph");
     assert!(graph.modules.is_empty());
     assert!(graph.edges.is_empty());
+}
+
+/// Phase 10: the L2 snippet command reads a module's source by repo-relative id.
+#[test]
+fn read_module_source_returns_a_modules_contents() {
+    let src = read_module_source(FIXTURE_DIR.to_string(), "src/services/http.ts".to_string())
+        .expect("reads the file");
+    // The annotated module carries its @Architecture block in the source.
+    assert!(src.contains("@Architecture"));
+}
+
+#[test]
+fn read_module_source_on_a_missing_file_errors() {
+    let result = read_module_source(FIXTURE_DIR.to_string(), "src/nope.ts".to_string());
+    assert!(result.is_err());
 }

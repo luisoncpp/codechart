@@ -70,6 +70,46 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   `edgeRole`/`edgeOpacity`/`borderAnchor` are the testable seams (edges don't render under jsdom).
 - **Icons:** sparing, name → glyph map (`icon-map.tsx`); unknown names render no glyph.
 
+## Semantic zoom L0/L1/L2 + metadata (Phase 10)
+
+Detail level is a **pure projection over the immutable `ProjectGraph`** (TDD §8). The render
+pipeline gained a graph-reduction step *before* layout:
+
+```
+ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced ProjectGraph
+             ──LayoutEngine.layout(reduced, sizeOpts)────▶ LayoutedGraph
+             ──projectGraph(reduced, layout, renderOpts)─▶ React Flow models
+```
+
+- `projectForZoom` (`domain/graph/Private/zoom-projection.ts`, pure): drops modules + nested groups
+  under a collapsed group; **re-routes** edges whose endpoint was hidden onto the outermost collapsed
+  ancestor group box; drops self-loops; dedups (a violation among the merged edges survives). A
+  collapsed group stays as a visible empty container. `topLevelGroupIds` = the L0 default collapse set;
+  `levelFromZoom(factor)` maps the scroll zoom factor to 0/1/2 (`<0.55 / <1.7 / ≥1.7`).
+- **Levels:** L0 collapses all top-level groups; L1 expands everything; L2 keeps L1's node set but each
+  module box renders a **source snippet** (first 12 lines, monospace). The store seeds the default
+  collapse set per level, and `toggleGroup`/`collapse`/`expand` layer per-group overrides on top.
+- **Layout sizing:** `LayoutEngine.layout(graph, {moduleWidth, moduleHeight})` — L2 uses larger boxes
+  so snippets fit; a **childless (collapsed) group** gets a fixed min size (`elk-input.ts`).
+- **L2 source is lazy, not in the contract:** `GraphSessionStore.ensureSources` fetches each visible
+  module's source via `AnalysisClient.readModuleSource(root, path)` (Tauri command
+  `read_module_source`, reusing `FsProjectSource::read_file`) and caches it. The `ProjectGraph` never
+  carries file bodies. The mock client serves fixture source via Vite `?raw` imports.
+- **Scroll drives the level, fit does not fight it:** `GraphCanvas.onMoveEnd` → `levelFromZoom` →
+  `store.setZoomLevel` (guarded against no-ops). `FitView` fits **once per mount** (= once per project
+  load, since `App` renders the canvas only when `ready`) and **never refits on a level change** — a
+  programmatic refit would change the zoom and feed back into another level switch (L0 → fit → L2
+  oscillation). The store re-layouts on every collapse/zoom change, **seq-guarded** so a stale async
+  layout from rapid scrolling never overwrites a newer one. A `LevelBadge` shows the active level.
+- **Metadata rendering:** `rf-projection` threads `annotation.descriptionShort` into node data; group
+  nodes show it as a subtitle when collapsed (plus a ▸/▾ caret). `InspectionPanel` gains a
+  `MetadataSection` (`This module` + `Group` annotation: type / short / long), rendering nothing when
+  neither side is annotated (graceful fallback, TDD §10). `icon-map` covers the fixture's icon names.
+
+Store surface (TDD §5.1): `getZoomLevel`, `getReducedGraph`, `getCollapsedGroupIds`, `getSourceCache`,
+`setZoomLevel`, `expandGroup`/`collapseGroup`/`toggleGroup`; emits `zoom-changed` + `layout-changed`.
+The canvas renders from `getReducedGraph()` + `getLayout()`, not the raw graph.
+
 ## Invariants to preserve
 
 - Projection is **pure** and selection-free (selection overlaid in the canvas) → testable by counts.

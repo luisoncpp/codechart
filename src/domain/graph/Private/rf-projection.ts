@@ -14,10 +14,19 @@ import { colorForGroup } from "./colors";
 
 type BoxIndex = Map<string, LayoutBox>;
 
+/** Per-render overlay state (semantic zoom): which groups are collapsed and the
+ *  lazily-fetched source snippets to show in module boxes at L2. */
+export interface RenderOptions {
+  collapsedGroupIds?: Set<string>;
+  /** moduleId → source; presence (at L2) turns on the in-box snippet. */
+  snippets?: Map<string, string>;
+}
+
 /** Project a `ProjectGraph` + its layout into React Flow nodes/edges (pure). */
 export function projectGraph(
   graph: ProjectGraph,
   layout: LayoutedGraph,
+  options?: RenderOptions,
 ): ProjectedGraph {
   const index: BoxIndex = new Map();
   for (const box of [...layout.groups, ...layout.modules]) {
@@ -26,12 +35,13 @@ export function projectGraph(
   const groupById = new Map(graph.groups.map((g) => [g.id, g]));
   const moduleById = new Map(graph.modules.map((m) => [m.id, m]));
 
+  const ctx: ProjectionCtx = { index, options };
   const groupNodes = layout.groups
     .filter((box) => groupById.has(box.id))
-    .map((box) => groupNode(groupById.get(box.id)!, box, index));
+    .map((box) => groupNode(groupById.get(box.id)!, box, ctx));
   const moduleNodes = layout.modules
     .filter((box) => moduleById.has(box.id))
-    .map((box) => moduleNode(moduleById.get(box.id)!, box, index));
+    .map((box) => moduleNode(moduleById.get(box.id)!, box, ctx));
 
   // A module tints/outlines to match its owning group's color.
   for (const node of moduleNodes) {
@@ -45,6 +55,12 @@ export function projectGraph(
   return { nodes, edges: graph.edges.map((e) => edge(e, moduleById)) };
 }
 
+/** Shared projection state passed to the per-node builders (keeps arity ≤ 3). */
+interface ProjectionCtx {
+  index: BoxIndex;
+  options?: RenderOptions;
+}
+
 function relativePosition(box: LayoutBox, index: BoxIndex) {
   const parent = box.parentId ? index.get(box.parentId) : undefined;
   if (!parent) return { x: box.x, y: box.y };
@@ -54,12 +70,12 @@ function relativePosition(box: LayoutBox, index: BoxIndex) {
 function groupNode(
   group: GroupNode,
   box: LayoutBox,
-  index: BoxIndex,
+  ctx: ProjectionCtx,
 ): GroupRFNode {
   return {
     id: group.id,
     type: "group",
-    position: relativePosition(box, index),
+    position: relativePosition(box, ctx.index),
     width: box.width,
     height: box.height,
     ...(group.parentId ? { parentId: group.parentId } : {}),
@@ -67,6 +83,8 @@ function groupNode(
       label: group.label,
       color: group.color ?? colorForGroup(group.id),
       icon: group.annotation?.icon,
+      descriptionShort: group.annotation?.descriptionShort,
+      collapsed: ctx.options?.collapsedGroupIds?.has(group.id) ?? false,
     },
   };
 }
@@ -74,12 +92,12 @@ function groupNode(
 function moduleNode(
   module: ModuleNode,
   box: LayoutBox,
-  index: BoxIndex,
+  ctx: ProjectionCtx,
 ): ModuleRFNode {
   return {
     id: module.id,
     type: "module",
-    position: relativePosition(box, index),
+    position: relativePosition(box, ctx.index),
     width: box.width,
     height: box.height,
     ...(module.groupId ? { parentId: module.groupId } : {}),
@@ -88,6 +106,8 @@ function moduleNode(
       isFacade: module.isFacade,
       language: module.language,
       icon: module.annotation?.icon,
+      descriptionShort: module.annotation?.descriptionShort,
+      snippet: ctx.options?.snippets?.get(module.id),
     },
   };
 }

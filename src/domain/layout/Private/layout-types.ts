@@ -20,6 +20,12 @@ export interface LayoutedGraph {
   height: number;
 }
 
+/** Optional sizing overrides (e.g. larger module boxes for L2 code snippets). */
+export interface LayoutOptions {
+  moduleWidth?: number;
+  moduleHeight?: number;
+}
+
 export interface LayoutEngine {
-  layout(graph: ProjectGraph): Promise<LayoutedGraph>;
+  layout(graph: ProjectGraph, options?: LayoutOptions): Promise<LayoutedGraph>;
 }

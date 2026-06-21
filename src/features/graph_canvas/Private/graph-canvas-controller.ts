@@ -1,4 +1,5 @@
 import type { Node } from "@xyflow/react";
+import { levelFromZoom } from "../../../domain/graph";
 import type { GraphSessionStore } from "../../../state/graph-session";
 
 /**
@@ -13,7 +14,18 @@ export class GraphCanvasController {
     this.store.select(node.id);
   }
 
+  /** Double-click a group to collapse/expand just it (per-group override). */
+  onNodeDoubleClick(node: Node) {
+    if (node.type !== "group") return;
+    this.store.toggleGroup(node.id);
+  }
+
   onPaneClick() {
     this.store.select(null);
+  }
+
+  /** Scroll-zoom drives the discrete detail level (guarded against no-ops). */
+  onViewportZoom(zoom: number) {
+    this.store.setZoomLevel(levelFromZoom(zoom));
   }
 }
