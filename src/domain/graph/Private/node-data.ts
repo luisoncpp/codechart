@@ -1,5 +1,6 @@
 import type { Node, Edge as RFEdge } from "@xyflow/react";
 import type { Language } from "../Language";
+import type { SymbolKind } from "./symbol-kind";
 
 /** Data carried by a custom group container node. */
 export interface GroupNodeData extends Record<string, unknown> {
@@ -31,6 +32,7 @@ export interface ModuleNodeData extends Record<string, unknown> {
 /** Data carried by an exported-symbol box nested under a module. */
 export interface SymbolNodeData extends Record<string, unknown> {
   label: string;
+  kind: SymbolKind;
   color?: string;
 }
 

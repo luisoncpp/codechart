@@ -24,3 +24,132 @@
 .react-flow__edge {
   pointer-events: none;
 }
+
+/* ── Symbol boxes (L1.5): kind badge + tinted fill inside the group outline ── */
+
+.symbol-box {
+  --symbol-group-color: #64748b;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  font-size: 9px;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo,
+    Consolas, monospace;
+  color: #1e293b;
+  background: #ffffff;
+  border: 1px solid var(--symbol-group-color);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.symbol-box--selected,
+.react-flow__node-symbol.selected .symbol-box {
+  outline: 2px solid #2563eb;
+  outline-offset: -1px;
+}
+
+.symbol-box__badge {
+  flex: 0 0 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  border-right: 1px solid color-mix(in srgb, var(--symbol-group-color) 35%, transparent);
+}
+
+.symbol-box__label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Kind tints — badge is saturated, body is a whisper of the same hue. */
+.symbol-box--function {
+  background: #f8fbff;
+}
+.symbol-box--function .symbol-box__badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.symbol-box--component {
+  background: #faf8ff;
+}
+.symbol-box--component .symbol-box__badge {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.symbol-box--class {
+  background: #fffdf5;
+}
+.symbol-box--class .symbol-box__badge {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.symbol-box--interface {
+  background: #f4fcfd;
+}
+.symbol-box--interface .symbol-box__badge {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+.symbol-box--type {
+  background: #f4fdfb;
+}
+.symbol-box--type .symbol-box__badge {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.symbol-box--hook {
+  background: #fdfaff;
+}
+.symbol-box--hook .symbol-box__badge {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.symbol-box--predicate {
+  background: #f6fef8;
+}
+.symbol-box--predicate .symbol-box__badge {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.symbol-box--constant {
+  background: #fffaf5;
+}
+.symbol-box--constant .symbol-box__badge {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.symbol-box--default {
+  background: #f8fafc;
+  border-style: dashed;
+}
+.symbol-box--default .symbol-box__badge {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* Types get a hairline dashed inner edge — the "erased at compile time" cue. */
+.symbol-box--type,
+.symbol-box--interface {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 8%, transparent);
+}

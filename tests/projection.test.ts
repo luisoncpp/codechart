@@ -117,6 +117,9 @@ describe("render options (Phase 10 metadata + zoom)", () => {
     expect(httpSymbol?.type).toBe("symbol");
     expect(httpSymbol?.parentId).toBe("src/services/http.ts");
     expect(httpSymbol?.data.label).toBe("getJson");
+    expect(httpSymbol?.data.kind).toBe("function");
+    const appSymbol = nodes.find((n) => n.id === "src/ui/App.tsx::App");
+    expect(appSymbol?.data.kind).toBe("component");
     const coreSymbols = symbols.filter((n) => n.parentId === "src/core/index.ts");
     expect(coreSymbols.map((n) => n.data.label).sort()).toEqual([
       "Todo",

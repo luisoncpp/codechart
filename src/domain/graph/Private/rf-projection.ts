@@ -1,5 +1,6 @@
 import type { LayoutBox, LayoutedGraph } from "../../layout";
 import { symbolNameFromId } from "./symbol-id";
+import { inferSymbolKind } from "./symbol-kind";
 import type { ProjectGraph } from "../ProjectGraph";
 import type { GroupNode } from "../GroupNode";
 import type { ModuleNode } from "../ModuleNode";
@@ -137,23 +138,26 @@ function moduleNode(
 function symbolNode(
   box: LayoutBox,
   moduleById: Map<string, ModuleNode>,
-  ctx: ProjectionCtx,
+  _ctx: ProjectionCtx,
 ): SymbolRFNode {
   const moduleId = box.parentId;
-  if (!moduleId || !moduleById.has(moduleId)) {
+  const module = moduleId ? moduleById.get(moduleId) : undefined;
+  if (!moduleId || !module) {
     throw new Error(`symbol ${box.id} has no parent module`);
   }
+  const label = symbolNameFromId(box.id);
   return {
     id: box.id,
     type: "symbol",
-    position: relativePosition(box, ctx.index),
+    position: relativePosition(box, _ctx.index),
     width: box.width,
     height: box.height,
     style: { width: box.width, height: box.height },
     parentId: moduleId,
     extent: "parent",
     data: {
-      label: symbolNameFromId(box.id),
+      label,
+      kind: inferSymbolKind(label, module.language),
     },
   };
 }

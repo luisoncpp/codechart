@@ -12,6 +12,7 @@ export type { Severity } from "./Severity";
 export { projectGraphSummary } from "./Private/graph-projector";
 export { projectGraph, type RenderOptions } from "./Private/rf-projection";
 export { symbolBoxId, symbolNameFromId } from "./Private/symbol-id";
+export { inferSymbolKind, type SymbolKind } from "./Private/symbol-kind";
 export {
   projectForZoom,
   topLevelGroupIds,

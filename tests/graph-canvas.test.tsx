@@ -74,6 +74,8 @@ describe("GraphCanvas", () => {
     );
     const symbol = container.querySelector(`[data-id="src/core/store.ts::TodoStore"]`)!;
     expect(symbol.textContent).toContain("TodoStore");
+    expect(symbol.querySelector(".symbol-box--class")).toBeTruthy();
+    expect(symbol.querySelector(".symbol-box__badge")?.textContent).toBe("C");
   });
 
   it("clicking a collapsed group at L0 selects it in the store", async () => {
