@@ -6,10 +6,12 @@
 //
 // `flag_drift` (Phase 8) is a second pass over the resolved edges: it marks
 // facade-bypass edges `is_violation` + emits `architectureViolation`s.
-// `classify_soft` (Phase 9) is a separate pass over the parsed modules that
-// pairs event emit/listen signals into `soft` (dashed) edges (TDD §2.4).
+// `classify_soft` (Phase 9) pairs event emit/listen signals into `soft` edges.
+// `classify_interface_seams` (Phase 10) pairs interface importers with
+// cross-group implementors into `soft` seam edges (TDD §2.4).
 
 mod drift;
+mod interface_seams;
 mod resolve;
 mod soft;
 
@@ -17,6 +19,7 @@ mod soft;
 mod tests;
 
 pub use drift::{flag_drift, GroupBoundaries};
+pub use interface_seams::classify_interface_seams;
 pub use soft::classify_soft;
 
 use std::collections::BTreeSet;

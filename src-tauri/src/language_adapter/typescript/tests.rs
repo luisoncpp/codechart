@@ -175,3 +175,15 @@ fn parses_file_from_memory_source() {
     assert_eq!(m.path, "src/a.ts");
     assert_eq!(specifiers(&m), vec!["./b"]);
 }
+
+#[test]
+fn implements_clause_names_are_extracted() {
+    let m = parse("a.ts", "class Foo implements IBar, IBaz<T> {}");
+    assert_eq!(m.implements, vec!["IBar", "IBaz"]);
+}
+
+#[test]
+fn class_without_implements_has_empty_implements() {
+    let m = parse("a.ts", "class Foo extends Base {}");
+    assert!(m.implements.is_empty());
+}

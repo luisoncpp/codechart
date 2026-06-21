@@ -19,7 +19,9 @@
       "label": "Core",
       "parentId": "app",
       "color": "#7c3aed",
-      "facadeModuleIds": ["src/core/index.ts"],
+      "facadeModuleIds": [
+        "src/core/index.ts"
+      ],
       "annotation": {
         "descriptionShort": "Domain types & state",
         "descriptionLong": "Domain model and in-memory state for todos. Pure logic with no I/O or UI. Code outside this group must go through the facade (index.ts); store, todo, and validate are private.",
@@ -31,7 +33,9 @@
       "label": "Services",
       "parentId": "app",
       "color": "#0ea5e9",
-      "facadeModuleIds": ["src/services/index.ts"],
+      "facadeModuleIds": [
+        "src/services/index.ts"
+      ],
       "annotation": {
         "descriptionShort": "Data access",
         "descriptionLong": "Data access layer. Wraps network calls behind http.ts so the rest of the app never calls fetch directly. Exposes fetchTitles through the facade (index.ts).",
@@ -55,7 +59,9 @@
       "label": "UI",
       "parentId": "app",
       "color": "#22c55e",
-      "facadeModuleIds": ["src/ui/index.ts"],
+      "facadeModuleIds": [
+        "src/ui/index.ts"
+      ],
       "annotation": {
         "descriptionShort": "React components",
         "descriptionLong": "React components that render todos. Depends on core and services through their facades. The TodoList component intentionally bypasses the core facade to demonstrate drift detection.",
@@ -71,7 +77,9 @@
       "language": "typescript",
       "groupId": "core",
       "isFacade": true,
-      "metrics": { "loc": 3 }
+      "metrics": {
+        "loc": 3
+      }
     },
     {
       "id": "src/core/store.ts",
@@ -80,7 +88,9 @@
       "language": "typescript",
       "groupId": "core",
       "isFacade": false,
-      "metrics": { "loc": 26 }
+      "metrics": {
+        "loc": 26
+      }
     },
     {
       "id": "src/core/todo.ts",
@@ -89,7 +99,9 @@
       "language": "typescript",
       "groupId": "shared",
       "isFacade": false,
-      "metrics": { "loc": 9 }
+      "metrics": {
+        "loc": 9
+      }
     },
     {
       "id": "src/core/validate.ts",
@@ -98,7 +110,9 @@
       "language": "typescript",
       "groupId": "core",
       "isFacade": false,
-      "metrics": { "loc": 5 }
+      "metrics": {
+        "loc": 5
+      }
     },
     {
       "id": "src/main.ts",
@@ -107,7 +121,9 @@
       "language": "typescript",
       "groupId": null,
       "isFacade": false,
-      "metrics": { "loc": 9 }
+      "metrics": {
+        "loc": 9
+      }
     },
     {
       "id": "src/services/api.ts",
@@ -116,7 +132,9 @@
       "language": "typescript",
       "groupId": "services",
       "isFacade": false,
-      "metrics": { "loc": 11 }
+      "metrics": {
+        "loc": 11
+      }
     },
     {
       "id": "src/services/http.ts",
@@ -125,7 +143,9 @@
       "language": "typescript",
       "groupId": "services",
       "isFacade": false,
-      "metrics": { "loc": 6 },
+      "metrics": {
+        "loc": 6
+      },
       "annotation": {
         "type": "Module",
         "group": "services",
@@ -141,7 +161,9 @@
       "language": "typescript",
       "groupId": "services",
       "isFacade": true,
-      "metrics": { "loc": 2 }
+      "metrics": {
+        "loc": 2
+      }
     },
     {
       "id": "src/services/types.ts",
@@ -150,7 +172,9 @@
       "language": "typescript",
       "groupId": "shared",
       "isFacade": false,
-      "metrics": { "loc": 5 }
+      "metrics": {
+        "loc": 13
+      }
     },
     {
       "id": "src/ui/App.tsx",
@@ -159,7 +183,9 @@
       "language": "tsx",
       "groupId": "ui",
       "isFacade": false,
-      "metrics": { "loc": 14 }
+      "metrics": {
+        "loc": 14
+      }
     },
     {
       "id": "src/ui/TodoItem.tsx",
@@ -168,7 +194,9 @@
       "language": "tsx",
       "groupId": "ui",
       "isFacade": false,
-      "metrics": { "loc": 5 }
+      "metrics": {
+        "loc": 5
+      }
     },
     {
       "id": "src/ui/TodoList.tsx",
@@ -177,7 +205,9 @@
       "language": "tsx",
       "groupId": "ui",
       "isFacade": false,
-      "metrics": { "loc": 14 }
+      "metrics": {
+        "loc": 14
+      }
     },
     {
       "id": "src/ui/index.ts",
@@ -186,7 +216,9 @@
       "language": "typescript",
       "groupId": "ui",
       "isFacade": true,
-      "metrics": { "loc": 3 }
+      "metrics": {
+        "loc": 3
+      }
     }
   ],
   "edges": [
@@ -356,6 +388,14 @@
       "target": "src/ui/App.tsx",
       "kind": "soft",
       "trigger": "event:todos:changed",
+      "isViolation": false
+    },
+    {
+      "id": "src/ui/App.tsx->src/core/store.ts:seam:0",
+      "source": "src/ui/App.tsx",
+      "target": "src/core/store.ts",
+      "kind": "soft",
+      "trigger": "interface:ITodoStore",
       "isViolation": false
     }
   ],

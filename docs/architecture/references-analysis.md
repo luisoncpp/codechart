@@ -1,6 +1,6 @@
 # References & Analysis (the backend pipeline)
 
-**Status: implemented (Phase 4; drift detection Phase 8; soft edges Phase 9).**
+**Status: implemented (Phase 4; drift detection Phase 8; soft edges Phase 9; interface seams Phase 10).**
 Source: `src-tauri/src/references/`, `src-tauri/src/diagnostics/`,
 `src-tauri/src/analysis/`.
 
@@ -47,6 +47,33 @@ arg, or a same-module self-pair produces nothing. TDD §2.4. React-context
 provider/consumer detection is deferred (context objects already surface as
 import edges). Edges sorted by `(source, target, token)`; ordinal disambiguates
 multiple tokens between the same pair.
+
+## `references::classify_interface_seams` — cross-group interface seams (Phase 10)
+
+`classify_interface_seams(parsed, &GroupBoundaries, &import_pairs) -> Vec<Edge>`
+(`interface_seams.rs`). A third post-pass, peer of `classify_soft` and
+`flag_drift`, wired in `analysis::resolve_edges`.
+
+The adapter records `implements: Vec<String>` on each `ParsedModule` — the
+interface names appearing in `class Foo implements IBar, IBaz<T>` (extracted by
+`language_adapter/typescript/implements.rs` via tree-sitter `implements_clause`
+nodes). The classifier cross-references two indexes:
+
+- **implementors**: interface name → set of modules with a matching `implements` entry.
+- **importers**: interface name → set of modules that import a symbol by that name.
+
+For each interface name, every `(importer A, implementor B)` pair where
+**A ≠ B**, **different groups**, and **no existing direct import A→B** produces
+one `soft` edge `A → B`, `trigger = "interface:<name>"`,
+`id = ${source}->${target}:seam:${ordinal}`. The `:seam:` segment avoids
+ordinal collisions with event-based `:soft:` edges between the same pair.
+
+**Same-group suppression:** if A and B share the same group, a solid import
+edge already models the relationship — no seam edge is emitted (TDD §2.4).
+
+**Direct-import suppression:** `import_pairs` is the set of `(source, target)`
+already resolved as solid import edges; a seam between an already-solid pair is
+redundant and is skipped.
 
 ## `references::flag_drift` — facade-bypass drift (Phase 8)
 

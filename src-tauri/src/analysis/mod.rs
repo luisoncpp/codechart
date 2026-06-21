@@ -20,7 +20,9 @@ use crate::grouping::{resolve_groups, ResolvedGroups};
 use crate::language_adapter::{registry_for_path, ParsedModule};
 use crate::project_config::{discover_group_defs, is_group_file};
 use crate::project_source::ProjectSource;
-use crate::references::{classify_soft, flag_drift, resolve_references, GroupBoundaries};
+use crate::references::{
+    classify_interface_seams, classify_soft, flag_drift, resolve_references, GroupBoundaries,
+};
 
 use nodes::{build_modules, language_for, ParsedFile};
 
@@ -58,18 +60,31 @@ pub fn analyze_project(
 }
 
 /// Resolve import edges, flag facade-bypass drift (Phase 8), then append
-/// event-driven `soft` edges (Phase 9). Imports stay sorted first; soft edges
-/// follow. Returns the edges + their diagnostics.
+/// event-driven `soft` edges (Phase 9) and interface-seam `soft` edges (Phase
+/// 10). Imports stay sorted first; soft edges follow.
 fn resolve_edges(
     parsed: &[ParsedModule],
     groups: &ResolvedGroups,
 ) -> (Vec<Edge>, Vec<Diagnostic>) {
     let mut refs = resolve_references(parsed);
-    let violations = flag_drift(&mut refs.edges, &group_boundaries(groups));
+    let bounds = group_boundaries(groups);
+    let violations = flag_drift(&mut refs.edges, &bounds);
+    let import_pairs = collect_import_pairs(&refs.edges);
     refs.edges.extend(classify_soft(parsed));
+    refs.edges.extend(classify_interface_seams(parsed, &bounds, &import_pairs));
     let mut diagnostics = refs.diagnostics;
     diagnostics.extend(violations);
     (refs.edges, diagnostics)
+}
+
+/// Collect `(source, target)` pairs from all solid import edges.
+fn collect_import_pairs(edges: &[Edge]) -> std::collections::BTreeSet<(String, String)> {
+    use crate::contract::EdgeKind;
+    edges
+        .iter()
+        .filter(|e| e.kind == EdgeKind::Import)
+        .map(|e| (e.source.clone(), e.target.clone()))
+        .collect()
 }
 
 /// Derive the boundary facts drift needs from the resolved group tree.

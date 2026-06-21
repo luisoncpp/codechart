@@ -30,6 +30,8 @@ leaks past this boundary.
 | `reexports` | `export ... from "m"` (also dependency edges) |
 | `exported_symbols` | locally-declared + re-exported names |
 | `comments` | raw `CommentBlock`s (text + byte range) in source order |
+| `signals` | event emit/listen `CommSignal`s in source order (Phase 9) |
+| `implements` | interface names from `implements` clauses (`class Foo implements IBar`) (Phase 10) |
 | `loc` | line count |
 
 `ParsedImport` carries `specifier`, `kind` (`Default`/`Named`/`Namespace`/`SideEffect`),

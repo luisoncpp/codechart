@@ -3,7 +3,7 @@ import { Todo, makeTodo } from "./todo";
 // `emit`/`on` are an ambient global event bus (declared in a global .d.ts):
 // the store broadcasts changes the UI listens for — a soft (runtime) edge that
 // no import expresses.
-export class TodoStore {
+export class TodoStore implements ITodoStore {
   private todos: Todo[] = [];
 
   add(title: string): Todo {

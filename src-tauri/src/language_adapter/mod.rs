@@ -76,6 +76,9 @@ pub struct ParsedModule {
     pub comments: Vec<CommentBlock>,
     /// Event emit/listen signals, in source order (Phase 9 soft edges).
     pub signals: Vec<CommSignal>,
+    /// Interface names this module's classes implement (`implements IFoo`).
+    /// Used by the interface-seam classifier (Phase 10 soft edges).
+    pub implements: Vec<String>,
     /// Lines of code (newline count + 1 for non-empty files).
     pub loc: u32,
 }

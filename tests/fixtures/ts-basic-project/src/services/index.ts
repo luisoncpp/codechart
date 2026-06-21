@@ -1,2 +1,2 @@
 export { fetchTitles } from "./api";
-export type { ApiResult } from "./types";
+export type { ApiResult, ITodoStore } from "./types";

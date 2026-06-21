@@ -1,6 +1,6 @@
 use super::*;
 use crate::contract::EdgeKind;
-use crate::language_adapter::{CommSignal, ImportKind, SignalRole};
+use crate::language_adapter::{CommSignal, ImportKind, ParsedImport, SignalRole};
 
 /// Build a `ParsedModule` at `path` importing each given specifier.
 fn module(path: &str, specifiers: &[&str]) -> ParsedModule {
@@ -254,4 +254,114 @@ fn two_tokens_between_the_same_pair_get_incrementing_ordinals() {
     ];
     let ids: Vec<String> = classify_soft(&parsed).into_iter().map(|e| e.id).collect();
     assert_eq!(ids, ["a.ts->b.ts:soft:0", "a.ts->b.ts:soft:1"]);
+}
+
+// ---- interface seams (Phase 10) ------------------------------------------
+
+/// A `ParsedModule` that imports the given named symbols from `specifier`.
+fn with_imports(path: &str, specifier: &str, names: &[&str]) -> ParsedModule {
+    let imports = vec![ParsedImport {
+        specifier: specifier.to_string(),
+        kind: ImportKind::Named,
+        names: names.iter().map(|n| (*n).to_string()).collect(),
+        is_type_only: true,
+        is_reexport: false,
+    }];
+    ParsedModule { path: path.to_string(), imports, ..Default::default() }
+}
+
+/// A `ParsedModule` that implements the given interface names.
+fn with_implements(path: &str, ifaces: &[&str]) -> ParsedModule {
+    let implements = ifaces.iter().map(|n| (*n).to_string()).collect();
+    ParsedModule { path: path.to_string(), implements, ..Default::default() }
+}
+
+#[test]
+fn cross_group_interface_pair_produces_seam_edge() {
+    let parsed = vec![
+        with_imports("ui/app.ts", "./contracts", &["IStorage"]),
+        with_implements("core/store.ts", &["IStorage"]),
+    ];
+    let bounds = boundaries(
+        &[("ui/app.ts", "ui"), ("core/store.ts", "core")],
+        &[],
+        &[],
+    );
+    let edges = classify_interface_seams(&parsed, &bounds, &BTreeSet::new());
+    assert_eq!(edges.len(), 1);
+    assert_eq!(edges[0].source, "ui/app.ts");
+    assert_eq!(edges[0].target, "core/store.ts");
+    assert_eq!(edges[0].kind, EdgeKind::Soft);
+    assert_eq!(edges[0].trigger, "interface:IStorage");
+    assert_eq!(edges[0].id, "ui/app.ts->core/store.ts:seam:0");
+    assert!(!edges[0].is_violation);
+}
+
+#[test]
+fn same_group_interface_pair_is_suppressed() {
+    let parsed = vec![
+        with_imports("core/a.ts", "./contracts", &["IStorage"]),
+        with_implements("core/store.ts", &["IStorage"]),
+    ];
+    let bounds = boundaries(
+        &[("core/a.ts", "core"), ("core/store.ts", "core")],
+        &[],
+        &[],
+    );
+    let edges = classify_interface_seams(&parsed, &bounds, &BTreeSet::new());
+    assert!(edges.is_empty(), "same-group seam must not produce a dashed edge");
+}
+
+#[test]
+fn seam_suppressed_when_direct_import_already_exists() {
+    let parsed = vec![
+        with_imports("ui/app.ts", "./contracts", &["IStorage"]),
+        with_implements("core/store.ts", &["IStorage"]),
+    ];
+    let bounds = boundaries(
+        &[("ui/app.ts", "ui"), ("core/store.ts", "core")],
+        &[],
+        &[],
+    );
+    let already: BTreeSet<(String, String)> =
+        [("ui/app.ts".to_string(), "core/store.ts".to_string())].into();
+    let edges = classify_interface_seams(&parsed, &bounds, &already);
+    assert!(edges.is_empty(), "solid import edge makes seam redundant");
+}
+
+#[test]
+fn unmatched_interface_name_produces_no_seam() {
+    let parsed = vec![
+        with_imports("ui/app.ts", "./contracts", &["IFoo"]),
+        with_implements("core/store.ts", &["IBar"]),
+    ];
+    let bounds = boundaries(
+        &[("ui/app.ts", "ui"), ("core/store.ts", "core")],
+        &[],
+        &[],
+    );
+    let edges = classify_interface_seams(&parsed, &bounds, &BTreeSet::new());
+    assert!(edges.is_empty(), "different interface names must not match");
+}
+
+#[test]
+fn two_interfaces_between_same_pair_get_incrementing_ordinals() {
+    let parsed = vec![
+        with_imports("ui/app.ts", "./contracts", &["IFoo", "IBar"]),
+        with_implements("core/store.ts", &["IFoo", "IBar"]),
+    ];
+    let bounds = boundaries(
+        &[("ui/app.ts", "ui"), ("core/store.ts", "core")],
+        &[],
+        &[],
+    );
+    let ids: Vec<String> =
+        classify_interface_seams(&parsed, &bounds, &BTreeSet::new())
+            .into_iter()
+            .map(|e| e.id)
+            .collect();
+    assert_eq!(ids, [
+        "ui/app.ts->core/store.ts:seam:0",
+        "ui/app.ts->core/store.ts:seam:1",
+    ]);
 }

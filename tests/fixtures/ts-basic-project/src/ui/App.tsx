@@ -1,4 +1,4 @@
-import { fetchTitles } from "../services";
+import { fetchTitles, type ITodoStore } from "../services";
 import { TodoList } from "./TodoList";
 import { TodoStore } from "../core";
 
