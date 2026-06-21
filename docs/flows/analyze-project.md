@@ -14,6 +14,7 @@ End-to-end backend sequence that turns a folder of source into a `ProjectGraph`.
 | 3 | Parse each adapter-supported, non-config file (partial results) | `parse_file` → `LanguageAdapter::parse` | `analysis/mod.rs`, `language_adapter/typescript/` |
 | 4 | Assign modules → nested groups + facades | `resolve_groups` | `grouping/mod.rs` |
 | 5 | Resolve relative imports → edges + unresolved diagnostics | `resolve_references` | `references/mod.rs`, `references/resolve.rs` |
+| 5b | Flag facade-bypass drift → `isViolation` + `architectureViolation` (Phase 8) | `flag_drift` (via `resolve_edges` + `group_boundaries`) | `analysis/mod.rs`, `references/drift.rs` |
 | 6 | Build `ModuleNode`s (id/label/lang/group/facade/loc/annotation) | `build_modules` | `analysis/nodes.rs` |
 | 7 | Merge + sort diagnostics | `merge` | `diagnostics/mod.rs` |
 | 8 | Validate invariants + emit graph | `ProjectGraphBuilder::build` | `contract/builder.rs`, `contract/validate.rs` |

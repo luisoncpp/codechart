@@ -10,15 +10,17 @@ mod nodes;
 #[cfg(test)]
 mod tests;
 
+use std::collections::{BTreeMap, BTreeSet};
+
 use crate::contract::{
     BuildError, Diagnostic, Edge, GroupNode, ModuleNode, ProjectGraph, ProjectGraphBuilder,
 };
 use crate::diagnostics::{merge, parse_error};
-use crate::grouping::resolve_groups;
+use crate::grouping::{resolve_groups, ResolvedGroups};
 use crate::language_adapter::{registry_for_path, ParsedModule};
 use crate::project_config::{discover_group_defs, is_group_file};
 use crate::project_source::ProjectSource;
-use crate::references::resolve_references;
+use crate::references::{flag_drift, resolve_references, GroupBoundaries};
 
 use nodes::{build_modules, language_for, ParsedFile};
 
@@ -44,20 +46,48 @@ pub fn analyze_project(
     let module_paths: Vec<String> = parsed.iter().map(|f| f.module.path.clone()).collect();
     let groups = resolve_groups(&module_paths, &defs);
     let parsed_modules: Vec<ParsedModule> = parsed.iter().map(|f| f.module.clone()).collect();
-    let refs = resolve_references(&parsed_modules);
+    let (edges, ref_diags) = resolve_edges(&parsed_modules, &groups);
 
     let parts = GraphParts {
         modules: build_modules(&parsed, &groups),
-        diagnostics: merge(vec![
-            config_diags,
-            groups.diagnostics,
-            refs.diagnostics,
-            parse_diags,
-        ]),
+        diagnostics: merge(vec![config_diags, groups.diagnostics, ref_diags, parse_diags]),
         groups: groups.groups,
-        edges: refs.edges,
+        edges,
     };
     assemble(root, parts)
+}
+
+/// Resolve import edges, then flag facade-bypass drift against the group tree
+/// (Phase 8). Returns the (drift-annotated) edges + their diagnostics.
+fn resolve_edges(
+    parsed: &[ParsedModule],
+    groups: &ResolvedGroups,
+) -> (Vec<Edge>, Vec<Diagnostic>) {
+    let mut refs = resolve_references(parsed);
+    let violations = flag_drift(&mut refs.edges, &group_boundaries(groups));
+    let mut diagnostics = refs.diagnostics;
+    diagnostics.extend(violations);
+    (refs.edges, diagnostics)
+}
+
+/// Derive the boundary facts drift needs from the resolved group tree.
+fn group_boundaries(groups: &ResolvedGroups) -> GroupBoundaries {
+    let mut parent_of = BTreeMap::new();
+    let mut faceted_groups = BTreeSet::new();
+    for group in &groups.groups {
+        if let Some(parent) = &group.parent_id {
+            parent_of.insert(group.id.clone(), parent.clone());
+        }
+        if !group.facade_module_ids.is_empty() {
+            faceted_groups.insert(group.id.clone());
+        }
+    }
+    GroupBoundaries {
+        module_group: groups.module_group.clone(),
+        parent_of,
+        faceted_groups,
+        facades: groups.facades.clone(),
+    }
 }
 
 /// Parse every adapter-supported, non-config file. Read/parse failures become

@@ -93,3 +93,100 @@ fn duplicate_edge_gets_incrementing_ordinal() {
     let ids: Vec<String> = resolve_references(&parsed).edges.into_iter().map(|e| e.id).collect();
     assert_eq!(ids, ["src/a.ts->src/b.ts:import:0", "src/a.ts->src/b.ts:import:1"]);
 }
+
+// ---- drift detection (Phase 8) -------------------------------------------
+
+use std::collections::{BTreeMap, BTreeSet};
+
+/// A solid import edge between two module ids (ordinal 0).
+fn edge(source: &str, target: &str) -> Edge {
+    import_edge(source, target, 0)
+}
+
+/// Build `GroupBoundaries` from `(module, group)` pairs, a facade list, and the
+/// `(child, parent)` group nesting.
+fn boundaries(
+    members: &[(&str, &str)],
+    facades: &[&str],
+    nesting: &[(&str, &str)],
+) -> GroupBoundaries {
+    let module_group: BTreeMap<String, String> =
+        members.iter().map(|(m, g)| ((*m).into(), (*g).into())).collect();
+    let facades: BTreeSet<String> = facades.iter().map(|f| (*f).into()).collect();
+    let faceted_groups: BTreeSet<String> = facades
+        .iter()
+        .filter_map(|f| module_group.get(f).cloned())
+        .collect();
+    let parent_of = nesting.iter().map(|(c, p)| ((*c).into(), (*p).into())).collect();
+    GroupBoundaries { module_group, parent_of, faceted_groups, facades }
+}
+
+#[test]
+fn import_through_the_facade_is_not_a_violation() {
+    let bounds = boundaries(
+        &[("ui/a.ts", "ui"), ("core/index.ts", "core"), ("core/store.ts", "core")],
+        &["core/index.ts"],
+        &[],
+    );
+    let mut edges = vec![edge("ui/a.ts", "core/index.ts")];
+    let diags = flag_drift(&mut edges, &bounds);
+    assert!(!edges[0].is_violation);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn import_into_a_private_module_from_outside_is_a_violation() {
+    let bounds = boundaries(
+        &[("ui/a.ts", "ui"), ("core/index.ts", "core"), ("core/store.ts", "core")],
+        &["core/index.ts"],
+        &[],
+    );
+    let mut edges = vec![edge("ui/a.ts", "core/store.ts")];
+    let diags = flag_drift(&mut edges, &bounds);
+    assert!(edges[0].is_violation);
+    assert_eq!(diags.len(), 1);
+    assert_eq!(diags[0].kind, DiagnosticKind::ArchitectureViolation);
+    assert_eq!(diags[0].module_id.as_deref(), Some("ui/a.ts"));
+    assert_eq!(diags[0].edge_id.as_deref(), Some(edges[0].id.as_str()));
+}
+
+#[test]
+fn intra_group_import_into_a_private_module_is_allowed() {
+    let bounds = boundaries(
+        &[("core/index.ts", "core"), ("core/store.ts", "core")],
+        &["core/index.ts"],
+        &[],
+    );
+    let mut edges = vec![edge("core/index.ts", "core/store.ts")];
+    let diags = flag_drift(&mut edges, &bounds);
+    assert!(!edges[0].is_violation);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn import_into_a_facade_less_public_group_is_never_flagged() {
+    let bounds = boundaries(
+        &[("ui/a.ts", "ui"), ("shared/types.ts", "shared")],
+        &[], // shared declares no facade → public
+        &[],
+    );
+    let mut edges = vec![edge("ui/a.ts", "shared/types.ts")];
+    let diags = flag_drift(&mut edges, &bounds);
+    assert!(!edges[0].is_violation);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn import_from_a_nested_subgroup_into_its_ancestor_private_is_allowed() {
+    // sub is a child of core; a module in sub reaching core's private member is
+    // still inside core's subtree, so it is not a bypass.
+    let bounds = boundaries(
+        &[("core/sub/x.ts", "sub"), ("core/store.ts", "core"), ("core/index.ts", "core")],
+        &["core/index.ts"],
+        &[("sub", "core")],
+    );
+    let mut edges = vec![edge("core/sub/x.ts", "core/store.ts")];
+    let diags = flag_drift(&mut edges, &bounds);
+    assert!(!edges[0].is_violation, "descendant import stays inside the boundary");
+    assert!(diags.is_empty());
+}

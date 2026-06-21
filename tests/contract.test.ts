@@ -19,16 +19,19 @@ describe("ProjectGraph contract", () => {
     expect(graph.groups).toHaveLength(5);
     expect(graph.modules).toHaveLength(13);
     expect(graph.edges).toHaveLength(20);
-    expect(graph.diagnostics).toHaveLength(1);
-    expect(graph.diagnostics[0].kind).toBe("unresolvedImport");
+    expect(graph.diagnostics).toHaveLength(2);
+    const kinds = graph.diagnostics.map((d) => d.kind);
+    expect(kinds).toContain("unresolvedImport");
+    expect(kinds).toContain("architectureViolation");
 
     const facades = graph.modules.filter((m) => m.isFacade);
     expect(facades).toHaveLength(3);
 
+    // Planted facade bypass is present and flagged as a violation (Phase 8).
     const bypass = graph.edges.find(
       (e) => e.source === "src/ui/TodoList.tsx" && e.target === "src/core/store.ts",
     );
-    expect(bypass).toBeDefined();
+    expect(bypass?.isViolation).toBe(true);
 
     const annotated = graph.modules.find((m) => m.id === "src/services/http.ts");
     expect(annotated?.annotation).toBeDefined();

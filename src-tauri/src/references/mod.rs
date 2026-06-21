@@ -4,13 +4,17 @@
 // edges or `unresolvedImport` diagnostics. Package (non-relative) imports are
 // external metadata — neither edge nor diagnostic.
 //
-// Dashed/soft edges and `isViolation` (drift) are reserved for Phases 8–9; every
-// edge here is a solid `import` with `is_violation = false`.
+// `flag_drift` (Phase 8) is a second pass over the resolved edges: it marks
+// facade-bypass edges `is_violation` + emits `architectureViolation`s. Soft
+// (dashed) edges remain reserved for Phase 9.
 
+mod drift;
 mod resolve;
 
 #[cfg(test)]
 mod tests;
+
+pub use drift::{flag_drift, GroupBoundaries};
 
 use std::collections::BTreeSet;
 

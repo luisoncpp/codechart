@@ -28,6 +28,25 @@ fn analyze_matches_the_golden_fixture() {
     assert_eq!(graph, golden());
 }
 
+/// Phase 8: the planted facade bypass (`ui/TodoList → core/store`) is the *only*
+/// flagged edge, and it carries an `architectureViolation` diagnostic.
+#[test]
+fn flags_the_planted_facade_bypass_with_no_false_positives() {
+    let source = FsProjectSource::new(FIXTURE_DIR);
+    let graph = analyze_project(&source, GOLDEN_ROOT).expect("builds");
+    let violations: Vec<_> = graph.edges.iter().filter(|e| e.is_violation).collect();
+    assert_eq!(violations.len(), 1, "exactly one violation — no false positives");
+    assert_eq!(violations[0].source, "src/ui/TodoList.tsx");
+    assert_eq!(violations[0].target, "src/core/store.ts");
+    let diag = graph
+        .diagnostics
+        .iter()
+        .find(|d| d.kind == DiagnosticKind::ArchitectureViolation)
+        .expect("a violation diagnostic");
+    assert_eq!(diag.module_id.as_deref(), Some("src/ui/TodoList.tsx"));
+    assert_eq!(diag.edge_id.as_deref(), Some(violations[0].id.as_str()));
+}
+
 #[test]
 fn unresolved_import_produces_a_warning_diagnostic_and_no_edge() {
     let source = memory(&[("src/a.ts", "import { x } from \"./gone\";")]);

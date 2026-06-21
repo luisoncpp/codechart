@@ -316,7 +316,7 @@
       "target": "src/core/store.ts",
       "kind": "import",
       "trigger": "import",
-      "isViolation": false
+      "isViolation": true
     },
     {
       "id": "src/ui/TodoList.tsx->src/ui/TodoItem.tsx:import:0",
@@ -352,6 +352,14 @@
     }
   ],
   "diagnostics": [
+    {
+      "id": "architectureViolation:src/ui/TodoList.tsx->src/core/store.ts:import:0",
+      "severity": "warning",
+      "kind": "architectureViolation",
+      "message": "src/ui/TodoList.tsx imports src/core/store.ts, bypassing the core facade",
+      "moduleId": "src/ui/TodoList.tsx",
+      "edgeId": "src/ui/TodoList.tsx->src/core/store.ts:import:0"
+    },
     {
       "id": "unresolved:src/services/api.ts:./cache",
       "severity": "warning",

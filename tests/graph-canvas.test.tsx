@@ -62,7 +62,7 @@ describe("edgeRole (selection-aware coloring)", () => {
     data: { isViolation: false, kind: "import" },
   };
 
-  it("marks edges leaving the selected module as imports (red)", () => {
+  it("marks edges leaving the selected module as imports (orange)", () => {
     expect(edgeRole(rfEdge, src)).toBe("import");
   });
 
@@ -130,5 +130,30 @@ describe("InspectionPanel", () => {
     const store = await readyStore();
     render(<InspectionPanel store={store} />);
     expect(screen.getByText(/Select a module/)).toBeInTheDocument();
+  });
+
+  it("explains the facade bypass on the violating module (Phase 8)", async () => {
+    const store = await readyStore();
+    const violation = graph.edges.find((e) => e.isViolation)!;
+    store.select(violation.source); // src/ui/TodoList.tsx
+    render(<InspectionPanel store={store} />);
+
+    const message = screen.getByText(/bypassing the core facade/);
+    expect(message).toBeInTheDocument();
+    expect(message).toHaveStyle({ color: "#dc2626" }); // red, matches the edge
+  });
+});
+
+describe("violation edge styling (Phase 8)", () => {
+  it("renders the bypass edge red when nothing is selected", () => {
+    const violation = graph.edges.find((e) => e.isViolation)!;
+    const rfEdge = {
+      id: violation.id,
+      source: violation.source,
+      target: violation.target,
+      data: { isViolation: true, kind: "import" },
+    };
+    expect(edgeRole(rfEdge, null)).toBe("violation");
+    expect(styleEdge(rfEdge, null).style?.stroke).toBe("#dc2626");
   });
 });

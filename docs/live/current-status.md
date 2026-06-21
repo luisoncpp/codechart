@@ -2,6 +2,15 @@
 
 ## Implemented
 
+**Phase 8 — Architecture drift detection** is complete — facade bypasses are flagged.
+
+- `references::flag_drift(&mut edges, &GroupBoundaries)` (`references/drift.rs`): a second pass over resolved edges, kept out of `resolve_references` so pure import resolution stays group-agnostic. Sets `is_violation` + emits one `architectureViolation` diagnostic when `S → T` crosses into a **private** group (target group has ≥1 facade), `T` is **not** that facade, and `S` lives **outside** the group's subtree (descendants stay inside). **Facade-less groups are public** → never flagged (no false positives for cross-cutting/shared). Diagnostic keyed `architectureViolation:<edge-id>`, links the importer module + edge, severity `warning`.
+- `analysis::analyze_project` now calls `resolve_edges` (resolve → flag_drift) and derives `GroupBoundaries` from the `ResolvedGroups` via `group_boundaries`; `references` owns the input type so it stays decoupled from `grouping`.
+- Frontend already rendered `isViolation` edges red (Phase 6 stub now live); `InspectionPanel` colors `architectureViolation` diagnostics **red** (vs amber) so the explanation matches the bypass edge. Selecting the violating module (`src/ui/TodoList.tsx`) shows the reason.
+- Golden fixture updated: `ui/TodoList → core/store` edge is `isViolation: true` + a second diagnostic (the `architectureViolation`). Counts now 2 diagnostics; contract tests (Rust + TS), smoke test, golden diff all updated.
+- Tests: 5 `references` drift units (through-facade OK / private-from-outside flagged / intra-group OK / facade-less public OK / nested-subtree descendant OK) + 1 analysis `flags_the_planted_facade_bypass_with_no_false_positives` (exactly one violation) → 88 Rust. Frontend: panel red-violation test + `styleEdge` red-stroke test → 48 vitest. lint + typecheck clean.
+- Checkpoint: `analyze` golden diff reproduces the flagged edge + diagnostic; the planted bypass renders red and is explained in the panel. Architecture: [references-analysis.md](../architecture/references-analysis.md) (drift section) + [graph-canvas.md](../architecture/graph-canvas.md) (panel red). Flow [analyze-project.md](../flows/analyze-project.md) gains step 5b.
+
 **Phase 7 — Wire end-to-end on a real project** is complete — **MVP Milestone 1 functionally done.**
 
 - Rust IPC: `tauri_api::analyze_project(path) -> Result<ProjectGraph, String>` builds an `FsProjectSource` over the chosen folder and runs the Phase 4 pipeline; the path is used as both the fs root and the graph `root`. `BuildError` now implements `Display`/`Error` so failures cross IPC as readable strings. Registered in `lib.rs` (replaces the `get_sample_graph` stub); `tauri-plugin-dialog` added (+ `dialog:default` capability) for the native folder picker.
@@ -84,9 +93,8 @@
 
 ## Next
 
-**MVP Milestone 1 is functionally complete** (Phases 0–7). Remaining are the additive fast-follows on the same contract — no rework:
+**MVP Milestone 1 is functionally complete** (Phases 0–7); Phase 8 (drift detection) shipped. Remaining additive fast-follows on the same contract — no rework:
 
-- **Phase 8 — Architecture drift detection**: private-group/facade rules → `isViolation` edges (red) + `architectureViolation` diagnostics; the fixture already plants one (`ui/TodoList → core/store`).
 - **Phase 9 — Dashed/soft edges**: event/context/pub-sub classifier → `soft` edges.
 - **Phase 10 — Semantic zoom (L0/L1/L2) + `@Architecture` metadata rendering.**
 

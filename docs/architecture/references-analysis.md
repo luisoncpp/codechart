@@ -1,7 +1,8 @@
 # References & Analysis (the backend pipeline)
 
-**Status: implemented (Phase 4).** Source: `src-tauri/src/references/`,
-`src-tauri/src/diagnostics/`, `src-tauri/src/analysis/`.
+**Status: implemented (Phase 4; drift detection Phase 8).** Source:
+`src-tauri/src/references/`, `src-tauri/src/diagnostics/`,
+`src-tauri/src/analysis/`.
 
 ## Responsibility
 
@@ -24,9 +25,33 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
 
 **Edge id** = `${source}->${target}:import:${ordinal}`. Edges are sorted by
 `(source, target)`; `ordinal` disambiguates repeated same-pair imports (0-based).
-`kind = import`, `trigger = "import"`, `is_violation = false` for every edge —
-dashed/soft (Phase 9) and drift (Phase 8) are reserved on the contract, not yet
-emitted here.
+`kind = import`, `trigger = "import"`. `is_violation` starts `false` and is set
+by the drift pass below. Dashed/soft edges (Phase 9) are still reserved on the
+contract, not yet emitted.
+
+## `references::flag_drift` — facade-bypass drift (Phase 8)
+
+`flag_drift(&mut edges, &GroupBoundaries) -> Vec<Diagnostic>` (`drift.rs`). A
+second pass over the resolved edges, kept separate from `resolve_references` so
+pure import-resolution stays group-agnostic. An edge `S → T` is a **violation**
+(sets `is_violation`, emits one `architectureViolation`) when **all** hold:
+
+- `T`'s group has ≥1 facade (faceted = *private*). A **facade-less group is
+  public** — imports into it are never flagged (no false positives for
+  cross-cutting/shared groups, TDD §7/§10).
+- `T` is **not** a facade of that group (importing the facade is the sanctioned
+  path).
+- `S` lives **outside** the group's subtree — `S`'s group is neither the target
+  group nor a descendant of it (a module nested *deeper* than the facade's group
+  is still "inside" the boundary).
+
+The diagnostic (`Severity::Warning`, `kind: ArchitectureViolation`) is keyed
+`architectureViolation:<edge-id>`, links `module_id = S` (the importer at fault)
+and `edge_id`, and reads `"<S> imports <T>, bypassing the <group> facade"`.
+
+`GroupBoundaries` (module→group, group→parent, faceted groups, facade ids) is
+derived by `analysis::group_boundaries` from the `ResolvedGroups` — `references`
+owns the input type so it stays decoupled from `grouping`.
 
 ## `diagnostics` — normalization
 
@@ -43,7 +68,8 @@ sort by id, dedup by id — for deterministic final output.
    a read/parse failure becomes a `parseError` diagnostic and the file is dropped;
    the rest of the graph still builds.
 3. `resolve_groups(parsed_paths, defs)` — group tree, membership, facades.
-4. `resolve_references(parsed_modules)` — edges + unresolved diagnostics.
+4. `resolve_edges(parsed_modules, &groups)` — `resolve_references` for edges +
+   unresolved diagnostics, then `flag_drift` for facade-bypass violations.
 5. Build `ModuleNode`s (`nodes.rs`): id = path, label = basename, language from
    extension (`tsx` → `Tsx`, else `TypeScript`), `group_id`/`is_facade` from the
    resolved groups, `loc` from the parse, annotation = first `@Architecture` block.

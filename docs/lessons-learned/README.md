@@ -28,3 +28,4 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 | [tree-sitter-error-tolerant-no-parse-error.md](./tree-sitter-error-tolerant-no-parse-error.md) | Malformed source never yields a `ParseError`; test the `parseError` path via a read failure | 2026-06-20 |
 | [react-flow-jsdom-testing.md](./react-flow-jsdom-testing.md) | React Flow under jsdom: required polyfills, edges don't render, use `fireEvent` not `userEvent` | 2026-06-20 |
 | [analyze-command-root-equals-path.md](./analyze-command-root-equals-path.md) | The Tauri command's `path` arg is both fs root and graph `root`; ids stay repo-relative — patch `root` to diff against golden | 2026-06-20 |
+| [edge-classifiers-are-post-passes-not-in-resolve.md](./edge-classifiers-are-post-passes-not-in-resolve.md) | Drift (P8) / soft edges (P9) are separate passes over resolved edges; `resolve_references` stays pure + group-agnostic | 2026-06-20 |

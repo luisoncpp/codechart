@@ -51,15 +51,17 @@ change, update the golden group annotations to match.
 | Facade bypass | `ui/TodoList.tsx` imports `../core/store` (private) instead of `../core` | `architectureViolation` (Phase 8) |
 | `@Architecture` block | `services/http.ts` header comment | metadata rendering (Phase 10) |
 
-## Scope of the golden file (M1 / Phase 4)
+## Scope of the golden file (M1 / Phase 4 + Phase 8)
 
-The golden output reflects what the Phase 4 analyzer is expected to produce:
+The golden output reflects what the analyzer is expected to produce:
 
-- **Import edges** (`kind: "import"`, `isViolation: false`) for every resolved
-  relative import, including re-exports. The facade bypass is present as an
-  ordinary import edge here; Phase 8 flips its `isViolation` and adds the
-  diagnostic (golden updates then).
+- **Import edges** (`kind: "import"`) for every resolved relative import,
+  including re-exports. All are `isViolation: false` **except** the planted
+  facade bypass `ui/TodoList.tsx → core/store.ts`, which Phase 8 flags
+  `isViolation: true`.
 - **One `unresolvedImport` diagnostic** for `./cache`; no edge is emitted for it.
+- **One `architectureViolation` diagnostic** (Phase 8) linked to the bypass edge
+  + importer module (`src/ui/TodoList.tsx`).
 - The `@Architecture` annotation parsed onto `services/http.ts`.
 - **No `soft`/dashed edges** yet — the event/context classifier ships in Phase 9.
 

@@ -35,16 +35,19 @@ mod contract_tests {
         assert_eq!(graph.groups.len(), 5, "3 responsibility + 1 aggregate + 1 cross-cutting");
         assert_eq!(graph.modules.len(), 13);
         assert_eq!(graph.edges.len(), 20);
-        assert_eq!(graph.diagnostics.len(), 1);
-        assert_eq!(graph.diagnostics[0].kind, DiagnosticKind::UnresolvedImport);
+        assert_eq!(graph.diagnostics.len(), 2, "unresolved import + facade bypass");
+        let kinds: Vec<&DiagnosticKind> = graph.diagnostics.iter().map(|d| &d.kind).collect();
+        assert!(kinds.contains(&&DiagnosticKind::UnresolvedImport));
+        assert!(kinds.contains(&&DiagnosticKind::ArchitectureViolation));
 
         let facades: usize = graph.modules.iter().filter(|m| m.is_facade).count();
         assert_eq!(facades, 3, "one facade per group");
 
-        let bypass = graph.edges.iter().any(|e| {
+        // The planted facade bypass is present *and* flagged as a violation (Phase 8).
+        let bypass = graph.edges.iter().find(|e| {
             e.source == "src/ui/TodoList.tsx" && e.target == "src/core/store.ts"
         });
-        assert!(bypass, "planted facade-bypass import is present");
+        assert!(bypass.expect("planted facade-bypass import is present").is_violation);
 
         let annotated = graph
             .modules

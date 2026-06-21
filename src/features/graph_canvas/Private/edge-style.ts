@@ -4,9 +4,9 @@ import type { RFEdgeT } from "../../../domain/graph";
 export type EdgeRole = "import" | "export" | "violation" | "neutral";
 
 const COLOR: Record<EdgeRole, string> = {
-  import: "#dc2626",
+  import: "#ea580c", // orange — the selected module's outgoing imports
   export: "#2563eb",
-  violation: "#dc2626",
+  violation: "#dc2626", // red — reserved for facade-bypass violations
   neutral: "#94a3b8",
 };
 

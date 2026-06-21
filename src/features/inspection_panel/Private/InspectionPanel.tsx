@@ -69,13 +69,20 @@ function Diagnostics({
   return (
     <div style={{ marginTop: 12 }}>
       <h3 style={{ fontSize: 12, margin: "0 0 4px" }}>Diagnostics</h3>
-      <ul style={{ fontSize: 12, color: "#b45309", paddingLeft: 16, margin: 0 }}>
+      <ul style={{ fontSize: 12, paddingLeft: 16, margin: 0 }}>
         {items.map((d) => (
-          <li key={d.id}>{d.message}</li>
+          // Architecture violations match the red bypass edge; others stay amber.
+          <li key={d.id} style={{ color: diagnosticColor(d.kind) }}>
+            {d.message}
+          </li>
         ))}
       </ul>
     </div>
   );
+}
+
+function diagnosticColor(kind: string): string {
+  return kind === "architectureViolation" ? "#dc2626" : "#b45309";
 }
 
 const panelStyle = {
