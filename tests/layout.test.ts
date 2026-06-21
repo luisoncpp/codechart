@@ -4,7 +4,12 @@ import { ElkLayoutEngine } from "../src/domain/layout";
 import type { LayoutBox, LayoutedGraph } from "../src/domain/layout";
 import type { ProjectGraph } from "../src/domain/graph";
 import { symbolBoxWidth, SYMBOL_BOX } from "../src/domain/layout/Private/symbol-box-metrics";
-import { moduleBoxSize, MODULE_BOX } from "../src/domain/layout/Private/module-box-metrics";
+import {
+  moduleBoxSize,
+  MODULE_BOX,
+  LABEL_FIT,
+  fitLabelFontSize,
+} from "../src/domain/layout/Private/module-box-metrics";
 
 const graph = goldenGraph as ProjectGraph;
 
@@ -161,6 +166,31 @@ describe("moduleBoxSize", () => {
     const box = moduleBoxSize("ipc.ts", symbols);
     inWindow(box);
     expect(box.width).toBeLessThan(900);
+  });
+});
+
+describe("fitLabelFontSize", () => {
+  it("grows a short filename well past the 11px floor in a base box", () => {
+    const font = fitLabelFontSize("index.ts", MODULE_BOX.minWidth, MODULE_BOX.minHeight);
+    expect(font).toBeGreaterThan(MODULE_BOX.fontSize);
+    expect(font).toBeLessThanOrEqual(LABEL_FIT.maxFont);
+  });
+
+  it("never exceeds the cap", () => {
+    expect(fitLabelFontSize("a", 800, 600)).toBe(LABEL_FIT.maxFont);
+  });
+
+  it("still fills a base box with a longer name (wrapping onto more lines)", () => {
+    const long = "tauri-analysis-client.ts";
+    const font = fitLabelFontSize(long, MODULE_BOX.minWidth, MODULE_BOX.minHeight);
+    expect(font).toBeGreaterThan(MODULE_BOX.fontSize);
+    expect(font).toBeLessThanOrEqual(LABEL_FIT.maxFont);
+  });
+
+  it("never returns below the base floor", () => {
+    expect(fitLabelFontSize("averyverylongunbreakablefilename.tsx", 30, 20)).toBe(
+      MODULE_BOX.fontSize,
+    );
   });
 });
 

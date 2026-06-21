@@ -1,5 +1,6 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { ModuleRFNode, ModuleNodeData } from "../../../domain/graph";
+import { fitLabelFontSize, MODULE_BOX } from "../../../domain/layout";
 import { iconGlyph } from "./icon-map";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
@@ -16,10 +17,14 @@ function darken(hex: string, factor = 0.55): string {
 }
 
 /** Module container: label-only at L1; symbol children appear inside at L1.5+. */
-export function ModuleNodeView({ data, selected }: NodeProps<ModuleRFNode>) {
+export function ModuleNodeView({ data, selected, width, height }: NodeProps<ModuleRFNode>) {
   const color = data.color ?? "#64748b";
   const textColor = darken(color);
   const detail = data.showSymbols || !!data.snippet;
+  // L1: grow the centered label to fill its box; L2 keeps the compact 9px label.
+  const fontSize = detail
+    ? 9
+    : fitLabelFontSize(data.label, width ?? MODULE_BOX.minWidth, height ?? MODULE_BOX.minHeight);
   return (
     <div
       style={cardStyle(color, textColor, data.isFacade, selected, detail)}
@@ -27,7 +32,7 @@ export function ModuleNodeView({ data, selected }: NodeProps<ModuleRFNode>) {
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       {data.snippet && <Snippet source={data.snippet} />}
-      <Header data={data} textColor={textColor} detail={detail} />
+      <Header data={data} textColor={textColor} detail={detail} fontSize={fontSize} />
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
   );
@@ -39,10 +44,12 @@ function Header({
   data,
   textColor,
   detail,
+  fontSize,
 }: {
   data: ModuleNodeData;
   textColor: string;
   detail: boolean;
+  fontSize: number;
 }) {
   const glyph = iconGlyph(data.icon);
   const base = {
@@ -51,7 +58,7 @@ function Header({
     gap: 4,
     flexShrink: 0,
     overflow: "hidden",
-    fontSize: detail ? 9 : 11,
+    fontSize,
     lineHeight: 1.15,
     pointerEvents: "none" as const,
     zIndex: 1,

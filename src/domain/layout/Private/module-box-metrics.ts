@@ -25,6 +25,33 @@ export const MODULE_BOX = {
   minAspect: 4 / 5,
 } as const;
 
+/** Centered-label fit (L1 only): grow the font so a short name fills its box. */
+export const LABEL_FIT = {
+  /** Largest the centered label is ever drawn — keeps one box from shouting. */
+  maxFont: 22,
+  /** Monospace advance / fontSize (derived from the box's own metrics). */
+  charRatio: MODULE_BOX.charWidth / MODULE_BOX.fontSize,
+  /** Conservative line height (≥ the 1.15 the header renders) so it never overflows. */
+  lineRatio: 1.3,
+} as const;
+
+/** Largest font (px) at which `label` fits a centered, wrap-anywhere block inside
+ *  a `width`×`height` box. A short filename in a base-or-larger box gets drawn big
+ *  instead of floating tiny at the 11px floor; floored at the base so it never
+ *  regresses, capped at `maxFont` so it never dominates. */
+export function fitLabelFontSize(label: string, width: number, height: number): number {
+  const innerW = width - MODULE_BOX.hPadding;
+  const innerH = height - MODULE_BOX.vPadding;
+  const len = Math.max(1, label.length);
+  for (let font = LABEL_FIT.maxFont; font > MODULE_BOX.fontSize; font--) {
+    const charsPerLine = Math.floor(innerW / (font * LABEL_FIT.charRatio));
+    if (charsPerLine < 1) continue;
+    const lines = Math.ceil(len / charsPerLine);
+    if (lines * font * LABEL_FIT.lineRatio <= innerH) return font;
+  }
+  return MODULE_BOX.fontSize;
+}
+
 /** Inner symbol-packing metrics (must mirror MODULE_COMPOUND_OPTIONS padding). */
 const SYMBOL_GRID = {
   gap: 4,

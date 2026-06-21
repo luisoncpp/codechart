@@ -137,8 +137,12 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
   to L0 instead of dwindling — a *read* of the camera, which the scroll-zoom oscillation lesson permits
   (it only forbids programmatic camera *writes*). Expanded groups keep the quiet header strip, but its
   label **also counter-scales** so the group name stays legible when zoomed out. **Module labels do
-  *not* counter-scale** (fixed 11px / 9px world units): the module box is laid out to fit that size, so
-  scaling the text against the camera made it overflow the box. Net L1 hierarchy: zoom out → group
+  *not* counter-scale** against the camera (still world units, so they can't overflow the box). But the
+  L1 centered label is **fit to its box** rather than fixed at 11px: `fitLabelFontSize(label, w, h)`
+  (`module-box-metrics.ts`, pure) picks the largest font (capped `LABEL_FIT.maxFont` 22px, floored at the
+  11px base) at which the wrap-anywhere filename fits the box — so a short name like `index.ts` fills a
+  large box instead of floating tiny in it. `ModuleNodeView` reads the node's laid-out `width`/`height`
+  (`NodeProps`) to compute it; L2 detail labels stay at the compact 9px. Net L1 hierarchy: zoom out → group
   headers grow and dominate, module labels shrink with their boxes and always fit. `InspectionPanel` gains a
   `MetadataSection` (`This module` + `Group` annotation: type / short / long), rendering nothing when
   neither side is annotated (graceful fallback, TDD §10). `icon-map` covers the fixture's icon names.
