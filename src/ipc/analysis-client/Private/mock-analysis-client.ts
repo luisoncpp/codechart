@@ -1,6 +1,6 @@
 import goldenGraph from "../../../../tests/fixtures/golden/project-graph.json";
 import { ProjectGraph } from "../../../domain/graph";
-import { AnalysisClient } from "../index";
+import { AnalysisClient } from "./analysis-client";
 
 /**
  * Returns the golden fixture so the whole UI runs with zero Rust.

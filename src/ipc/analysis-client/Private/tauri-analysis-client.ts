@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { ProjectGraph } from "../../../domain/graph";
-import { AnalysisClient } from "../index";
+import { AnalysisClient } from "./analysis-client";
 
 /** Calls the Rust `analyze_project` command over Tauri IPC for a real folder. */
 export function createTauriAnalysisClient(): AnalysisClient {
