@@ -1,8 +1,9 @@
-import { useStore, type NodeProps } from "@xyflow/react";
+import { Handle, Position, useStore, type NodeProps } from "@xyflow/react";
 import type { GroupRFNode, GroupNodeData } from "../../../domain/graph";
 import { iconGlyph } from "./icon-map";
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 
 /** Counter-scale factor so collapsed content stays readable as the camera zooms
  *  out. Clamped 1–2.4× — at the L0 band (~0.5×) text lands at a constant, legible
@@ -27,11 +28,15 @@ export function GroupNodeView({ data }: NodeProps<GroupRFNode>) {
         background: `${data.color}14`,
       }}
     >
+      {/* Invisible handles so a collapsed group can be an edge endpoint (L0
+          group→group edges). FloatingEdge ignores their position. */}
+      <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       {data.collapsed ? (
         <CollapsedCard data={data} scale={scale} />
       ) : (
         <ExpandedHeader data={data} />
       )}
+      <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
   );
 }

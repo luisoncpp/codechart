@@ -10,10 +10,10 @@ const COLOR: Record<EdgeRole, string> = {
   neutral: "#94a3b8",
 };
 
-/** An edge's role relative to the selected module (selection wins over violation). */
+/** An edge's role relative to the selected node (module or collapsed group). */
 export function edgeRole(edge: RFEdgeT, selectedId: string | null): EdgeRole {
-  if (selectedId && edge.source === selectedId) return "import"; // selected imports target
-  if (selectedId && edge.target === selectedId) return "export"; // target imports selected
+  if (selectedId && edge.source === selectedId) return "import"; // outgoing from selection
+  if (selectedId && edge.target === selectedId) return "export"; // incoming to selection
   if (edge.data?.isViolation) return "violation";
   return "neutral";
 }

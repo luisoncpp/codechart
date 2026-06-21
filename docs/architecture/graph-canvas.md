@@ -56,8 +56,10 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   (**Idea 1**). For an import that enters a facade **from outside its group**, the arrow anchors on
   the **group box** border, not the facade card (**Idea 2**); projection marks these with
   `data.groupTargetId` (internal same-group edges keep the box anchor). The module handles still
-  exist for RF wiring but their position is ignored. Edge aggregation (folding N→1) is deferred to
-  group-collapse work.
+  exist for RF wiring but their position is ignored. **Group nodes carry the same invisible
+  source/target handles** so a collapsed group can be an edge endpoint at L0 — React Flow silently
+  drops any edge whose endpoint node lacks a Handle (error #008). Edge aggregation (folding N→1) is
+  done by `projectForZoom` at L0 (group→group, deduped — see the semantic-zoom section).
 - **Selection-aware edges + focus/context dimming:** when a module is selected, `edgeRole(edge,
   selectedId)` colors edges by role relative to it — edges leaving it (`source === selectedId`, its
   imports) render **orange**, edges entering it (`target === selectedId`, exports / imported-by) render

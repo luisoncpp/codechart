@@ -10,8 +10,14 @@ export class GraphCanvasController {
   constructor(private store: GraphSessionStore) {}
 
   onNodeClick(node: Node) {
-    if (node.type !== "module") return;
-    this.store.select(node.id);
+    if (node.type === "module") {
+      this.store.select(node.id);
+      return;
+    }
+    // Collapsed groups are edge endpoints (L0 overview); select like a module.
+    if (node.type === "group" && node.data?.collapsed) {
+      this.store.select(node.id);
+    }
   }
 
   /** Double-click a group to collapse/expand just it (per-group override). */

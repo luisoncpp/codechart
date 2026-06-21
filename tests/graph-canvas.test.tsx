@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import goldenGraph from "./fixtures/golden/project-graph.json";
 import { GraphCanvas, edgeRole, styleEdge } from "../src/features/graph_canvas";
+import { projectForZoom, topLevelGroupIds } from "../src/domain/graph";
 import { InspectionPanel } from "../src/features/inspection_panel";
 import { GraphSessionStore } from "../src/state/graph-session";
 import { ElkLayoutEngine } from "../src/domain/layout";
@@ -40,6 +41,18 @@ describe("GraphCanvas", () => {
     );
   });
 
+  it("gives group nodes source+target handles so collapsed groups can be edge endpoints (L0)", async () => {
+    // Regression: at L0 edges re-route onto group boxes; without handles React
+    // Flow drops them (error #008) and the overview shows no edges at all.
+    const { container } = render(<GraphCanvas store={store} />);
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="app"]`)).toBeTruthy(),
+    );
+    const group = container.querySelector(`[data-id="app"]`)!;
+    expect(group.querySelector(".react-flow__handle.source")).toBeTruthy();
+    expect(group.querySelector(".react-flow__handle.target")).toBeTruthy();
+  });
+
   it("clicking a module selects it in the store", async () => {
     const { container } = render(<GraphCanvas store={store} />);
     await waitFor(() =>
@@ -49,6 +62,28 @@ describe("GraphCanvas", () => {
     const node = container.querySelector(`[data-id="${facade.id}"]`)!;
     fireEvent.click(node);
     expect(store.getSelectedId()).toBe(facade.id);
+  });
+
+  it("clicking a collapsed group at L0 selects it in the store", async () => {
+    await new Promise<void>((resolve) => {
+      store.once("layout-changed", () => resolve());
+      store.setZoomLevel(0);
+    });
+    const { container } = render(<GraphCanvas store={store} />);
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="app"]`)).toBeTruthy(),
+    );
+    fireEvent.click(container.querySelector(`[data-id="app"]`)!);
+    expect(store.getSelectedId()).toBe("app");
+  });
+
+  it("does not select an expanded group header (L1)", async () => {
+    const { container } = render(<GraphCanvas store={store} />);
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="app"]`)).toBeTruthy(),
+    );
+    fireEvent.click(container.querySelector(`[data-id="app"]`)!);
+    expect(store.getSelectedId()).toBeNull();
   });
 });
 
@@ -101,6 +136,22 @@ describe("styleEdge (focus + context dimming)", () => {
 
   it("keeps the selected module's own edges fully opaque", () => {
     expect(styleEdge(rfEdge, src).style?.opacity).toBe(1);
+  });
+
+  it("keeps a collapsed group's in/out edges fully opaque at L0", () => {
+    const reduced = projectForZoom(graph, new Set(topLevelGroupIds(graph)));
+    const touchingApp = reduced.edges.find(
+      (e) => e.source === "app" || e.target === "app",
+    );
+    expect(touchingApp).toBeDefined();
+    const rfEdge = {
+      id: touchingApp!.id,
+      source: touchingApp!.source,
+      target: touchingApp!.target,
+      data: { isViolation: false, kind: "import" },
+    };
+    expect(styleEdge(rfEdge, "app").style?.opacity).toBe(1);
+    expect(styleEdge(rfEdge, "no-such-id").style?.opacity).toBe(0.45);
   });
 
   it("dims unrelated edges to one quiet level — selected or not", () => {
