@@ -11,7 +11,7 @@ ELK is an implementation detail kept private behind `index.ts`.
 
 ```ts
 LayoutBox  = { id, parentId, x, y, width, height }   // absolute top-left
-LayoutedGraph = { groups: LayoutBox[], modules: LayoutBox[], width, height }
+LayoutedGraph = { groups, modules, symbols, descriptions: LayoutBox[], width, height }
 ```
 
 Coordinates are **absolute** (not ELK's parent-relative). Phase 6 (React Flow) can derive
@@ -25,6 +25,12 @@ parent-relative offsets by subtracting the parent box when it needs `parentNode`
    - Leaf size + spacing/padding come from `PRESETS` (deterministic; no randomness). The group's
      **top** padding is `groupPadding + groupHeaderHeight` so the rendered header (graph-canvas) has
      reserved room and modules never overlap the group label.
+   - **In-body description box:** an **annotated** group gets a real leaf child (`descriptionBoxId`)
+     injected into its layered flow, sized by `descriptionBoxSize(text)` (content-fit, like
+     `moduleBoxSize`), pinned top-left (`layerConstraint: FIRST` + `considerModelOrder`;
+     `separateConnectedComponents=false` so all-disconnected groups still honor model order). ELK packs
+     the modules around it. These boxes are returned separately as `LayoutedGraph.descriptions` (not in
+     `modules`); graph-canvas draws the prose at this geometry. Collapsed (childless) groups get none.
    - **Two algorithms by depth:** the **root** uses `rectpacking` (`elk.aspectRatio=1.6`) so
      top-level groups + ungrouped modules pack into a compact, screen-shaped 2D grid instead of one
      long horizontal row. **Each group** uses `layered` (direction RIGHT) internally so its modules

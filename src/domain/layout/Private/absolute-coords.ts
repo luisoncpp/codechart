@@ -9,10 +9,12 @@ export function toLayoutedGraph(
   root: ElkNode,
   groupIds: Set<string>,
   moduleIds: Set<string>,
+  descriptionIds: Set<string>,
 ): LayoutedGraph {
   const groups: LayoutBox[] = [];
   const modules: LayoutBox[] = [];
   const symbols: LayoutBox[] = [];
+  const descriptions: LayoutBox[] = [];
 
   const walk = (node: ElkNode, parentId: string | null, ox: number, oy: number) => {
     for (const child of node.children ?? []) {
@@ -28,11 +30,19 @@ export function toLayoutedGraph(
       };
       if (groupIds.has(child.id)) groups.push(box);
       else if (moduleIds.has(child.id)) modules.push(box);
+      else if (descriptionIds.has(child.id)) descriptions.push(box);
       else symbols.push(box);
       walk(child, child.id, x, y);
     }
   };
 
   walk(root, /*parentId=*/ null, /*ox=*/ 0, /*oy=*/ 0);
-  return { groups, modules, symbols, width: root.width ?? 0, height: root.height ?? 0 };
+  return {
+    groups,
+    modules,
+    symbols,
+    descriptions,
+    width: root.width ?? 0,
+    height: root.height ?? 0,
+  };
 }

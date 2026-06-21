@@ -93,6 +93,32 @@ describe("render options (Phase 10 metadata + zoom)", () => {
     expect(core?.data.descriptionShort).toBe("Domain types & state");
   });
 
+  it("threads descriptionLong + showLong (L1.5+) into group node data", () => {
+    const short = projectGraph(graph, layout).nodes.find((n) => n.id === "core");
+    expect(short?.data.descriptionLong).toContain("Domain model");
+    expect(short?.data.showLong).toBe(false);
+    const long = projectGraph(graph, layout, { showSymbols: true }).nodes.find(
+      (n) => n.id === "core",
+    );
+    expect(long?.data.showLong).toBe(true);
+  });
+
+  it("raises the description box to the content top when its column is clear", () => {
+    const { graph: g, layout: l } = sceneWithDescription(/*moduleAboveDesc=*/ false);
+    const grp = projectGraph(g, l).nodes.find((n) => n.id === "g")!;
+    // No module above it → pulled up to group content top (padding + header = 42).
+    expect(grp.data.descriptionBox?.y).toBe(42);
+  });
+
+  it("does not raise the description box over a module ELK placed above it", () => {
+    const { graph: g, layout: l } = sceneWithDescription(/*moduleAboveDesc=*/ true);
+    const grp = projectGraph(g, l).nodes.find((n) => n.id === "g")!;
+    const d = grp.data.descriptionBox!;
+    // Module m sits at y=42 h=90 sharing the desc's x-span → desc lands below it, no overlap.
+    expect(d.y).toBeGreaterThanOrEqual(42 + 90);
+    expect(d.y).toBeLessThanOrEqual(300); // never pushed below its reserved slot
+  });
+
   it("marks a group collapsed when it is in the collapsed set", () => {
     const { nodes } = projectGraph(graph, layout, {
       collapsedGroupIds: new Set(["core"]),
@@ -136,6 +162,51 @@ describe("render options (Phase 10 metadata + zoom)", () => {
     ]);
   });
 });
+
+/** A one-group/one-module scene with the description box reserved low (as ELK's
+ *  centering does). `moduleAboveDesc` decides whether the module shares the desc's
+ *  x-span at the top, so the collision-avoidance branch is exercised both ways. */
+function sceneWithDescription(moduleAboveDesc: boolean): {
+  graph: ProjectGraph;
+  layout: LayoutedGraph;
+} {
+  const g = {
+    root: "/x",
+    groups: [
+      {
+        id: "g",
+        label: "G",
+        parentId: null,
+        facadeModuleIds: [],
+        annotation: { descriptionShort: "short", descriptionLong: "long prose here" },
+      },
+    ],
+    modules: [
+      {
+        id: "m",
+        path: "m.ts",
+        label: "m.ts",
+        language: "ts",
+        groupId: "g",
+        isFacade: false,
+        metrics: { loc: 1 },
+        exportedSymbols: [],
+      },
+    ],
+    edges: [],
+    diagnostics: [],
+  } as unknown as ProjectGraph;
+  const moduleX = moduleAboveDesc ? 12 : 260; // share desc's x-span, or sit in another column
+  const layout = {
+    groups: [{ id: "g", parentId: null, x: 0, y: 0, width: 420, height: 600 }],
+    modules: [{ id: "m", parentId: "g", x: moduleX, y: 42, width: 120, height: 90 }],
+    symbols: [],
+    descriptions: [{ id: "g::__description__", parentId: "g", x: 12, y: 300, width: 200, height: 150 }],
+    width: 420,
+    height: 600,
+  } as LayoutedGraph;
+  return { graph: g, layout };
+}
 
 describe("selectors", () => {
   it("imports/imported-by are inverse views of the edge list", () => {

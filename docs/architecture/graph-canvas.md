@@ -130,9 +130,36 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
   programmatic refit would change the zoom and feed back into another level switch (L0 → fit → L2
   oscillation). The store re-layouts on every collapse/zoom change, **seq-guarded** so a stale async
   layout from rapid scrolling never overwrites a newer one. A `LevelBadge` shows the active level.
-- **Metadata rendering:** `rf-projection` threads `annotation.descriptionShort` into node data. A
+- **Group descriptions (multi-level):** `rf-projection` threads both `descriptionShort` and
+  `descriptionLong` into group node data, plus `showLong` (= `showSymbols`, i.e. L1.5+). The view shows
+  progressively more prose as you zoom in:
+  - **L0 (collapsed card):** `collapsedDescription` **prefers `descriptionLong`** when it fits the card
+    at a legible font (`fitsBox`, 14px base), else falls back to `descriptionShort`. The text uses the
+    **darkened group color** (`darken(data.color)`), not the old grey, and its line clamp is derived
+    from the card height.
+  - **L1 (expanded):** `GroupDescription` draws `descriptionShort` **directly in the group** (no box) at
+    `data.descriptionBox` (parent-relative). ELK vertically *centers* a short column, so the reserved slot
+    floats mid-group with a gap under the header; **projection raises `y`** (`freeTopFor`) to the highest
+    spot in the box's x-column that stays **clear of every sibling box above it** — collision-checked, not
+    blindly pinned to the top (a module ELK placed up there blocks it; the box stops just below). Floored
+    at the group content top (`groupPadding + groupHeaderHeight`). `textAlign: left` (React Flow's node
+    default is centered). World units at `DESC_BOX.fontSize` (18) — sized like a module label, not
+    counter-scaled.
+  - **L1.5+ (`showLong`):** same box shows `descriptionLong` (falls back to `descriptionShort`).
+  - **Reserved layout space (packed, not a band):** `elk-input` injects a **real leaf box** per annotated
+    group (`descriptionBoxId(groupId)`) into the group's layered flow, sized by `descriptionBoxSize(text)`
+    (the *same* content-fit philosophy as `moduleBoxSize` — width capped, height grown to fit the prose at
+    the render font, so it never truncates). ELK then **packs the modules around it** instead of wasting a
+    full-width strip. The box is pinned to the group's top-left via `layerConstraint: FIRST` +
+    `considerModelOrder` + `separateConnectedComponents=false` (the last so an all-disconnected group like
+    `shared` still honors model order). It carries `descriptionLong ?? descriptionShort` so the box fits
+    the largest text shown. The layout splits these into `LayoutedGraph.descriptions` (a sibling of
+    `modules`/`symbols`); `rf-projection` stashes each one's parent-relative geometry into the owning
+    group's `descriptionBox` and emits **no** node for it. Collapsed groups get no box (they render their
+    own card).
+- **Metadata rendering:** A
   collapsed group renders a **readable card** (`GroupNodeView` → `CollapsedCard`): a large uppercase
-  label + icon over a wrapped 3-line description. Both font sizes **counter-scale with the live camera
+  label + icon over a wrapped description (see Group descriptions above). Both font sizes **counter-scale with the live camera
   zoom** (`useStore(s => s.transform[2])`, clamped 1–2.4×) so the text stays legible as you zoom out
   to L0 instead of dwindling — a *read* of the camera, which the scroll-zoom oscillation lesson permits
   (it only forbids programmatic camera *writes*). Expanded groups keep the quiet header strip, but its

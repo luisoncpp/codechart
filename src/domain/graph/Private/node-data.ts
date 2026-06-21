@@ -9,8 +9,15 @@ export interface GroupNodeData extends Record<string, unknown> {
   icon?: string;
   /** Annotation one-liner shown under the header (Phase 10 metadata). */
   descriptionShort?: string;
+  /** Full annotation prose; preferred over the short one at L0 / L1.5+ when it fits. */
+  descriptionLong?: string;
   /** True when this group is rendered collapsed (semantic zoom). */
   collapsed?: boolean;
+  /** True at L1.5+ (symbols visible): the in-group description shows the long text. */
+  showLong?: boolean;
+  /** Geometry (parent-relative) of the layout-reserved in-body description box, so
+   *  the view draws the prose there and modules pack around it (expanded only). */
+  descriptionBox?: { x: number; y: number; width: number; height: number };
 }
 
 /** Data carried by a custom module node. */

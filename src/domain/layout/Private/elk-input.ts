@@ -1,8 +1,18 @@
 import type { ElkNode, ElkExtendedEdge } from "elkjs/lib/elk-api";
-import { symbolBoxId, type ProjectGraph } from "../../graph";
+import { symbolBoxId, type ProjectGraph, type GroupNode } from "../../graph";
 import type { LayoutOptions } from "./layout-types";
 import { SYMBOL_BOX, symbolBoxWidth } from "./symbol-box-metrics";
-import { moduleBoxSize } from "./module-box-metrics";
+import { moduleBoxSize, descriptionBoxSize } from "./module-box-metrics";
+
+/** Layout id of a group's in-body description box (a non-module leaf child). */
+export function descriptionBoxId(groupId: string): string {
+  return `${groupId}::__description__`;
+}
+
+/** The text the description box must hold (long preferred — it shows at L1.5). */
+function descriptionText(group: GroupNode): string | undefined {
+  return group.annotation?.descriptionLong ?? group.annotation?.descriptionShort;
+}
 
 /** Deterministic layout presets (TDD §"layout presets"). */
 export const PRESETS = {
@@ -37,6 +47,12 @@ const GROUP_LAYOUT_OPTIONS: Record<string, string> = {
   "elk.direction": "RIGHT",
   "elk.spacing.nodeNode": String(PRESETS.nodeSpacing),
   "elk.layered.spacing.nodeNodeBetweenLayers": String(PRESETS.layerSpacing),
+  // Honor child order within a layer so the prepended description box stays at
+  // the top of its (leftmost) column — i.e. the group's top-left corner. Keep
+  // disconnected nodes (e.g. an isolated description box) in the same flow so
+  // model order applies to them too, instead of being packed separately.
+  "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
+  "elk.separateConnectedComponents": "false",
 };
 
 const GROUP_OPTIONS: Record<string, string> = {
@@ -55,12 +71,33 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
   const childGroups = byParent(graph);
   const modulesByGroup = byGroup(graph);
   const moduleById = new Map(graph.modules.map((m) => [m.id, m]));
+  const groupById = new Map(graph.groups.map((g) => [g.id, g]));
   const moduleWidth = options?.moduleWidth ?? PRESETS.moduleWidth;
   const moduleHeight = options?.moduleHeight ?? PRESETS.moduleHeight;
 
+  // Prepend a description box (sized to its prose) into the group's flow so ELK
+  // packs the modules around it — never as a full-width band. Only for expanded
+  // groups (those that have other children); a collapsed group renders its own card.
+  const withDescription = (groupId: string, children: ElkNode[]): ElkNode[] => {
+    if (children.length === 0) return children;
+    const text = descriptionText(groupById.get(groupId)!);
+    if (!text) return children;
+    const desc: ElkNode = {
+      id: descriptionBoxId(groupId),
+      ...descriptionBoxSize(text),
+      // Pin to the first (leftmost) layer + first model-order slot → top-left corner.
+      layoutOptions: { "elk.layered.layering.layerConstraint": "FIRST" },
+    };
+    return [desc, ...children];
+  };
+
   const build = (parentId: string | null): ElkNode[] => {
     const groups = (childGroups.get(parentId) ?? []).map((id) =>
-      groupElkNode(id, build(id), options?.collapsedGroupSizes),
+      groupElkNode(
+        groupById.get(id)!,
+        withDescription(id, build(id)),
+        options?.collapsedGroupSizes,
+      ),
     );
     const modules = (modulesByGroup.get(parentId) ?? []).map((id) => {
       const mod = moduleById.get(id)!;
@@ -113,17 +150,17 @@ type SizeMap = LayoutOptions["collapsedGroupSizes"];
 
 /** A group node; a collapsed (childless) group keeps its expanded footprint when
  *  known, else a generous fallback card — never the shrunken stub. */
-function groupElkNode(id: string, children: ElkNode[], sizes?: SizeMap): ElkNode {
+function groupElkNode(group: GroupNode, children: ElkNode[], sizes?: SizeMap): ElkNode {
   if (children.length === 0) {
-    const kept = sizes?.get(id);
+    const kept = sizes?.get(group.id);
     return {
-      id,
+      id: group.id,
       width: kept?.width ?? PRESETS.collapsedGroupWidth,
       height: kept?.height ?? PRESETS.collapsedGroupHeight,
     };
   }
   return {
-    id,
+    id: group.id,
     layoutOptions: { ...GROUP_LAYOUT_OPTIONS, ...GROUP_OPTIONS },
     children,
   };

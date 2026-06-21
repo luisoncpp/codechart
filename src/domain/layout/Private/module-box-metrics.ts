@@ -52,6 +52,37 @@ export function fitLabelFontSize(label: string, width: number, height: number): 
   return MODULE_BOX.fontSize;
 }
 
+/** Typography + footprint for a group's in-body description box (sized like a
+ *  module box, but from prose length instead of a symbol grid). World units;
+ *  `GroupNodeView` renders the text at `fontSize` so the box always fits it. */
+export const DESC_BOX = {
+  /** Sized to read like a module label (those grow to ~22px), not body text. */
+  fontSize: 18,
+  /** Sans-serif glyph advance at `fontSize` (generous so text rarely clips). */
+  charWidth: 9.4,
+  lineHeight: 24,
+  padding: 12,
+  /** Never narrower/shorter than a comfortable module-box footprint. */
+  minWidth: 180,
+  minHeight: MODULE_BOX.minHeight,
+  /** Cap the width so long prose wraps into a box-like shape, not a wide banner. */
+  maxWidth: 340,
+} as const;
+
+/** Footprint that fits `text` at `DESC_BOX.fontSize`: width capped so prose wraps
+ *  into a module-box-like shape (taller, not a banner), floored at the base. */
+export function descriptionBoxSize(text: string): { width: number; height: number } {
+  const contentW = text.length * DESC_BOX.charWidth + 2 * DESC_BOX.padding;
+  const width = Math.max(DESC_BOX.minWidth, Math.min(DESC_BOX.maxWidth, Math.ceil(contentW)));
+  const charsPerLine = Math.max(1, Math.floor((width - 2 * DESC_BOX.padding) / DESC_BOX.charWidth));
+  const lines = Math.max(1, Math.ceil(text.length / charsPerLine));
+  const height = Math.max(
+    DESC_BOX.minHeight,
+    Math.ceil(lines * DESC_BOX.lineHeight + 2 * DESC_BOX.padding),
+  );
+  return { width, height };
+}
+
 /** Inner symbol-packing metrics (must mirror MODULE_COMPOUND_OPTIONS padding). */
 const SYMBOL_GRID = {
   gap: 4,

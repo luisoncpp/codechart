@@ -1,4 +1,4 @@
-import type { LayoutBox, LayoutedGraph } from "../../layout";
+import { type LayoutBox, type LayoutedGraph, PRESETS } from "../../layout";
 import { symbolNameFromId } from "./symbol-id";
 import { inferSymbolKind } from "./symbol-kind";
 import type { ProjectGraph } from "../ProjectGraph";
@@ -35,9 +35,16 @@ export function projectGraph(
   options?: RenderOptions,
 ): ProjectedGraph {
   const index: BoxIndex = new Map();
-  for (const box of [...layout.groups, ...layout.modules, ...layout.symbols]) {
+  for (const box of [
+    ...layout.groups,
+    ...layout.modules,
+    ...layout.symbols,
+    ...layout.descriptions,
+  ]) {
     index.set(box.id, box);
   }
+  const descriptionByGroup = new Map(layout.descriptions.map((b) => [b.parentId, b]));
+  const childBoxesByGroup = byParentId([...layout.modules, ...layout.groups]);
   const groupById = new Map(graph.groups.map((g) => [g.id, g]));
   const moduleById = new Map(graph.modules.map((m) => [m.id, m]));
   const collapsed = options?.collapsedGroupIds;
@@ -45,7 +52,13 @@ export function projectGraph(
   const moduleVisible = (m: ModuleNode) =>
     !collapsed?.size || isModuleExpanded(m.groupId, collapsed, parentOf);
 
-  const ctx: ProjectionCtx = { index, options, moduleVisible };
+  const ctx: ProjectionCtx = {
+    index,
+    options,
+    moduleVisible,
+    descriptionByGroup,
+    childBoxesByGroup,
+  };
   const groupNodes = layout.groups
     .filter((box) => groupById.has(box.id))
     .map((box) => groupNode(groupById.get(box.id)!, box, ctx));
@@ -88,6 +101,18 @@ interface ProjectionCtx {
   index: BoxIndex;
   options?: RenderOptions;
   moduleVisible: (m: ModuleNode) => boolean;
+  descriptionByGroup: Map<string | null, LayoutBox>;
+  childBoxesByGroup: Map<string | null, LayoutBox[]>;
+}
+
+function byParentId(boxes: LayoutBox[]): Map<string | null, LayoutBox[]> {
+  const map = new Map<string | null, LayoutBox[]>();
+  for (const box of boxes) {
+    const list = map.get(box.parentId) ?? [];
+    list.push(box);
+    map.set(box.parentId, list);
+  }
+  return map;
 }
 
 function relativePosition(box: LayoutBox, index: BoxIndex) {
@@ -113,9 +138,39 @@ function groupNode(
       color: group.color ?? colorForGroup(group.id),
       icon: group.annotation?.icon,
       descriptionShort: group.annotation?.descriptionShort,
+      descriptionLong: group.annotation?.descriptionLong,
       collapsed: ctx.options?.collapsedGroupIds?.has(group.id) ?? false,
+      showLong: ctx.options?.showSymbols ?? false,
+      descriptionBox: descriptionBoxGeometry(group.id, box, ctx),
     },
   };
+}
+
+/** Parent-relative geometry of a group's reserved description box, pulled up to
+ *  the highest position in its column that stays clear of every other child box.
+ *  ELK vertically centers a short column under the header; rather than blindly
+ *  pinning to the top (which can collide with a module ELK placed up there), we
+ *  raise the box only until a sibling that shares its x-span blocks the way. */
+function descriptionBoxGeometry(groupId: string, groupBox: LayoutBox, ctx: ProjectionCtx) {
+  const box = ctx.descriptionByGroup.get(groupId);
+  if (!box) return undefined;
+  const y = freeTopFor(box, ctx.childBoxesByGroup.get(groupId) ?? [], groupBox);
+  return { x: box.x - groupBox.x, y: y - groupBox.y, width: box.width, height: box.height };
+}
+
+const DESC_GAP = 8;
+
+/** Highest absolute `y` the description box can sit at without overlapping a
+ *  horizontally-overlapping sibling above it; floored at the group content top. */
+function freeTopFor(box: LayoutBox, siblings: LayoutBox[], groupBox: LayoutBox): number {
+  let top = groupBox.y + PRESETS.groupPadding + PRESETS.groupHeaderHeight;
+  for (const s of siblings) {
+    if (s.id === box.id) continue;
+    const xOverlaps = s.x < box.x + box.width && box.x < s.x + s.width;
+    if (!xOverlaps || s.y >= box.y) continue; // not blocking, or not above the box
+    top = Math.max(top, s.y + s.height + DESC_GAP);
+  }
+  return Math.min(box.y, top); // only ever move up, never below the reserved slot
 }
 
 function moduleNode(

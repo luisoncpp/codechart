@@ -51,6 +51,31 @@ describe("ElkLayoutEngine (golden model)", () => {
     }
   });
 
+  it("packs a description box inside each annotated group without overlapping modules", async () => {
+    const result = await new ElkLayoutEngine().layout(graph);
+    const groupById = new Map(result.groups.map((g) => [g.id, g]));
+    // Every annotated group gets one description box, geometrically inside it.
+    expect(result.descriptions.length).toBeGreaterThan(0);
+    for (const d of result.descriptions) {
+      const group = groupById.get(d.parentId!)!;
+      expect(contains(group, d)).toBe(true);
+    }
+    // A description box never overlaps a module box (it's reserved layout space).
+    for (const d of result.descriptions) {
+      for (const m of result.modules) {
+        expect(overlaps(d, m)).toBe(false);
+      }
+    }
+  });
+
+  it("sizes a description box big enough to fit its prose at the render font", async () => {
+    const result = await new ElkLayoutEngine().layout(graph);
+    // `core` has a long, multi-sentence annotation — its box must be tall, not a stub.
+    const core = result.descriptions.find((d) => d.parentId === "core")!;
+    expect(core.width).toBeGreaterThanOrEqual(170);
+    expect(core.height).toBeGreaterThan(90);
+  });
+
   it("nests every module box inside its group box", async () => {
     const result = await new ElkLayoutEngine().layout(graph);
     const groupById = new Map(result.groups.map((g) => [g.id, g]));

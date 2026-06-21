@@ -17,6 +17,9 @@ export interface LayoutedGraph {
   modules: LayoutBox[];
   /** Exported-symbol boxes nested inside their module (fixed footprint). */
   symbols: LayoutBox[];
+  /** In-body description boxes nested inside a group (one per annotated group);
+   *  not modules — `GroupNodeView` draws the prose at this geometry. */
+  descriptions: LayoutBox[];
   /** Overall diagram bounds. */
   width: number;
   height: number;

@@ -78,6 +78,35 @@ describe("GraphCanvas", () => {
     expect(symbol.querySelector(".symbol-box__badge")?.textContent).toBe("C");
   });
 
+  it("shows the group's short description in its reserved band at L1", async () => {
+    const { container } = render(<GraphCanvas store={store} />);
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="core"]`)).toBeTruthy(),
+    );
+    const group = container.querySelector(`[data-id="core"]`)!;
+    expect(group.textContent).toContain("Domain types & state");
+  });
+
+  it("upgrades the in-band description to the long text at L1.5", async () => {
+    store.setZoomLevel(1.5);
+    const { container } = render(<GraphCanvas store={store} />);
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="core"]`)).toBeTruthy(),
+    );
+    const group = container.querySelector(`[data-id="core"]`)!;
+    expect(group.textContent).toContain("Domain model and in-memory state");
+  });
+
+  it("prefers the long description on a collapsed group card at L0", async () => {
+    store.setZoomLevel(0);
+    const { container } = render(<GraphCanvas store={store} />);
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="services"]`)).toBeTruthy(),
+    );
+    const group = container.querySelector(`[data-id="services"]`)!;
+    expect(group.textContent).toContain("Data access layer");
+  });
+
   it("clicking a collapsed group at L0 selects it in the store", async () => {
     store.setZoomLevel(0);
     const { container } = render(<GraphCanvas store={store} />);
