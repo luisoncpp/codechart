@@ -64,6 +64,20 @@ describe("GraphCanvas", () => {
     expect(store.getSelectedId()).toBe(facade.id);
   });
 
+  it("renders exported symbols in module boxes at L1.5", async () => {
+    await new Promise<void>((resolve) => {
+      store.once("layout-changed", () => resolve());
+      store.setZoomLevel(1.5);
+    });
+    const { container } = render(<GraphCanvas store={store} />);
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
+    );
+    const node = container.querySelector(`[data-id="src/core/store.ts"]`)!;
+    expect(node.textContent).toContain("TodoStore");
+    expect(node.textContent).not.toContain("class TodoStore");
+  });
+
   it("clicking a collapsed group at L0 selects it in the store", async () => {
     await new Promise<void>((resolve) => {
       store.once("layout-changed", () => resolve());

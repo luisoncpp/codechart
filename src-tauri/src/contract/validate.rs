@@ -192,6 +192,7 @@ mod tests {
             group_id: group_id.map(Into::into),
             is_facade: false,
             metrics: ModuleMetrics::default(),
+            exported_symbols: vec![],
             annotation: None,
         }
     }

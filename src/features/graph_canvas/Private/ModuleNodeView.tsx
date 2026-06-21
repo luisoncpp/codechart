@@ -4,6 +4,7 @@ import { iconGlyph } from "./icon-map";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 const SNIPPET_LINES = 12;
+const SYMBOL_LINES = 6;
 
 /** Darken a #rrggbb color toward black so label text reads clearly. */
 function darken(hex: string, factor = 0.55): string {
@@ -15,17 +16,19 @@ function darken(hex: string, factor = 0.55): string {
   return `#${ch(16)}${ch(8)}${ch(0)}`;
 }
 
-/** A single module box: compact card, or a code card at L2 (when a snippet is set). */
+/** A single module box: compact card, symbols at L1.5, or a code card at L2. */
 export function ModuleNodeView({ data, selected }: NodeProps<ModuleRFNode>) {
   const color = data.color ?? "#64748b";
   const textColor = darken(color);
+  const detail = data.snippet ? "source" : data.symbols ? "symbols" : "label";
   return (
     <div
-      style={cardStyle(color, textColor, data.isFacade, selected, !!data.snippet)}
+      style={cardStyle(color, textColor, data.isFacade, selected, detail)}
       title={data.descriptionShort ?? data.label}
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <Header data={data} textColor={textColor} />
+      {data.symbols && <SymbolList symbols={data.symbols} color={color} />}
       {data.snippet && <Snippet source={data.snippet} color={color} />}
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
@@ -42,6 +45,37 @@ function Header({ data, textColor }: { data: ModuleNodeData; textColor: string }
         {data.label}
       </span>
     </div>
+  );
+}
+
+function SymbolList({ symbols, color }: { symbols: string[]; color: string }) {
+  const visible = symbols.slice(0, SYMBOL_LINES);
+  const overflow = symbols.length - visible.length;
+  return (
+    <ul
+      style={{
+        flex: 1,
+        margin: "6px 0 0",
+        padding: "4px 6px",
+        listStyle: "none",
+        fontSize: 9,
+        lineHeight: 1.45,
+        color: "#1e293b",
+        background: "#ffffff",
+        border: `1px solid ${color}40`,
+        borderRadius: 4,
+        overflow: "hidden",
+      }}
+    >
+      {visible.map((name) => (
+        <li key={name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {name}
+        </li>
+      ))}
+      {overflow > 0 && (
+        <li style={{ color: "#64748b", fontStyle: "italic" }}>+{overflow} more</li>
+      )}
+    </ul>
   );
 }
 
@@ -73,7 +107,7 @@ function cardStyle(
   textColor: string,
   isFacade: boolean,
   selected: boolean,
-  snippet: boolean,
+  detail: "label" | "symbols" | "source",
 ) {
   return {
     width: "100%",
@@ -81,8 +115,8 @@ function cardStyle(
     boxSizing: "border-box" as const,
     display: "flex",
     flexDirection: "column" as const,
-    justifyContent: snippet ? "flex-start" : "center",
-    padding: snippet ? 8 : "0 8px",
+    justifyContent: detail === "label" ? "center" : "flex-start",
+    padding: detail === "label" ? "0 8px" : 8,
     fontSize: 11,
     fontFamily:
       'ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace',

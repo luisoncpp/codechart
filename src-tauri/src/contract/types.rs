@@ -70,6 +70,8 @@ pub struct ModuleNode {
     pub group_id: Option<String>,
     pub is_facade: bool,
     pub metrics: ModuleMetrics,
+    /// Locally-declared and re-exported symbol names (from the language adapter).
+    pub exported_symbols: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub annotation: Option<Annotation>,

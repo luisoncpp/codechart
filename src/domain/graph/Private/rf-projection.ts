@@ -18,6 +18,8 @@ type BoxIndex = Map<string, LayoutBox>;
  *  lazily-fetched source snippets to show in module boxes at L2. */
 export interface RenderOptions {
   collapsedGroupIds?: Set<string>;
+  /** When true, module boxes list exported symbols (L1.5). */
+  showSymbols?: boolean;
   /** moduleId → source; presence (at L2) turns on the in-box snippet. */
   snippets?: Map<string, string>;
 }
@@ -107,6 +109,7 @@ function moduleNode(
       language: module.language,
       icon: module.annotation?.icon,
       descriptionShort: module.annotation?.descriptionShort,
+      symbols: ctx.options?.showSymbols ? module.exportedSymbols : undefined,
       snippet: ctx.options?.snippets?.get(module.id),
     },
   };

@@ -114,6 +114,25 @@ describe("GraphSessionStore semantic zoom", () => {
     await done2;
   });
 
+  it("L1.5 uses larger module boxes but does not fetch source", async () => {
+    const client: AnalysisClient = {
+      analyzeProject: async () => graph,
+      readModuleSource: async () => {
+        throw new Error("should not fetch source at L1.5");
+      },
+    };
+    const store = newStore(client);
+    await store.loadProject("/x");
+    const defaultBox = store.getLayout()?.modules.find((m) => m.id === "src/main.ts");
+    const done = nextLayout(store);
+    store.setZoomLevel(1.5);
+    await done;
+    const symbolBox = store.getLayout()?.modules.find((m) => m.id === "src/main.ts");
+    expect(symbolBox!.width).toBeGreaterThan(defaultBox!.width);
+    expect(symbolBox!.height).toBeGreaterThan(defaultBox!.height);
+    expect(store.getSourceCache().size).toBe(0);
+  });
+
   it("L2 lazily fetches and caches module source", async () => {
     const client: AnalysisClient = {
       analyzeProject: async () => graph,

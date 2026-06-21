@@ -10,6 +10,9 @@ import { EventEmitter } from "./event-emitter";
 
 export type SessionPhase = "idle" | "loading" | "ready" | "failed" | "empty";
 
+/** Medium module boxes at L1.5 so exported symbols fit. */
+const L1_5_LAYOUT: LayoutOptions = { moduleWidth: 200, moduleHeight: 88 };
+
 /** Larger module boxes at L2 so a source snippet fits. */
 const L2_LAYOUT: LayoutOptions = { moduleWidth: 260, moduleHeight: 168 };
 
@@ -117,6 +120,7 @@ export class GraphSessionStore extends EventEmitter {
     const reduced = projectForZoom(graph, new Set(this.collapsedGroupIds));
     if (this.zoomLevel === 2) await this.ensureSources(reduced.modules);
     const opts: LayoutOptions = {
+      ...(this.zoomLevel === 1.5 ? L1_5_LAYOUT : {}),
       ...(this.zoomLevel === 2 ? L2_LAYOUT : {}),
       collapsedGroupSizes: this.expandedGroupSizes,
     };

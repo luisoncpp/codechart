@@ -68,7 +68,7 @@ frontend's job (so layout can change without re-analyzing).
 Five entities, defined once, language-agnostic.
 
 - **Module** — atomic node = one compilation unit (a `.ts/.tsx` file; later a `.cpp/.h` pair).
-  Holds a stable id, path, group, `isFacade`, local metrics, and optional `annotation`.
+  Holds a stable id, path, group, `isFacade`, `exportedSymbols`, local metrics, and optional `annotation`.
 - **Group** — non-overlapping nested container partitioning modules into subsystems. Has a label,
   optional color, parent, ordered children, and zero-or-more designated facade modules.
 - **Facade** — *not* a separate node: a designation on a module that is its group's public
@@ -128,6 +128,7 @@ interface ModuleNode {
   groupId: string | null;
   isFacade: boolean;
   metrics: { loc: number; churn?: number; complexity?: number };
+  exportedSymbols: string[];      // locally-declared + re-exported names (language adapter)
   annotation?: Annotation;
 }
 
@@ -226,7 +227,7 @@ folder (implementation). External code imports only the nearest `index.ts`.
 ### 5.1 Key class: `GraphSessionStore`
 
 - **Owns:** current `ProjectGraph`, computed `LayoutedGraph`, **session phase**
-  (`idle | loading | ready | failed | empty`), `zoomLevel (0|1|2)`, `selection`, config path.
+  (`idle | loading | ready | failed | empty`), `zoomLevel (0|1|1.5|2)`, `selection`, config path.
 - **Emits:** `session-changed`, `model-changed`, `layout-changed`, `selection-changed`, `zoom-changed`.
 - **Methods:** `loadProject(path)`, `setZoomLevel(n)`, `select(id)`, `expandGroup(id)`/`collapseGroup(id)`.
 - **Why a class:** derivation is explicit and free of React side effects; `useGraphSession` is a 1:1
@@ -338,13 +339,25 @@ diagnostic; the rest of the graph still builds (partial-results discipline).
 ## 8. Semantic zoom & facade re-routing (post-MVP, designed now)
 
 Rendering reads `zoomLevel` and applies a **pure projection** `project(model, collapsedGroupIds)`
-→ render model (the underlying `ProjectGraph` stays immutable per analysis run):
+→ render model (the underlying `ProjectGraph` stays immutable per analysis run). Scroll zoom maps
+to a discrete level via `levelFromZoom(factor)` (`<0.55` → L0, `<1.1` → L1, `<1.7` → L1.5, `≥1.7`
+→ L2).
 
 - **L0 (bird's eye):** render only top-level groups; collapse each to its facade(s). Edges whose
   endpoint is a private module inside a collapsed group **re-route to that group's facade**.
-- **L1 (architectural):** expand focused groups → modules + intra-group edges visible.
-- **L2 (implementation):** node box renders a syntax-highlighted snippet (uses adapter source ranges
-  already captured in `ParsedModule`).
+- **L1 (architectural):** expand focused groups → modules + intra-group edges visible. Module boxes
+  show the filename only.
+- **L1.5 (symbol view):** same node set as L1; each module box lists its `exportedSymbols` (up to
+  six names, with overflow). Symbols are analysis-time data from the language adapter — no extra
+  IPC fetch. Layout uses medium boxes (between L1 compact and L2 snippet size).
+- **L2 (implementation):** node box renders a source snippet (first 12 lines, monospace). Source
+  is **lazy-fetched** via `AnalysisClient.readModuleSource` and cached in the store; file bodies
+  are not part of the `ProjectGraph` contract.
+
+Per-group `expandGroup` / `collapseGroup` overrides layer on top of each level's default collapse
+set. Re-layout is seq-guarded so rapid scrolling cannot apply a stale layout. Programmatic
+`fitView` runs once per project load only — refitting on level change would feed back into
+`levelFromZoom` and oscillate (see `docs/lessons-learned/scroll-zoom-relayout-autofit-feedback.md`).
 
 ---
 
@@ -402,7 +415,7 @@ tests/fixtures/
 |--------------------|-----------------|
 | Architecture drift / red violation edges (§3.1) | `references` (flag + diagnostic) — Phase 8, near-term |
 | Dashed/soft edges: events, context, pub/sub (§2.4) | `references` (new classifier) — Phase 9 |
-| Semantic zoom L0/L1/L2 (§3.3) | pure `project()` in `graph_canvas` — Phase 10 |
+| Semantic zoom L0/L1/L1.5/L2 (§3.3) | pure `project()` in `graph_canvas` — Phase 10 |
 | Narrative diff visualizer (§3.4) | diff input to `analyze_project` + render overlay |
 | Git time-travel (§3.5) | new `ProjectSource` over git revisions |
 | Activity heatmaps (§3.5) | extra `ModuleNode.metrics` + render layer |

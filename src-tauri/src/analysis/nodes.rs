@@ -47,6 +47,7 @@ fn build_module(file: &ParsedFile, groups: &ResolvedGroups) -> ModuleNode {
         group_id: groups.module_group.get(path).cloned(),
         is_facade: groups.facades.contains(path),
         metrics: ModuleMetrics { loc: file.module.loc, ..Default::default() },
+        exported_symbols: file.module.exported_symbols.clone(),
         annotation: file.annotation.clone(),
     }
 }

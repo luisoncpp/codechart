@@ -101,6 +101,7 @@ mod tests {
                 group_id: Some("core".into()),
                 is_facade: true,
                 metrics: ModuleMetrics { loc: 10, ..Default::default() },
+                exported_symbols: vec![],
                 annotation: None,
             })
             .module(ModuleNode {
@@ -111,6 +112,7 @@ mod tests {
                 group_id: Some("core".into()),
                 is_facade: false,
                 metrics: ModuleMetrics { loc: 4, ..Default::default() },
+                exported_symbols: vec![],
                 annotation: None,
             })
             .diagnostic(Diagnostic {

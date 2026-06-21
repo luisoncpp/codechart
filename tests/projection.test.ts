@@ -108,6 +108,14 @@ describe("render options (Phase 10 metadata + zoom)", () => {
     const http = nodes.find((n) => n.id === "src/services/http.ts");
     expect(http?.data.snippet).toBe("export const x = 1;");
   });
+
+  it("attaches exported symbols when showSymbols is set (L1.5)", () => {
+    const { nodes } = projectGraph(graph, layout, { showSymbols: true });
+    const http = nodes.find((n) => n.id === "src/services/http.ts");
+    expect(http?.data.symbols).toEqual(["getJson"]);
+    const core = nodes.find((n) => n.id === "src/core/index.ts");
+    expect(core?.data.symbols).toEqual(["TodoStore", "isValid", "Todo"]);
+  });
 });
 
 describe("selectors", () => {

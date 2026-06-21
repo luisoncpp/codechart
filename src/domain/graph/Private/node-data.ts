@@ -22,6 +22,8 @@ export interface ModuleNodeData extends Record<string, unknown> {
   color?: string;
   /** Annotation one-liner (Phase 10 metadata). */
   descriptionShort?: string;
+  /** Exported symbol names shown in-box at L1.5. */
+  symbols?: string[];
   /** Source snippet shown in-box at L2 (lazily fetched). */
   snippet?: string;
 }

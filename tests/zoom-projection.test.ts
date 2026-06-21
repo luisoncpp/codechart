@@ -10,12 +10,14 @@ import type { ProjectGraph } from "../src/domain/graph";
 const graph = goldenGraph as unknown as ProjectGraph;
 
 describe("levelFromZoom", () => {
-  it("maps the zoom factor to L0/L1/L2 by threshold", () => {
+  it("maps the zoom factor to L0/L1/L1.5/L2 by threshold", () => {
     expect(levelFromZoom(0.3)).toBe(0);
     expect(levelFromZoom(0.54)).toBe(0);
     expect(levelFromZoom(0.55)).toBe(1);
     expect(levelFromZoom(1.0)).toBe(1);
-    expect(levelFromZoom(1.69)).toBe(1);
+    expect(levelFromZoom(1.09)).toBe(1);
+    expect(levelFromZoom(1.1)).toBe(1.5);
+    expect(levelFromZoom(1.69)).toBe(1.5);
     expect(levelFromZoom(1.7)).toBe(2);
     expect(levelFromZoom(3)).toBe(2);
   });

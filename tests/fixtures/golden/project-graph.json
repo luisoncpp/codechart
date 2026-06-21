@@ -79,7 +79,8 @@
       "isFacade": true,
       "metrics": {
         "loc": 3
-      }
+      },
+      "exportedSymbols": ["TodoStore", "isValid", "Todo"]
     },
     {
       "id": "src/core/store.ts",
@@ -90,7 +91,8 @@
       "isFacade": false,
       "metrics": {
         "loc": 26
-      }
+      },
+      "exportedSymbols": ["TodoStore"]
     },
     {
       "id": "src/core/todo.ts",
@@ -101,7 +103,8 @@
       "isFacade": false,
       "metrics": {
         "loc": 9
-      }
+      },
+      "exportedSymbols": ["Todo", "makeTodo"]
     },
     {
       "id": "src/core/validate.ts",
@@ -112,7 +115,8 @@
       "isFacade": false,
       "metrics": {
         "loc": 5
-      }
+      },
+      "exportedSymbols": ["isValid"]
     },
     {
       "id": "src/main.ts",
@@ -123,7 +127,8 @@
       "isFacade": false,
       "metrics": {
         "loc": 9
-      }
+      },
+      "exportedSymbols": ["bootstrap"]
     },
     {
       "id": "src/services/api.ts",
@@ -134,7 +139,8 @@
       "isFacade": false,
       "metrics": {
         "loc": 11
-      }
+      },
+      "exportedSymbols": ["fetchTitles"]
     },
     {
       "id": "src/services/http.ts",
@@ -152,7 +158,8 @@
         "descriptionShort": "HTTP transport",
         "descriptionLong": "Single choke point for network access; services depend on this, not fetch.",
         "icon": "globe"
-      }
+      },
+      "exportedSymbols": ["getJson"]
     },
     {
       "id": "src/services/index.ts",
@@ -163,7 +170,8 @@
       "isFacade": true,
       "metrics": {
         "loc": 2
-      }
+      },
+      "exportedSymbols": ["fetchTitles", "ApiResult", "ITodoStore"]
     },
     {
       "id": "src/services/types.ts",
@@ -174,7 +182,8 @@
       "isFacade": false,
       "metrics": {
         "loc": 13
-      }
+      },
+      "exportedSymbols": ["ApiResult", "ITodoStore"]
     },
     {
       "id": "src/ui/App.tsx",
@@ -185,7 +194,8 @@
       "isFacade": false,
       "metrics": {
         "loc": 14
-      }
+      },
+      "exportedSymbols": ["App"]
     },
     {
       "id": "src/ui/TodoItem.tsx",
@@ -196,7 +206,8 @@
       "isFacade": false,
       "metrics": {
         "loc": 5
-      }
+      },
+      "exportedSymbols": ["TodoItem"]
     },
     {
       "id": "src/ui/TodoList.tsx",
@@ -207,7 +218,8 @@
       "isFacade": false,
       "metrics": {
         "loc": 14
-      }
+      },
+      "exportedSymbols": ["TodoList"]
     },
     {
       "id": "src/ui/index.ts",
@@ -218,7 +230,8 @@
       "isFacade": true,
       "metrics": {
         "loc": 3
-      }
+      },
+      "exportedSymbols": ["App", "TodoList", "TodoItem"]
     }
   ],
   "edges": [

@@ -3,4 +3,8 @@ import type { Annotation } from "./Annotation";
 import type { Language } from "./Language";
 import type { ModuleMetrics } from "./ModuleMetrics";
 
-export type ModuleNode = { id: string, path: string, label: string, language: Language, groupId: string | null, isFacade: boolean, metrics: ModuleMetrics, annotation?: Annotation, };
+export type ModuleNode = { id: string, path: string, label: string, language: Language, groupId: string | null, isFacade: boolean, metrics: ModuleMetrics, 
+/**
+ * Locally-declared and re-exported symbol names (from the language adapter).
+ */
+exportedSymbols: Array<string>, annotation?: Annotation, };

@@ -1,8 +1,8 @@
 import type { ProjectGraph } from "../ProjectGraph";
 import type { Edge } from "../Edge";
 
-/** Zoom level: 0 bird's-eye (collapsed), 1 architectural, 2 implementation. */
-export type ZoomLevel = 0 | 1 | 2;
+/** Zoom level: 0 bird's-eye, 1 architectural, 1.5 symbols, 2 implementation (source). */
+export type ZoomLevel = 0 | 1 | 1.5 | 2;
 
 /** Top-level groups (the L0 default collapse set). */
 export function topLevelGroupIds(graph: ProjectGraph): string[] {
@@ -12,7 +12,8 @@ export function topLevelGroupIds(graph: ProjectGraph): string[] {
 /** Map React Flow's continuous zoom factor to a discrete detail level. */
 export function levelFromZoom(factor: number): ZoomLevel {
   if (factor < 0.55) return 0;
-  if (factor < 1.7) return 1;
+  if (factor < 1.1) return 1;
+  if (factor < 1.7) return 1.5;
   return 2;
 }
 

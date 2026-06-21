@@ -18,7 +18,8 @@
       "language": "typescript",
       "groupId": "core",
       "isFacade": true,
-      "metrics": { "loc": 12 }
+      "metrics": { "loc": 12 },
+      "exportedSymbols": []
     }
   ],
   "edges": [],

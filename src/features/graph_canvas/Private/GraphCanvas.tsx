@@ -28,8 +28,9 @@ interface GraphCanvasProps {
 /** Clamp the post-fit zoom into the active level's band (see FitView). */
 function fitOptionsForLevel(level: ZoomLevel): FitViewOptions {
   if (level === 0) return { padding: 0.18, maxZoom: 0.5 };
+  if (level === 1.5) return { padding: 0.1, minZoom: 1.1, maxZoom: 1.65 };
   if (level === 2) return { padding: 0.1, minZoom: 1.8 };
-  return { padding: 0.12, minZoom: 0.6, maxZoom: 1.6 };
+  return { padding: 0.12, minZoom: 0.6, maxZoom: 1.05 };
 }
 
 export function GraphCanvas({ store }: GraphCanvasProps) {
@@ -48,6 +49,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
       if (!graph || !layout) return null;
       const options: RenderOptions = {
         collapsedGroupIds: session.getCollapsedGroupIds(),
+        showSymbols: level === 1.5,
         snippets: level === 2 ? session.getSourceCache() : undefined,
       };
       return projectGraph(graph, layout, options);
@@ -99,6 +101,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
 const LABEL: Record<ZoomLevel, string> = {
   0: "L0 · overview",
   1: "L1 · modules",
+  1.5: "L1.5 · symbols",
   2: "L2 · source",
 };
 
