@@ -1,7 +1,6 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { ModuleRFNode, ModuleNodeData } from "../../../domain/graph";
 import { iconGlyph } from "./icon-map";
-import { useZoomCounterScale } from "./use-zoom-counter-scale";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 const SNIPPET_LINES = 12;
@@ -21,7 +20,6 @@ export function ModuleNodeView({ data, selected }: NodeProps<ModuleRFNode>) {
   const color = data.color ?? "#64748b";
   const textColor = darken(color);
   const detail = data.showSymbols || !!data.snippet;
-  const scale = useZoomCounterScale();
   return (
     <div
       style={cardStyle(color, textColor, data.isFacade, selected, detail)}
@@ -29,31 +27,31 @@ export function ModuleNodeView({ data, selected }: NodeProps<ModuleRFNode>) {
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       {data.snippet && <Snippet source={data.snippet} />}
-      <Header data={data} textColor={textColor} detail={detail} scale={detail ? 1 : scale} />
+      <Header data={data} textColor={textColor} detail={detail} />
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
   );
 }
 
+/** Label scales with the box (world units, no camera counter-scale): the box is
+ *  laid out to fit this size, so the text never overflows it as you zoom. */
 function Header({
   data,
   textColor,
   detail,
-  scale,
 }: {
   data: ModuleNodeData;
   textColor: string;
   detail: boolean;
-  scale: number;
 }) {
   const glyph = iconGlyph(data.icon);
   const base = {
     display: "flex" as const,
     alignItems: "center",
-    gap: 4 * scale,
+    gap: 4,
     flexShrink: 0,
     overflow: "hidden",
-    fontSize: (detail ? 9 : 11) * scale,
+    fontSize: detail ? 9 : 11,
     lineHeight: 1.15,
     pointerEvents: "none" as const,
     zIndex: 1,
@@ -74,7 +72,7 @@ function Header({
     >
       {glyph && <span aria-hidden>{glyph}</span>}
       {data.isFacade && (
-        <span aria-hidden style={{ color: textColor, fontSize: 9 * scale }}>
+        <span aria-hidden style={{ color: textColor, fontSize: 9 }}>
           ★
         </span>
       )}

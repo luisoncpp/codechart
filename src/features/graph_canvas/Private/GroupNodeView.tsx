@@ -27,18 +27,20 @@ export function GroupNodeView({ data }: NodeProps<GroupRFNode>) {
       {data.collapsed ? (
         <CollapsedCard data={data} scale={scale} />
       ) : (
-        <ExpandedHeader data={data} />
+        <ExpandedHeader data={data} scale={scale} />
       )}
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
   );
 }
 
-/** Expanded: a quiet header strip; the modules inside carry the detail. */
-function ExpandedHeader({ data }: { data: GroupNodeData }) {
+/** Expanded: a quiet header strip; the modules inside carry the detail.
+ *  Counter-scales with the camera so the group name stays legible when zoomed
+ *  out — the level at which the group, not its modules, is what you read. */
+function ExpandedHeader({ data, scale }: { data: GroupNodeData; scale: number }) {
   const glyph = iconGlyph(data.icon);
   return (
-    <div style={headerStyle(data.color)} title="Double-click to collapse / expand">
+    <div style={headerStyle(data.color, scale)} title="Double-click to collapse / expand">
       <span aria-hidden>▾</span>
       {glyph && <span aria-hidden>{glyph}</span>}
       <span>{data.label}</span>
@@ -74,13 +76,13 @@ function CollapsedCard({ data, scale }: { data: GroupNodeData; scale: number }) 
   );
 }
 
-function headerStyle(color: string) {
+function headerStyle(color: string, scale: number) {
   return {
     display: "flex",
     alignItems: "center",
-    gap: 6,
-    padding: "4px 10px",
-    fontSize: 12,
+    gap: 6 * scale,
+    padding: `${4 * scale}px ${10 * scale}px`,
+    fontSize: 12 * scale,
     fontFamily: SANS,
     fontWeight: 700,
     letterSpacing: 0.4,

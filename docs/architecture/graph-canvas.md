@@ -119,7 +119,11 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
   label + icon over a wrapped 3-line description. Both font sizes **counter-scale with the live camera
   zoom** (`useStore(s => s.transform[2])`, clamped 1–2.4×) so the text stays legible as you zoom out
   to L0 instead of dwindling — a *read* of the camera, which the scroll-zoom oscillation lesson permits
-  (it only forbids programmatic camera *writes*). Expanded groups keep the quiet header strip. `InspectionPanel` gains a
+  (it only forbids programmatic camera *writes*). Expanded groups keep the quiet header strip, but its
+  label **also counter-scales** so the group name stays legible when zoomed out. **Module labels do
+  *not* counter-scale** (fixed 11px / 9px world units): the module box is laid out to fit that size, so
+  scaling the text against the camera made it overflow the box. Net L1 hierarchy: zoom out → group
+  headers grow and dominate, module labels shrink with their boxes and always fit. `InspectionPanel` gains a
   `MetadataSection` (`This module` + `Group` annotation: type / short / long), rendering nothing when
   neither side is annotated (graceful fallback, TDD §10). `icon-map` covers the fixture's icon names.
 
