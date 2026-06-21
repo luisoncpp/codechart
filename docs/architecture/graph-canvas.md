@@ -89,8 +89,12 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
 - **Levels:** L0 collapses all top-level groups; L1 expands everything; L2 keeps L1's node set but each
   module box renders a **source snippet** (first 12 lines, monospace). The store seeds the default
   collapse set per level, and `toggleGroup`/`collapse`/`expand` layer per-group overrides on top.
-- **Layout sizing:** `LayoutEngine.layout(graph, {moduleWidth, moduleHeight})` — L2 uses larger boxes
-  so snippets fit; a **childless (collapsed) group** gets a fixed min size (`elk-input.ts`).
+- **Layout sizing:** `LayoutEngine.layout(graph, {moduleWidth, moduleHeight, collapsedGroupSizes})` —
+  L2 uses larger boxes so snippets fit. A **collapsed (childless) group keeps its expanded footprint**:
+  the store captures every group's box size from the full (uncollapsed) layout into
+  `expandedGroupSizes` and passes it as `collapsedGroupSizes`, so collapsing swaps the contents (modules
+  → description) **without shrinking the box**. Groups never seen expanded fall back to a generous card
+  size (`PRESETS.collapsedGroup{Width,Height}`, `elk-input.ts`).
 - **L2 source is lazy, not in the contract:** `GraphSessionStore.ensureSources` fetches each visible
   module's source via `AnalysisClient.readModuleSource(root, path)` (Tauri command
   `read_module_source`, reusing `FsProjectSource::read_file`) and caches it. The `ProjectGraph` never
@@ -101,8 +105,12 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
   programmatic refit would change the zoom and feed back into another level switch (L0 → fit → L2
   oscillation). The store re-layouts on every collapse/zoom change, **seq-guarded** so a stale async
   layout from rapid scrolling never overwrites a newer one. A `LevelBadge` shows the active level.
-- **Metadata rendering:** `rf-projection` threads `annotation.descriptionShort` into node data; group
-  nodes show it as a subtitle when collapsed (plus a ▸/▾ caret). `InspectionPanel` gains a
+- **Metadata rendering:** `rf-projection` threads `annotation.descriptionShort` into node data. A
+  collapsed group renders a **readable card** (`GroupNodeView` → `CollapsedCard`): a large uppercase
+  label + icon over a wrapped 3-line description. Both font sizes **counter-scale with the live camera
+  zoom** (`useStore(s => s.transform[2])`, clamped 1–2.4×) so the text stays legible as you zoom out
+  to L0 instead of dwindling — a *read* of the camera, which the scroll-zoom oscillation lesson permits
+  (it only forbids programmatic camera *writes*). Expanded groups keep the quiet header strip. `InspectionPanel` gains a
   `MetadataSection` (`This module` + `Group` annotation: type / short / long), rendering nothing when
   neither side is annotated (graceful fallback, TDD §10). `icon-map` covers the fixture's icon names.
 

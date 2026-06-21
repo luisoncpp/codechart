@@ -10,9 +10,13 @@ export const PRESETS = {
   groupHeaderHeight: 30,
   nodeSpacing: 32,
   layerSpacing: 56,
-  /** A collapsed (childless) group still needs a visible box. */
-  collapsedGroupWidth: 150,
-  collapsedGroupHeight: 56,
+  /**
+   * A collapsed (childless) group keeps a full card footprint — it must NOT
+   * shrink to a tiny stub when its modules disappear. Sized to hold a large
+   * label + a few wrapped description lines (see GroupNodeView).
+   */
+  collapsedGroupWidth: 300,
+  collapsedGroupHeight: 168,
 } as const;
 
 const ROOT_OPTIONS: Record<string, string> = {
@@ -40,7 +44,9 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
   const moduleHeight = options?.moduleHeight ?? PRESETS.moduleHeight;
 
   const build = (parentId: string | null): ElkNode[] => {
-    const groups = (childGroups.get(parentId) ?? []).map((id) => groupElkNode(id, build(id)));
+    const groups = (childGroups.get(parentId) ?? []).map((id) =>
+      groupElkNode(id, build(id), options?.collapsedGroupSizes),
+    );
     const modules = (modulesByGroup.get(parentId) ?? []).map((id) => ({
       id,
       width: moduleWidth,
@@ -57,13 +63,17 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
   };
 }
 
-/** A group node; a collapsed (childless) group gets a fixed visible size. */
-function groupElkNode(id: string, children: ElkNode[]): ElkNode {
+type SizeMap = LayoutOptions["collapsedGroupSizes"];
+
+/** A group node; a collapsed (childless) group keeps its expanded footprint when
+ *  known, else a generous fallback card — never the shrunken stub. */
+function groupElkNode(id: string, children: ElkNode[], sizes?: SizeMap): ElkNode {
   if (children.length === 0) {
+    const kept = sizes?.get(id);
     return {
       id,
-      width: PRESETS.collapsedGroupWidth,
-      height: PRESETS.collapsedGroupHeight,
+      width: kept?.width ?? PRESETS.collapsedGroupWidth,
+      height: kept?.height ?? PRESETS.collapsedGroupHeight,
     };
   }
   return {

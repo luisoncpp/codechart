@@ -24,6 +24,12 @@ export interface LayoutedGraph {
 export interface LayoutOptions {
   moduleWidth?: number;
   moduleHeight?: number;
+  /**
+   * Per-group footprint to reuse when a group is collapsed (childless), keyed by
+   * group id. Lets a collapsed group keep its expanded size instead of shrinking
+   * to a generic card. Captured from the full (uncollapsed) layout.
+   */
+  collapsedGroupSizes?: Map<string, { width: number; height: number }>;
 }
 
 export interface LayoutEngine {

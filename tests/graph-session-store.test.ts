@@ -130,6 +130,23 @@ describe("GraphSessionStore semantic zoom", () => {
     );
   });
 
+  it("a collapsed group keeps its expanded footprint (does not shrink)", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    const boxOf = (id: string) =>
+      store.getLayout()?.groups.find((g) => g.id === id);
+    const expanded = boxOf("app");
+    expect(expanded).toBeDefined();
+
+    const done = nextLayout(store);
+    store.setZoomLevel(0);
+    await done;
+
+    const collapsed = boxOf("app");
+    expect(collapsed?.width).toBe(expanded?.width);
+    expect(collapsed?.height).toBe(expanded?.height);
+  });
+
   it("setZoomLevel back to L1 restores the full graph", async () => {
     const store = newStore(clientReturning(graph));
     await store.loadProject("/x");

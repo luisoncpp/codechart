@@ -24,6 +24,9 @@ export class GraphSessionStore extends EventEmitter {
   private zoomLevel: ZoomLevel = 1;
   private collapsedGroupIds = new Set<string>();
   private sourceCache = new Map<string, string>();
+  /** Each group's footprint from the full (uncollapsed) layout, so a collapsed
+   *  group keeps its own expanded size instead of shrinking. */
+  private expandedGroupSizes = new Map<string, { width: number; height: number }>();
   private layoutSeq = 0;
 
   constructor(
@@ -100,6 +103,7 @@ export class GraphSessionStore extends EventEmitter {
     this.zoomLevel = 1;
     this.collapsedGroupIds = new Set();
     this.sourceCache = new Map();
+    this.expandedGroupSizes = new Map();
     this.reduced = null;
     this.layout = null;
   }
@@ -112,12 +116,25 @@ export class GraphSessionStore extends EventEmitter {
     const seq = ++this.layoutSeq;
     const reduced = projectForZoom(graph, new Set(this.collapsedGroupIds));
     if (this.zoomLevel === 2) await this.ensureSources(reduced.modules);
-    const opts = this.zoomLevel === 2 ? L2_LAYOUT : undefined;
+    const opts: LayoutOptions = {
+      ...(this.zoomLevel === 2 ? L2_LAYOUT : {}),
+      collapsedGroupSizes: this.expandedGroupSizes,
+    };
     const layout = await this.layoutEngine.layout(reduced, opts);
     if (seq !== this.layoutSeq) return; // a newer recompute won
     this.reduced = reduced;
     this.layout = layout;
+    this.captureExpandedSizes(layout);
     this.emit("layout-changed");
+  }
+
+  /** Record group footprints from a fully-expanded layout (nothing collapsed),
+   *  so later collapses can reuse each group's own expanded size. */
+  private captureExpandedSizes(layout: LayoutedGraph) {
+    if (this.collapsedGroupIds.size > 0) return; // only trust a full layout
+    for (const g of layout.groups) {
+      this.expandedGroupSizes.set(g.id, { width: g.width, height: g.height });
+    }
   }
 
   /** Lazily fetch + cache source for the visible modules (L2 snippets). */
