@@ -1,7 +1,7 @@
 # References & Analysis (the backend pipeline)
 
-**Status: implemented (Phase 4; drift detection Phase 8).** Source:
-`src-tauri/src/references/`, `src-tauri/src/diagnostics/`,
+**Status: implemented (Phase 4; drift detection Phase 8; soft edges Phase 9).**
+Source: `src-tauri/src/references/`, `src-tauri/src/diagnostics/`,
 `src-tauri/src/analysis/`.
 
 ## Responsibility
@@ -26,8 +26,27 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
 **Edge id** = `${source}->${target}:import:${ordinal}`. Edges are sorted by
 `(source, target)`; `ordinal` disambiguates repeated same-pair imports (0-based).
 `kind = import`, `trigger = "import"`. `is_violation` starts `false` and is set
-by the drift pass below. Dashed/soft edges (Phase 9) are still reserved on the
-contract, not yet emitted.
+by the drift pass below. Soft (dashed) edges are emitted by `classify_soft`.
+
+## `references::classify_soft` — event soft edges (Phase 9)
+
+`classify_soft(parsed: &[ParsedModule]) -> Vec<Edge>` (`soft.rs`). A separate
+pass over the *parsed modules* (not the resolved edges), so pure import
+resolution stays untouched (lessons-learned `edge-classifiers-are-post-passes`).
+The adapter records `CommSignal`s — `emit/dispatch/publish/send` and
+`on/addEventListener/subscribe/addListener` calls whose **first argument is a
+string literal** (the event token; `language_adapter/typescript/signals.rs`).
+`classify_soft` indexes signals by token into per-token emitter/listener module
+sets (deduped), then for each token pairs every emitter `E` with every listener
+`L` where `E != L` → one `soft` edge `E → L` (data flows emitter → listener),
+`trigger = "event:<token>"`, id `${source}->${target}:soft:${ordinal}`.
+
+**False-positive guard:** a soft edge requires a string-literal token **and** a
+matching token in a *different* module. A lone emit/listen, a non-literal first
+arg, or a same-module self-pair produces nothing. TDD §2.4. React-context
+provider/consumer detection is deferred (context objects already surface as
+import edges). Edges sorted by `(source, target, token)`; ordinal disambiguates
+multiple tokens between the same pair.
 
 ## `references::flag_drift` — facade-bypass drift (Phase 8)
 
@@ -69,7 +88,8 @@ sort by id, dedup by id — for deterministic final output.
    the rest of the graph still builds.
 3. `resolve_groups(parsed_paths, defs)` — group tree, membership, facades.
 4. `resolve_edges(parsed_modules, &groups)` — `resolve_references` for edges +
-   unresolved diagnostics, then `flag_drift` for facade-bypass violations.
+   unresolved diagnostics, then `flag_drift` for facade-bypass violations, then
+   `classify_soft` appends event soft edges (imports stay sorted first).
 5. Build `ModuleNode`s (`nodes.rs`): id = path, label = basename, language from
    extension (`tsx` → `Tsx`, else `TypeScript`), `group_id`/`is_facade` from the
    resolved groups, `loc` from the parse, annotation = first `@Architecture` block.

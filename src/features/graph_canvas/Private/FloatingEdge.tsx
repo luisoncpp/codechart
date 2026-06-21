@@ -8,7 +8,10 @@ import {
   type Node,
 } from "@xyflow/react";
 import type { EdgeData } from "../../../domain/graph";
-import { borderAnchor, centerOf, type Box, type Side } from "./border-anchor";
+import { borderAnchor, bowedPath, centerOf, type Box, type Side } from "./border-anchor";
+
+/** Sideways arc (px) for soft edges so the dash clears overlapping import edges. */
+const SOFT_BOW = 36;
 
 const POSITION: Record<Side, Position> = {
   left: Position.Left,
@@ -29,14 +32,17 @@ export function FloatingEdge({ id, source, target, data, markerEnd, style }: Edg
   const targetBox = boxOf(targetNode);
   const from = borderAnchor(sourceBox, centerOf(targetBox));
   const to = borderAnchor(targetBox, centerOf(sourceBox));
-  const [path] = getBezierPath({
-    sourceX: from.x,
-    sourceY: from.y,
-    sourcePosition: POSITION[from.side],
-    targetX: to.x,
-    targetY: to.y,
-    targetPosition: POSITION[to.side],
-  });
+  const isSoft = (data as EdgeData | undefined)?.kind === "soft";
+  const path = isSoft
+    ? bowedPath(from, to, /*bow=*/ SOFT_BOW)
+    : getBezierPath({
+        sourceX: from.x,
+        sourceY: from.y,
+        sourcePosition: POSITION[from.side],
+        targetX: to.x,
+        targetY: to.y,
+        targetPosition: POSITION[to.side],
+      })[0];
   return <BaseEdge id={id} path={path} markerEnd={markerEnd} style={style} />;
 }
 

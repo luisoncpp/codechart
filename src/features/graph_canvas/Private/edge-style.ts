@@ -27,15 +27,22 @@ export function edgeOpacity(role: EdgeRole): number {
   return role === "neutral" ? 0.45 : 1;
 }
 
-/** Apply the sample's edge aesthetic + focus dimming (floating routing). */
+/** Apply the sample's edge aesthetic + focus dimming (floating routing).
+ *  Soft (event/runtime) edges render dashed; direction color still applies. */
 export function styleEdge(edge: RFEdgeT, selectedId: string | null): RFEdgeT {
   const role = edgeRole(edge, selectedId);
   const color = COLOR[role];
   const focused = role !== "neutral";
+  const dashed = edge.data?.kind === "soft";
   return {
     ...edge,
     type: "floating",
     markerEnd: { type: MarkerType.ArrowClosed, color, width: 14, height: 14 },
-    style: { stroke: color, strokeWidth: focused ? 2 : 1.2, opacity: edgeOpacity(role) },
+    style: {
+      stroke: color,
+      strokeWidth: focused ? 2 : 1.2,
+      opacity: edgeOpacity(role),
+      ...(dashed ? { strokeDasharray: "6 4" } : {}),
+    },
   };
 }

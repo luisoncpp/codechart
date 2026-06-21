@@ -20,14 +20,21 @@ export function groupOf(
   return graph.groups.find((g) => g.id === module.groupId);
 }
 
-/** Edges where the given module is the importer (outgoing). */
+/** Import edges where the given module is the importer (outgoing). */
 export function importsOf(graph: ProjectGraph, id: string): Edge[] {
-  return graph.edges.filter((e) => e.source === id);
+  return graph.edges.filter((e) => e.kind === "import" && e.source === id);
 }
 
-/** Edges where the given module is imported by others (incoming). */
+/** Import edges where the given module is imported by others (incoming). */
 export function importedBy(graph: ProjectGraph, id: string): Edge[] {
-  return graph.edges.filter((e) => e.target === id);
+  return graph.edges.filter((e) => e.kind === "import" && e.target === id);
+}
+
+/** Soft (event/runtime) edges touching the given module, either endpoint. */
+export function softEdgesOf(graph: ProjectGraph, id: string): Edge[] {
+  return graph.edges.filter(
+    (e) => e.kind === "soft" && (e.source === id || e.target === id),
+  );
 }
 
 export function diagnosticsFor(graph: ProjectGraph, id: string): Diagnostic[] {

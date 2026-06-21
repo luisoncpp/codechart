@@ -144,6 +144,34 @@ describe("InspectionPanel", () => {
   });
 });
 
+describe("soft edges (Phase 9)", () => {
+  const soft = graph.edges.find((e) => e.kind === "soft")!;
+
+  it("renders soft edges dashed; import edges are not dashed", () => {
+    const rfSoft = {
+      id: soft.id,
+      source: soft.source,
+      target: soft.target,
+      data: { isViolation: false, kind: "soft" },
+    };
+    const rfImport = { ...rfSoft, id: "i", data: { isViolation: false, kind: "import" } };
+    expect(styleEdge(rfSoft, null).style?.strokeDasharray).toBe("6 4");
+    expect(styleEdge(rfImport, null).style?.strokeDasharray).toBeUndefined();
+  });
+
+  it("lists the event seam under Events and keeps it out of Imports", async () => {
+    const store = await readyStore();
+    store.select(soft.source); // src/core/store.ts (the emitter)
+    render(<InspectionPanel store={store} />);
+
+    const events = screen.getByText(/^Events/).closest("div")!;
+    expect(within(events).getByText(new RegExp(soft.target))).toBeInTheDocument();
+
+    const imports = screen.getByText(/^Imports/).closest("div")!;
+    expect(within(imports).queryByText(soft.target)).not.toBeInTheDocument();
+  });
+});
+
 describe("violation edge styling (Phase 8)", () => {
   it("renders the bypass edge red when nothing is selected", () => {
     const violation = graph.edges.find((e) => e.isViolation)!;

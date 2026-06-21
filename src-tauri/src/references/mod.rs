@@ -5,16 +5,19 @@
 // external metadata — neither edge nor diagnostic.
 //
 // `flag_drift` (Phase 8) is a second pass over the resolved edges: it marks
-// facade-bypass edges `is_violation` + emits `architectureViolation`s. Soft
-// (dashed) edges remain reserved for Phase 9.
+// facade-bypass edges `is_violation` + emits `architectureViolation`s.
+// `classify_soft` (Phase 9) is a separate pass over the parsed modules that
+// pairs event emit/listen signals into `soft` (dashed) edges (TDD §2.4).
 
 mod drift;
 mod resolve;
+mod soft;
 
 #[cfg(test)]
 mod tests;
 
 pub use drift::{flag_drift, GroupBoundaries};
+pub use soft::classify_soft;
 
 use std::collections::BTreeSet;
 

@@ -32,7 +32,7 @@ describe("ProjectLoaderPanel", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("13 modules · 20 edges · 2 diagnostics"),
+        screen.getByText("13 modules · 21 edges · 2 diagnostics"),
       ).toBeInTheDocument();
     });
     expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();

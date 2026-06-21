@@ -49,9 +49,10 @@ change, update the golden group annotations to match.
 | Short import chain | `main → ui → ui/App → services → services/api → services/http` | direction & layout |
 | Unresolved import | `services/api.ts` imports `./cache` (no such file) | `unresolvedImport` diagnostic (Phase 4) |
 | Facade bypass | `ui/TodoList.tsx` imports `../core/store` (private) instead of `../core` | `architectureViolation` (Phase 8) |
+| Event seam | `core/store.ts` `emit("todos:changed")` ↔ `ui/App.tsx` `on("todos:changed", …)` via an ambient global bus | `soft` (dashed) edge `store → App` (Phase 9) |
 | `@Architecture` block | `services/http.ts` header comment | metadata rendering (Phase 10) |
 
-## Scope of the golden file (M1 / Phase 4 + Phase 8)
+## Scope of the golden file (M1 / Phase 4 + Phase 8 + Phase 9)
 
 The golden output reflects what the analyzer is expected to produce:
 
@@ -63,7 +64,10 @@ The golden output reflects what the analyzer is expected to produce:
 - **One `architectureViolation` diagnostic** (Phase 8) linked to the bypass edge
   + importer module (`src/ui/TodoList.tsx`).
 - The `@Architecture` annotation parsed onto `services/http.ts`.
-- **No `soft`/dashed edges** yet — the event/context classifier ships in Phase 9.
+- **One `soft` (dashed) edge** `core/store.ts → ui/App.tsx`, `trigger:"event:todos:changed"`
+  (Phase 9): the store emits and `App` listens on the same token over an ambient global
+  bus, so the relationship exists with no import to match it. `emit`/`on` are intentionally
+  undeclared (a global `.d.ts` in real projects); detection is purely token-based.
 
 ### Provisional `@Architecture` syntax
 

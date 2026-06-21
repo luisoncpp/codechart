@@ -18,7 +18,7 @@ describe("ProjectGraph contract", () => {
 
     expect(graph.groups).toHaveLength(5);
     expect(graph.modules).toHaveLength(13);
-    expect(graph.edges).toHaveLength(20);
+    expect(graph.edges).toHaveLength(21);
     expect(graph.diagnostics).toHaveLength(2);
     const kinds = graph.diagnostics.map((d) => d.kind);
     expect(kinds).toContain("unresolvedImport");
@@ -32,6 +32,13 @@ describe("ProjectGraph contract", () => {
       (e) => e.source === "src/ui/TodoList.tsx" && e.target === "src/core/store.ts",
     );
     expect(bypass?.isViolation).toBe(true);
+
+    // Planted event seam → a single soft (dashed) edge, store → App (Phase 9).
+    const soft = graph.edges.filter((e) => e.kind === "soft");
+    expect(soft).toHaveLength(1);
+    expect(soft[0].source).toBe("src/core/store.ts");
+    expect(soft[0].target).toBe("src/ui/App.tsx");
+    expect(soft[0].trigger).toBe("event:todos:changed");
 
     const annotated = graph.modules.find((m) => m.id === "src/services/http.ts");
     expect(annotated?.annotation).toBeDefined();

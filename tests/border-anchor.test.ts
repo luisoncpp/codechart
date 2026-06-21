@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { borderAnchor, centerOf } from "../src/features/graph_canvas";
+import { borderAnchor, bowedPath, centerOf } from "../src/features/graph_canvas";
 
 const box = { x: 0, y: 0, width: 100, height: 40 };
 
@@ -40,5 +40,24 @@ describe("borderAnchor (floating edge anchors — Idea 1)", () => {
       a.y === box.y ||
       a.y === box.y + box.height;
     expect(onEdge).toBe(true);
+  });
+});
+
+describe("bowedPath (soft edges arc clear of overlapping imports)", () => {
+  const from = { x: 0, y: 0 };
+  const to = { x: 0, y: 100 }; // vertical corridor, as in store.ts → App.tsx
+
+  it("starts at `from` and ends at `to`", () => {
+    const d = bowedPath(from, to, /*bow=*/ 36);
+    expect(d.startsWith("M 0,0")).toBe(true);
+    expect(d.endsWith("0,100")).toBe(true);
+  });
+
+  it("a non-zero bow pushes the control point off the straight line", () => {
+    const straight = bowedPath(from, to, /*bow=*/ 0);
+    const bowed = bowedPath(from, to, /*bow=*/ 36);
+    expect(bowed).not.toBe(straight);
+    // perpendicular to a vertical line is horizontal → control x offset of -36
+    expect(bowed).toContain("Q -36,50");
   });
 });

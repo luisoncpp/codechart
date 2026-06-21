@@ -1,5 +1,6 @@
 use super::*;
-use crate::language_adapter::ImportKind;
+use crate::contract::EdgeKind;
+use crate::language_adapter::{CommSignal, ImportKind, SignalRole};
 
 /// Build a `ParsedModule` at `path` importing each given specifier.
 fn module(path: &str, specifiers: &[&str]) -> ParsedModule {
@@ -189,4 +190,68 @@ fn import_from_a_nested_subgroup_into_its_ancestor_private_is_allowed() {
     let diags = flag_drift(&mut edges, &bounds);
     assert!(!edges[0].is_violation, "descendant import stays inside the boundary");
     assert!(diags.is_empty());
+}
+
+// ---- soft edges (Phase 9) ------------------------------------------------
+
+/// A `ParsedModule` at `path` carrying the given `(role, token)` signals.
+fn with_signals(path: &str, signals: &[(SignalRole, &str)]) -> ParsedModule {
+    let signals = signals
+        .iter()
+        .map(|(role, token)| CommSignal { role: *role, token: (*token).to_string() })
+        .collect();
+    ParsedModule { path: path.to_string(), signals, ..Default::default() }
+}
+
+#[test]
+fn matched_token_pairs_emitter_to_listener() {
+    let parsed = vec![
+        with_signals("a.ts", &[(SignalRole::Emit, "changed")]),
+        with_signals("b.ts", &[(SignalRole::Listen, "changed")]),
+    ];
+    let edges = classify_soft(&parsed);
+    assert_eq!(edges.len(), 1);
+    assert_eq!(edges[0].source, "a.ts");
+    assert_eq!(edges[0].target, "b.ts");
+    assert_eq!(edges[0].kind, EdgeKind::Soft);
+    assert_eq!(edges[0].trigger, "event:changed");
+    assert_eq!(edges[0].id, "a.ts->b.ts:soft:0");
+    assert!(!edges[0].is_violation);
+}
+
+#[test]
+fn unmatched_token_produces_no_edge() {
+    let parsed = vec![
+        with_signals("a.ts", &[(SignalRole::Emit, "changed")]),
+        with_signals("b.ts", &[(SignalRole::Listen, "other")]),
+    ];
+    assert!(classify_soft(&parsed).is_empty(), "tokens must match across modules");
+}
+
+#[test]
+fn same_module_emit_and_listen_is_not_a_self_edge() {
+    let parsed = vec![with_signals(
+        "a.ts",
+        &[(SignalRole::Emit, "tick"), (SignalRole::Listen, "tick")],
+    )];
+    assert!(classify_soft(&parsed).is_empty(), "no soft edge from a module to itself");
+}
+
+#[test]
+fn duplicate_emit_in_one_module_yields_a_single_edge() {
+    let parsed = vec![
+        with_signals("a.ts", &[(SignalRole::Emit, "changed"), (SignalRole::Emit, "changed")]),
+        with_signals("b.ts", &[(SignalRole::Listen, "changed")]),
+    ];
+    assert_eq!(classify_soft(&parsed).len(), 1, "emitter set is deduped per token");
+}
+
+#[test]
+fn two_tokens_between_the_same_pair_get_incrementing_ordinals() {
+    let parsed = vec![
+        with_signals("a.ts", &[(SignalRole::Emit, "x"), (SignalRole::Emit, "y")]),
+        with_signals("b.ts", &[(SignalRole::Listen, "x"), (SignalRole::Listen, "y")]),
+    ];
+    let ids: Vec<String> = classify_soft(&parsed).into_iter().map(|e| e.id).collect();
+    assert_eq!(ids, ["a.ts->b.ts:soft:0", "a.ts->b.ts:soft:1"]);
 }

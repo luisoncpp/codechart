@@ -47,6 +47,23 @@ fn flags_the_planted_facade_bypass_with_no_false_positives() {
     assert_eq!(diag.edge_id.as_deref(), Some(violations[0].id.as_str()));
 }
 
+/// Phase 9: the planted event seam (`core/store` emits, `ui/App` listens on
+/// `todos:changed`) yields exactly one `soft` edge — store → App.
+#[test]
+fn classifies_the_planted_event_seam() {
+    let source = FsProjectSource::new(FIXTURE_DIR);
+    let graph = analyze_project(&source, GOLDEN_ROOT).expect("builds");
+    let soft: Vec<_> = graph
+        .edges
+        .iter()
+        .filter(|e| e.kind == crate::contract::EdgeKind::Soft)
+        .collect();
+    assert_eq!(soft.len(), 1, "exactly one soft edge");
+    assert_eq!(soft[0].source, "src/core/store.ts");
+    assert_eq!(soft[0].target, "src/ui/App.tsx");
+    assert_eq!(soft[0].trigger, "event:todos:changed");
+}
+
 #[test]
 fn unresolved_import_produces_a_warning_diagnostic_and_no_edge() {
     let source = memory(&[("src/a.ts", "import { x } from \"./gone\";")]);

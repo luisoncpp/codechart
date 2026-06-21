@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::language_adapter::{registry_for_path, ImportKind, ParsedModule};
+use crate::language_adapter::{registry_for_path, ImportKind, ParsedModule, SignalRole};
 use crate::project_source::{MemoryProjectSource, ProjectSource};
 
 fn parse(path: &str, source: &str) -> ParsedModule {
@@ -108,6 +108,53 @@ export function App() { return <TodoList />; }"#;
     let m = parse("App.tsx", src);
     assert_eq!(specifiers(&m), vec!["./TodoList"]);
     assert_eq!(m.exported_symbols, vec!["App"]);
+}
+
+// ---- communication signals (Phase 9 soft edges) -------------------------
+
+#[test]
+fn bare_emit_call_is_an_emit_signal() {
+    let m = parse("a.ts", r#"emit("todos:changed");"#);
+    assert_eq!(m.signals.len(), 1);
+    assert_eq!(m.signals[0].role, SignalRole::Emit);
+    assert_eq!(m.signals[0].token, "todos:changed");
+}
+
+#[test]
+fn member_listen_call_is_a_listen_signal() {
+    let m = parse("a.ts", r#"bus.on("ready", () => {});"#);
+    assert_eq!(m.signals.len(), 1);
+    assert_eq!(m.signals[0].role, SignalRole::Listen);
+    assert_eq!(m.signals[0].token, "ready");
+}
+
+#[test]
+fn signal_is_found_inside_a_method_body() {
+    let src = "class S { add() { this.publish(\"changed\"); } }";
+    let m = parse("a.ts", src);
+    assert_eq!(m.signals.len(), 1);
+    assert_eq!(m.signals[0].role, SignalRole::Emit);
+    assert_eq!(m.signals[0].token, "changed");
+}
+
+#[test]
+fn non_string_first_argument_is_not_a_signal() {
+    let m = parse("a.ts", r#"emit(eventName); on(EVENTS.ready, cb);"#);
+    assert!(m.signals.is_empty(), "tokens must be string literals");
+}
+
+#[test]
+fn allowlisted_names_only() {
+    let m = parse("a.ts", r#"compute("x"); render("y");"#);
+    assert!(m.signals.is_empty(), "compute/render are not emit/listen");
+}
+
+#[test]
+fn multiple_signals_kept_in_source_order() {
+    let src = r#"emit("a"); bus.addEventListener("b", cb); dispatch("c");"#;
+    let m = parse("a.ts", src);
+    let tokens: Vec<&str> = m.signals.iter().map(|s| s.token.as_str()).collect();
+    assert_eq!(tokens, vec!["a", "b", "c"]);
 }
 
 #[test]

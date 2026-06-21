@@ -39,6 +39,22 @@ export function centerOf(box: Box): Point {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
+/**
+ * Quadratic-bezier SVG path from `from` to `to`, bowed sideways by `bow` px at the
+ * midpoint (perpendicular to the straight line). Lets a soft edge arc clear of the
+ * import/violation edges sharing the same corridor instead of overlapping them.
+ */
+export function bowedPath(from: Point, to: Point, bow: number): string {
+  const mx = (from.x + to.x) / 2;
+  const my = (from.y + to.y) / 2;
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const cx = mx + (-dy / len) * bow; // perpendicular offset
+  const cy = my + (dx / len) * bow;
+  return `M ${from.x},${from.y} Q ${cx},${cy} ${to.x},${to.y}`;
+}
+
 function sideFor(scaleX: number, scaleY: number, dx: number, dy: number): Side {
   if (scaleX < scaleY) return dx > 0 ? "right" : "left";
   return dy > 0 ? "bottom" : "top";

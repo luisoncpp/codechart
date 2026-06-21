@@ -1,6 +1,7 @@
 // TypeScript/TSX adapter (Phase 2): tree-sitter walk → ParsedModule.
 
 mod extract;
+mod signals;
 
 use tree_sitter::Parser;
 
@@ -38,6 +39,7 @@ impl LanguageAdapter for TypeScriptAdapter {
             ..Default::default()
         };
         extract::walk_top_level(tree.root_node(), source, &mut module);
+        module.signals = signals::collect_signals(tree.root_node(), source);
         Ok(module)
     }
 }

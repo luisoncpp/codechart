@@ -20,7 +20,7 @@ use crate::grouping::{resolve_groups, ResolvedGroups};
 use crate::language_adapter::{registry_for_path, ParsedModule};
 use crate::project_config::{discover_group_defs, is_group_file};
 use crate::project_source::ProjectSource;
-use crate::references::{flag_drift, resolve_references, GroupBoundaries};
+use crate::references::{classify_soft, flag_drift, resolve_references, GroupBoundaries};
 
 use nodes::{build_modules, language_for, ParsedFile};
 
@@ -57,14 +57,16 @@ pub fn analyze_project(
     assemble(root, parts)
 }
 
-/// Resolve import edges, then flag facade-bypass drift against the group tree
-/// (Phase 8). Returns the (drift-annotated) edges + their diagnostics.
+/// Resolve import edges, flag facade-bypass drift (Phase 8), then append
+/// event-driven `soft` edges (Phase 9). Imports stay sorted first; soft edges
+/// follow. Returns the edges + their diagnostics.
 fn resolve_edges(
     parsed: &[ParsedModule],
     groups: &ResolvedGroups,
 ) -> (Vec<Edge>, Vec<Diagnostic>) {
     let mut refs = resolve_references(parsed);
     let violations = flag_drift(&mut refs.edges, &group_boundaries(groups));
+    refs.edges.extend(classify_soft(parsed));
     let mut diagnostics = refs.diagnostics;
     diagnostics.extend(violations);
     (refs.edges, diagnostics)

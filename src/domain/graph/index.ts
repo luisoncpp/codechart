@@ -26,5 +26,6 @@ export {
   groupOf,
   importsOf,
   importedBy,
+  softEdgesOf,
   diagnosticsFor,
 } from "./Private/selectors";

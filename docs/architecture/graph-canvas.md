@@ -19,12 +19,12 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 |-------|------|------|
 | `projectGraph(graph, layout)` | `domain/graph/Private/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
 | `FloatingEdge` | `features/graph_canvas/Private/FloatingEdge.tsx` | Custom RF edge: computes both endpoints via `borderAnchor` from live node geometry (`useInternalNode`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
-| `borderAnchor(box, toward)` | `features/graph_canvas/Private/border-anchor.ts` | **Pure.** Ray-from-center → border intersection point + which side it hit. The testable seam for floating edges. |
-| selectors | `domain/graph/Private/selectors.ts` | `findModule`, `groupOf`, `importsOf`, `importedBy`, `diagnosticsFor` — pure edge-list views. |
+| `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
+| selectors | `domain/graph/Private/selectors.ts` | `findModule`, `groupOf`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor` — pure edge-list views. `importsOf`/`importedBy` filter to `kind === "import"` (soft edges don't leak into the import lists); `softEdgesOf` returns soft edges on either endpoint. |
 | `GraphSessionStore` | `state/graph-session` | Now also owns `LayoutedGraph` (computed via injected `LayoutEngine` on load) and `selectedId`. Emits `phase-changed` + `selection-changed`. |
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules only) → `store.select`; pane click → clear. |
-| `InspectionPanel` | `features/inspection_panel` | Selected module's path, group, facade status, language, LOC, imports, imported-by, diagnostics. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. |
+| `InspectionPanel` | `features/inspection_panel` | Selected module's path, group, facade status, language, LOC, imports, imported-by, **Events** (soft edges: `emits → …` / `listens ← …` + token), diagnostics. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. |
 
 ## Aesthetic rules (the visual gate)
 
@@ -41,7 +41,12 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   copies the group color onto each grouped module's `data.color`
   (group `color` ?? `colorForGroup` hash); ungrouped modules fall back to slate `#64748b`.
 - **Edge:** solid grey arrow (`import`); red + thicker when `isViolation` (a facade bypass, emitted
-  by the backend drift pass — Phase 8).
+  by the backend drift pass — Phase 8). **Dashed** (`strokeDasharray "6 4"`) when `kind === "soft"`
+  (an event/runtime relationship — Phase 9); direction coloring still applies, so a selected soft edge
+  reads its role *and* its dash. A soft edge is drawn **bowed** (`bowedPath`, a quadratic arc offset
+  ~36px perpendicular to its straight line) instead of the straight bezier used by imports, so its dash
+  arcs clear of any import/violation edge sharing the same corridor (e.g. `store.ts → App.tsx` soft vs.
+  the `TodoList.tsx → store.ts` violation) instead of overlapping it.
   Edges are **display-only** (no `onEdgeClick`/hover handlers), so `graph-canvas.css` sets
   `pointer-events: none` on `.react-flow__edge` — React Flow's invisible edge interaction path would
   otherwise swallow a `pointerdown` and break pan-by-drag that starts on an edge.

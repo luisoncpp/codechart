@@ -80,7 +80,7 @@
       "language": "typescript",
       "groupId": "core",
       "isFacade": false,
-      "metrics": { "loc": 21 }
+      "metrics": { "loc": 26 }
     },
     {
       "id": "src/core/todo.ts",
@@ -159,7 +159,7 @@
       "language": "tsx",
       "groupId": "ui",
       "isFacade": false,
-      "metrics": { "loc": 11 }
+      "metrics": { "loc": 14 }
     },
     {
       "id": "src/ui/TodoItem.tsx",
@@ -348,6 +348,14 @@
       "target": "src/ui/TodoList.tsx",
       "kind": "import",
       "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/core/store.ts->src/ui/App.tsx:soft:0",
+      "source": "src/core/store.ts",
+      "target": "src/ui/App.tsx",
+      "kind": "soft",
+      "trigger": "event:todos:changed",
       "isViolation": false
     }
   ],

@@ -4,9 +4,11 @@ import {
   groupOf,
   importsOf,
   importedBy,
+  softEdgesOf,
   diagnosticsFor,
 } from "../../../domain/graph";
 import { EdgeList } from "./EdgeList";
+import { EventList } from "./EventList";
 
 interface InspectionPanelProps {
   store: GraphSessionStore;
@@ -43,6 +45,7 @@ export function InspectionPanel({ store }: InspectionPanelProps) {
         edges={importedBy(graph, module.id)}
         field="source"
       />
+      <EventList edges={softEdgesOf(graph, module.id)} moduleId={module.id} />
       <Diagnostics graph={graph} moduleId={module.id} />
     </aside>
   );

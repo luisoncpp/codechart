@@ -34,7 +34,7 @@ mod contract_tests {
         let graph = load_golden();
         assert_eq!(graph.groups.len(), 5, "3 responsibility + 1 aggregate + 1 cross-cutting");
         assert_eq!(graph.modules.len(), 13);
-        assert_eq!(graph.edges.len(), 20);
+        assert_eq!(graph.edges.len(), 21, "20 imports + 1 soft (event) edge");
         assert_eq!(graph.diagnostics.len(), 2, "unresolved import + facade bypass");
         let kinds: Vec<&DiagnosticKind> = graph.diagnostics.iter().map(|d| &d.kind).collect();
         assert!(kinds.contains(&&DiagnosticKind::UnresolvedImport));

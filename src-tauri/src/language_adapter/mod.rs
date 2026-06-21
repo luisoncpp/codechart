@@ -44,6 +44,22 @@ pub struct CommentBlock {
     pub end_byte: usize,
 }
 
+/// Whether a communication call emits an event or listens for one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SignalRole {
+    Emit,
+    Listen,
+}
+
+/// A dynamic-communication signal: an event emit/listen keyed by its string
+/// token (Phase 9). The soft-edge classifier pairs emitters to listeners that
+/// share a `token` — a runtime relationship imports can't see (TDD §2.4).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommSignal {
+    pub role: SignalRole,
+    pub token: String,
+}
+
 /// Local facts extracted from a single source file. Pure data — no resolution
 /// against other files happens here.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -58,6 +74,8 @@ pub struct ParsedModule {
     pub exported_symbols: Vec<String>,
     /// Raw comment blocks, in source order.
     pub comments: Vec<CommentBlock>,
+    /// Event emit/listen signals, in source order (Phase 9 soft edges).
+    pub signals: Vec<CommSignal>,
     /// Lines of code (newline count + 1 for non-empty files).
     pub loc: u32,
 }
