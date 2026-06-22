@@ -232,7 +232,7 @@ function useClampedLayout(
       },
       inFov: true,
     });
-  }, [zoom, tx, ty, w, h]);
+  }, [containerRef, zoom, tx, ty, w, h]);
 
   return state;
 }

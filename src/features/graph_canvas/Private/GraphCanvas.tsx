@@ -136,6 +136,8 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
         showSymbols: level >= 1.5,
         snippets: level === 2 ? session.getSourceCache() : undefined,
       };
+      // cacheVersion busts memo when source cache updates without session identity change
+      void cacheVersion;
       return projectGraph(graph, layout, options);
     },
     [graph, layout, level, session, cacheVersion],
