@@ -5,6 +5,139 @@ import { L2Header } from "./L2Header";
 import { L2Description, L2CodeBlock } from "./L2Content";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
+/** Visible thumb width on screen (px); divided by canvas zoom inside the node. */
+const SCROLLBAR_SCREEN_PX = 6;
+/** Wider hit target so the thumb is easy to grab and drag. */
+const SCROLLBAR_HIT_SCREEN_PX = 12;
+const MIN_THUMB_SCREEN_PX = 24;
+
+interface L2ScrollableBodyProps {
+  zoom: number;
+  padding: string;
+  gap: string;
+  children: React.ReactNode;
+}
+
+function L2ScrollableBody({ zoom, padding, gap, children }: L2ScrollableBodyProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ startY: number; startScrollTop: number } | null>(null);
+  const [thumb, setThumb] = useState({ top: 0, height: 0, show: false });
+  const [dragging, setDragging] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const sync = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      if (scrollHeight <= clientHeight + 1) {
+        setThumb({ top: 0, height: 0, show: false });
+        return;
+      }
+      const minHeight = MIN_THUMB_SCREEN_PX / zoom;
+      const height = Math.max(minHeight, (clientHeight / scrollHeight) * clientHeight);
+      const track = clientHeight - height;
+      const top = track * (scrollTop / (scrollHeight - clientHeight));
+      setThumb({ top, height, show: true });
+    };
+
+    sync();
+    el.addEventListener("scroll", sync, { passive: true });
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    for (const child of el.children) ro.observe(child);
+    return () => {
+      el.removeEventListener("scroll", sync);
+      ro.disconnect();
+    };
+  }, [zoom, children]);
+
+  const onThumbPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = scrollRef.current;
+    if (!el) return;
+    dragRef.current = { startY: e.clientY, startScrollTop: el.scrollTop };
+    setDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onThumbPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const { scrollHeight, clientHeight } = el;
+    const minHeight = MIN_THUMB_SCREEN_PX / zoom;
+    const thumbHeight = Math.max(minHeight, (clientHeight / scrollHeight) * clientHeight);
+    const track = clientHeight - thumbHeight;
+    const scrollRange = scrollHeight - clientHeight;
+    if (track <= 0 || scrollRange <= 0) return;
+    const deltaY = (e.clientY - dragRef.current.startY) / zoom;
+    el.scrollTop = dragRef.current.startScrollTop + deltaY * (scrollRange / track);
+  };
+
+  const endThumbDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    setDragging(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
+  return (
+    <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <div
+        ref={scrollRef}
+        className="nowheel nodrag l2-scrollable"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          overflowX: "hidden",
+          padding,
+          display: "flex",
+          flexDirection: "column",
+          gap,
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
+      >
+        {children}
+      </div>
+      {thumb.show && (
+        <div
+          className="nodrag"
+          style={{
+            position: "absolute",
+            top: thumb.top,
+            right: 0,
+            width: SCROLLBAR_HIT_SCREEN_PX / zoom,
+            height: thumb.height,
+            display: "flex",
+            justifyContent: "flex-end",
+            cursor: dragging ? "grabbing" : "grab",
+            touchAction: "none",
+          }}
+          onPointerDown={onThumbPointerDown}
+          onPointerMove={onThumbPointerMove}
+          onPointerUp={endThumbDrag}
+          onPointerCancel={endThumbDrag}
+        >
+          <div
+            aria-hidden
+            style={{
+              width: SCROLLBAR_SCREEN_PX / zoom,
+              height: "100%",
+              borderRadius: 9999,
+              background: dragging ? "rgba(0, 0, 0, 0.3)" : "rgba(0, 0, 0, 0.2)",
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface L2DocumentNodeProps {
   data: ModuleNodeData;
@@ -138,23 +271,10 @@ export function L2DocumentNode({
       {inFov && (
         <div style={clampedStyles}>
           <L2Header label={data.label} color={color} zoom={zoom} />
-          <div
-            className="nowheel nodrag l2-scrollable"
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: bodyPadding,
-              display: "flex",
-              flexDirection: "column",
-              gap: gapSize,
-              scrollbarWidth: "thin",
-              scrollbarColor: "rgba(0, 0, 0, 0.15) transparent",
-              ["--l2-scrollbar-width" as any]: `${5 / zoom}px`,
-            }}
-          >
+          <L2ScrollableBody zoom={zoom} padding={bodyPadding} gap={gapSize}>
             <L2Description description={description} color={color} zoom={zoom} />
             <L2CodeBlock snippet={data.snippet} path={data.path} zoom={zoom} />
-          </div>
+          </L2ScrollableBody>
         </div>
       )}
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />

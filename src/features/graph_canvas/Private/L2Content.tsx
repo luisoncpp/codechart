@@ -112,7 +112,7 @@ export function L2CodeBlock({ snippet, path, zoom }: CodeBlockProps) {
   const codePadding = `${6 / zoom}px 0`;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column" }}>
       <div
         style={{
           fontSize: 8 / zoom,
@@ -127,6 +127,7 @@ export function L2CodeBlock({ snippet, path, zoom }: CodeBlockProps) {
         Source Code
       </div>
       <pre
+        className="l2-scrollable"
         style={{
           margin: 0,
           padding: codePadding,
@@ -138,7 +139,9 @@ export function L2CodeBlock({ snippet, path, zoom }: CodeBlockProps) {
           lineHeight: 1.4,
           color: "#334155",
           overflowX: "auto",
-          flex: 1,
+          overflowY: "hidden",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
         }}
       >
         {lines.map((lineTokens, idx) => (
