@@ -96,8 +96,7 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
   (every group); `topLevelGroupIds` remains for parentless roots. `levelFromZoom(factor)` maps the
   scroll zoom factor to 0/1/2 (`<0.55 / <1.7 / ≥1.7`).
 - **Levels:** L0 collapses every group (all boxes stay visible, modules hidden); L1 expands
-  everything; L2 keeps L1's node set but each module box renders a **source snippet** (first 12 lines,
-  monospace). The store seeds the default collapse set per level, and `toggleGroup`/`collapse`/`expand`
+  everything; L2 renders each module as a scrollable document consisting of the module description at the top (preferring the long description if available) and the full syntax-highlighted source code below it. All text elements are counter-scaled to remain small/compact in screen space, and the scrollable area is clamped dynamically to fit completely inside the visible viewport. The store seeds the default collapse set per level, and `toggleGroup`/`collapse`/`expand`
   layer per-group overrides on top.
 - **Module box sizing:** `moduleBoxSize(label, symbols)` (`domain/layout/Private/module-box-metrics.ts`,
   pure, shared constants in `MODULE_BOX`) sizes every module to fit its content — the wrapped filename plus

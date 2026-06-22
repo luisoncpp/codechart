@@ -127,6 +127,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
     };
   }, [activeSymbol]);
 
+  const cacheVersion = session.getSourceCacheVersion();
   const projected = useMemo(
     /*reproject on model/zoom change*/ () => {
       if (!graph || !layout) return null;
@@ -137,7 +138,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
       };
       return projectGraph(graph, layout, options);
     },
-    [graph, layout, level, session],
+    [graph, layout, level, session, cacheVersion],
   );
 
   if (!projected) return null;

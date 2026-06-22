@@ -144,6 +144,19 @@ describe("render options (Phase 10 metadata + zoom)", () => {
     expect(http?.data.snippet).toBe("export const x = 1;");
   });
 
+  it("attaches descriptionLong, path, and snippet and hides symbols at L2", () => {
+    const snippets = new Map([["src/services/http.ts", "export const x = 1;"]]);
+    const { nodes } = projectGraph(graph, layout, { showSymbols: true, snippets });
+    const http = nodes.find((n) => n.id === "src/services/http.ts");
+    expect(http?.data.snippet).toBe("export const x = 1;");
+    expect(http?.data.path).toBe("src/services/http.ts");
+    expect(http?.data.descriptionLong).toBeDefined();
+
+    // Verify symbols are hidden when snippets (L2 mode) is active
+    const symbols = nodes.filter((n) => n.type === "symbol");
+    expect(symbols.length).toBe(0);
+  });
+
   it("attaches exported symbols when showSymbols is set (L1.5)", () => {
     const { nodes } = projectGraph(graph, layout, { showSymbols: true });
     const symbols = nodes.filter((n) => n.type === "symbol");

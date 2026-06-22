@@ -22,6 +22,7 @@ export class GraphSessionStore extends EventEmitter {
   private zoomLevel: ZoomLevel = 1;
   private collapsedGroupIds = new Set<string>();
   private sourceCache = new Map<string, string>();
+  private sourceCacheVersion = 0;
   /** Each group's footprint from the full (uncollapsed) layout, so a collapsed
    *  group keeps its own expanded size instead of shrinking. */
   private expandedGroupSizes = new Map<string, { width: number; height: number }>();
@@ -43,6 +44,7 @@ export class GraphSessionStore extends EventEmitter {
   getZoomLevel = () => this.zoomLevel;
   getCollapsedGroupIds = () => this.collapsedGroupIds;
   getSourceCache = () => this.sourceCache;
+  getSourceCacheVersion = () => this.sourceCacheVersion;
 
   select(id: string | null) {
     if (this.selectedId === id) return;
@@ -59,10 +61,12 @@ export class GraphSessionStore extends EventEmitter {
     try {
       const src = await this.client.readModuleSource(this.root, m.path);
       this.sourceCache.set(moduleId, src);
+      this.sourceCacheVersion++;
       return src;
     } catch {
       const fallback = `// ${m.path}`;
       this.sourceCache.set(moduleId, fallback);
+      this.sourceCacheVersion++;
       return fallback;
     }
   }
@@ -122,6 +126,7 @@ export class GraphSessionStore extends EventEmitter {
     this.zoomLevel = 1;
     this.collapsedGroupIds = new Set();
     this.sourceCache = new Map();
+    this.sourceCacheVersion = 0;
     this.expandedGroupSizes = new Map();
     this.reduced = null;
     this.layout = null;
@@ -173,6 +178,7 @@ export class GraphSessionStore extends EventEmitter {
   private async ensureSources(modules: ProjectGraph["modules"]) {
     if (!this.root) return;
     const missing = modules.filter((m) => !this.sourceCache.has(m.id));
+    if (missing.length === 0) return;
     await Promise.all(
       missing.map(async (m) => {
         try {
@@ -182,5 +188,6 @@ export class GraphSessionStore extends EventEmitter {
         }
       }),
     );
+    this.sourceCacheVersion++;
   }
 }

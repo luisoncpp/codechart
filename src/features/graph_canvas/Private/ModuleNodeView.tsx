@@ -3,6 +3,7 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { ModuleRFNode, ModuleNodeData } from "../../../domain/graph";
 import { fitLabelFontSize, MODULE_BOX } from "../../../domain/layout";
 import { iconGlyph } from "./icon-map";
+import { L2DocumentNode } from "./L2DocumentNode";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 const SNIPPET_LINES = 12;
@@ -34,6 +35,18 @@ const DESCRIPTION_STYLE: React.CSSProperties = {
 export function ModuleNodeView({ data, selected, width, height }: NodeProps<ModuleRFNode>) {
   const color = data.color ?? "#64748b";
   const textColor = darken(color);
+
+  if (data.snippet !== undefined) {
+    return (
+      <L2DocumentNode
+        data={data}
+        selected={selected}
+        color={color}
+        textColor={textColor}
+      />
+    );
+  }
+
   const detail = data.showSymbols || !!data.snippet;
   // L1: grow the centered label to fill its box; L2 keeps the compact 9px label.
   const fontSize = detail

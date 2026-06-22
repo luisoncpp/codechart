@@ -67,7 +67,7 @@ export function projectGraph(
     .filter((box) => moduleById.has(box.id))
     .filter((box) => moduleVisible(moduleById.get(box.id)!))
     .map((box) => moduleNode(moduleById.get(box.id)!, box, ctx));
-  const symbolNodes = options?.showSymbols
+  const symbolNodes = options?.showSymbols && !options?.snippets
     ? layout.symbols
         .filter((box) => {
           if (!box.parentId) return false;
@@ -198,8 +198,10 @@ function moduleNode(
       language: module.language,
       icon: module.annotation?.icon,
       descriptionShort: module.annotation?.descriptionShort,
+      descriptionLong: module.annotation?.descriptionLong,
       showSymbols,
       snippet: ctx.options?.snippets?.get(module.id),
+      path: module.path,
     },
   };
 }

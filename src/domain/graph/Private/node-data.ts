@@ -31,10 +31,14 @@ export interface ModuleNodeData extends Record<string, unknown> {
   color?: string;
   /** Annotation one-liner (Phase 10 metadata). */
   descriptionShort?: string;
+  /** Detailed annotation prose (Phase 10 metadata). */
+  descriptionLong?: string;
   /** True when symbol child boxes are visible (L1.5+). */
   showSymbols?: boolean;
   /** Source snippet shown in-box at L2 (lazily fetched). */
   snippet?: string;
+  /** Relative source file path of the module. */
+  path?: string;
 }
 
 /** Data carried by an exported-symbol box nested under a module. */
