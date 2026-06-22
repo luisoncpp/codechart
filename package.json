@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "dist:win": "tauri build --bundles nsis,msi",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
