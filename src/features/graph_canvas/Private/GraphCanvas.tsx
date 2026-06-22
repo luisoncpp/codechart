@@ -10,12 +10,8 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./graph-canvas.css";
-import {
-  projectGraph,
-  type RFNode,
-  type RenderOptions,
-  type ZoomLevel,
-} from "../../../domain/graph";
+import { projectGraph } from "../../../domain/graph";
+import type { RFNode, RenderOptions, ZoomLevel } from "../../../domain/graph";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { nodeTypes } from "./node-types";
 import { edgeTypes } from "./edge-types";

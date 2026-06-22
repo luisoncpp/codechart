@@ -10,9 +10,11 @@ export type { ModuleNode } from "./ModuleNode";
 export type { ProjectGraph } from "./ProjectGraph";
 export type { Severity } from "./Severity";
 export { projectGraphSummary } from "./Private/graph-projector";
-export { projectGraph, type RenderOptions } from "./Private/rf-projection";
+export { projectGraph } from "./Private/rf-projection";
+export type { RenderOptions } from "./Private/rf-projection";
 export { symbolBoxId, symbolNameFromId } from "./Private/symbol-id";
-export { inferSymbolKind, type SymbolKind } from "./Private/symbol-kind";
+export { inferSymbolKind } from "./Private/symbol-kind";
+export type { SymbolKind } from "./Private/symbol-kind";
 export {
   projectForZoom,
   allGroupIds,
@@ -20,8 +22,8 @@ export {
   levelFromZoom,
   isModuleExpanded,
   groupParentMap,
-  type ZoomLevel,
 } from "./Private/zoom-projection";
+export type { ZoomLevel } from "./Private/zoom-projection";
 export type {
   ProjectedGraph,
   GroupNodeData,
