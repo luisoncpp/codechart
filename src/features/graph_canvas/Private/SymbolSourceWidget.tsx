@@ -1,5 +1,6 @@
 // @Architecture(descriptionShort="Displays a resizable panel with the source code of a symbol")
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
+import { tokenizeCode, Token } from "./highlighter";
 
 interface SymbolSourceWidgetProps {
   symbolName: string;
@@ -40,17 +41,17 @@ export function findSymbolLine(source: string, symbolName: string): number {
 }
 
 function CodeLines({
-  lines,
+  tokenizedLines,
   targetLine,
   lineRef,
 }: {
-  lines: string[];
+  tokenizedLines: Token[][];
   targetLine: number;
   lineRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
     <pre className="symbol-widget__code">
-      {lines.map((line, idx) => (
+      {tokenizedLines.map((lineTokens, idx) => (
         <div
           key={idx}
           ref={idx === targetLine ? lineRef : undefined}
@@ -59,7 +60,17 @@ function CodeLines({
           }`}
         >
           <span className="symbol-widget__ln">{idx + 1}</span>
-          <span className="symbol-widget__text">{line || " "}</span>
+          <span className="symbol-widget__text">
+            {lineTokens.length === 0 ? (
+              " "
+            ) : (
+              lineTokens.map((token, tokenIdx) => (
+                <span key={tokenIdx} className={`hl-${token.type}`}>
+                  {token.text}
+                </span>
+              ))
+            )}
+          </span>
         </div>
       ))}
     </pre>
@@ -79,7 +90,10 @@ export function SymbolSourceWidget({
   left,
 }: SymbolSourceWidgetProps) {
   const lineRef = useRef<HTMLDivElement>(null);
-  const lines = sourceText.split("\n");
+  const tokenizedLines = useMemo(
+    () => tokenizeCode(sourceText, modulePath),
+    [sourceText, modulePath],
+  );
   const targetLine = findSymbolLine(sourceText, symbolName);
 
   useEffect(() => {
@@ -111,7 +125,11 @@ export function SymbolSourceWidget({
         </button>
       </div>
       <div className="symbol-widget__body">
-        <CodeLines lines={lines} targetLine={targetLine} lineRef={lineRef} />
+        <CodeLines
+          tokenizedLines={tokenizedLines}
+          targetLine={targetLine}
+          lineRef={lineRef}
+        />
       </div>
     </div>
   );

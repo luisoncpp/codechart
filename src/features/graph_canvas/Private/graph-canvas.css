@@ -276,3 +276,31 @@
 .symbol-widget__text {
   flex: 1;
 }
+
+/* ── Syntax Highlighting Colors ── */
+:root {
+  --hl-comment: #64748b;     /* Cool Gray */
+  --hl-string: #0f766e;      /* Teal Dark */
+  --hl-number: #b45309;      /* Amber Dark */
+  --hl-keyword: #4f46e5;     /* Indigo */
+  --hl-builtin: #0891b2;     /* Cyan */
+  --hl-type: #7c3aed;        /* Purple */
+  --hl-function: #2563eb;    /* Royal Blue */
+  --hl-operator: #475569;    /* Slate */
+  --hl-punctuation: #94a3b8; /* Slate Light */
+  --hl-decorator: #db2777;   /* Pink */
+  --hl-macro: #be185d;       /* Rose */
+}
+
+.hl-comment { color: var(--hl-comment); font-style: italic; }
+.hl-string { color: var(--hl-string); }
+.hl-number { color: var(--hl-number); }
+.hl-keyword { color: var(--hl-keyword); font-weight: 600; }
+.hl-builtin { color: var(--hl-builtin); }
+.hl-type { color: var(--hl-type); font-weight: 600; }
+.hl-function { color: var(--hl-function); }
+.hl-operator { color: var(--hl-operator); }
+.hl-punctuation { color: var(--hl-punctuation); }
+.hl-decorator { color: var(--hl-decorator); }
+.hl-macro { color: var(--hl-macro); }
+
