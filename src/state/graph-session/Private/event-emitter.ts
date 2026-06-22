@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Lightweight publish-subscribe event emitter for session updates")
 type Listener = () => void;
 
 export class EventEmitter {

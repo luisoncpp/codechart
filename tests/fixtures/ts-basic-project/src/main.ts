@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Entry point initializing services and launching UI")
 import { App } from "./ui";
 import { TodoStore } from "./core";
 

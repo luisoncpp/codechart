@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Handles canvas zoom, pan, and click events")
 import type React from "react";
 import type { Node } from "@xyflow/react";
 import { levelFromZoom } from "../../../domain/graph";

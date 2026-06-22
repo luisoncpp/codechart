@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Root React App component containing the layout and canvas")
 import { useMemo } from "react";
 import { createTauriAnalysisClient } from "../../ipc/analysis-client";
 import { ElkLayoutEngine } from "../../domain/layout";

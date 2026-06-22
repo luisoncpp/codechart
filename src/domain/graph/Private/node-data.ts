@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="TypeScript interfaces and types for projection nodes")
 import type { Node, Edge as RFEdge } from "@xyflow/react";
 import type { Language } from "../Language";
 import type { SymbolKind } from "./symbol-kind";

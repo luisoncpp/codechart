@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Color utility functions for visual nodes and groups")
 /** Deterministic fallback palette for groups that declare no color. */
 const PALETTE = [
   "#7c3aed", // violet

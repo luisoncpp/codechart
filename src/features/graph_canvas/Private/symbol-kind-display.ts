@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Maps symbol kinds to specific visual badges and colors")
 import type { SymbolKind } from "../../../domain/graph";
 
 /** IDE-style glyph + human label for each inferred symbol kind. */

@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="A UI indicator displaying the current semantic zoom level")
 import type { ZoomLevel } from "../../../domain/graph";
 
 const LABEL: Record<ZoomLevel, string> = {

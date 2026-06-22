@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Manages the global project, layout, and selection states")
 import { AnalysisClient } from "../../../ipc/analysis-client";
 import {
   ProjectGraph,

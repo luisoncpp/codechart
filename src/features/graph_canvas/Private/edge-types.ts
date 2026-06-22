@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Registers custom edge renderers for React Flow")
 import type { EdgeTypes } from "@xyflow/react";
 import { FloatingEdge } from "./FloatingEdge";
 

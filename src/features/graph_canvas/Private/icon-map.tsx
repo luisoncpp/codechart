@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Maps icon name strings to SVG React components")
 /** Sparing icon set: named annotation icons → a compact glyph. */
 const ICONS: Record<string, string> = {
   cube: "📦",

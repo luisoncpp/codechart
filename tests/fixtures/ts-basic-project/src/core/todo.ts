@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Domain type definitions for Todos")
 export interface Todo {
   id: string;
   title: string;

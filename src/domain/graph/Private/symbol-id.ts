@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Utility functions for parsing and creating symbol IDs")
 /** Stable layout id for a symbol box nested under its module. */
 export function symbolBoxId(moduleId: string, symbolName: string): string {
   return `${moduleId}::${symbolName}`;

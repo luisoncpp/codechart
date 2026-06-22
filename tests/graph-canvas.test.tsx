@@ -125,6 +125,30 @@ describe("GraphCanvas", () => {
     fireEvent.click(container.querySelector(`[data-id="app"]`)!);
     expect(store.getSelectedId()).toBeNull();
   });
+
+  it("uses bold for module filenames at L1.5 and normal at L1", async () => {
+    store.setZoomLevel(1.5);
+    const { container: containerL15 } = render(<GraphCanvas store={store} />);
+    await waitFor(() =>
+      expect(containerL15.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
+    );
+    const nodeL15 = containerL15.querySelector(`[data-id="src/core/store.ts"]`)!;
+    const labelSpanL15 = Array.from(nodeL15.querySelectorAll("span")).find(
+      (el) => el.textContent === "store.ts",
+    )!;
+    expect(labelSpanL15.style.fontWeight).toBe("bold");
+
+    store.setZoomLevel(1.0);
+    const { container: containerL1 } = render(<GraphCanvas store={store} />);
+    await waitFor(() =>
+      expect(containerL1.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
+    );
+    const nodeL1 = containerL1.querySelector(`[data-id="src/core/store.ts"]`)!;
+    const labelSpanL1 = Array.from(nodeL1.querySelectorAll("span")).find(
+      (el) => el.textContent === "store.ts",
+    )!;
+    expect(labelSpanL1.style.fontWeight).toBe("normal");
+  });
 });
 
 describe("edgeRole (selection-aware coloring)", () => {
@@ -236,7 +260,7 @@ describe("InspectionPanel", () => {
 
   it("omits the Architecture section for a module with no annotation", async () => {
     const store = await readyStore();
-    store.select("src/ui/TodoItem.tsx"); // no annotation, and its group has one
+    store.select("src/ui/index.ts"); // no annotation (barrel file), and its group has one
     render(<InspectionPanel store={store} />);
     // The group (ui) is annotated, so the section shows the group block but the
     // module has no "This module" block.

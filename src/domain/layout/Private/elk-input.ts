@@ -1,8 +1,9 @@
+// @Architecture(descriptionShort="Constructs the hierarchical ELK layout graph input from a project graph")
 import type { ElkNode, ElkExtendedEdge } from "elkjs/lib/elk-api";
 import { symbolBoxId, type ProjectGraph, type GroupNode } from "../../graph";
 import type { LayoutOptions } from "./layout-types";
 import { SYMBOL_BOX, symbolBoxWidth } from "./symbol-box-metrics";
-import { moduleBoxSize, descriptionBoxSize } from "./module-box-metrics";
+import { moduleBoxSize, descriptionBoxSize, wrappedDescriptionHeight } from "./module-box-metrics";
 
 /** Layout id of a group's in-body description box (a non-module leaf child). */
 export function descriptionBoxId(groupId: string): string {
@@ -98,10 +99,10 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
     );
     const modules = (modulesByGroup.get(parentId) ?? []).map((id) => {
       const mod = moduleById.get(id)!;
-      const fit = moduleBoxSize(mod.label, mod.exportedSymbols);
+      const fit = moduleBoxSize(mod.label, mod.exportedSymbols, mod.annotation?.descriptionShort);
       const width = Math.max(moduleWidth, fit.width);
       const height = Math.max(moduleHeight, fit.height);
-      return moduleElkNode(id, mod.exportedSymbols, width, height);
+      return moduleElkNode(id, mod.exportedSymbols, width, height, mod.annotation?.descriptionShort);
     });
     return [...groups, ...modules];
   };
@@ -120,21 +121,30 @@ function moduleElkNode(
   symbols: string[],
   fallbackWidth: number,
   fallbackHeight: number,
+  descriptionShort?: string,
 ): ElkNode {
   if (symbols.length === 0) {
     return { id: moduleId, width: fallbackWidth, height: fallbackHeight };
   }
+  const layoutOptions: Record<string, string> = {
+    ...MODULE_COMPOUND_OPTIONS,
+    "elk.aspectRatio": (fallbackWidth / fallbackHeight).toFixed(3),
+    "elk.nodeSize.constraints": "NODE_LABELS MINIMUM_SIZE",
+    "elk.nodeSize.minimum": `(${fallbackWidth},${fallbackHeight})`,
+  };
+
+  if (descriptionShort) {
+    const descH = wrappedDescriptionHeight(descriptionShort, fallbackWidth);
+    const padTop = PRESETS.moduleHeaderHeight + PRESETS.moduleSymbolPadding + descH;
+    layoutOptions["elk.padding"] = `[top=${padTop},left=${PRESETS.moduleSymbolPadding},bottom=${PRESETS.moduleSymbolPadding},right=${PRESETS.moduleSymbolPadding}]`;
+  }
+
   return {
     id: moduleId,
     // Pin the compound footprint to the aspect-clamped size (`moduleBoxSize`):
     // the minimum holds the box at that size and the inner packing targets the
     // same aspect, so symbol boxes stay inside the chosen viewport.
-    layoutOptions: {
-      ...MODULE_COMPOUND_OPTIONS,
-      "elk.aspectRatio": (fallbackWidth / fallbackHeight).toFixed(3),
-      "elk.nodeSize.constraints": "NODE_LABELS MINIMUM_SIZE",
-      "elk.nodeSize.minimum": `(${fallbackWidth},${fallbackHeight})`,
-    },
+    layoutOptions,
     children: symbols.map((name) => ({
       id: symbolBoxId(moduleId, name),
       width: symbolBoxWidth(name),

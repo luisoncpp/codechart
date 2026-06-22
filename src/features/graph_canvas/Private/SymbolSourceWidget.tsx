@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Displays a resizable panel with the source code of a symbol")
 import { useEffect, useRef } from "react";
 
 interface SymbolSourceWidgetProps {

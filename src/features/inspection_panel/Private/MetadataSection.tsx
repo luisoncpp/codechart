@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Displays file path, group name, and architecture annotations")
 import type { Annotation, GroupNode, ModuleNode } from "../../../domain/graph";
 
 interface MetadataSectionProps {

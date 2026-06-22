@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Helper functions for computing expanded and collapsed group states")
 import type { ProjectGraph } from "../ProjectGraph";
 import type { Edge } from "../Edge";
 

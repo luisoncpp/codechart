@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Mock analysis client using static fixtures for web development")
 import goldenGraph from "../../../../tests/fixtures/golden/project-graph.json";
 import { ProjectGraph } from "../../../domain/graph";
 import { AnalysisClient } from "./analysis-client";

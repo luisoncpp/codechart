@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Side panel displaying detailed metadata of the selected node")
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import {
   findModule,

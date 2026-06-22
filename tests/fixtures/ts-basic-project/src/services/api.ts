@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Domain API client consuming HTTP transport")
 import { getJson } from "./http";
 import { ApiResult } from "./types";
 // Intentionally unresolved: ./cache does not exist (planted unresolvedImport).

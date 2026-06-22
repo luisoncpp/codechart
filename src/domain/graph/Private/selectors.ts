@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Selector functions for querying the projected graph state")
 import type { ProjectGraph } from "../ProjectGraph";
 import type { ModuleNode } from "../ModuleNode";
 import type { GroupNode } from "../GroupNode";

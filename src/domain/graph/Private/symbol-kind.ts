@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Infers symbol kind (e.g. function, class) from symbol names")
 import type { Language } from "../Language";
 
 /** Heuristic export category — inferred from name (+ module language) until the adapter carries AST kinds. */

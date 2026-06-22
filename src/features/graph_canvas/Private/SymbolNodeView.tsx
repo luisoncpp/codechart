@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Renders individual exported symbol boxes inside modules")
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { SymbolRFNode } from "../../../domain/graph";
 import { SYMBOL_KIND_DISPLAY } from "./symbol-kind-display";

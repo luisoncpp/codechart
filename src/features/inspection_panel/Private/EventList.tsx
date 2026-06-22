@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Lists soft events emitted and listened to by a module")
 import type { Edge } from "../../../domain/graph";
 
 interface EventListProps {

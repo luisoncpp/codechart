@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Converts ELK layout coordinate outputs to absolute canvas coordinates")
 import type { ElkNode } from "elkjs/lib/elk-api";
 import type { LayoutBox, LayoutedGraph } from "./layout-types";
 

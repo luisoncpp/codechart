@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Wrapper for native Tauri file dialog to select directories")
 import { open } from "@tauri-apps/plugin-dialog";
 
 /** A folder chooser: resolves to the picked absolute path, or null if cancelled. */

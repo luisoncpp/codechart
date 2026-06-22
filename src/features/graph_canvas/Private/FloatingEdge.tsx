@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Renders a dynamic edge connecting node borders")
 import {
   BaseEdge,
   getBezierPath,

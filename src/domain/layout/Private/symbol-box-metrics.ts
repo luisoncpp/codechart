@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Calculates layout metrics and sizing for symbol nodes")
 /** Typography + padding shared by ELK layout and `SymbolNodeView`. */
 export const SYMBOL_BOX = {
   fontSize: 9,

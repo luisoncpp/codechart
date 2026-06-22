@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Bridges frontend requests to Tauri backend commands")
 import { invoke } from "@tauri-apps/api/core";
 import { ProjectGraph } from "../../../domain/graph";
 import { AnalysisClient } from "./analysis-client";

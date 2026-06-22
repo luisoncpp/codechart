@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Calculates intersection points on node borders for floating edges")
 export interface Box {
   x: number;
   y: number;

@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Floating button component to fit graph canvas view to screen")
 import { useEffect, useRef } from "react";
 import {
   useNodesInitialized,

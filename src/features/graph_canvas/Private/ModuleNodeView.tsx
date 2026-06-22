@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Renders module cards showing name, symbols, and snippets")
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { ModuleRFNode, ModuleNodeData } from "../../../domain/graph";
 import { fitLabelFontSize, MODULE_BOX } from "../../../domain/layout";
@@ -16,6 +17,19 @@ function darken(hex: string, factor = 0.55): string {
   return `#${ch(16)}${ch(8)}${ch(0)}`;
 }
 
+const DESCRIPTION_STYLE: React.CSSProperties = {
+  fontSize: 8,
+  lineHeight: "10px",
+  padding: "2px 6px 4px",
+  opacity: 0.8,
+  fontStyle: "italic",
+  whiteSpace: "normal",
+  wordBreak: "break-word",
+  borderBottom: "1px dashed rgba(0,0,0,0.1)",
+  position: "relative",
+  zIndex: 1,
+};
+
 /** Module container: label-only at L1; symbol children appear inside at L1.5+. */
 export function ModuleNodeView({ data, selected, width, height }: NodeProps<ModuleRFNode>) {
   const color = data.color ?? "#64748b";
@@ -33,6 +47,11 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       {data.snippet && <Snippet source={data.snippet} />}
       <Header data={data} textColor={textColor} detail={detail} fontSize={fontSize} />
+      {data.showSymbols && data.descriptionShort && (
+        <div style={{ ...DESCRIPTION_STYLE, color: textColor }}>
+          {data.descriptionShort}
+        </div>
+      )}
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
   );
@@ -52,31 +71,12 @@ function Header({
   fontSize: number;
 }) {
   const glyph = iconGlyph(data.icon);
-  const base = {
-    display: "flex" as const,
-    alignItems: "center",
-    gap: 4,
-    flexShrink: 0,
-    overflow: "hidden",
-    fontSize,
-    lineHeight: 1.15,
-    pointerEvents: "none" as const,
-    zIndex: 1,
-  };
+  const style = detail
+    ? { display: "flex" as const, alignItems: "center", gap: 4, flexShrink: 0, overflow: "hidden", fontSize, lineHeight: 1.15, pointerEvents: "none" as const, zIndex: 1, position: "relative" as const, padding: "2px 4px 0" }
+    : { display: "flex" as const, alignItems: "center", gap: 4, flexShrink: 0, overflow: "hidden", fontSize, lineHeight: 1.15, pointerEvents: "none" as const, zIndex: 1, position: "absolute" as const, inset: 0, justifyContent: "center", padding: "0 8px" };
+
   return (
-    <div
-      style={
-        detail
-          ? { ...base, position: "relative", padding: "2px 4px 0" }
-          : {
-              ...base,
-              position: "absolute",
-              inset: 0,
-              justifyContent: "center",
-              padding: "0 8px",
-            }
-      }
-    >
+    <div style={style}>
       {glyph && <span aria-hidden>{glyph}</span>}
       {data.isFacade && (
         <span aria-hidden style={{ color: textColor, fontSize: 9 }}>
@@ -89,6 +89,7 @@ function Header({
           overflowWrap: "anywhere",
           wordBreak: "break-word",
           textAlign: detail ? "left" : "center",
+          fontWeight: detail ? "bold" : "normal",
         }}
       >
         {data.label}

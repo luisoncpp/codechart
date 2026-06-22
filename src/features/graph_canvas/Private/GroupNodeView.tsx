@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Renders group boundaries, titles, and descriptions")
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { GroupRFNode, GroupNodeData } from "../../../domain/graph";
 import { DESC_BOX, PRESETS } from "../../../domain/layout";

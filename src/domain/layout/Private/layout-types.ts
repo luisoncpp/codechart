@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="TypeScript definitions and interfaces for layouts and options")
 import type { ProjectGraph } from "../../graph";
 
 /** An absolutely-positioned box for one group or module. */

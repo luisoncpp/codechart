@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="ELK layout engine implementation running inside the web worker")
 import ELK from "elkjs/lib/elk.bundled.js";
 import type { ProjectGraph } from "../../graph";
 import type { LayoutEngine, LayoutedGraph, LayoutOptions } from "./layout-types";

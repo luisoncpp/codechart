@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Root visual dashboard container")
 import { fetchTitles, type ITodoStore } from "../services";
 import { TodoList } from "./TodoList";
 import { TodoStore } from "../core";

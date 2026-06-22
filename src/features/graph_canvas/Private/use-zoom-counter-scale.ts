@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Custom hook to counter-scale elements on camera zoom")
 import { useStore } from "@xyflow/react";
 
 /** Counter-scale factor so labels stay readable as the camera zooms out.

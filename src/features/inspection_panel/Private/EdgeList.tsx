@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Lists incoming/outgoing imports in the inspection panel")
 import type { Edge } from "../../../domain/graph";
 
 interface EdgeListProps {

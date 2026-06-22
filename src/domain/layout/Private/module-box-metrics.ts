@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Calculates dimensions and font sizes for module and description boxes")
 import { SYMBOL_BOX, symbolBoxWidth } from "./symbol-box-metrics";
 
 /** Typography + box sizing shared by ELK layout and `ModuleNodeView`.
@@ -97,6 +98,16 @@ function boxFor(text: string, font: number): { width: number; height: number } {
   return { width, height };
 }
 
+export function wrappedDescriptionHeight(description: string, width: number): number {
+  const charWidth = 4.8; // conservative average character width at 8px font-size
+  const lineHeight = 10;
+  const padding = 6; // top/bottom padding
+  const usableWidth = width - 12; // left/right padding (6px each side)
+  const textWidth = description.length * charWidth;
+  const lines = Math.max(1, Math.ceil(textWidth / usableWidth));
+  return lines * lineHeight + padding;
+}
+
 /** Inner symbol-packing metrics (must mirror MODULE_COMPOUND_OPTIONS padding). */
 const SYMBOL_GRID = {
   gap: 4,
@@ -115,11 +126,17 @@ const SYMBOL_GRID = {
 export function moduleBoxSize(
   label: string,
   symbols: readonly string[] = [],
+  descriptionShort?: string,
 ): { width: number; height: number } {
   const labelH = wrappedLabelHeight(label);
-  const content = symbolContentSize(symbols);
+  const content = symbolContentSize(symbols, descriptionShort);
   const width = Math.max(MODULE_BOX.minWidth, content.width);
-  const height = Math.max(MODULE_BOX.minHeight, labelH, content.height);
+  let contentHeight = content.height;
+  if (symbols.length === 0 && descriptionShort) {
+    const descH = wrappedDescriptionHeight(descriptionShort, MODULE_BOX.minWidth);
+    contentHeight = SYMBOL_GRID.padTop + descH + SYMBOL_GRID.padOther;
+  }
+  const height = Math.max(MODULE_BOX.minHeight, labelH, contentHeight);
   return clampToAspect(width, height);
 }
 
@@ -132,16 +149,21 @@ function wrappedLabelHeight(label: string): number {
 
 /** Compact bounding box for the packed symbols: from total area at the target
  *  aspect, floored so the widest single symbol still fits on one row. */
-function symbolContentSize(symbols: readonly string[]): { width: number; height: number } {
+function symbolContentSize(symbols: readonly string[], descriptionShort?: string): { width: number; height: number } {
   if (symbols.length === 0) return { width: 0, height: 0 };
   const cellH = SYMBOL_BOX.height + SYMBOL_GRID.gap;
   const area = symbols.reduce((sum, s) => sum + (symbolBoxWidth(s) + SYMBOL_GRID.gap) * cellH, 0);
   const packed = area * SYMBOL_GRID.slack;
   const innerW = Math.max(Math.sqrt(packed * SYMBOL_GRID.aspect), Math.max(...symbols.map(symbolBoxWidth)));
   const innerH = packed / innerW;
+  let padTop = SYMBOL_GRID.padTop;
+  if (descriptionShort) {
+    const targetW = Math.max(MODULE_BOX.minWidth, innerW + 2 * SYMBOL_GRID.padOther);
+    padTop += wrappedDescriptionHeight(descriptionShort, targetW);
+  }
   return {
     width: Math.ceil(innerW) + 2 * SYMBOL_GRID.padOther,
-    height: Math.ceil(innerH) + SYMBOL_GRID.padTop + SYMBOL_GRID.padOther,
+    height: Math.ceil(innerH) + padTop + SYMBOL_GRID.padOther,
   };
 }
 

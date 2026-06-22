@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="React hook for components to read and write session store state")
 import { useEffect, useState } from "react";
 import { GraphSessionStore } from "./graph-session-store";
 

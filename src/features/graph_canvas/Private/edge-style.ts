@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Applies strokes, patterns, and colors to visual edges")
 import { MarkerType } from "@xyflow/react";
 import type { RFEdgeT } from "../../../domain/graph";
 

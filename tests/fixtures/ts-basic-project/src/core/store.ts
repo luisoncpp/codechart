@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Redux-like store managing state changes")
 import { Todo, makeTodo } from "./todo";
 
 // `emit`/`on` are an ambient global event bus (declared in a global .d.ts):

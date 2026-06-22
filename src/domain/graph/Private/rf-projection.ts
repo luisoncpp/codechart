@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Converts internal project graph model to React Flow projection")
 import { type LayoutBox, type LayoutedGraph, PRESETS } from "../../layout";
 import { symbolNameFromId } from "./symbol-id";
 import { inferSymbolKind } from "./symbol-kind";

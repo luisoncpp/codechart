@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Main React Flow canvas rendering modules, groups, and edges")
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import {
   ReactFlow,

@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Visual folder selector panel for loading project analysis")
 import { useState } from "react";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { projectGraphSummary } from "../../../domain/graph";

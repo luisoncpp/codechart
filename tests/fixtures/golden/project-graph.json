@@ -80,7 +80,11 @@
       "metrics": {
         "loc": 3
       },
-      "exportedSymbols": ["TodoStore", "isValid", "Todo"]
+      "exportedSymbols": [
+        "TodoStore",
+        "isValid",
+        "Todo"
+      ]
     },
     {
       "id": "src/core/store.ts",
@@ -90,9 +94,14 @@
       "groupId": "core",
       "isFacade": false,
       "metrics": {
-        "loc": 26
+        "loc": 27
       },
-      "exportedSymbols": ["TodoStore"]
+      "exportedSymbols": [
+        "TodoStore"
+      ],
+      "annotation": {
+        "descriptionShort": "Redux-like store managing state changes"
+      }
     },
     {
       "id": "src/core/todo.ts",
@@ -102,9 +111,15 @@
       "groupId": "shared",
       "isFacade": false,
       "metrics": {
-        "loc": 9
+        "loc": 10
       },
-      "exportedSymbols": ["Todo", "makeTodo"]
+      "exportedSymbols": [
+        "Todo",
+        "makeTodo"
+      ],
+      "annotation": {
+        "descriptionShort": "Domain type definitions for Todos"
+      }
     },
     {
       "id": "src/core/validate.ts",
@@ -114,9 +129,14 @@
       "groupId": "core",
       "isFacade": false,
       "metrics": {
-        "loc": 5
+        "loc": 6
       },
-      "exportedSymbols": ["isValid"]
+      "exportedSymbols": [
+        "isValid"
+      ],
+      "annotation": {
+        "descriptionShort": "Validation rules for Todo items"
+      }
     },
     {
       "id": "src/main.ts",
@@ -126,9 +146,14 @@
       "groupId": null,
       "isFacade": false,
       "metrics": {
-        "loc": 9
+        "loc": 10
       },
-      "exportedSymbols": ["bootstrap"]
+      "exportedSymbols": [
+        "bootstrap"
+      ],
+      "annotation": {
+        "descriptionShort": "Entry point initializing services and launching UI"
+      }
     },
     {
       "id": "src/services/api.ts",
@@ -138,9 +163,14 @@
       "groupId": "services",
       "isFacade": false,
       "metrics": {
-        "loc": 11
+        "loc": 12
       },
-      "exportedSymbols": ["fetchTitles"]
+      "exportedSymbols": [
+        "fetchTitles"
+      ],
+      "annotation": {
+        "descriptionShort": "Domain API client consuming HTTP transport"
+      }
     },
     {
       "id": "src/services/http.ts",
@@ -152,14 +182,16 @@
       "metrics": {
         "loc": 6
       },
+      "exportedSymbols": [
+        "getJson"
+      ],
       "annotation": {
         "type": "Module",
         "group": "services",
         "descriptionShort": "HTTP transport",
         "descriptionLong": "Single choke point for network access; services depend on this, not fetch.",
         "icon": "globe"
-      },
-      "exportedSymbols": ["getJson"]
+      }
     },
     {
       "id": "src/services/index.ts",
@@ -171,7 +203,11 @@
       "metrics": {
         "loc": 2
       },
-      "exportedSymbols": ["fetchTitles", "ApiResult", "ITodoStore"]
+      "exportedSymbols": [
+        "fetchTitles",
+        "ApiResult",
+        "ITodoStore"
+      ]
     },
     {
       "id": "src/services/types.ts",
@@ -181,9 +217,15 @@
       "groupId": "shared",
       "isFacade": false,
       "metrics": {
-        "loc": 13
+        "loc": 14
       },
-      "exportedSymbols": ["ApiResult", "ITodoStore"]
+      "exportedSymbols": [
+        "ApiResult",
+        "ITodoStore"
+      ],
+      "annotation": {
+        "descriptionShort": "Service type definitions"
+      }
     },
     {
       "id": "src/ui/App.tsx",
@@ -193,9 +235,14 @@
       "groupId": "ui",
       "isFacade": false,
       "metrics": {
-        "loc": 14
+        "loc": 15
       },
-      "exportedSymbols": ["App"]
+      "exportedSymbols": [
+        "App"
+      ],
+      "annotation": {
+        "descriptionShort": "Root visual dashboard container"
+      }
     },
     {
       "id": "src/ui/TodoItem.tsx",
@@ -205,9 +252,14 @@
       "groupId": "ui",
       "isFacade": false,
       "metrics": {
-        "loc": 5
+        "loc": 6
       },
-      "exportedSymbols": ["TodoItem"]
+      "exportedSymbols": [
+        "TodoItem"
+      ],
+      "annotation": {
+        "descriptionShort": "Individual Todo item list card"
+      }
     },
     {
       "id": "src/ui/TodoList.tsx",
@@ -217,9 +269,14 @@
       "groupId": "ui",
       "isFacade": false,
       "metrics": {
-        "loc": 14
+        "loc": 15
       },
-      "exportedSymbols": ["TodoList"]
+      "exportedSymbols": [
+        "TodoList"
+      ],
+      "annotation": {
+        "descriptionShort": "Visual list rendering Todo items"
+      }
     },
     {
       "id": "src/ui/index.ts",
@@ -231,7 +288,11 @@
       "metrics": {
         "loc": 3
       },
-      "exportedSymbols": ["App", "TodoList", "TodoItem"]
+      "exportedSymbols": [
+        "App",
+        "TodoList",
+        "TodoItem"
+      ]
     }
   ],
   "edges": [

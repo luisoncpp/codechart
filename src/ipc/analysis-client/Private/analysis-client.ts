@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Defines the abstract interface for the analyzer client")
 import { ProjectGraph } from "../../../domain/graph";
 
 export interface AnalysisClient {
