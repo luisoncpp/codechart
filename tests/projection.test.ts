@@ -7,6 +7,7 @@ import {
   importsOf,
   importedBy,
   allGroupIds,
+  projectForZoom,
 } from "../src/domain/graph";
 import type { ProjectGraph } from "../src/domain/graph";
 
@@ -160,6 +161,14 @@ describe("render options (Phase 10 metadata + zoom)", () => {
       "TodoStore",
       "isValid",
     ]);
+  });
+
+  it("does not throw an error when showSymbols is set and some groups are collapsed", () => {
+    const collapsed = new Set(["core"]);
+    const reducedGraph = projectForZoom(graph, collapsed);
+    expect(() => {
+      projectGraph(reducedGraph, layout, { showSymbols: true, collapsedGroupIds: collapsed });
+    }).not.toThrow();
   });
 });
 

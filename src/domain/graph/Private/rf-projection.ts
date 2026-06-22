@@ -68,7 +68,11 @@ export function projectGraph(
     .map((box) => moduleNode(moduleById.get(box.id)!, box, ctx));
   const symbolNodes = options?.showSymbols
     ? layout.symbols
-        .filter((box) => !box.parentId || moduleVisible(moduleById.get(box.parentId)!))
+        .filter((box) => {
+          if (!box.parentId) return false;
+          const parentModule = moduleById.get(box.parentId);
+          return parentModule !== undefined && moduleVisible(parentModule);
+        })
         .map((box) => symbolNode(box, moduleById, ctx))
     : [];
 
