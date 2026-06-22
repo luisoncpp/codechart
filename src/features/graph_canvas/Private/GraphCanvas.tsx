@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
   Background,
   Controls,
   type FitViewOptions,
+  type Node as FlowNode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./graph-canvas.css";
@@ -20,15 +21,38 @@ import { edgeTypes } from "./edge-types";
 import { styleEdge } from "./edge-style";
 import { FitView } from "./FitView";
 import { GraphCanvasController } from "./graph-canvas-controller";
+import { SymbolSourceWidget } from "./SymbolSourceWidget";
+import { LevelBadge } from "./LevelBadge";
 
 interface GraphCanvasProps {
   store: GraphSessionStore;
 }
 
-/** Initial fit only — camera zoom is free after load (Google Maps style). */
 function fitOptionsForLevel(level: ZoomLevel): FitViewOptions {
   if (level === 0) return { padding: 0.18, maxZoom: 0.45 };
   return { padding: 0.12 };
+}
+
+function computeWidgetPosition(
+  symbolRect: DOMRect,
+  containerRect: DOMRect,
+): { top: number; left: number } {
+  const widgetWidth = 400;
+  const widgetHeight = 300;
+  const spacing = 8;
+
+  let left = symbolRect.right - containerRect.left + spacing;
+  if (left + widgetWidth > containerRect.width && symbolRect.left - containerRect.left > widgetWidth) {
+    left = symbolRect.left - containerRect.left - widgetWidth - spacing;
+  }
+
+  let top = symbolRect.top - containerRect.top;
+  if (top + widgetHeight > containerRect.height) {
+    top = containerRect.height - widgetHeight - spacing;
+  }
+  if (top < spacing) top = spacing;
+
+  return { top, left };
 }
 
 export function GraphCanvas({ store }: GraphCanvasProps) {
@@ -37,10 +61,70 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
   const layout = session.getLayout();
   const level = session.getZoomLevel();
   const selectedId = session.getSelectedId();
-  const controller = useMemo(
-    /*build controller*/ () => new GraphCanvasController(store),
-    [store],
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [activeSymbol, setActiveSymbol] = useState<{
+    symbolName: string;
+    modulePath: string;
+    sourceText: string;
+    top: number;
+    left: number;
+    parentId: string;
+  } | null>(null);
+
+  const handleSymbolClick = useCallback(
+    async (node: FlowNode, event: React.MouseEvent) => {
+      const symbolEl =
+        (event.target as HTMLElement).closest(".symbol-box") ||
+        (event.target as HTMLElement).closest(".react-flow__node-symbol");
+      const container = containerRef.current;
+      if (!symbolEl || !container || !graph) return;
+      const moduleId = node.parentId!;
+      const module = graph.modules.find((m) => m.id === moduleId);
+      if (!module) return;
+      const sourceText = await store.fetchModuleSource(moduleId);
+      const { top, left } = computeWidgetPosition(
+        symbolEl.getBoundingClientRect(),
+        container.getBoundingClientRect(),
+      );
+      setActiveSymbol({
+        symbolName: (node.data?.label as string) || "",
+        modulePath: module.path,
+        sourceText,
+        top,
+        left,
+        parentId: moduleId,
+      });
+    },
+    [graph, store],
   );
+
+  const controller = useMemo(
+    /*build controller*/ () => new GraphCanvasController(store, handleSymbolClick),
+    [store, handleSymbolClick],
+  );
+
+  useEffect(() => {
+    if (selectedId === null || (activeSymbol && activeSymbol.parentId !== selectedId)) {
+      setActiveSymbol(null);
+    }
+  }, [selectedId, activeSymbol]);
+
+  useEffect(() => {
+    if (!activeSymbol) return;
+    const handler = (e: MouseEvent) => {
+      const widget = document.querySelector(".symbol-widget");
+      if (widget?.contains(e.target as globalThis.Node)) return;
+      setActiveSymbol(null);
+    };
+    const timer = setTimeout(() => {
+      document.addEventListener("click", handler);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("click", handler);
+    };
+  }, [activeSymbol]);
 
   const projected = useMemo(
     /*reproject on model/zoom change*/ () => {
@@ -66,7 +150,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
 
   return (
     <ReactFlowProvider>
-      <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      <div ref={containerRef} style={{ position: "relative", width: "100%", height: "100%" }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -76,6 +160,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
           onNodeClick={(e, node) => controller.onNodeClick(node, e)}
           onNodeDoubleClick={(_e, node) => controller.onNodeDoubleClick(node)}
           onPaneClick={() => controller.onPaneClick()}
+          onMoveStart={() => setActiveSymbol(null)}
           onMoveEnd={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}
           fitView
           fitViewOptions={fitOptions}
@@ -91,38 +176,17 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
           <Controls showInteractive={false} />
         </ReactFlow>
         <LevelBadge level={level} />
+        {activeSymbol && (
+          <SymbolSourceWidget
+            symbolName={activeSymbol.symbolName}
+            modulePath={activeSymbol.modulePath}
+            sourceText={activeSymbol.sourceText}
+            top={activeSymbol.top}
+            left={activeSymbol.left}
+            onClose={() => setActiveSymbol(null)}
+          />
+        )}
       </div>
     </ReactFlowProvider>
-  );
-}
-
-const LABEL: Record<ZoomLevel, string> = {
-  0: "L0 · overview",
-  1: "L1 · modules",
-  1.5: "L1.5 · symbols",
-  2: "L2 · source",
-};
-
-/** Read-out of the active semantic-zoom level (driven by scroll). */
-function LevelBadge({ level }: { level: ZoomLevel }) {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: 10,
-        right: 10,
-        padding: "3px 8px",
-        fontSize: 11,
-        fontFamily: "ui-sans-serif, system-ui, sans-serif",
-        fontWeight: 600,
-        color: "#475569",
-        background: "#ffffffcc",
-        border: "1px solid #e2e8f0",
-        borderRadius: 6,
-        pointerEvents: "none",
-      }}
-    >
-      {LABEL[level]}
-    </div>
   );
 }

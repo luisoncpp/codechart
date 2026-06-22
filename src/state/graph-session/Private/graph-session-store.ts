@@ -49,6 +49,23 @@ export class GraphSessionStore extends EventEmitter {
     this.emit("selection-changed");
   }
 
+  async fetchModuleSource(moduleId: string): Promise<string> {
+    const cached = this.sourceCache.get(moduleId);
+    if (cached !== undefined) return cached;
+    if (!this.root || !this.graph) return "";
+    const m = this.graph.modules.find((mod) => mod.id === moduleId);
+    if (!m) return "";
+    try {
+      const src = await this.client.readModuleSource(this.root, m.path);
+      this.sourceCache.set(moduleId, src);
+      return src;
+    } catch {
+      const fallback = `// ${m.path}`;
+      this.sourceCache.set(moduleId, fallback);
+      return fallback;
+    }
+  }
+
   /** Switch detail level. Collapse state updates for L0; layout stays fixed (projection-only). */
   setZoomLevel(level: ZoomLevel) {
     if (level === this.zoomLevel) return;

@@ -43,4 +43,19 @@ describe("GraphCanvasController.onNodeClick", () => {
     expect(store.toggleGroup).not.toHaveBeenCalled();
     expect(store.select).not.toHaveBeenCalled();
   });
+
+  it("selects the parent module and triggers the callback when a symbol node is clicked", () => {
+    const store = spyStore();
+    const onSymbolClick = vi.fn();
+    const symbolNode = { id: "s1", type: "symbol", parentId: "m1" } as unknown as Node;
+    const evt = clickEvent(/*onToggleButton=*/ false);
+
+    new GraphCanvasController(
+      store as unknown as GraphSessionStore,
+      onSymbolClick,
+    ).onNodeClick(symbolNode, evt);
+
+    expect(store.select).toHaveBeenCalledWith("m1");
+    expect(onSymbolClick).toHaveBeenCalledWith(symbolNode, evt);
+  });
 });

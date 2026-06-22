@@ -44,3 +44,4 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [analyze-project.md](./analyze-project.md) | Folder → `ProjectGraph`: the full backend pipeline (parse → group → resolve → build) |
 | [open-project.md](./open-project.md) | Open folder → IPC → live diagram: the UI front of the analysis pipeline (session phases) |
 | [select-module.md](./select-module.md) | Click a module on the canvas → selection → inspection panel (pure UI state) |
+| [preview-symbol.md](./preview-symbol.md) | Click a symbol in L1.5 zoom → selection + resizable preview code widget next to it |

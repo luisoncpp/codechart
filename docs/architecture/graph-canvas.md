@@ -181,6 +181,7 @@ ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced Pro
   and calls `store.toggleGroup` on a single click; double-clicking anywhere on the group still toggles via
   `onNodeDoubleClick`. Keep the `data-group-toggle` attribute — it's how the controller distinguishes a
   toggle click from a select/body click without threading a callback through the pure projection.
+- **Symbol Source Preview Widget (L1.5):** Clicking an exported symbol node in the L1.5 zoom view selects its parent module and opens a resizable, scrollable popup widget (`SymbolSourceWidget`) next to the symbol. The widget displays the module's source code, automatically locating and scrolling to focus on the line containing the symbol's definition (matching class/function/const/etc. patterns). It automatically dismisses when the canvas viewport is moved, when selecting another node or clicking the pane, or on any click outside the widget.
 
 Store surface (TDD §5.1): `getZoomLevel`, `getReducedGraph`, `getCollapsedGroupIds`, `getSourceCache`,
 `setZoomLevel`, `expandGroup`/`collapseGroup`/`toggleGroup`; emits `zoom-changed` + `layout-changed`.

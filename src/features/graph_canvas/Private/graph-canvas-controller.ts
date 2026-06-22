@@ -8,11 +8,15 @@ import type { GraphSessionStore } from "../../../state/graph-session";
  * Keeps `GraphCanvas` free of selection logic (guidelines: classes over hooks).
  */
 export class GraphCanvasController {
-  constructor(private store: GraphSessionStore) {}
+  constructor(
+    private store: GraphSessionStore,
+    private onSymbolClick?: (node: Node, event: React.MouseEvent) => void,
+  ) {}
 
   onNodeClick(node: Node, event: React.MouseEvent) {
     if (node.type === "symbol") {
       this.store.select(node.parentId ?? null);
+      this.onSymbolClick?.(node, event);
       return;
     }
     if (node.type === "module") {
