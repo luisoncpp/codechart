@@ -37,26 +37,17 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
   const textColor = darken(color);
 
   if (data.snippet !== undefined) {
-    return (
-      <L2DocumentNode
-        data={data}
-        selected={selected}
-        color={color}
-        textColor={textColor}
-      />
-    );
+    return <L2DocumentNode data={data} selected={selected} color={color} textColor={textColor} />;
   }
 
   const detail = data.showSymbols || !!data.snippet;
-  // L1: grow the centered label to fill its box; L2 keeps the compact 9px label.
   const fontSize = detail
     ? 9
     : fitLabelFontSize(data.label, width ?? MODULE_BOX.minWidth, height ?? MODULE_BOX.minHeight);
+
+  const cardOpts = { color, textColor, isFacade: data.isFacade, selected, detail };
   return (
-    <div
-      style={cardStyle(color, textColor, data.isFacade, selected, detail)}
-      title={data.descriptionShort ?? data.label}
-    >
+    <div style={cardStyle(cardOpts)} title={data.descriptionShort ?? data.label}>
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       {data.snippet && <Snippet source={data.snippet} />}
       <Header data={data} textColor={textColor} detail={detail} fontSize={fontSize} />
@@ -69,44 +60,41 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
     </div>
   );
 }
-
-/** Label scales with the box (world units, no camera counter-scale): the box is
- *  laid out to fit this size, so the text never overflows it as you zoom. */
-function Header({
-  data,
-  textColor,
-  detail,
-  fontSize,
-}: {
+interface HeaderProps {
   data: ModuleNodeData;
   textColor: string;
   detail: boolean;
   fontSize: number;
-}) {
-  const glyph = iconGlyph(data.icon);
-  const style = detail
-    ? { display: "flex" as const, alignItems: "center", gap: 4, flexShrink: 0, overflow: "hidden", fontSize, lineHeight: 1.15, pointerEvents: "none" as const, zIndex: 1, position: "relative" as const, padding: "2px 4px 0" }
-    : { display: "flex" as const, alignItems: "center", gap: 4, flexShrink: 0, overflow: "hidden", fontSize, lineHeight: 1.15, pointerEvents: "none" as const, zIndex: 1, position: "absolute" as const, inset: 0, justifyContent: "center", padding: "0 8px" };
+}
 
+const labelStyle = (detail: boolean): React.CSSProperties => ({
+  overflow: "hidden",
+  overflowWrap: "anywhere",
+  wordBreak: "break-word",
+  textAlign: detail ? "left" : "center",
+  fontWeight: detail ? "bold" : "normal",
+});
+
+const headerStyle = (detail: boolean, fontSize: number): React.CSSProperties => {
+  const base = { display: "flex" as const, alignItems: "center", gap: 4, flexShrink: 0, overflow: "hidden", fontSize, lineHeight: 1.15, pointerEvents: "none" as const, zIndex: 1 };
+  return detail
+    ? { ...base, position: "relative" as const, padding: "2px 4px 0" }
+    : { ...base, position: "absolute" as const, inset: 0, justifyContent: "center", padding: "0 8px" };
+};
+
+/** Label scales with the box (world units, no camera counter-scale): the box is
+ *  laid out to fit this size, so the text never overflows it as you zoom. */
+function Header({ data, textColor, detail, fontSize }: HeaderProps) {
+  const glyph = iconGlyph(data.icon);
   return (
-    <div style={style}>
+    <div style={headerStyle(detail, fontSize)}>
       {glyph && <span aria-hidden>{glyph}</span>}
       {data.isFacade && (
-        <span aria-hidden style={{ color: textColor, fontSize: 9 }}>
+        <span aria-hidden style={{ color: textColor, fontSize }}>
           ★
         </span>
       )}
-      <span
-        style={{
-          overflow: "hidden",
-          overflowWrap: "anywhere",
-          wordBreak: "break-word",
-          textAlign: detail ? "left" : "center",
-          fontWeight: detail ? "bold" : "normal",
-        }}
-      >
-        {data.label}
-      </span>
+      <span style={labelStyle(detail)}>{data.label}</span>
     </div>
   );
 }
@@ -135,13 +123,15 @@ function Snippet({ source }: { source: string }) {
   );
 }
 
-function cardStyle(
-  color: string,
-  textColor: string,
-  isFacade: boolean,
-  selected: boolean,
-  detail: boolean,
-) {
+interface CardStyleOptions {
+  color: string;
+  textColor: string;
+  isFacade: boolean;
+  selected: boolean;
+  detail: boolean;
+}
+
+function cardStyle({ color, textColor, isFacade, selected, detail }: CardStyleOptions) {
   return {
     position: "relative" as const,
     width: "100%",
