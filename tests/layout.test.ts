@@ -137,6 +137,19 @@ describe("ElkLayoutEngine (golden model)", () => {
     expect(result.width / result.height).toBeLessThan(2.5);
   });
 
+  it("does not stack every sibling subgroup in one vertical column", async () => {
+    const result = await new ElkLayoutEngine().layout(graph);
+    for (const parent of graph.groups) {
+      const nestedChildIds = graph.groups.filter((g) => g.parentId === parent.id).map((g) => g.id);
+      if (nestedChildIds.length < 3) continue;
+      const siblings = result.groups.filter((g) => g.parentId === parent.id);
+      const stacked = siblings.every(
+        (s, i, arr) => i === 0 || s.y >= arr[i - 1].y + arr[i - 1].height - 1,
+      );
+      expect(stacked, `${parent.id} subgroups all in one column`).toBe(false);
+    }
+  });
+
   it("is deterministic across runs", async () => {
     const a = await new ElkLayoutEngine().layout(graph);
     const b = await new ElkLayoutEngine().layout(graph);

@@ -39,7 +39,7 @@ const ROOT_OPTIONS: Record<string, string> = {
   "elk.spacing.nodeNode": String(PRESETS.nodeSpacing),
 };
 
-const GROUP_LAYOUT_OPTIONS: Record<string, string> = {
+const GROUP_LAYERED_OPTIONS: Record<string, string> = {
   "elk.algorithm": "layered",
   "elk.direction": "RIGHT",
   "elk.spacing.nodeNode": String(PRESETS.nodeSpacing),
@@ -50,6 +50,14 @@ const GROUP_LAYOUT_OPTIONS: Record<string, string> = {
   // model order applies to them too, instead of being packed separately.
   "elk.layered.considerModelOrder.strategy": "NODES_AND_EDGES",
   "elk.separateConnectedComponents": "false",
+};
+
+/** Edgeless groups (handlers, services barrels, etc.) pack into a screen-shaped
+ *  grid instead of one tall column — layered only when intra-group imports exist. */
+const GROUP_REPACK_OPTIONS: Record<string, string> = {
+  "elk.algorithm": "rectpacking",
+  "elk.aspectRatio": "1.6",
+  "elk.spacing.nodeNode": String(PRESETS.nodeSpacing),
 };
 
 const GROUP_OPTIONS: Record<string, string> = {
@@ -75,7 +83,11 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
   // Prepend a description box (sized to its prose) into the group's flow so ELK
   // packs the modules around it — never as a full-width band. Only for expanded
   // groups (those that have other children); a collapsed group renders its own card.
-  const withDescription = (groupId: string, children: ElkNode[]): ElkNode[] => {
+  const withDescription = (
+    groupId: string,
+    children: ElkNode[],
+    layered: boolean,
+  ): ElkNode[] => {
     if (children.length === 0) return children;
     const ann = groupById.get(groupId)!.annotation;
     const short = ann?.descriptionShort;
@@ -83,20 +95,29 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
     const desc: ElkNode = {
       id: descriptionBoxId(groupId),
       ...descriptionBoxSize(short, ann.descriptionLong ?? short),
-      // Pin to the first (leftmost) layer + first model-order slot → top-left corner.
-      layoutOptions: { "elk.layered.layering.layerConstraint": "FIRST" },
+      // Layered only: pin to the first (leftmost) column + first model-order slot.
+      // Rectpacking groups rely on rf-projection to pull the box to the top-left.
+      ...(layered
+        ? { layoutOptions: { "elk.layered.layering.layerConstraint": "FIRST" } }
+        : {}),
     };
     return [desc, ...children];
   };
 
   const build = (parentId: string | null): ElkNode[] => {
-    const groups = (childGroups.get(parentId) ?? []).map((id) =>
-      groupElkNode(
+    const groupIds = childGroups.get(parentId) ?? [];
+    const groups = groupIds.map((id) => {
+      const nested = build(id);
+      const nestedChildIds = childGroups.get(id) ?? [];
+      const layered = shouldUseLayeredGroup(graph, id, nestedChildIds);
+      return groupElkNode(
         groupById.get(id)!,
-        withDescription(id, build(id)),
+        withDescription(id, nested, layered),
+        layered,
+        nestedChildIds.length > 0,
         options?.collapsedGroupSizes,
-      ),
-    );
+      );
+    });
     const modules = (modulesByGroup.get(parentId) ?? []).map((id) => {
       const mod = moduleById.get(id)!;
       const fit = moduleBoxSize(mod.label, mod.exportedSymbols, mod.annotation?.descriptionShort);
@@ -157,7 +178,13 @@ type SizeMap = LayoutOptions["collapsedGroupSizes"];
 
 /** A group node; a collapsed (childless) group keeps its expanded footprint when
  *  known, else a generous fallback card — never the shrunken stub. */
-function groupElkNode(group: GroupNode, children: ElkNode[], sizes?: SizeMap): ElkNode {
+function groupElkNode(
+  group: GroupNode,
+  children: ElkNode[],
+  layered: boolean,
+  hasNestedGroups: boolean,
+  sizes?: SizeMap,
+): ElkNode {
   if (children.length === 0) {
     const kept = sizes?.get(group.id);
     return {
@@ -166,11 +193,36 @@ function groupElkNode(group: GroupNode, children: ElkNode[], sizes?: SizeMap): E
       height: kept?.height ?? PRESETS.collapsedGroupHeight,
     };
   }
+  const repack = hasNestedGroups
+    ? { ...GROUP_REPACK_OPTIONS, "elk.aspectRatio": "2.5" }
+    : GROUP_REPACK_OPTIONS;
+  const layout = layered ? GROUP_LAYERED_OPTIONS : repack;
   return {
     id: group.id,
-    layoutOptions: { ...GROUP_LAYOUT_OPTIONS, ...GROUP_OPTIONS },
+    layoutOptions: { ...layout, ...GROUP_OPTIONS },
     children,
   };
+}
+
+/** Layered only for flat module groups with import edges. Containers that nest
+ *  subgroups always repack: layered stacks same-layer siblings vertically, so
+ *  unrelated subgroups (e.g. map-editor beside pane-workspace) waste horizontal space. */
+function shouldUseLayeredGroup(
+  graph: ProjectGraph,
+  groupId: string,
+  nestedChildIds: string[],
+): boolean {
+  if (nestedChildIds.length > 0) return false;
+  return hasIntraGroupEdges(graph, groupId);
+}
+
+/** True when at least one import edge connects two direct members of `groupId`. */
+function hasIntraGroupEdges(graph: ProjectGraph, groupId: string): boolean {
+  const members = new Set(
+    graph.modules.filter((m) => m.groupId === groupId).map((m) => m.id),
+  );
+  if (members.size < 2) return false;
+  return graph.edges.some((e) => members.has(e.source) && members.has(e.target));
 }
 
 function buildEdges(graph: ProjectGraph): ElkExtendedEdge[] {

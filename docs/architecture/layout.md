@@ -33,10 +33,13 @@ parent-relative offsets by subtracting the parent box when it needs `parentNode`
      `modules`); graph-canvas draws the prose at this geometry. Collapsed (childless) groups get none.
    - **Two algorithms by depth:** the **root** uses `rectpacking` (`elk.aspectRatio=1.6`) so
      top-level groups + ungrouped modules pack into a compact, screen-shaped 2D grid instead of one
-     long horizontal row. **Each group** uses `layered` (direction RIGHT) internally so its modules
-     keep dependency flow. Edges are attached at the root but no algorithm routes them — React Flow
-     draws edges itself from node positions, so dropping ELK's cross-group routing costs nothing.
-2. `elk.layout()` computes parent-relative coords + group sizes (rectpacking root, layered groups).
+     long horizontal row. **Each group** uses `layered` (direction RIGHT) only for **flat** groups
+     whose direct members share import edges. **Group containers** (nested subgroups) always use
+     `rectpacking` (`aspectRatio=2.5`) so sibling subgroups tile horizontally instead of stacking in
+     one column; leaf groups without edges use `rectpacking` (`aspectRatio=1.6`). Edges are attached
+     at the root but no algorithm routes them — React Flow draws edges itself from node positions, so dropping ELK's
+     cross-group routing costs nothing.
+2. `elk.layout()` computes parent-relative coords + group sizes (rectpacking root; per-group layered or rectpacking).
 3. `absolute-coords.ts` `toLayoutedGraph` — walks the result, accumulates offsets into absolute
    boxes, and splits groups from modules via the group-id set.
 

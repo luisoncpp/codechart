@@ -20,8 +20,10 @@ only orders *within* a connected component. The fix for the edgeless-group case 
 the unrelated-sounding `separateConnectedComponents=false`.
 
 Trade-off: disabling component separation makes a group of fully-disconnected leaf
-modules stack into one column (taller). Acceptable because grouped modules usually
-share imports; verify the compactness invariant still holds after enabling it.
+modules stack into one column (taller) **when that group uses `layered`**. Groups
+with no intra-group import edges now use `rectpacking` instead (see
+`hasIntraGroupEdges` in `elk-input.ts`), so the pin options above apply only where
+dependency flow layout is active.
 
 A group-of-groups (the root `app` wrapper) still resists exact top-left pinning —
 `layerConstraint` is honored loosely when children are large compound nodes. Treated
