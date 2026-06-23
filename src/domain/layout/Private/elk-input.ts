@@ -120,10 +120,11 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
     });
     const modules = (modulesByGroup.get(parentId) ?? []).map((id) => {
       const mod = moduleById.get(id)!;
-      const fit = moduleBoxSize(mod.label, mod.exportedSymbols, mod.annotation?.descriptionShort);
+      const symbols = uniqueSymbols(mod.exportedSymbols);
+      const fit = moduleBoxSize(mod.label, symbols, mod.annotation?.descriptionShort);
       const width = Math.max(moduleWidth, fit.width);
       const height = Math.max(moduleHeight, fit.height);
-      return moduleElkNode(id, mod.exportedSymbols, width, height, mod.annotation?.descriptionShort);
+      return moduleElkNode(id, symbols, width, height, mod.annotation?.descriptionShort);
     });
     return [...groups, ...modules];
   };
@@ -251,4 +252,9 @@ function push(map: Map<string | null, string[]>, key: string | null, id: string)
   const list = map.get(key) ?? [];
   list.push(id);
   map.set(key, list);
+}
+
+/** Defense in depth: stale analysis may still carry duplicate export names. */
+function uniqueSymbols(symbols: readonly string[]): string[] {
+  return [...new Set(symbols)];
 }

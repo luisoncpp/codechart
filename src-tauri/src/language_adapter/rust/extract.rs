@@ -34,23 +34,50 @@ fn push_use(node: Node, src: &str, module: &mut ParsedModule, is_reexport: bool)
     };
     let importer = &module.path;
     let mut names = Vec::new();
-    for rust_path in use_module_paths(argument, src, &mut names) {
-        let specifier = use_specifier(importer, &rust_path);
-        if specifier.is_none() && names.is_empty() {
+    let paths = use_module_paths(argument, src, &mut names);
+    for (i, rust_path) in paths.iter().enumerate() {
+        let import_names = import_names_for_path(i, &paths, &names);
+        let specifier = use_specifier(importer, rust_path);
+        if specifier.is_none() && import_names.is_empty() {
             continue;
         }
         let import = ParsedImport {
             specifier: specifier.unwrap_or_default(),
-            kind: if names.is_empty() { ImportKind::SideEffect } else { ImportKind::Named },
-            names: names.clone(),
+            kind: if import_names.is_empty() {
+                ImportKind::SideEffect
+            } else {
+                ImportKind::Named
+            },
+            names: import_names,
             is_type_only: false,
             is_reexport,
         };
         if is_reexport {
             module.reexports.push(import);
-            module.exported_symbols.extend(names.iter().cloned());
         } else {
             module.imports.push(import);
+        }
+    }
+    if is_reexport {
+        extend_unique(&mut module.exported_symbols, &names);
+    }
+}
+
+/// One path per list item shares the collected `names` by index; a single path keeps them all.
+fn import_names_for_path(index: usize, paths: &[Vec<String>], names: &[String]) -> Vec<String> {
+    if names.is_empty() {
+        return Vec::new();
+    }
+    if paths.len() == 1 {
+        return names.to_vec();
+    }
+    names.get(index).cloned().into_iter().collect()
+}
+
+fn extend_unique(dest: &mut Vec<String>, names: &[String]) {
+    for name in names {
+        if !dest.contains(name) {
+            dest.push(name.clone());
         }
     }
 }

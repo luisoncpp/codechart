@@ -63,6 +63,23 @@ pub enum Kind { A }
 }
 
 #[test]
+fn pub_use_list_reexports_each_symbol_once() {
+    let source = r#"
+pub use builder::ProjectGraphBuilder;
+pub use validate::BuildError;
+pub use types::{ Alpha, Beta, Gamma };
+"#;
+    let m = parse("src-tauri/src/contract/mod.rs", source);
+    assert_eq!(
+        m.exported_symbols,
+        vec!["ProjectGraphBuilder", "BuildError", "Alpha", "Beta", "Gamma"]
+    );
+    assert_eq!(m.reexports.len(), 5);
+    assert_eq!(m.reexports[2].names, vec!["Alpha"]);
+    assert_eq!(m.reexports[4].names, vec!["Gamma"]);
+}
+
+#[test]
 fn captures_comments() {
     let m = parse("src/a.rs", "// line\n/* block */\n");
     assert_eq!(m.comments.len(), 2);
