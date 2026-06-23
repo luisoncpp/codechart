@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Resolves modules into nested groups and facades")
 // grouping — assign modules to a nested group tree and designate facades
 // (Phase 3). Pure: takes the file list + parsed `GroupDef`s, returns group nodes,
 // per-module group assignment, the facade set, and configError diagnostics.

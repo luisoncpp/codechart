@@ -1,3 +1,5 @@
+// @Architecture(descriptionShort="Tauri IPC commands bridging frontend to analysis")
+
 use crate::analysis::analyze_project as run_analysis;
 use crate::contract::ProjectGraph;
 use crate::project_source::{FsProjectSource, ProjectSource};

@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Discovers and parses co-located *.group.md files")
 // project_config — discover, parse, and validate co-located `*.group.md` files
 // (Phase 3). A group is declared by a single `*.group.md` placed in the folder it
 // describes: YAML frontmatter (metadata + membership) + markdown body (docs).

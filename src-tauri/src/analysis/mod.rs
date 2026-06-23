@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Composes parsing, grouping, and references into ProjectGraph")
 // analysis — the deep module that composes Phases 2–4 into a `ProjectGraph`
 // (Phase 4). The IPC layer and CLI see only `analyze_project`; the adapters,
 // grouping, references, and diagnostics sub-modules stay behind this seam.

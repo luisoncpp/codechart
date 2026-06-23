@@ -1,4 +1,5 @@
-// @Architecture(...) comment-block parser (Phase 2).
+// @Architecture(descriptionShort="Parses @Architecture comment blocks from source text")
+// Comment-block parser (Phase 2).
 //
 // Scans arbitrary text for `@Architecture(key=value, key="quoted value", ...)`
 // blocks and maps the recognized keys onto an `Annotation`. Unknown keys are

@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Resolves imports to edges and architecture diagnostics")
 // references — turn parsed local facts into graph edges + import diagnostics
 // (Phase 4). Pure: takes the parsed modules, resolves each relative import
 // (TDD §7) against the set of known module ids, and produces solid `import`

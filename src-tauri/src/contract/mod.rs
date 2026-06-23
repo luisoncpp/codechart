@@ -1,3 +1,5 @@
+// @Architecture(descriptionShort="ProjectGraph data contract and builder invariant gate")
+
 pub mod builder;
 pub mod types;
 mod validate;

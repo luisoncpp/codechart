@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Rust tree-sitter adapter")
 // Rust adapter (Phase 2): tree-sitter walk → ParsedModule.
 
 mod extract;

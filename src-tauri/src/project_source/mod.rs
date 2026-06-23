@@ -1,3 +1,5 @@
+// @Architecture(descriptionShort="ProjectSource trait for filesystem and in-memory reads")
+
 use thiserror::Error;
 
 pub mod fs_source;

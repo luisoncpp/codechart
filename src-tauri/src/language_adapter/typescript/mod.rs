@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="TypeScript/TSX tree-sitter adapter")
 // TypeScript/TSX adapter (Phase 2): tree-sitter walk → ParsedModule.
 
 mod extract;

@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Headless CLI for parse, groups, and analyze")
 // Dev CLI: inspect intermediate analysis output with no UI.
 //
 //   codechart-cli parse   <file.ts|tsx>   — print imports + annotations

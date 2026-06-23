@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="LanguageAdapter seam: one source file to ParsedModule")
 // Language adapters: parse one source file into local facts (Phase 2).
 //
 // Public surface: the `LanguageAdapter` trait, the `ParsedModule` data it

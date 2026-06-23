@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Normalizes and merges analysis diagnostics deterministically")
 // diagnostics — normalize analysis findings into `Diagnostic`s (Phase 4).
 //
 // Config and import findings are already produced as `Diagnostic`s by
