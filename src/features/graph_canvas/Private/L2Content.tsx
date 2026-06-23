@@ -13,6 +13,8 @@ export function L2Description({ description, color, zoom }: DescriptionProps) {
   return (
     <div
       style={{
+        width: "100%",
+        boxSizing: "border-box",
         background: "#f8fafc",
         borderLeft: `${3 / zoom}px solid ${color}`,
         borderRadius: `0 ${4 / zoom}px ${4 / zoom}px 0`,
@@ -112,7 +114,7 @@ export function L2CodeBlock({ snippet, path, zoom }: CodeBlockProps) {
   const codePadding = `${6 / zoom}px 0`;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", flexDirection: "column", width: "max-content", minWidth: "100%" }}>
       <div
         style={{
           fontSize: 8 / zoom,
@@ -127,7 +129,6 @@ export function L2CodeBlock({ snippet, path, zoom }: CodeBlockProps) {
         Source Code
       </div>
       <pre
-        className="l2-scrollable"
         style={{
           margin: 0,
           padding: codePadding,
@@ -138,10 +139,6 @@ export function L2CodeBlock({ snippet, path, zoom }: CodeBlockProps) {
           fontSize,
           lineHeight: 1.4,
           color: "#334155",
-          overflowX: "auto",
-          overflowY: "hidden",
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
         }}
       >
         {lines.map((lineTokens, idx) => (

@@ -304,7 +304,7 @@
 .hl-decorator { color: var(--hl-decorator); }
 .hl-macro { color: var(--hl-macro); }
 
-/* L2 scroll area — native bars hidden; zoom-aware thumb rendered in L2DocumentNode */
+/* L2 scroll area — native bars hidden; zoom-aware thumbs in L2DocumentNode */
 .l2-scrollable {
   scrollbar-width: none;
   -ms-overflow-style: none;

@@ -5,132 +5,220 @@ import { L2Header } from "./L2Header";
 import { L2Description, L2CodeBlock } from "./L2Content";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
-/** Visible thumb width on screen (px); divided by canvas zoom inside the node. */
+/** Visible thumb thickness on screen (px); divided by canvas zoom inside the node. */
 const SCROLLBAR_SCREEN_PX = 6;
 /** Wider hit target so the thumb is easy to grab and drag. */
 const SCROLLBAR_HIT_SCREEN_PX = 12;
 const MIN_THUMB_SCREEN_PX = 24;
 
+interface AxisThumb {
+  offset: number;
+  size: number;
+  show: boolean;
+}
+
 interface L2ScrollableBodyProps {
   zoom: number;
   padding: string;
   gap: string;
+  layoutKey: string;
   children: React.ReactNode;
 }
 
-function L2ScrollableBody({ zoom, padding, gap, children }: L2ScrollableBodyProps) {
+function L2ScrollableBody({ zoom, padding, gap, layoutKey, children }: L2ScrollableBodyProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ startY: number; startScrollTop: number } | null>(null);
-  const [thumb, setThumb] = useState({ top: 0, height: 0, show: false });
-  const [dragging, setDragging] = useState(false);
+  const vDragRef = useRef<{ startY: number; startScrollTop: number } | null>(null);
+  const hDragRef = useRef<{ startX: number; startScrollLeft: number } | null>(null);
+  const [vThumb, setVThumb] = useState<AxisThumb>({ offset: 0, size: 0, show: false });
+  const [hThumb, setHThumb] = useState<AxisThumb>({ offset: 0, size: 0, show: false });
+  const [vDragging, setVDragging] = useState(false);
+  const [hDragging, setHDragging] = useState(false);
+
+  const bar = SCROLLBAR_HIT_SCREEN_PX / zoom;
+  const thumbPx = SCROLLBAR_SCREEN_PX / zoom;
 
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
 
     const sync = () => {
-      const { scrollTop, scrollHeight, clientHeight } = el;
+      const { scrollTop, scrollLeft, scrollHeight, scrollWidth, clientHeight, clientWidth } = el;
+
       if (scrollHeight <= clientHeight + 1) {
-        setThumb({ top: 0, height: 0, show: false });
-        return;
+        setVThumb({ offset: 0, size: 0, show: false });
+      } else {
+        const minSize = MIN_THUMB_SCREEN_PX / zoom;
+        const size = Math.max(minSize, (clientHeight / scrollHeight) * clientHeight);
+        const track = clientHeight - size;
+        const offset = track * (scrollTop / (scrollHeight - clientHeight));
+        setVThumb({ offset, size, show: true });
       }
-      const minHeight = MIN_THUMB_SCREEN_PX / zoom;
-      const height = Math.max(minHeight, (clientHeight / scrollHeight) * clientHeight);
-      const track = clientHeight - height;
-      const top = track * (scrollTop / (scrollHeight - clientHeight));
-      setThumb({ top, height, show: true });
+
+      if (scrollWidth <= clientWidth + 1) {
+        setHThumb({ offset: 0, size: 0, show: false });
+      } else {
+        const minSize = MIN_THUMB_SCREEN_PX / zoom;
+        const size = Math.max(minSize, (clientWidth / scrollWidth) * clientWidth);
+        const track = clientWidth - size;
+        const offset = track * (scrollLeft / (scrollWidth - clientWidth));
+        setHThumb({ offset, size, show: true });
+      }
     };
 
     sync();
+    const raf = requestAnimationFrame(sync);
     el.addEventListener("scroll", sync, { passive: true });
     const ro = new ResizeObserver(sync);
     ro.observe(el);
     for (const child of el.children) ro.observe(child);
     return () => {
+      cancelAnimationFrame(raf);
       el.removeEventListener("scroll", sync);
       ro.disconnect();
     };
-  }, [zoom, children]);
+  }, [zoom, children, layoutKey]);
 
-  const onThumbPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  const onVThumbPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     const el = scrollRef.current;
     if (!el) return;
-    dragRef.current = { startY: e.clientY, startScrollTop: el.scrollTop };
-    setDragging(true);
+    vDragRef.current = { startY: e.clientY, startScrollTop: el.scrollTop };
+    setVDragging(true);
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
-  const onThumbPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current) return;
+  const onVThumbPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!vDragRef.current) return;
     const el = scrollRef.current;
     if (!el) return;
     e.preventDefault();
     e.stopPropagation();
     const { scrollHeight, clientHeight } = el;
-    const minHeight = MIN_THUMB_SCREEN_PX / zoom;
-    const thumbHeight = Math.max(minHeight, (clientHeight / scrollHeight) * clientHeight);
-    const track = clientHeight - thumbHeight;
+    const minSize = MIN_THUMB_SCREEN_PX / zoom;
+    const thumbSize = Math.max(minSize, (clientHeight / scrollHeight) * clientHeight);
+    const track = clientHeight - thumbSize;
     const scrollRange = scrollHeight - clientHeight;
     if (track <= 0 || scrollRange <= 0) return;
-    const deltaY = (e.clientY - dragRef.current.startY) / zoom;
-    el.scrollTop = dragRef.current.startScrollTop + deltaY * (scrollRange / track);
+    const deltaY = (e.clientY - vDragRef.current.startY) / zoom;
+    el.scrollTop = vDragRef.current.startScrollTop + deltaY * (scrollRange / track);
   };
 
-  const endThumbDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current) return;
-    dragRef.current = null;
-    setDragging(false);
+  const onHThumbPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = scrollRef.current;
+    if (!el) return;
+    hDragRef.current = { startX: e.clientX, startScrollLeft: el.scrollLeft };
+    setHDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onHThumbPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!hDragRef.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const { scrollWidth, clientWidth } = el;
+    const minSize = MIN_THUMB_SCREEN_PX / zoom;
+    const thumbSize = Math.max(minSize, (clientWidth / scrollWidth) * clientWidth);
+    const track = clientWidth - thumbSize;
+    const scrollRange = scrollWidth - clientWidth;
+    if (track <= 0 || scrollRange <= 0) return;
+    const deltaX = (e.clientX - hDragRef.current.startX) / zoom;
+    el.scrollLeft = hDragRef.current.startScrollLeft + deltaX * (scrollRange / track);
+  };
+
+  const endVDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!vDragRef.current) return;
+    vDragRef.current = null;
+    setVDragging(false);
     e.currentTarget.releasePointerCapture(e.pointerId);
   };
 
+  const endHDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!hDragRef.current) return;
+    hDragRef.current = null;
+    setHDragging(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
+  const thumbBg = (dragging: boolean) =>
+    dragging ? "rgba(0, 0, 0, 0.45)" : "rgba(0, 0, 0, 0.3)";
+
   return (
-    <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+    <div style={{ position: "relative", flex: "1 1 0%", minHeight: 0, overflow: "hidden" }}>
       <div
         ref={scrollRef}
         className="nowheel nodrag l2-scrollable"
         style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          overflowX: "hidden",
+          position: "absolute",
+          inset: 0,
+          overflow: "auto",
           padding,
-          display: "flex",
-          flexDirection: "column",
-          gap,
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
         }}
       >
-        {children}
+        <div style={{ display: "flex", flexDirection: "column", gap, minWidth: "100%" }}>{children}</div>
       </div>
-      {thumb.show && (
+      {vThumb.show && (
         <div
           className="nodrag"
           style={{
             position: "absolute",
-            top: thumb.top,
+            top: vThumb.offset,
             right: 0,
-            width: SCROLLBAR_HIT_SCREEN_PX / zoom,
-            height: thumb.height,
+            width: bar,
+            height: vThumb.size,
             display: "flex",
             justifyContent: "flex-end",
-            cursor: dragging ? "grabbing" : "grab",
+            cursor: vDragging ? "grabbing" : "grab",
             touchAction: "none",
+            zIndex: 1,
           }}
-          onPointerDown={onThumbPointerDown}
-          onPointerMove={onThumbPointerMove}
-          onPointerUp={endThumbDrag}
-          onPointerCancel={endThumbDrag}
+          onPointerDown={onVThumbPointerDown}
+          onPointerMove={onVThumbPointerMove}
+          onPointerUp={endVDrag}
+          onPointerCancel={endVDrag}
         >
           <div
             aria-hidden
             style={{
-              width: SCROLLBAR_SCREEN_PX / zoom,
+              width: thumbPx,
               height: "100%",
               borderRadius: 9999,
-              background: dragging ? "rgba(0, 0, 0, 0.3)" : "rgba(0, 0, 0, 0.2)",
+              background: thumbBg(vDragging),
+            }}
+          />
+        </div>
+      )}
+      {hThumb.show && (
+        <div
+          className="nodrag"
+          style={{
+            position: "absolute",
+            left: hThumb.offset,
+            bottom: 0,
+            height: bar,
+            width: hThumb.size,
+            display: "flex",
+            alignItems: "flex-end",
+            cursor: hDragging ? "grabbing" : "grab",
+            touchAction: "none",
+            zIndex: 1,
+          }}
+          onPointerDown={onHThumbPointerDown}
+          onPointerMove={onHThumbPointerMove}
+          onPointerUp={endHDrag}
+          onPointerCancel={endHDrag}
+        >
+          <div
+            aria-hidden
+            style={{
+              width: "100%",
+              height: thumbPx,
+              borderRadius: 9999,
+              background: thumbBg(hDragging),
             }}
           />
         </div>
@@ -154,40 +242,49 @@ function calculateVisibleBounds(
   const nodeRect = nodeEl.getBoundingClientRect();
   const parentRect = parentEl.getBoundingClientRect();
 
-  const nodeTopInScreen = nodeRect.top - parentRect.top;
-  const nodeBottomInScreen = nodeRect.bottom - parentRect.top;
-  const nodeLeftInScreen = nodeRect.left - parentRect.left;
-  const nodeRightInScreen = nodeRect.right - parentRect.left;
+  const border = 2 * zoom;
 
-  const verticalOverlap = nodeBottomInScreen > 0 && nodeTopInScreen < parentRect.height;
-  const horizontalOverlap = nodeRightInScreen > 0 && nodeLeftInScreen < parentRect.width;
+  const nodeContentTopInScreen = nodeRect.top + border - parentRect.top;
+  const nodeContentBottomInScreen = nodeRect.bottom - border - parentRect.top;
+  const nodeContentLeftInScreen = nodeRect.left + border - parentRect.left;
+  const nodeContentRightInScreen = nodeRect.right - border - parentRect.left;
+
+  const verticalOverlap = nodeContentBottomInScreen > 0 && nodeContentTopInScreen < parentRect.height;
+  const horizontalOverlap = nodeContentRightInScreen > 0 && nodeContentLeftInScreen < parentRect.width;
 
   if (!verticalOverlap || !horizontalOverlap) {
     return null;
   }
 
-  const visibleTop = Math.max(0, nodeTopInScreen);
-  const visibleBottom = Math.min(parentRect.height, nodeBottomInScreen);
+  const visibleTop = Math.max(0, nodeContentTopInScreen);
+  const visibleBottom = Math.min(parentRect.height, nodeContentBottomInScreen);
+  const visibleLeft = Math.max(0, nodeContentLeftInScreen);
+  const visibleRight = Math.min(parentRect.width, nodeContentRightInScreen);
 
   return {
-    top: (visibleTop - nodeTopInScreen) / zoom,
+    top: (visibleTop - nodeContentTopInScreen) / zoom,
     height: (visibleBottom - visibleTop) / zoom,
+    left: (visibleLeft - nodeContentLeftInScreen) / zoom,
+    width: (visibleRight - visibleLeft) / zoom,
   };
 }
 
 function useClampedLayout(
   containerRef: React.RefObject<HTMLDivElement | null>,
 ) {
+  const defaultStyles: React.CSSProperties = {
+    position: "absolute",
+    top: 0,
+    height: "100%",
+    left: 0,
+    width: "100%",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+  };
+
   const [state, setState] = useState<{ styles: React.CSSProperties; inFov: boolean }>({
-    styles: {
-      position: "absolute",
-      top: 0,
-      height: "100%",
-      left: 0,
-      right: 0,
-      display: "flex",
-      flexDirection: "column",
-    },
+    styles: defaultStyles,
     inFov: false,
   });
 
@@ -205,36 +302,27 @@ function useClampedLayout(
 
     const bounds = calculateVisibleBounds(el, parentEl, zoom);
     if (!bounds) {
-      setState({
-        styles: {
-          position: "absolute",
-          top: 0,
-          height: "100%",
-          left: 0,
-          right: 0,
-          display: "flex",
-          flexDirection: "column",
-        },
-        inFov: false,
-      });
+      setState({ styles: defaultStyles, inFov: false });
       return;
     }
 
     setState({
       styles: {
-        position: "absolute",
+        ...defaultStyles,
         top: bounds.top,
         height: bounds.height,
-        left: 0,
-        right: 0,
-        display: "flex",
-        flexDirection: "column",
+        left: bounds.left,
+        width: bounds.width,
       },
       inFov: true,
     });
   }, [containerRef, zoom, tx, ty, w, h]);
 
   return state;
+}
+
+function layoutKeyFromStyles(styles: React.CSSProperties): string {
+  return `${styles.top}|${styles.height}|${styles.left}|${styles.width}`;
 }
 
 export function L2DocumentNode({
@@ -271,7 +359,12 @@ export function L2DocumentNode({
       {inFov && (
         <div style={clampedStyles}>
           <L2Header label={data.label} color={color} zoom={zoom} />
-          <L2ScrollableBody zoom={zoom} padding={bodyPadding} gap={gapSize}>
+          <L2ScrollableBody
+            zoom={zoom}
+            padding={bodyPadding}
+            gap={gapSize}
+            layoutKey={layoutKeyFromStyles(clampedStyles)}
+          >
             <L2Description description={description} color={color} zoom={zoom} />
             <L2CodeBlock snippet={data.snippet} path={data.path} zoom={zoom} />
           </L2ScrollableBody>
