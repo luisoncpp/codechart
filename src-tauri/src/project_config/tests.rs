@@ -83,3 +83,42 @@ fn discover_collects_defs_and_config_errors() {
     assert_eq!(diagnostics[0].kind, DiagnosticKind::ConfigError);
     assert_eq!(diagnostics[0].id, "configError:b/b.group.md");
 }
+
+#[test]
+fn discover_rejects_duplicate_group_ids() {
+    let mut files = HashMap::new();
+    files.insert(
+        "src/app/app.group.md".to_string(),
+        "---\nid: app\n---\nApp shell.\n".to_string(),
+    );
+    files.insert(
+        "tests/fixtures/app.group.md".to_string(),
+        "---\nid: app\n---\nFixture app.\n".to_string(),
+    );
+    let source = MemoryProjectSource::new(files);
+
+    let (defs, diagnostics) = discover_group_defs(&source);
+    assert_eq!(defs.len(), 1, "first declaration wins (sorted path order)");
+    assert_eq!(defs[0].id, "app");
+    assert_eq!(diagnostics.len(), 1);
+    assert!(diagnostics[0].message.contains("duplicate group id"));
+}
+
+#[test]
+fn root_ignore_excludes_paths_from_group_discovery() {
+    let mut files = HashMap::new();
+    files.insert(
+        "codechart.group.md".to_string(),
+        "---\nid: root\nmatch:\n  - \"/$^/\"\nignore:\n  - tests/**\n---\n".to_string(),
+    );
+    files.insert(
+        "tests/fixtures/app.group.md".to_string(),
+        "---\nid: app\n---\n".to_string(),
+    );
+    let source = MemoryProjectSource::new(files);
+
+    let (defs, diagnostics) = discover_group_defs(&source);
+    assert_eq!(defs.len(), 1);
+    assert_eq!(defs[0].id, "root");
+    assert!(diagnostics.is_empty());
+}

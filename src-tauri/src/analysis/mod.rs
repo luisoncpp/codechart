@@ -18,7 +18,7 @@ use crate::contract::{
 use crate::diagnostics::{merge, parse_error};
 use crate::grouping::{resolve_groups, ResolvedGroups};
 use crate::language_adapter::{registry_for_path, ParsedModule};
-use crate::project_config::{discover_group_defs, is_group_file};
+use crate::project_config::{discover_group_defs, ignore_patterns, is_group_file, retain_unignored};
 use crate::project_source::ProjectSource;
 use crate::references::{
     classify_interface_seams, classify_soft, flag_drift, resolve_references, GroupBoundaries,
@@ -41,8 +41,9 @@ pub fn analyze_project(
     source: &dyn ProjectSource,
     root: &str,
 ) -> Result<ProjectGraph, BuildError> {
-    let files = source.list_files().unwrap_or_default();
     let (defs, config_diags) = discover_group_defs(source);
+    let patterns = ignore_patterns(&defs);
+    let files = retain_unignored(source.list_files().unwrap_or_default(), &patterns);
     let (parsed, parse_diags) = parse_sources(source, &files);
 
     let module_paths: Vec<String> = parsed.iter().map(|f| f.module.path.clone()).collect();

@@ -9,7 +9,7 @@ use std::process::ExitCode;
 use codechart_lib::analysis::analyze_project;
 use codechart_lib::grouping::{resolve_groups, ResolvedGroups};
 use codechart_lib::language_adapter::{registry_for_path, ParsedImport, ParsedModule};
-use codechart_lib::project_config::{discover_group_defs, is_group_file};
+use codechart_lib::project_config::{discover_group_defs, ignore_patterns, is_group_file, retain_unignored};
 use codechart_lib::project_source::{FsProjectSource, ProjectSource};
 use codechart_lib::semantic_comments::parse_annotations;
 
@@ -97,11 +97,12 @@ fn run_groups(path: Option<&str>) -> ExitCode {
         return fail("usage: codechart-cli groups <project-dir>");
     };
     let source = FsProjectSource::new(path);
-    let all_files = match source.list_files() {
-        Ok(files) => files,
-        Err(e) => return fail(&format!("cannot scan {path}: {e}")),
-    };
     let (defs, mut diagnostics) = discover_group_defs(&source);
+    let patterns = ignore_patterns(&defs);
+    let all_files = retain_unignored(
+        source.list_files().unwrap_or_default(),
+        &patterns,
+    );
     let modules = source_modules(&all_files);
     let resolved = resolve_groups(&modules, &defs);
     diagnostics.extend(resolved.diagnostics.iter().cloned());

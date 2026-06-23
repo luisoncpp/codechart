@@ -6,12 +6,16 @@
 // `discover_group_defs` (walk a `ProjectSource`, parse all, collect configErrors).
 // The frontmatter/body parser stays private behind this boundary.
 
+mod ignore;
 mod parse;
 
 #[cfg(test)]
 mod tests;
 
+pub use ignore::{ignore_patterns, is_ignored, retain_unignored};
 pub use parse::parse_group_def;
+
+use std::collections::BTreeSet;
 
 use crate::contract::{Diagnostic, DiagnosticKind, Severity};
 use crate::project_source::ProjectSource;
@@ -76,32 +80,49 @@ pub fn is_group_file(path: &str) -> bool {
 }
 
 /// Walk `source`, parse every `*.group.md`, and collect parse failures as
-/// `configError` diagnostics. Defs are returned sorted by id for determinism.
+/// `configError` diagnostics. Duplicate ids and ignored paths are dropped with
+/// a diagnostic. Defs are returned sorted by id for determinism.
 pub fn discover_group_defs(
     source: &dyn ProjectSource,
 ) -> (Vec<GroupDef>, Vec<Diagnostic>) {
-    let mut defs = Vec::new();
+    let mut candidates = Vec::new();
     let mut diagnostics = Vec::new();
     let mut paths = source.list_files().unwrap_or_default();
     paths.sort();
     for path in paths.iter().filter(|p| is_group_file(p)) {
         match source.read_file(path) {
-            Ok(content) => collect_def(path, &content, &mut defs, &mut diagnostics),
+            Ok(content) => collect_candidate(path, &content, &mut candidates, &mut diagnostics),
             Err(e) => diagnostics.push(config_error(path, &e.to_string())),
         }
+    }
+    let patterns = ignore_patterns(&candidates.iter().map(|(_, d)| d).cloned().collect::<Vec<_>>());
+    let mut defs = Vec::new();
+    let mut seen_ids = BTreeSet::new();
+    for (path, def) in candidates {
+        if is_ignored(&path, &patterns) {
+            continue;
+        }
+        if !seen_ids.insert(def.id.clone()) {
+            diagnostics.push(config_error(
+                &path,
+                &format!("duplicate group id `{}` (already declared elsewhere)", def.id),
+            ));
+            continue;
+        }
+        defs.push(def);
     }
     defs.sort_by(|a, b| a.id.cmp(&b.id));
     (defs, diagnostics)
 }
 
-fn collect_def(
+fn collect_candidate(
     path: &str,
     content: &str,
-    defs: &mut Vec<GroupDef>,
+    candidates: &mut Vec<(String, GroupDef)>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     match parse_group_def(path, content) {
-        Ok(def) => defs.push(def),
+        Ok(def) => candidates.push((path.to_string(), def)),
         Err(e) => diagnostics.push(config_error(path, &e.message(path))),
     }
 }
