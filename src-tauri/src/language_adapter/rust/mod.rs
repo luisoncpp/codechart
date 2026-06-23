@@ -1,6 +1,7 @@
 // Rust adapter (Phase 2): tree-sitter walk → ParsedModule.
 
 mod extract;
+mod implements;
 mod locate;
 mod path;
 
@@ -30,6 +31,7 @@ impl LanguageAdapter for RustAdapter {
             ..Default::default()
         };
         extract::walk_top_level(tree.root_node(), source, &mut module);
+        module.implements = implements::collect_implements(tree.root_node(), source);
         Ok(module)
     }
 }

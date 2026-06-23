@@ -31,7 +31,7 @@ leaks past this boundary.
 | `exported_symbols` | locally-declared + re-exported names |
 | `comments` | raw `CommentBlock`s (text + byte range) in source order |
 | `signals` | event emit/listen `CommSignal`s in source order (Phase 9) |
-| `implements` | interface names from `implements` clauses (`class Foo implements IBar`) (Phase 10) |
+| `implements` | interface names from `implements` clauses (`class Foo implements IBar`) or Rust `impl Trait for Type` (Phase 10) |
 | `loc` | line count |
 
 `ParsedImport` carries `specifier`, `kind` (`Default`/`Named`/`Namespace`/`SideEffect`),
@@ -51,9 +51,12 @@ not split out (MVP). Dynamic `import()` is skipped.
 `mod child;` (file edge), `use crate::` / `self::` / `super::` / bare crate paths
 (converted to `./`/`../` specifiers for the resolver), `pub use` re-exports, and
 `pub fn`/`struct`/`enum`/`trait`/`type`/`const`/`static` exports. Trailing
-UpperCase item names in `use` paths are trimmed to the parent module. External
-crates (`serde`, `std`, …) are skipped when the path has no `crate`/`self`/`super`
-prefix and does not resolve as an in-crate module. Inline `mod foo { ... }` and
+UpperCase item names in `use` paths are trimmed to the parent module for specifier
+resolution and recorded in `import.names` (seam importer index). `impl Trait for Type`
+blocks populate `implements` with the trait's final path segment (e.g.
+`crate::services::TodoStore` → `TodoStore`). Inherent `impl Type { }` blocks are
+skipped. External crates (`serde`, `std`, …) are skipped when the path has no
+`crate`/`self`/`super` prefix and does not resolve as an in-crate module. Inline `mod foo { ... }` and
 `extern crate` produce no file edges.
 
 ## `semantic_comments::parse_annotations(text) -> Vec<Annotation>`

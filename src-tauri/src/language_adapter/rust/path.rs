@@ -26,7 +26,12 @@ pub fn use_module_paths(node: Node, src: &str, names: &mut Vec<String>) -> Vec<V
         }
         _ => {
             let segs = path_segments(node, src);
-            if segs.is_empty() { vec![] } else { vec![segs] }
+            if segs.is_empty() {
+                vec![]
+            } else {
+                push_type_name_from_segments(&segs, names);
+                vec![segs]
+            }
         }
     }
 }
@@ -44,9 +49,12 @@ fn collect_list_paths(
         match child.kind() {
             "use_as_clause" | "use_wildcard" | "identifier" | "scoped_identifier" => {
                 let segs = path_segments(child, src);
-                paths.push(merge_prefix(prefix, &segs));
+                let merged = merge_prefix(prefix, &segs);
+                paths.push(merged.clone());
                 if let Some(alias) = child.child_by_field_name("alias") {
                     names.push(text_of(alias, src).to_string());
+                } else {
+                    push_type_name_from_segments(&merged, names);
                 }
             }
             "use_list" => paths.extend(collect_list_paths(child, src, prefix, names)),
@@ -93,6 +101,15 @@ fn path_segments(node: Node, src: &str) -> Vec<String> {
             .map(|p| path_segments(p, src))
             .unwrap_or_default(),
         _ => Vec::new(),
+    }
+}
+
+fn push_type_name_from_segments(segs: &[String], names: &mut Vec<String>) {
+    let Some(last) = segs.last() else {
+        return;
+    };
+    if last.chars().next().is_some_and(|c| c.is_uppercase()) {
+        names.push(last.clone());
     }
 }
 

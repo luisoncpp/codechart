@@ -55,9 +55,9 @@ multiple tokens between the same pair.
 `flag_drift`, wired in `analysis::resolve_edges`.
 
 The adapter records `implements: Vec<String>` on each `ParsedModule` — the
-interface names appearing in `class Foo implements IBar, IBaz<T>` (extracted by
-`language_adapter/typescript/implements.rs` via tree-sitter `implements_clause`
-nodes). The classifier cross-references two indexes:
+interface/trait names from `class Foo implements IBar` (TypeScript,
+`language_adapter/typescript/implements.rs`) or `impl MyTrait for MyType` (Rust,
+`language_adapter/rust/implements.rs`). The classifier cross-references two indexes:
 
 - **implementors**: interface name → set of modules with a matching `implements` entry.
 - **importers**: interface name → set of modules that import a symbol by that name.

@@ -35,11 +35,12 @@ fn push_use(node: Node, src: &str, module: &mut ParsedModule, is_reexport: bool)
     let importer = &module.path;
     let mut names = Vec::new();
     for rust_path in use_module_paths(argument, src, &mut names) {
-        let Some(specifier) = use_specifier(importer, &rust_path) else {
+        let specifier = use_specifier(importer, &rust_path);
+        if specifier.is_none() && names.is_empty() {
             continue;
-        };
+        }
         let import = ParsedImport {
-            specifier,
+            specifier: specifier.unwrap_or_default(),
             kind: if names.is_empty() { ImportKind::SideEffect } else { ImportKind::Named },
             names: names.clone(),
             is_type_only: false,
