@@ -4,6 +4,8 @@ import {
   ProjectGraph,
   projectForZoom,
   allGroupIds,
+  filterTestModules,
+  isTestModule,
   type ZoomLevel,
 } from "../../../domain/graph";
 import { LayoutEngine, LayoutedGraph, LayoutOptions } from "../../../domain/layout";
@@ -21,6 +23,7 @@ export class GraphSessionStore extends EventEmitter {
   private root: string | null = null;
   private zoomLevel: ZoomLevel = 1;
   private collapsedGroupIds = new Set<string>();
+  private hideTests = false;
   private sourceCache = new Map<string, string>();
   private sourceCacheVersion = 0;
   /** Each group's footprint from the full (uncollapsed) layout, so a collapsed
@@ -43,6 +46,7 @@ export class GraphSessionStore extends EventEmitter {
   getSelectedId = () => this.selectedId;
   getZoomLevel = () => this.zoomLevel;
   getCollapsedGroupIds = () => this.collapsedGroupIds;
+  getHideTests = () => this.hideTests;
   getSourceCache = () => this.sourceCache;
   getSourceCacheVersion = () => this.sourceCacheVersion;
 
@@ -89,6 +93,22 @@ export class GraphSessionStore extends EventEmitter {
   collapseGroup = (id: string) => this.toggleGroup(id, /*collapse=*/ true);
   expandGroup = (id: string) => this.toggleGroup(id, /*collapse=*/ false);
 
+  /** Hide or show test modules (re-layouts when toggled). */
+  setHideTests(hide: boolean) {
+    if (hide === this.hideTests) return;
+    this.hideTests = hide;
+    if (hide && this.selectedId && this.graph) {
+      const selected = this.graph.modules.find((m) => m.id === this.selectedId);
+      if (selected && isTestModule(selected.path)) {
+        this.selectedId = null;
+        this.emit("selection-changed");
+      }
+    }
+    this.syncReduced();
+    this.emit("view-changed");
+    void this.recomputeLayout();
+  }
+
   /** Per-group override layered on top of the level's default (TDD §8). */
   toggleGroup(id: string, collapse = !this.collapsedGroupIds.has(id)) {
     if (collapse === this.collapsedGroupIds.has(id)) return;
@@ -125,6 +145,7 @@ export class GraphSessionStore extends EventEmitter {
   private resetZoom() {
     this.zoomLevel = 1;
     this.collapsedGroupIds = new Set();
+    this.hideTests = false;
     this.sourceCache = new Map();
     this.sourceCacheVersion = 0;
     this.expandedGroupSizes = new Map();
@@ -135,7 +156,12 @@ export class GraphSessionStore extends EventEmitter {
   /** Keep the reduced graph in sync before async layout catches up. */
   private syncReduced() {
     if (!this.graph) return;
-    this.reduced = projectForZoom(this.graph, new Set(this.collapsedGroupIds));
+    this.reduced = this.reduceForView(this.graph);
+  }
+
+  private reduceForView(graph: ProjectGraph): ProjectGraph {
+    const zoomed = projectForZoom(graph, new Set(this.collapsedGroupIds));
+    return this.hideTests ? filterTestModules(zoomed) : zoomed;
   }
 
   /** Reduce for the collapse state and (re)lay it out. Guarded so a stale async
@@ -144,7 +170,7 @@ export class GraphSessionStore extends EventEmitter {
     const graph = this.graph;
     if (!graph) return;
     const seq = ++this.layoutSeq;
-    const reduced = projectForZoom(graph, new Set(this.collapsedGroupIds));
+    const reduced = this.reduceForView(graph);
     if (this.zoomLevel === 2) await this.ensureSources(reduced.modules);
     const opts: LayoutOptions = {
       collapsedGroupSizes: this.expandedGroupSizes,

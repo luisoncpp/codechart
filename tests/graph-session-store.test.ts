@@ -209,3 +209,70 @@ describe("GraphSessionStore semantic zoom", () => {
     expect(store.getReducedGraph()?.modules.length).toBe(graph.modules.length);
   });
 });
+
+describe("GraphSessionStore hide tests", () => {
+  const withTests: ProjectGraph = {
+    ...graph,
+    groups: [
+      ...graph.groups,
+      { id: "tests", label: "Tests", parentId: null, facadeModuleIds: [], color: "#000" },
+    ],
+    modules: [
+      ...graph.modules,
+      {
+        id: "tests/smoke.test.ts",
+        path: "tests/smoke.test.ts",
+        label: "smoke.test.ts",
+        language: "typescript",
+        groupId: "tests",
+        isFacade: false,
+        metrics: { loc: 10 },
+        exportedSymbols: [],
+      },
+    ],
+    edges: [
+      ...graph.edges,
+      {
+        id: "tests/smoke.test.ts->src/main.ts:import:0",
+        source: "tests/smoke.test.ts",
+        target: "src/main.ts",
+        kind: "import",
+        isViolation: false,
+      },
+    ],
+  };
+
+  it("hides test modules and re-layouts when enabled", async () => {
+    const store = newStore(clientReturning(withTests));
+    await store.loadProject("/x");
+    expect(store.getReducedGraph()?.modules.some((m) => m.id === "tests/smoke.test.ts")).toBe(
+      true,
+    );
+
+    const done = nextLayout(store);
+    store.setHideTests(true);
+    await done;
+
+    expect(store.getHideTests()).toBe(true);
+    expect(store.getReducedGraph()?.modules.some((m) => m.id === "tests/smoke.test.ts")).toBe(
+      false,
+    );
+    expect(store.getLayout()?.modules.some((m) => m.id === "tests/smoke.test.ts")).toBe(false);
+  });
+
+  it("clears selection when the selected module is hidden", async () => {
+    const store = newStore(clientReturning(withTests));
+    await store.loadProject("/x");
+    store.select("tests/smoke.test.ts");
+    store.setHideTests(true);
+    expect(store.getSelectedId()).toBeNull();
+  });
+
+  it("resets hide-tests when loading a new project", async () => {
+    const store = newStore(clientReturning(withTests));
+    await store.loadProject("/x");
+    store.setHideTests(true);
+    await store.loadProject("/y");
+    expect(store.getHideTests()).toBe(false);
+  });
+});

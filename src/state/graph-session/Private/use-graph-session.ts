@@ -12,6 +12,7 @@ export function useGraphSession(store: GraphSessionStore) {
       "selection-changed",
       "zoom-changed",
       "layout-changed",
+      "view-changed",
     ];
     events.forEach((e) => store.on(e, listener));
     return () => events.forEach((e) => store.off(e, listener));

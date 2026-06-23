@@ -20,6 +20,7 @@ import { FitView } from "./FitView";
 import { GraphCanvasController } from "./graph-canvas-controller";
 import { SymbolSourceWidget } from "./SymbolSourceWidget";
 import { LevelBadge } from "./LevelBadge";
+import { ViewControls } from "./ViewControls";
 
 interface GraphCanvasProps {
   store: GraphSessionStore;
@@ -176,6 +177,10 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
           <Controls showInteractive={false} />
         </ReactFlow>
         <LevelBadge level={level} />
+        <ViewControls
+          hideTests={session.getHideTests()}
+          onHideTestsChange={(hide) => store.setHideTests(hide)}
+        />
         {activeSymbol && (
           <SymbolSourceWidget
             symbolName={activeSymbol.symbolName}

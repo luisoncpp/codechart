@@ -23,6 +23,7 @@ export {
   isModuleExpanded,
   groupParentMap,
 } from "./Private/zoom-projection";
+export { isTestModule, filterTestModules } from "./Private/test-modules";
 export type { ZoomLevel } from "./Private/zoom-projection";
 export type {
   ProjectedGraph,
