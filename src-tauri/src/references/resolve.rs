@@ -11,8 +11,8 @@ pub fn is_relative(specifier: &str) -> bool {
 }
 
 /// Resolve a relative `specifier` imported from `importer` to a known module id,
-/// or `None` when no candidate exists. Tries extensionless `.ts`/`.tsx`, an
-/// explicit extension, then `index.ts`/`index.tsx`.
+/// or `None` when no candidate exists. Tries extensionless `.ts`/`.tsx`/`.rs`, an
+/// explicit extension, then `index.ts`/`index.tsx`/`mod.rs`.
 pub fn resolve_relative(
     importer: &str,
     specifier: &str,
@@ -53,13 +53,15 @@ fn normalize_join(dir: &str, spec: &str) -> String {
 
 /// Candidate module ids for a resolved base path, in resolution priority order.
 fn candidates(base: &str) -> Vec<String> {
-    if base.ends_with(".ts") || base.ends_with(".tsx") {
+    if base.ends_with(".ts") || base.ends_with(".tsx") || base.ends_with(".rs") {
         return vec![base.to_string()];
     }
     vec![
         format!("{base}.ts"),
         format!("{base}.tsx"),
+        format!("{base}.rs"),
         format!("{base}/index.ts"),
         format!("{base}/index.tsx"),
+        format!("{base}/mod.rs"),
     ]
 }

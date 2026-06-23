@@ -35,6 +35,7 @@ pub enum DiagnosticKind {
 pub enum Language {
     TypeScript,
     Tsx,
+    Rust,
 }
 
 #[derive(Serialize, Deserialize, TS, Debug, Clone, PartialEq, Default)]

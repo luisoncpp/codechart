@@ -62,6 +62,18 @@ fn resolves_parent_relative_import() {
 }
 
 #[test]
+fn resolves_rust_mod_file() {
+    let parsed = vec![
+        module("src/lib.rs", &["./analysis"]),
+        module("src/analysis/mod.rs", &[]),
+    ];
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/lib.rs".into(), "src/analysis/mod.rs".into())]
+    );
+}
+
+#[test]
 fn package_import_is_external_metadata() {
     let parsed = vec![module("src/a.ts", &["react"])];
     let refs = resolve_references(&parsed);

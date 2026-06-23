@@ -45,7 +45,7 @@ fn infer_one(
 
 fn infer_facades(dir: &str, files: &[String], facades: &mut BTreeSet<String>) -> Vec<String> {
     let mut ids = Vec::new();
-    for candidate in ["index.ts", "index.tsx"] {
+    for candidate in ["index.ts", "index.tsx", "mod.rs", "lib.rs"] {
         let id = format!("{dir}/{candidate}");
         if files.contains(&id) {
             facades.insert(id.clone());

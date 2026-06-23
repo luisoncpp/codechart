@@ -14,11 +14,11 @@ TypeScript is the first impl, C++ a future one with no pipeline change.
 
 `language_adapter::`
 - `trait LanguageAdapter { fn parse(&self, path, source) -> Result<ParsedModule, ParseError> }`
-- `registry_for(ext) -> Option<Box<dyn LanguageAdapter>>` — pick by extension (`ts`/`tsx`/`mts`/`cts`).
+- `registry_for(ext) -> Option<Box<dyn LanguageAdapter>>` — pick by extension (`ts`/`tsx`/`mts`/`cts`/`rs`).
 - `registry_for_path(path)` — convenience over the path's extension.
 - Data: `ParsedModule`, `ParsedImport`, `ImportKind`, `CommentBlock`.
 
-The TS impl (`typescript/`) is private behind the trait; tree-sitter never
+The TS impl (`typescript/`) and Rust impl (`rust/`) are private behind the trait; tree-sitter never
 leaks past this boundary.
 
 ## `ParsedModule`
@@ -45,6 +45,16 @@ re-exports `export { x } from`, `export type { T } from`, `export * from`; local
 exports (`const`/`function`/`class`/`interface`/`default`). Whole-statement
 type-only detection (`import type` / `export type`); mixed inline `{ type X }` is
 not split out (MVP). Dynamic `import()` is skipped.
+
+### Rust forms handled
+
+`mod child;` (file edge), `use crate::` / `self::` / `super::` / bare crate paths
+(converted to `./`/`../` specifiers for the resolver), `pub use` re-exports, and
+`pub fn`/`struct`/`enum`/`trait`/`type`/`const`/`static` exports. Trailing
+UpperCase item names in `use` paths are trimmed to the parent module. External
+crates (`serde`, `std`, …) are skipped when the path has no `crate`/`self`/`super`
+prefix and does not resolve as an in-crate module. Inline `mod foo { ... }` and
+`extern crate` produce no file edges.
 
 ## `semantic_comments::parse_annotations(text) -> Vec<Annotation>`
 

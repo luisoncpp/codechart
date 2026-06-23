@@ -104,7 +104,7 @@ pub fn facades_for(def: &GroupDef, members: &BTreeSet<String>) -> (Vec<String>, 
     match &def.facades {
         Some(list) => resolve_explicit(def, list, members, &mut facades, &mut diagnostics),
         None => {
-            for candidate in ["index.ts", "index.tsx"] {
+            for candidate in ["index.ts", "index.tsx", "mod.rs", "lib.rs"] {
                 let id = join_rel(&def.dir, candidate);
                 if members.contains(&id) {
                     facades.push(id);

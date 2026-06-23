@@ -5,6 +5,7 @@
 // The concrete TypeScript implementation stays private behind this boundary.
 
 mod typescript;
+mod rust;
 
 /// How a dependency specifier is brought into a module.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -104,6 +105,7 @@ pub fn registry_for(ext: &str) -> Option<Box<dyn LanguageAdapter>> {
         "ts" | "tsx" | "mts" | "cts" => {
             Some(Box::new(typescript::TypeScriptAdapter::new(ext == "tsx")))
         }
+        "rs" => Some(Box::new(rust::RustAdapter::new())),
         _ => None,
     }
 }

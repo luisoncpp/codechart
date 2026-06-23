@@ -11,7 +11,7 @@ End-to-end backend sequence that turns a folder of source into a `ProjectGraph`.
 |---|------|----------|------|
 | 1 | List files | `source.list_files()` | `project_source/fs_source.rs` |
 | 2 | Discover + parse `*.group.md` → defs + configErrors | `discover_group_defs` | `project_config/mod.rs` |
-| 3 | Parse each adapter-supported, non-config file (partial results) | `parse_file` → `LanguageAdapter::parse` | `analysis/mod.rs`, `language_adapter/typescript/` |
+| 3 | Parse each adapter-supported, non-config file (partial results) | `parse_file` → `LanguageAdapter::parse` | `analysis/mod.rs`, `language_adapter/typescript/`, `language_adapter/rust/` |
 | 4 | Assign modules → nested groups + facades | `resolve_groups` | `grouping/mod.rs` |
 | 5 | Resolve relative imports → edges + unresolved diagnostics | `resolve_references` | `references/mod.rs`, `references/resolve.rs` |
 | 5b | Flag facade-bypass drift → `isViolation` + `architectureViolation` (Phase 8) | `flag_drift` (via `resolve_edges` + `group_boundaries`) | `analysis/mod.rs`, `references/drift.rs` |

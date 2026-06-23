@@ -26,6 +26,7 @@ impl ParsedFile {
 pub fn language_for(path: &str) -> Language {
     match path.rsplit('.').next() {
         Some("tsx") => Language::Tsx,
+        Some("rs") => Language::Rust,
         _ => Language::TypeScript,
     }
 }
