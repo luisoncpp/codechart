@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Converts internal project graph model to React Flow projection")
-import { type LayoutBox, type LayoutedGraph, PRESETS } from "../../layout";
+import { type LayoutBox, type LayoutedGraph, PRESETS, DESC_BOX } from "../../layout";
 import { symbolNameFromId } from "./symbol-id";
 import { inferSymbolKind } from "./symbol-kind";
 import type { ProjectGraph } from "../ProjectGraph";
@@ -131,6 +131,14 @@ function groupNode(
   box: LayoutBox,
   ctx: ProjectionCtx,
 ): GroupRFNode {
+  const childBoxes = ctx.childBoxesByGroup.get(group.id) ?? [];
+  // Description is left-aligned in CollapsedCard with a padding of 16px.
+  // Constrained to DESC_BOX.maxWidth, plus another 16px buffer to the right.
+  const descriptionWidth = 16 + DESC_BOX.maxWidth + 16;
+  const overlappingChildren = childBoxes.filter((c) => c.x - box.x < descriptionWidth);
+  const relativeYs = overlappingChildren.map((c) => c.y - box.y);
+  const minChildY = relativeYs.length > 0 ? Math.min(...relativeYs) : undefined;
+
   return {
     id: group.id,
     type: "group",
@@ -147,6 +155,7 @@ function groupNode(
       collapsed: ctx.options?.collapsedGroupIds?.has(group.id) ?? false,
       showLong: ctx.options?.showSymbols ?? false,
       descriptionBox: descriptionBoxGeometry(group.id, box, ctx),
+      minChildY,
     },
   };
 }

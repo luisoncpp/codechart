@@ -129,7 +129,7 @@ function CollapsedCard({
   height?: number;
 }) {
   const glyph = iconGlyph(data.icon);
-  const description = collapsedDescription(data, width, height);
+  const description = collapsedDescription(data, scale, { width, height });
   return (
     <div
       style={{
@@ -155,15 +155,36 @@ function CollapsedCard({
   );
 }
 
-/** L0 prefers the long description when it fits the card at a legible font;
- *  otherwise falls back to the short one. Returns the text + line clamp. */
-function collapsedDescription(data: GroupNodeData, width?: number, height?: number) {
-  const availW = (width ?? PRESETS.collapsedGroupWidth) - 32;
-  const availH = (height ?? PRESETS.collapsedGroupHeight) - 56; // label strip + padding
-  const lines = Math.max(3, Math.floor(availH / (L0_DESC_FONT * 1.35)));
-  if (data.descriptionLong && fitsBox(data.descriptionLong, availW, availH, L0_DESC_FONT)) {
-    return { text: data.descriptionLong, lines };
+export function collapsedDescription(
+  data: GroupNodeData,
+  scale: number,
+  dims: { width?: number; height?: number } = {},
+) {
+  const availW = (dims.width ?? PRESETS.collapsedGroupWidth) - 32;
+
+  // Calculate available height based on scale and subgroup position (minChildY)
+  const headerH = 15 * scale * 1.1;
+  const gap = 8 * scale;
+  const descTop = 16 + headerH + gap;
+
+  const limitY = data.minChildY !== undefined ? data.minChildY : (dims.height ?? PRESETS.collapsedGroupHeight);
+  const availH = limitY - descTop - 12; // 12px gap before the subgroup or card bottom
+
+  const font = L0_DESC_FONT * scale;
+  const lines = Math.max(1, Math.floor(availH / (font * 1.35)));
+
+  if (availH <= 0 || lines < 1) {
+    return null;
   }
+
+  // 1. Try long description if it exists
+  if (data.descriptionLong) {
+    if (fitsBox(data.descriptionLong, availW, availH, font)) {
+      return { text: data.descriptionLong, lines };
+    }
+  }
+
+  // 2. Fallback to short description
   if (!data.descriptionShort) return null;
   return { text: data.descriptionShort, lines };
 }
@@ -227,6 +248,7 @@ function cardDescriptionStyle(color: string, scale: number, lines: number) {
     display: "-webkit-box",
     WebkitLineClamp: lines,
     WebkitBoxOrient: "vertical" as const,
+    maxWidth: DESC_BOX.maxWidth,
   };
 }
 

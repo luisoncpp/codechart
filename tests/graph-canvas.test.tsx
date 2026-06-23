@@ -107,6 +107,7 @@ describe("GraphCanvas", () => {
     expect(group.textContent).toContain("Data access layer");
   });
 
+
   it("clicking a collapsed group at L0 selects it in the store", async () => {
     store.setZoomLevel(0);
     const { container } = render(<GraphCanvas store={store} />);

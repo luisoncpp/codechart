@@ -19,6 +19,8 @@ export interface GroupNodeData extends Record<string, unknown> {
   /** Geometry (parent-relative) of the layout-reserved in-body description box, so
    *  the view draws the prose there and modules pack around it (expanded only). */
   descriptionBox?: { x: number; y: number; width: number; height: number };
+  /** Parent-relative y coordinate of the top-most subgroup or child box. */
+  minChildY?: number;
 }
 
 /** Data carried by a custom module node. */

@@ -10,6 +10,7 @@ import {
   projectForZoom,
 } from "../src/domain/graph";
 import type { ProjectGraph } from "../src/domain/graph";
+import { collapsedDescription } from "../src/features/graph_canvas/Private/GroupNodeView";
 
 const graph = goldenGraph as unknown as ProjectGraph;
 let layout: LayoutedGraph;
@@ -130,6 +131,47 @@ describe("render options (Phase 10 metadata + zoom)", () => {
     expect(ui?.data.collapsed).toBe(false);
   });
 
+  it("populates minChildY correctly based on child boxes", () => {
+    const g = {
+      root: "/x",
+      groups: [
+        {
+          id: "g",
+          label: "G",
+          parentId: null,
+          facadeModuleIds: [],
+        },
+      ],
+      modules: [
+        {
+          id: "m",
+          path: "m.ts",
+          label: "m.ts",
+          language: "ts",
+          groupId: "g",
+          isFacade: false,
+          metrics: { loc: 1 },
+          exportedSymbols: [],
+        },
+      ],
+      edges: [],
+      diagnostics: [],
+    } as unknown as ProjectGraph;
+
+    const l = {
+      groups: [{ id: "g", parentId: null, x: 0, y: 100, width: 400, height: 400 }],
+      modules: [{ id: "m", parentId: "g", x: 10, y: 150, width: 100, height: 100 }],
+      symbols: [],
+      descriptions: [],
+      width: 400,
+      height: 400,
+    } as LayoutedGraph;
+
+    const { nodes } = projectGraph(g, l);
+    const grp = nodes.find((n) => n.id === "g")!;
+    expect(grp.data.minChildY).toBe(50);
+  });
+
   it("hides modules under a collapsed group even when the layout still has their boxes", () => {
     const collapsed = new Set(allGroupIds(graph));
     const { nodes } = projectGraph(graph, layout, { collapsedGroupIds: collapsed });
@@ -182,6 +224,43 @@ describe("render options (Phase 10 metadata + zoom)", () => {
     expect(() => {
       projectGraph(reducedGraph, layout, { showSymbols: true, collapsedGroupIds: collapsed });
     }).not.toThrow();
+  });
+});
+
+describe("collapsedDescription fallback and clamping logic", () => {
+  it("prefers long description if it fits", () => {
+    const data = {
+      label: "G",
+      color: "#ff0000",
+      descriptionShort: "short text",
+      descriptionLong: "This is a very long description that should fit in a large box.",
+      minChildY: 200,
+    };
+    const desc = collapsedDescription(data, 1, { width: 300, height: 168 });
+    expect(desc?.text).toBe(data.descriptionLong);
+  });
+
+  it("falls back to short description if long description does not fit", () => {
+    const data = {
+      label: "G",
+      color: "#ff0000",
+      descriptionShort: "short text",
+      descriptionLong: "This is a very long description that will definitely not fit in a small constrained box.",
+      minChildY: 80,
+    };
+    const desc = collapsedDescription(data, 1, { width: 300, height: 168 });
+    expect(desc?.text).toBe(data.descriptionShort);
+  });
+
+  it("returns null if even the short description does not fit", () => {
+    const data = {
+      label: "G",
+      color: "#ff0000",
+      descriptionShort: "short text",
+      minChildY: 25,
+    };
+    const desc = collapsedDescription(data, 1, { width: 300, height: 168 });
+    expect(desc).toBeNull();
   });
 });
 
