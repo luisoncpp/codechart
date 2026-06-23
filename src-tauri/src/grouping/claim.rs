@@ -1,8 +1,4 @@
-// Module → group claim resolution, private to `grouping`.
-//
-// A group claims modules via membership sources (`match`/`files`) or, when no
-// source is present, folder ownership (innermost folder wins). `exclude` then
-// filters the claim. A module claimed by two groups is an overlap → configError.
+// @Architecture(descriptionShort="Assigns each module to at most one group via membership rules")
 
 use std::collections::{BTreeMap, BTreeSet};
 

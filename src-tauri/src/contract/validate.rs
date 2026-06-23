@@ -1,3 +1,5 @@
+// @Architecture(descriptionShort="Enforces the five ProjectGraph domain invariants at build time")
+
 use std::collections::HashSet;
 
 use super::types::{Edge, GroupNode, ModuleNode};

@@ -1,3 +1,5 @@
+// @Architecture(descriptionShort="Fluent builder assembling and validating ProjectGraph instances")
+
 use super::types::{Diagnostic, Edge, GroupNode, ModuleNode, ProjectGraph};
 use super::validate::{validate, BuildError};
 

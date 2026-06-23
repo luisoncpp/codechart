@@ -1,13 +1,4 @@
-// interface_seams — pair interface importers with cross-group implementors into
-// `soft` (dashed) seam edges (Phase 10, spec §2.4).
-//
-// Module A "uses" interface I when it imports a symbol named I.
-// Module B "implements" I when it has `class Foo implements I`.
-// An edge A → B is emitted when: A ≠ B, different groups, A does not already
-// have a direct import edge to B (which would make a solid edge redundant).
-//
-// Edge id uses the `:seam:` segment to avoid ordinal collisions with the
-// `:soft:` segment produced by `classify_soft` for the same module pair.
+// @Architecture(descriptionShort="Emits soft edges pairing interface importers with cross-group implementors")
 
 use std::collections::{BTreeMap, BTreeSet};
 

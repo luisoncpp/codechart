@@ -1,4 +1,4 @@
-// Map Rust module paths to graph-relative specifiers.
+// @Architecture(descriptionShort="Maps Rust module paths to graph-relative import specifiers")
 
 pub fn mod_specifier(importer: &str, child: &str) -> Option<String> {
     let base = self_module_base(importer)?;

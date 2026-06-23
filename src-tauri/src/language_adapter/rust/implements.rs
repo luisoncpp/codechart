@@ -1,7 +1,4 @@
-// Extract trait names from `impl Trait for Type` blocks (Phase 10).
-//
-// Tree-sitter shape: impl_item with optional `trait` field before `for`.
-// Skips inherent impls (`impl MyStruct { ... }`). Recurses the full tree.
+// @Architecture(descriptionShort="Extracts trait names from Rust impl Trait for Type blocks")
 
 use tree_sitter::Node;
 

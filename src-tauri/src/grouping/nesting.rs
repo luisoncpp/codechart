@@ -1,8 +1,4 @@
-// Group parentId resolution, private to `grouping`.
-//
-// An explicit `groups` reference from a parent wins; otherwise a group's parent
-// is the nearest ancestor folder that also declares a group (directory nesting).
-// An unknown `groups` id produces a configError.
+// @Architecture(descriptionShort="Resolves parent-child relationships in the group tree")
 
 use std::collections::{BTreeMap, BTreeSet};
 

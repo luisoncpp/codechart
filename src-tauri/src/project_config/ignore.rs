@@ -1,5 +1,4 @@
-// Ignore globs for project-wide file filtering (TDD §7 built-in defaults + root
-// `*.group.md` `ignore` entries). Private to `project_config`.
+// @Architecture(descriptionShort="Merges built-in and config ignore globs for file discovery")
 
 use glob::Pattern;
 

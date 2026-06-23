@@ -1,6 +1,4 @@
-// Relative-import path resolution (TDD §7). Pure string math over the set of
-// known module ids — no filesystem access. Package (non-relative) specifiers are
-// not resolved here; the caller treats them as external metadata.
+// @Architecture(descriptionShort="Resolves relative import specifiers to known module ids")
 
 use std::collections::BTreeSet;
 

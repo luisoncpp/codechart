@@ -1,3 +1,5 @@
+// @Architecture(descriptionShort="Serializable ProjectGraph data types shared with the frontend")
+
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 

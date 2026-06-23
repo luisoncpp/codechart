@@ -1,3 +1,5 @@
+// @Architecture(descriptionShort="Filesystem ProjectSource walking the project directory tree")
+
 use std::path::{Path, PathBuf};
 
 use super::{ProjectSource, ProjectSourceError};

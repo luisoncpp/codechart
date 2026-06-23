@@ -1,8 +1,4 @@
-// Path resolution and membership matchers, private to `grouping`.
-//
-// `match` entries are globs by default; a `/…/`-delimited entry is a regex over
-// the repo-relative path. Glob entries (and `files`/`facades`/`exclude` paths)
-// are resolved relative to the group folder; regex matches the path verbatim.
+// @Architecture(descriptionShort="Compiles glob and regex matchers for group membership paths")
 
 use glob::Pattern;
 use regex::Regex;

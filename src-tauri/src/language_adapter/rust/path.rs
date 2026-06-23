@@ -1,4 +1,4 @@
-// Rust `use` trees → module path segments.
+// @Architecture(descriptionShort="Parses Rust use declaration trees into module path segments")
 
 use tree_sitter::Node;
 

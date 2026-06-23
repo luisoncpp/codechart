@@ -1,6 +1,4 @@
-// Folder inference, private to `grouping`. When a project ships no `*.group.md`
-// files, infer one group per directory that directly contains source files, with
-// `index.ts`/`index.tsx` as the facade and directory nesting for parentId.
+// @Architecture(descriptionShort="Infers groups from directory layout when no group config exists")
 
 use std::collections::{BTreeMap, BTreeSet};
 

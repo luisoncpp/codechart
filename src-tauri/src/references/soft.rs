@@ -1,11 +1,4 @@
-// soft — pair event emitters to listeners into `soft` (dashed) edges (Phase 9,
-// spec §2.4). A separate pass over the parsed modules, kept out of
-// `resolve_references` so pure import resolution stays untouched.
-//
-// An emitter module E and a listener module L that share an event token produce
-// one soft edge E → L (data flows emitter → listener). A token needs a match in
-// a *different* module: a lone emit/listen, or a self-pair (same module emits
-// and listens), produces nothing.
+// @Architecture(descriptionShort="Emits soft edges pairing event emitters with listeners across modules")
 
 use std::collections::{BTreeMap, BTreeSet};
 

@@ -1,10 +1,4 @@
-// Dynamic-communication signal extraction for the TS adapter (Phase 9).
-//
-// Unlike imports (always top-level), emit/listen calls live anywhere — inside
-// methods, effects, callbacks — so this recurses the whole tree. A call is a
-// signal when its callee name is in an allowlist AND its first argument is a
-// string literal (the event token). The string-literal requirement plus the
-// cross-module token match in `classify_soft` keep false positives out.
+// @Architecture(descriptionShort="Extracts emit/listen event signals from TypeScript call expressions")
 
 use tree_sitter::Node;
 

@@ -1,9 +1,4 @@
-// Extract interface names from `implements` clauses in class declarations
-// (Phase 10, spec §2.4 cross-group decoupling interfaces).
-//
-// Tree-sitter shape: class_declaration → class_heritage → implements_clause
-// → type_identifier | generic_type(name: type_identifier).
-// Recurses the full tree so nested classes are also captured.
+// @Architecture(descriptionShort="Extracts interface names from TypeScript implements clauses")
 
 use tree_sitter::Node;
 

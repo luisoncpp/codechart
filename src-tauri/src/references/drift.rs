@@ -1,10 +1,4 @@
-// drift — flag facade-bypass architecture violations (Phase 8, spec §3.1/§10).
-//
-// An `import` edge into a *non-facade* member of a group that designates a facade
-// ("private"), from a module that lives *outside* that group's subtree, is a
-// facade bypass: the edge's `is_violation` is set and an `architectureViolation`
-// diagnostic explains it. Facade-less groups are public — imports into them are
-// never flagged (no false positives for cross-cutting/shared groups).
+// @Architecture(descriptionShort="Flags facade-bypass import violations as architecture diagnostics")
 
 use std::collections::{BTreeMap, BTreeSet};
 

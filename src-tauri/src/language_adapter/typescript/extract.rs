@@ -1,5 +1,4 @@
-// Top-level statement extraction for the TS adapter. Imports/re-exports/exports
-// are always top-level, so a single pass over the program's children suffices.
+// @Architecture(descriptionShort="Extracts imports, exports, and comments from TypeScript AST")
 
 use tree_sitter::Node;
 

@@ -1,5 +1,4 @@
-// Building `ModuleNode`s from parsed files + the resolved group tree (Phase 4).
-// Private to `analysis`.
+// @Architecture(descriptionShort="Builds ModuleNodes from parsed files and resolved groups")
 
 use crate::contract::{Annotation, Language, ModuleMetrics, ModuleNode};
 use crate::grouping::ResolvedGroups;

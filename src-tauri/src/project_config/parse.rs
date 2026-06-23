@@ -1,5 +1,4 @@
-// Frontmatter+body parsing for a single `*.group.md` file.
-// Private to `project_config`; the public surface re-exports `parse_group_def`.
+// @Architecture(descriptionShort="Parses YAML frontmatter and body from a single group.md file")
 
 use serde::Deserialize;
 

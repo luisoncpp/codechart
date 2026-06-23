@@ -1,3 +1,5 @@
+// @Architecture(descriptionShort="In-memory ProjectSource for tests and fixtures")
+
 use std::collections::HashMap;
 
 use super::{ProjectSource, ProjectSourceError};

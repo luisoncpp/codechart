@@ -1,4 +1,4 @@
-// Top-level extraction for the Rust adapter.
+// @Architecture(descriptionShort="Extracts uses, mods, and exports from Rust top-level items")
 
 use tree_sitter::Node;
 
