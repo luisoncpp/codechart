@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Rust tree-sitter adapter")
 // Rust adapter (Phase 2): tree-sitter walk → ParsedModule.
 
+mod commands;
 mod extract;
 mod implements;
 mod locate;
@@ -33,6 +34,7 @@ impl LanguageAdapter for RustAdapter {
         };
         extract::walk_top_level(tree.root_node(), source, &mut module);
         module.implements = implements::collect_implements(tree.root_node(), source);
+        module.ipc_commands = commands::collect_ipc_commands(tree.root_node(), source);
         Ok(module)
     }
 }

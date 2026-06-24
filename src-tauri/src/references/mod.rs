@@ -15,6 +15,7 @@ mod drift;
 mod interface_seams;
 mod resolve;
 mod soft;
+mod tauri_ipc;
 
 #[cfg(test)]
 mod tests;
@@ -22,6 +23,7 @@ mod tests;
 pub use drift::{flag_drift, GroupBoundaries};
 pub use interface_seams::classify_interface_seams;
 pub use soft::classify_soft;
+pub use tauri_ipc::classify_tauri_ipc;
 
 use std::collections::BTreeSet;
 

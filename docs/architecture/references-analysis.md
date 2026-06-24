@@ -1,6 +1,6 @@
 # References & Analysis (the backend pipeline)
 
-**Status: implemented (Phase 4; drift detection Phase 8; soft edges Phase 9; interface seams Phase 10).**
+**Status: implemented (Phase 4; drift detection Phase 8; soft edges Phase 9; interface seams Phase 10; Tauri IPC seams).**
 Source: `src-tauri/src/references/`, `src-tauri/src/diagnostics/`,
 `src-tauri/src/analysis/`.
 
@@ -74,6 +74,29 @@ edge already models the relationship — no seam edge is emitted (TDD §2.4).
 **Direct-import suppression:** `import_pairs` is the set of `(source, target)`
 already resolved as solid import edges; a seam between an already-solid pair is
 redundant and is skipped.
+
+## `references::classify_tauri_ipc` — Tauri IPC seams
+
+`classify_tauri_ipc(parsed: &[ParsedModule]) -> (Vec<Edge>, Vec<Diagnostic>)`
+(`tauri_ipc.rs`). A fourth post-pass, peer of the classifiers above, wired in
+`analysis::resolve_edges`.
+
+The TypeScript adapter records `ipc_invokes: Vec<String>` — `invoke("cmd")`
+calls whose first argument is a **string literal**, only when the module imports
+from `@tauri-apps/api` (`language_adapter/typescript/ipc.rs`). The Rust adapter
+records `ipc_commands: Vec<String>` from `#[tauri::command]` functions
+(`language_adapter/rust/commands.rs`; in tree-sitter-rust, outer attributes are
+**sibling statements** before the `function_item`, not children of it).
+
+The classifier indexes invokes and commands by name, then for each matching
+`(ts_module, rs_module)` pair where **TS ≠ RS** emits one `soft` edge
+`TS → RS`, `trigger = "ipc:<command>"`, id `${source}->${target}:ipc:${ordinal}`.
+An invoke with no matching handler → `unresolvedIpc` diagnostic (severity
+`warning`), no edge.
+
+**MVP limits:** command name must equal the Rust fn name (`rename =` not parsed);
+`generate_handler![…]` not parsed. Wrapped IPC clients hide call sites behind
+solid import edges — the seam is where `invoke` lives.
 
 ## `references::flag_drift` — facade-bypass drift (Phase 8)
 

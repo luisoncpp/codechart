@@ -182,8 +182,45 @@ fn implements_clause_names_are_extracted() {
     assert_eq!(m.implements, vec!["IBar", "IBaz"]);
 }
 
+// ---- Tauri IPC invoke extraction ----------------------------------------
+
 #[test]
-fn class_without_implements_has_empty_implements() {
-    let m = parse("a.ts", "class Foo extends Base {}");
-    assert!(m.implements.is_empty());
+fn invoke_call_with_tauri_import_is_recorded() {
+    let src = r#"
+import { invoke } from "@tauri-apps/api/core";
+export async function greet() {
+  return invoke("greet", { name: "world" });
 }
+"#;
+    let m = parse("src/ipc/client.ts", src);
+    assert_eq!(m.ipc_invokes, vec!["greet"]);
+}
+
+#[test]
+fn invoke_without_tauri_import_is_ignored() {
+    let m = parse("a.ts", r#"invoke("foo");"#);
+    assert!(m.ipc_invokes.is_empty());
+}
+
+#[test]
+fn non_literal_invoke_argument_is_ignored() {
+    let src = r#"
+import { invoke } from "@tauri-apps/api/core";
+const cmd = "greet";
+invoke(cmd);
+"#;
+    let m = parse("src/ipc/client.ts", src);
+    assert!(m.ipc_invokes.is_empty());
+}
+
+#[test]
+fn multiple_invokes_kept_in_source_order() {
+    let src = r#"
+import { invoke } from "@tauri-apps/api/core";
+invoke("a");
+invoke("b");
+"#;
+    let m = parse("src/ipc/client.ts", src);
+    assert_eq!(m.ipc_invokes, vec!["a", "b"]);
+}
+

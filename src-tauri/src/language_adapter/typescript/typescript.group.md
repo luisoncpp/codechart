@@ -8,4 +8,4 @@ facades:
 descriptionShort: TS/TSX tree-sitter adapter
 ---
 
-Walks TypeScript/TSX with tree-sitter: imports, re-exports, local exports, comment blocks, event signals, and `implements` clauses into a `ParsedModule`.
+Walks TypeScript/TSX with tree-sitter: imports, re-exports, local exports, comment blocks, event signals, Tauri `invoke` calls, and `implements` clauses into a `ParsedModule`.

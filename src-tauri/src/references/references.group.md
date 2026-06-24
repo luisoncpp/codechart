@@ -8,4 +8,4 @@ facades:
 descriptionShort: Imports → edges & drift
 ---
 
-Resolves relative imports to solid edges or `unresolvedImport` diagnostics. Post-passes: facade-bypass drift (`flag_drift`), event soft edges (`classify_soft`), and cross-group interface seams (`classify_interface_seams`).
+Resolves relative imports to solid edges or `unresolvedImport` diagnostics. Post-passes: facade-bypass drift (`flag_drift`), event soft edges (`classify_soft`), cross-group interface seams (`classify_interface_seams`), and Tauri IPC seams (`classify_tauri_ipc`).

@@ -133,3 +133,22 @@ fn rust_trait_seam_across_groups() {
     assert_eq!(edges[0].kind, EdgeKind::Soft);
     assert_eq!(edges[0].trigger, "interface:TodoStore");
 }
+
+#[test]
+fn tauri_command_attribute_is_recorded() {
+    let src = r#"
+#[tauri::command]
+pub fn greet(name: String) -> String {
+    format!("Hello, {name}")
+}
+"#;
+    let m = parse("src-tauri/src/commands.rs", src);
+    assert_eq!(m.ipc_commands, vec!["greet"]);
+}
+
+#[test]
+fn plain_function_has_no_ipc_commands() {
+    let m = parse("src/lib.rs", "pub fn run() {}\n");
+    assert!(m.ipc_commands.is_empty());
+}
+

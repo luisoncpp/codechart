@@ -16,6 +16,8 @@ End-to-end backend sequence that turns a folder of source into a `ProjectGraph`.
 | 5 | Resolve relative imports → edges + unresolved diagnostics | `resolve_references` | `references/mod.rs`, `references/resolve.rs` |
 | 5b | Flag facade-bypass drift → `isViolation` + `architectureViolation` (Phase 8) | `flag_drift` (via `resolve_edges` + `group_boundaries`) | `analysis/mod.rs`, `references/drift.rs` |
 | 5c | Pair event emit/listen tokens → `soft` (dashed) edges, appended (Phase 9) | `classify_soft` (via `resolve_edges`) | `analysis/mod.rs`, `references/soft.rs` |
+| 5d | Pair Tauri `invoke("cmd")` with `#[tauri::command] fn cmd` → `soft` edges + `unresolvedIpc` diagnostics | `classify_tauri_ipc` (via `resolve_edges`) | `analysis/mod.rs`, `references/tauri_ipc.rs` |
+| 5e | Pair interface importers with cross-group implementors → `soft` seam edges (Phase 10) | `classify_interface_seams` (via `resolve_edges`) | `analysis/mod.rs`, `references/interface_seams.rs` |
 | 6 | Build `ModuleNode`s (id/label/lang/group/facade/loc/annotation) | `build_modules` | `analysis/nodes.rs` |
 | 7 | Merge + sort diagnostics | `merge` | `diagnostics/mod.rs` |
 | 8 | Validate invariants + emit graph | `ProjectGraphBuilder::build` | `contract/builder.rs`, `contract/validate.rs` |

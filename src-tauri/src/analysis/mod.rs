@@ -22,7 +22,8 @@ use crate::language_adapter::{registry_for_path, ParsedModule};
 use crate::project_config::{discover_group_defs, ignore_patterns, is_group_file, retain_unignored};
 use crate::project_source::ProjectSource;
 use crate::references::{
-    classify_interface_seams, classify_soft, flag_drift, resolve_references, GroupBoundaries,
+    classify_interface_seams, classify_soft, classify_tauri_ipc, flag_drift, resolve_references,
+    GroupBoundaries,
 };
 
 use nodes::{build_modules, language_for, ParsedFile};
@@ -62,8 +63,8 @@ pub fn analyze_project(
 }
 
 /// Resolve import edges, flag facade-bypass drift (Phase 8), then append
-/// event-driven `soft` edges (Phase 9) and interface-seam `soft` edges (Phase
-/// 10). Imports stay sorted first; soft edges follow.
+/// event-driven `soft` edges (Phase 9), interface-seam `soft` edges (Phase
+/// 10), and Tauri IPC `soft` edges. Imports stay sorted first; soft edges follow.
 fn resolve_edges(
     parsed: &[ParsedModule],
     groups: &ResolvedGroups,
@@ -74,8 +75,11 @@ fn resolve_edges(
     let import_pairs = collect_import_pairs(&refs.edges);
     refs.edges.extend(classify_soft(parsed));
     refs.edges.extend(classify_interface_seams(parsed, &bounds, &import_pairs));
+    let (ipc_edges, ipc_diags) = classify_tauri_ipc(parsed);
+    refs.edges.extend(ipc_edges);
     let mut diagnostics = refs.diagnostics;
     diagnostics.extend(violations);
+    diagnostics.extend(ipc_diags);
     (refs.edges, diagnostics)
 }
 

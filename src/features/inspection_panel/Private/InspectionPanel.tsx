@@ -9,7 +9,7 @@ import {
   diagnosticsFor,
 } from "../../../domain/graph";
 import { EdgeList } from "./EdgeList";
-import { EventList } from "./EventList";
+import { SoftEdgeSections } from "./SoftEdgeSections";
 import { MetadataSection } from "./MetadataSection";
 
 interface InspectionPanelProps {
@@ -48,7 +48,7 @@ export function InspectionPanel({ store }: InspectionPanelProps) {
         edges={importedBy(graph, module.id)}
         field="source"
       />
-      <EventList edges={softEdgesOf(graph, module.id)} moduleId={module.id} />
+      <SoftEdgeSections edges={softEdgesOf(graph, module.id)} moduleId={module.id} />
       <Diagnostics graph={graph} moduleId={module.id} />
     </aside>
   );

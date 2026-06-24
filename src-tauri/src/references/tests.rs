@@ -377,3 +377,61 @@ fn two_interfaces_between_same_pair_get_incrementing_ordinals() {
         "ui/app.ts->core/store.ts:seam:1",
     ]);
 }
+
+// ---- Tauri IPC seams -----------------------------------------------------
+
+fn with_ipc_invokes(path: &str, commands: &[&str]) -> ParsedModule {
+    ParsedModule {
+        path: path.to_string(),
+        ipc_invokes: commands.iter().map(|c| (*c).to_string()).collect(),
+        ..Default::default()
+    }
+}
+
+fn with_ipc_commands(path: &str, commands: &[&str]) -> ParsedModule {
+    ParsedModule {
+        path: path.to_string(),
+        ipc_commands: commands.iter().map(|c| (*c).to_string()).collect(),
+        ..Default::default()
+    }
+}
+
+#[test]
+fn invoke_and_command_pair_produces_ipc_edge() {
+    let parsed = vec![
+        with_ipc_invokes("src/ipc/client.ts", &["greet"]),
+        with_ipc_commands("src-tauri/src/commands.rs", &["greet"]),
+    ];
+    let (edges, diagnostics) = classify_tauri_ipc(&parsed);
+    assert!(diagnostics.is_empty());
+    assert_eq!(edges.len(), 1);
+    assert_eq!(edges[0].source, "src/ipc/client.ts");
+    assert_eq!(edges[0].target, "src-tauri/src/commands.rs");
+    assert_eq!(edges[0].trigger, "ipc:greet");
+    assert_eq!(edges[0].id, "src/ipc/client.ts->src-tauri/src/commands.rs:ipc:0");
+}
+
+#[test]
+fn orphan_invoke_produces_unresolved_ipc_diagnostic() {
+    let parsed = vec![with_ipc_invokes("src/ipc/orphan.ts", &["missing_cmd"])];
+    let (edges, diagnostics) = classify_tauri_ipc(&parsed);
+    assert!(edges.is_empty());
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].kind, crate::contract::DiagnosticKind::UnresolvedIpc);
+    assert_eq!(diagnostics[0].module_id.as_deref(), Some("src/ipc/orphan.ts"));
+}
+
+#[test]
+fn two_commands_between_same_pair_get_incrementing_ordinals() {
+    let parsed = vec![
+        with_ipc_invokes("src/ipc/client.ts", &["a", "b"]),
+        with_ipc_commands("src-tauri/src/commands.rs", &["a", "b"]),
+    ];
+    let (edges, _) = classify_tauri_ipc(&parsed);
+    let ids: Vec<String> = edges.into_iter().map(|e| e.id).collect();
+    assert_eq!(ids, [
+        "src/ipc/client.ts->src-tauri/src/commands.rs:ipc:0",
+        "src/ipc/client.ts->src-tauri/src/commands.rs:ipc:1",
+    ]);
+}
+

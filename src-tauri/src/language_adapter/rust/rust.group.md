@@ -8,4 +8,4 @@ facades:
 descriptionShort: Rust tree-sitter adapter
 ---
 
-Walks Rust with tree-sitter: `use`/`mod` paths, pub exports, comment blocks, and `impl Trait for Type` into a `ParsedModule`.
+Walks Rust with tree-sitter: `use`/`mod` paths, pub exports, comment blocks, `#[tauri::command]` handlers, and `impl Trait for Type` into a `ParsedModule`.

@@ -108,3 +108,31 @@ fn partial_results_one_unreadable_file_still_builds_the_graph() {
     assert_eq!(parse_errors.len(), 1);
     assert_eq!(parse_errors[0].id, "parseError:src/b.ts");
 }
+
+const TAURI_FIXTURE_DIR: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/tauri-mini-project");
+const TAURI_FIXTURE_ROOT: &str = "tests/fixtures/tauri-mini-project";
+
+#[test]
+fn tauri_mini_project_ipc_seams_and_orphan_diagnostic() {
+    let source = FsProjectSource::new(TAURI_FIXTURE_DIR);
+    let graph = analyze_project(&source, TAURI_FIXTURE_ROOT).expect("builds");
+    let ipc: Vec<_> = graph
+        .edges
+        .iter()
+        .filter(|e| e.trigger.starts_with("ipc:"))
+        .collect();
+    assert_eq!(ipc.len(), 1, "greet invoke pairs with greet command");
+    assert_eq!(ipc[0].source, "src/ipc/client.ts");
+    assert_eq!(ipc[0].target, "src-tauri/src/commands.rs");
+    assert_eq!(ipc[0].trigger, "ipc:greet");
+
+    let orphans: Vec<_> = graph
+        .diagnostics
+        .iter()
+        .filter(|d| d.kind == DiagnosticKind::UnresolvedIpc)
+        .collect();
+    assert_eq!(orphans.len(), 1);
+    assert_eq!(orphans[0].module_id.as_deref(), Some("src/ipc/orphan.ts"));
+}
+

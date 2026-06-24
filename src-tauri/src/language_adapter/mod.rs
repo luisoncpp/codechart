@@ -81,6 +81,10 @@ pub struct ParsedModule {
     /// Interface names this module's classes implement (`implements IFoo`).
     /// Used by the interface-seam classifier (Phase 10 soft edges).
     pub implements: Vec<String>,
+    /// Tauri `invoke("…")` command names, in source order (TS modules only).
+    pub ipc_invokes: Vec<String>,
+    /// `#[tauri::command]` handler names, in source order (Rust modules only).
+    pub ipc_commands: Vec<String>,
     /// Lines of code (newline count + 1 for non-empty files).
     pub loc: u32,
 }

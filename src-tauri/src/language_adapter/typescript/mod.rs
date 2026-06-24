@@ -3,6 +3,7 @@
 
 mod extract;
 mod implements;
+mod ipc;
 mod signals;
 
 use tree_sitter::Parser;
@@ -43,6 +44,8 @@ impl LanguageAdapter for TypeScriptAdapter {
         extract::walk_top_level(tree.root_node(), source, &mut module);
         module.signals = signals::collect_signals(tree.root_node(), source);
         module.implements = implements::collect_implements(tree.root_node(), source);
+        module.ipc_invokes =
+            ipc::collect_ipc_invokes(tree.root_node(), source, &module.imports);
         Ok(module)
     }
 }

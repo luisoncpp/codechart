@@ -38,6 +38,15 @@ export function softEdgesOf(graph: ProjectGraph, id: string): Edge[] {
   );
 }
 
+/** Soft edges touching the module whose trigger starts with the given prefix. */
+export function softEdgesByTrigger(
+  graph: ProjectGraph,
+  id: string,
+  prefix: string,
+): Edge[] {
+  return softEdgesOf(graph, id).filter((e) => e.trigger.startsWith(prefix));
+}
+
 export function diagnosticsFor(graph: ProjectGraph, id: string): Diagnostic[] {
   return graph.diagnostics.filter((d) => d.moduleId === id);
 }

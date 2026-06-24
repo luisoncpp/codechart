@@ -32,6 +32,8 @@ leaks past this boundary.
 | `comments` | raw `CommentBlock`s (text + byte range) in source order |
 | `signals` | event emit/listen `CommSignal`s in source order (Phase 9) |
 | `implements` | interface names from `implements` clauses (`class Foo implements IBar`) or Rust `impl Trait for Type` (Phase 10) |
+| `ipc_invokes` | Tauri `invoke("…")` command names, source order (TS; requires `@tauri-apps/api` import) |
+| `ipc_commands` | `#[tauri::command]` handler names, source order (Rust) |
 | `loc` | line count |
 
 `ParsedImport` carries `specifier`, `kind` (`Default`/`Named`/`Namespace`/`SideEffect`),

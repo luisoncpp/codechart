@@ -27,6 +27,7 @@ pub enum Severity {
 pub enum DiagnosticKind {
     ParseError,
     UnresolvedImport,
+    UnresolvedIpc,
     ConfigError,
     ArchitectureViolation,
 }
