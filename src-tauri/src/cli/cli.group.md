@@ -3,8 +3,10 @@ id: cli
 label: Dev CLI
 color: "#475569"
 icon: terminal
+files:
+  - ../bin/codechart-cli.rs
 facades:
-  - codechart-cli.rs
+  - ../bin/codechart-cli.rs
 descriptionShort: Headless parse/groups/analyze
 ---
 
