@@ -38,6 +38,43 @@ fn resolves_explicit_extension() {
 }
 
 #[test]
+fn resolves_js_extension_to_ts_source() {
+    let parsed = vec![
+        module("electron/ipc/handlers/project-handlers/order-handlers.ts", &[
+            "../../../../src/shared/ipc.js",
+            "../../../ipc-errors.js",
+            "../../../ipc-runtime.js",
+            "./shared.js",
+        ]),
+        module("src/shared/ipc.ts", &[]),
+        module("electron/ipc-errors.ts", &[]),
+        module("electron/ipc-runtime.ts", &[]),
+        module("electron/ipc/handlers/project-handlers/shared.ts", &[]),
+    ];
+    assert_eq!(
+        edge_targets(&parsed),
+        [
+            (
+                "electron/ipc/handlers/project-handlers/order-handlers.ts".into(),
+                "electron/ipc-errors.ts".into(),
+            ),
+            (
+                "electron/ipc/handlers/project-handlers/order-handlers.ts".into(),
+                "electron/ipc-runtime.ts".into(),
+            ),
+            (
+                "electron/ipc/handlers/project-handlers/order-handlers.ts".into(),
+                "electron/ipc/handlers/project-handlers/shared.ts".into(),
+            ),
+            (
+                "electron/ipc/handlers/project-handlers/order-handlers.ts".into(),
+                "src/shared/ipc.ts".into(),
+            ),
+        ]
+    );
+}
+
+#[test]
 fn resolves_tsx_extensionless() {
     let parsed = vec![module("src/a.ts", &["./b"]), module("src/b.tsx", &[])];
     assert_eq!(edge_targets(&parsed), [("src/a.ts".into(), "src/b.tsx".into())]);

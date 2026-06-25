@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import trivialGraph from "./fixtures/trivial-graph.json";
 import goldenGraph from "./fixtures/golden/project-graph.json";
-import { ProjectGraph } from "../src/domain/graph";
+import { ProjectGraph, architectureViolations } from "../src/domain/graph";
 
 describe("ProjectGraph contract", () => {
   it("parses the trivial fixture JSON on the TypeScript side", () => {
@@ -32,6 +32,10 @@ describe("ProjectGraph contract", () => {
       (e) => e.source === "src/ui/TodoList.tsx" && e.target === "src/core/store.ts",
     );
     expect(bypass?.isViolation).toBe(true);
+
+    const violations = architectureViolations(graph);
+    expect(violations).toHaveLength(1);
+    expect(violations[0].message).toMatch(/bypassing the core facade/);
 
     // Soft (dashed) edges: the planted event seam store → App (Phase 9) plus the
     // interface seam App → store (detected via the shared ITodoStore interface).

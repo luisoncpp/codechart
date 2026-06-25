@@ -16,6 +16,7 @@ in the running app until the canvas renders.
 | 4 | Backend pipeline → `ProjectGraph` | `tauri_api::analyze_project` | `src-tauri/src/tauri_api/mod.rs` (→ [analyze-project](./analyze-project.md)) |
 | 5 | 0 modules → `empty`; else ELK layout → `ready` | `GraphSessionStore.loadProject` | same as #2 |
 | 6 | Render canvas + inspection panel | `App` gates on `phase==="ready"` | `app/Private/App.tsx` |
+| 6b | When ready, show collapsible **facade bypasses** list (textarea + **Copy list**) | `FacadeBypassList` | `project_loader/Private/FacadeBypassList.tsx` |
 
 ## Session phases
 `idle` → `loading` → (`ready` | `empty` | `failed`). The panel shows a hint per

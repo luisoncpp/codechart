@@ -44,4 +44,5 @@ export {
   importedBy,
   softEdgesOf,
   diagnosticsFor,
+  architectureViolations,
 } from "./Private/selectors";

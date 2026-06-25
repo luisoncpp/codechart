@@ -20,7 +20,7 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 | `projectGraph(graph, layout)` | `domain/graph/Private/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
 | `FloatingEdge` | `features/graph_canvas/Private/FloatingEdge.tsx` | Custom RF edge: computes both endpoints via `borderAnchor` from live node geometry (`useInternalNode`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
 | `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
-| selectors | `domain/graph/Private/selectors.ts` | `findModule`, `groupOf`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor` — pure edge-list views. `importsOf`/`importedBy` filter to `kind === "import"` (soft edges don't leak into the import lists); `softEdgesOf` returns soft edges on either endpoint. |
+| selectors | `domain/graph/Private/selectors.ts` | `findModule`, `groupOf`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. `importsOf`/`importedBy` filter to `kind === "import"` (soft edges don't leak into the import lists); `softEdgesOf` returns soft edges on either endpoint; `architectureViolations` returns all facade-bypass diagnostics project-wide. |
 | `GraphSessionStore` | `state/graph-session` | Now also owns `LayoutedGraph` (computed via injected `LayoutEngine` on load) and `selectedId`. Emits `phase-changed` + `selection-changed`. |
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules only) → `store.select`; pane click → clear. |
@@ -79,10 +79,16 @@ Detail level is a **pure projection over the immutable `ProjectGraph`** (TDD §8
 pipeline gained a graph-reduction step *before* layout:
 
 ```
-ProjectGraph ──projectForZoom(graph, collapsedGroupIds)──▶ reduced ProjectGraph
-             ──LayoutEngine.layout(reduced, sizeOpts)────▶ LayoutedGraph
+ProjectGraph ──filterTestModules?──▶ base graph
+             ──projectForZoom(base, collapsedGroupIds)──▶ reduced ProjectGraph (display/edges)
+             ──LayoutEngine.layout(layoutGraph, sizeOpts)──▶ LayoutedGraph
              ──projectGraph(reduced, layout, renderOpts)─▶ React Flow models
 ```
+
+Layout uses the test-filtered **full** graph at L0 (L0 collapse is projection-only there) and
+applies `projectForZoom` for manual per-group collapse at L1+. Display/edge routing always runs
+`filterTestModules` **before** `projectForZoom` so empty-group pruning never sees modules already
+hidden by zoom collapse.
 
 - `projectForZoom` (`domain/graph/Private/zoom-projection.ts`, pure): drops modules under a
   collapsed group; keeps every collapsed group box visible (nested groups are not absorbed into a

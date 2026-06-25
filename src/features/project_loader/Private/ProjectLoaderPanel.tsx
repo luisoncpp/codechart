@@ -1,8 +1,9 @@
 // @Architecture(descriptionShort="Visual folder selector panel for loading project analysis")
 import { useState } from "react";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
-import { projectGraphSummary } from "../../../domain/graph";
+import { architectureViolations, projectGraphSummary } from "../../../domain/graph";
 import { FolderPicker, pickFolder as defaultPickFolder } from "./pick-folder";
+import { FacadeBypassList } from "./FacadeBypassList";
 
 interface ProjectLoaderPanelProps {
   store: GraphSessionStore;
@@ -20,6 +21,7 @@ export function ProjectLoaderPanel({
   const phase = session.getPhase();
   const graph = session.getGraph();
   const summary = graph ? projectGraphSummary(graph) : null;
+  const bypasses = graph ? architectureViolations(graph) : [];
 
   const open = async () => {
     const picked = await pickFolder();
@@ -49,6 +51,7 @@ export function ProjectLoaderPanel({
         summary={summary}
         error={session.getError()}
       />
+      {phase === "ready" && <FacadeBypassList violations={bypasses} />}
     </header>
   );
 }

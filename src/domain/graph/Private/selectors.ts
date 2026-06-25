@@ -50,3 +50,8 @@ export function softEdgesByTrigger(
 export function diagnosticsFor(graph: ProjectGraph, id: string): Diagnostic[] {
   return graph.diagnostics.filter((d) => d.moduleId === id);
 }
+
+/** Every facade-bypass (`architectureViolation`) diagnostic in the project. */
+export function architectureViolations(graph: ProjectGraph): Diagnostic[] {
+  return graph.diagnostics.filter((d) => d.kind === "architectureViolation");
+}

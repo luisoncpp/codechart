@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ProjectLoaderPanel } from "../src/features/project_loader";
 import { GraphSessionStore } from "../src/state/graph-session";
@@ -36,6 +36,38 @@ describe("ProjectLoaderPanel", () => {
       ).toBeInTheDocument();
     });
     expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();
+  });
+
+  it("lists facade bypasses in a copyable textarea", async () => {
+    const writeText = vi.fn();
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    render(
+      <ProjectLoaderPanel
+        store={makeStore()}
+        pickFolder={async () => "/some/project"}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open folder…" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("1 facade bypass")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("1 facade bypass"));
+
+    const textarea = screen.getByRole("textbox");
+    expect(textarea).toHaveValue(
+      "src/ui/TodoList.tsx imports src/core/store.ts, bypassing the core facade",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy list" }));
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith(
+        "src/ui/TodoList.tsx imports src/core/store.ts, bypassing the core facade",
+      );
+    });
   });
 
   it("stays idle when the picker is cancelled", async () => {

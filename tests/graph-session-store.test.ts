@@ -275,4 +275,35 @@ describe("GraphSessionStore hide tests", () => {
     await store.loadProject("/y");
     expect(store.getHideTests()).toBe(false);
   });
+
+  it("L0 + hide tests keeps non-test groups in the reduced graph", async () => {
+    const store = newStore(clientReturning(withTests));
+    await store.loadProject("/x");
+    store.setZoomLevel(0);
+    const done = nextLayout(store);
+    store.setHideTests(true);
+    await done;
+    expect(store.getReducedGraph()?.groups.map((g) => g.id).sort()).toEqual([
+      "app",
+      "core",
+      "services",
+      "shared",
+      "ui",
+    ]);
+  });
+
+  it("L1 hide tests → L0 → unhide → L1 keeps grouped modules in layout", async () => {
+    const store = newStore(clientReturning(withTests));
+    await store.loadProject("/x");
+    const done1 = nextLayout(store);
+    store.setHideTests(true);
+    await done1;
+    store.setZoomLevel(0);
+    const done2 = nextLayout(store);
+    store.setHideTests(false);
+    await done2;
+    store.setZoomLevel(1);
+    expect(store.getReducedGraph()?.modules.length).toBe(withTests.modules.length);
+    expect(store.getLayout()?.modules.some((m) => m.id === "src/services/http.ts")).toBe(true);
+  });
 });

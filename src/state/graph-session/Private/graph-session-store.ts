@@ -160,8 +160,15 @@ export class GraphSessionStore extends EventEmitter {
   }
 
   private reduceForView(graph: ProjectGraph): ProjectGraph {
-    const zoomed = projectForZoom(graph, new Set(this.collapsedGroupIds));
-    return this.hideTests ? filterTestModules(zoomed) : zoomed;
+    const base = this.hideTests ? filterTestModules(graph) : graph;
+    return projectForZoom(base, new Set(this.collapsedGroupIds));
+  }
+
+  /** Layout graph: test filter on the full graph; L0 collapse is projection-only. */
+  private reduceForLayout(graph: ProjectGraph): ProjectGraph {
+    const base = this.hideTests ? filterTestModules(graph) : graph;
+    if (this.zoomLevel === 0) return base;
+    return projectForZoom(base, new Set(this.collapsedGroupIds));
   }
 
   /** Reduce for the collapse state and (re)lay it out. Guarded so a stale async
@@ -170,7 +177,7 @@ export class GraphSessionStore extends EventEmitter {
     const graph = this.graph;
     if (!graph) return;
     const seq = ++this.layoutSeq;
-    const reduced = this.reduceForView(graph);
+    const reduced = this.reduceForLayout(graph);
     if (this.zoomLevel === 2) await this.ensureSources(reduced.modules);
     const opts: LayoutOptions = {
       collapsedGroupSizes: this.expandedGroupSizes,

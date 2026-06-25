@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isTestModule, filterTestModules } from "../src/domain/graph";
+import { isTestModule, filterTestModules, projectForZoom } from "../src/domain/graph";
 import type { ProjectGraph } from "../src/domain/graph";
 
 function module(id: string, groupId: string | null = null) {
@@ -90,5 +90,19 @@ describe("filterTestModules", () => {
       groups: base.groups.slice(0, 1),
     };
     expect(filterTestModules(prodOnly)).toEqual(prodOnly);
+  });
+
+  it("filter before zoom keeps groups when L0 collapse hides their modules", () => {
+    const withUngroupedTest: ProjectGraph = {
+      ...base,
+      modules: [...base.modules, module("src/smoke.test.ts", null)],
+    };
+    const collapsed = new Set(["app", "tests"]);
+    const zoomed = projectForZoom(withUngroupedTest, collapsed);
+    expect(filterTestModules(zoomed).groups).toHaveLength(0);
+
+    const filtered = filterTestModules(withUngroupedTest);
+    const zoomedAfterFilter = projectForZoom(filtered, collapsed);
+    expect(zoomedAfterFilter.groups.map((g) => g.id)).toEqual(["app"]);
   });
 });
