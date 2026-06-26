@@ -39,6 +39,7 @@ pub enum Language {
     TypeScript,
     Tsx,
     Rust,
+    CSharp,
 }
 
 #[derive(Serialize, Deserialize, TS, Debug, Clone, PartialEq, Default)]

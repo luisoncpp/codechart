@@ -14,11 +14,11 @@ TypeScript is the first impl, C++ a future one with no pipeline change.
 
 `language_adapter::`
 - `trait LanguageAdapter { fn parse(&self, path, source) -> Result<ParsedModule, ParseError> }`
-- `registry_for(ext) -> Option<Box<dyn LanguageAdapter>>` — pick by extension (`ts`/`tsx`/`mts`/`cts`/`rs`).
+- `registry_for(ext) -> Option<Box<dyn LanguageAdapter>>` — pick by extension (`ts`/`tsx`/`mts`/`cts`/`rs`/`cs`).
 - `registry_for_path(path)` — convenience over the path's extension.
 - Data: `ParsedModule`, `ParsedImport`, `ImportKind`, `CommentBlock`.
 
-The TS impl (`typescript/`) and Rust impl (`rust/`) are private behind the trait; tree-sitter never
+The TS impl (`typescript/`), Rust impl (`rust/`), and C# impl (`csharp/`) are private behind the trait; tree-sitter never
 leaks past this boundary.
 
 ## `ParsedModule`
@@ -34,6 +34,7 @@ leaks past this boundary.
 | `implements` | interface names from `implements` clauses (`class Foo implements IBar`) or Rust `impl Trait for Type` (Phase 10) |
 | `ipc_invokes` | Tauri `invoke("…")` command names, source order (TS; requires `@tauri-apps/api` import) |
 | `ipc_commands` | `#[tauri::command]` handler names, source order (Rust) |
+| `declared_namespace` | declared `namespace` for the file (C#) |
 | `loc` | line count |
 
 `ParsedImport` carries `specifier`, `kind` (`Default`/`Named`/`Namespace`/`SideEffect`),
@@ -61,6 +62,16 @@ skipped. External crates (`serde`, `std`, …) are skipped when the path has no
 `crate`/`self`/`super` prefix and does not resolve as an in-crate module. Inline `mod foo { ... }` and
 `extern crate` produce no file edges.
 
+### C# forms handled
+
+`using` / `global using` (namespace specifier stored for the references pass),
+`using Alias = …` (alias target's final segment in `import.names`),
+file-scoped and block `namespace` declarations (`declared_namespace`), and
+`public` classes/interfaces/structs/enums/records/delegates as exports.
+`: IFoo` base lists populate `implements`. External namespaces (`System`, …)
+produce no edges; in-project namespace matches become solid `import` edges via
+`references::csharp`.
+
 ## `semantic_comments::parse_annotations(text) -> Vec<Annotation>`
 
 Scans arbitrary text for `@Architecture(key=value, key="quoted value", ...)`
@@ -80,7 +91,7 @@ Single ordered top-level walk → output preserves source order. No timestamps/r
 ## Checkpoint (CLI)
 
 From the repo root:
-`cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- parse <file.ts|tsx>`
+`cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- parse <file.ts|tsx|rs|cs>`
 prints imports, re-exports, exported symbols, and annotations. (`codechart-cli` is
 a `[[bin]]` of the `codechart` package in `src-tauri/`, so it's `--bin codechart-cli`,
 not `-p codechart-cli`; `--manifest-path` lets paths stay repo-relative.) Verified

@@ -9,8 +9,8 @@ pub fn is_relative(specifier: &str) -> bool {
 }
 
 /// Resolve a relative `specifier` imported from `importer` to a known module id,
-/// or `None` when no candidate exists. Tries extensionless `.ts`/`.tsx`/`.rs`, an
-/// explicit `.ts`/`.tsx`/`.rs`, `.js`/`.jsx`/`.mjs` (TS ESM → source `.ts`), then
+/// or `None` when no candidate exists. Tries extensionless `.ts`/`.tsx`/`.rs`/`.cs`, an
+/// explicit extension, `.js`/`.jsx`/`.mjs` (TS ESM → source `.ts`), then
 /// `index.ts`/`index.tsx`/`mod.rs`.
 pub fn resolve_relative(
     importer: &str,
@@ -52,7 +52,11 @@ fn normalize_join(dir: &str, spec: &str) -> String {
 
 /// Candidate module ids for a resolved base path, in resolution priority order.
 fn candidates(base: &str) -> Vec<String> {
-    if base.ends_with(".ts") || base.ends_with(".tsx") || base.ends_with(".rs") {
+    if base.ends_with(".ts")
+        || base.ends_with(".tsx")
+        || base.ends_with(".rs")
+        || base.ends_with(".cs")
+    {
         return vec![base.to_string()];
     }
     if let Some(stem) = strip_js_like_extension(base) {
@@ -76,6 +80,7 @@ fn extensionless_candidates(base: &str) -> Vec<String> {
         format!("{base}.ts"),
         format!("{base}.tsx"),
         format!("{base}.rs"),
+        format!("{base}.cs"),
         format!("{base}/index.ts"),
         format!("{base}/index.tsx"),
         format!("{base}/mod.rs"),

@@ -31,6 +31,7 @@ export function inferSymbolKind(name: string, language?: Language): SymbolKind {
 
   if (/^[A-Z]/.test(name)) {
     if (language === "tsx") return "component";
+    if (language === "csharp") return "class";
     if (TYPE_SUFFIX.test(name)) return "type";
     if (CLASS_SUFFIX.test(name)) return "class";
     // Short PascalCase nouns in .ts are usually domain types, not classes.

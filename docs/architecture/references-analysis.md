@@ -17,12 +17,15 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
 (id = path). For every `import`/re-export:
 
 - **Relative** specifier (`./x`, `../x`) → resolved against known ids using the
-  §7 rules (`resolve.rs`): extensionless `.ts`/`.tsx`, explicit `.ts`/`.tsx`/`.rs`,
+  §7 rules (`resolve.rs`): extensionless `.ts`/`.tsx`/`.cs`, explicit extensions,
   `.js`/`.jsx`/`.mjs` (TS ESM convention → source `.ts`/`.tsx`), then
   `index.ts`/`index.tsx`/`mod.rs`. Hit → solid `import` edge. Miss → `unresolvedImport`
   diagnostic (severity `warning`, no ghost edge in M1).
-- **Non-relative** (package) specifier → external metadata: neither edge nor
+- **Non-relative** specifier on **non-C#** modules → external metadata: neither edge nor
   diagnostic.
+- **Non-relative** specifier on **`.cs`** modules → looked up against in-project
+  `declared_namespace` values (`references::csharp`). Match → solid `import` edge;
+  miss (e.g. `System`) → external metadata.
 
 **Edge id** = `${source}->${target}:import:${ordinal}`. Edges are sorted by
 `(source, target)`; `ordinal` disambiguates repeated same-pair imports (0-based).

@@ -8,4 +8,4 @@ facades:
 descriptionShort: One file → ParsedModule seam
 ---
 
-`LanguageAdapter` trait and `registry_for(ext)` picker. TypeScript and Rust tree-sitter implementations stay private; parsed facts (imports, exports, signals, implements) feed the references pass.
+`LanguageAdapter` trait and `registry_for(ext)` picker. TypeScript, Rust, and C# tree-sitter implementations stay private; parsed facts (imports, exports, signals, implements) feed the references pass.

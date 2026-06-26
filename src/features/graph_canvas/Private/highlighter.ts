@@ -73,6 +73,21 @@ const goRules: Rule[] = [
   { type: "whitespace", regex: /^\s+/ },
 ];
 
+const csharpRules: Rule[] = [
+  { type: "comment", regex: /^\/\/.*|^\/\*[\s\S]*?\*\// },
+  { type: "string", regex: /^@"(?:[^"]|"")*"|^"(?:[^"\\]|\\.)*"/ },
+  { type: "number", regex: /^\b0x[0-9a-fA-F_]+\b|^\b\d[\d_]*(?:\.\d+)?[dfm]?/i },
+  { type: "keyword", regex: /^\b(abstract|as|base|bool|break|byte|case|catch|char|checked|class|const|continue|decimal|default|delegate|do|double|else|enum|event|explicit|extern|false|finally|fixed|float|for|foreach|goto|if|implicit|in|int|interface|internal|is|lock|long|namespace|new|null|object|operator|out|override|params|private|protected|public|readonly|record|ref|return|sealed|short|sizeof|stackalloc|static|string|struct|switch|this|throw|true|try|typeof|uint|ulong|unchecked|unsafe|ushort|using|virtual|void|volatile|while|global|file|required|partial|where|get|set|init|add|remove|value|var|when|with|and|or|not|nint|nuint)\b/ },
+  { type: "type", regex: /^\b([A-Z][a-zA-Z0-9_]*)\b/ },
+  { type: "decorator", regex: /^\[[\s\S]*?\]/ },
+  { type: "function", regex: /^\b([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*\()/ },
+  { type: "operator", regex: /^(===|==|!==|!=|=>|\+\+|--|\+=|-=|\*=|\/=|&&|\|\||[+\-*/%&|^!~=<>?:])/ },
+  { type: "punctuation", regex: /^[{}()[\].,;]/ },
+  { type: "text", regex: /^[a-zA-Z0-9_]+/ },
+  { type: "text", regex: /^[^\s"'`\w+\-*/%&|^!~=<>?:{}()[\].,;]+/ },
+  { type: "whitespace", regex: /^\s+/ },
+];
+
 const defaultRules: Rule[] = [
   { type: "comment", regex: /^\/\/.*|^\/\*[\s\S]*?\*\/|^#.*/ },
   { type: "string", regex: /^"(?:[^"\\]|\\.)*"|^'(?:[^'\\]|\\.)*'/ },
@@ -95,6 +110,8 @@ function getRulesForFile(filepath: string): Rule[] {
       return jsRules;
     case "rs":
       return rustRules;
+    case "cs":
+      return csharpRules;
     case "py":
       return pythonRules;
     case "go":

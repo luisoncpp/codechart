@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="Headless CLI for parse, groups, and analyze")
 // Dev CLI: inspect intermediate analysis output with no UI.
 //
-//   codechart-cli parse   <file.ts|tsx>   — print imports + annotations
+//   codechart-cli parse   <file.ts|tsx|rs|cs>   — print imports + annotations
 //   codechart-cli groups  <project-dir>   — print the resolved group tree
 //   codechart-cli analyze <project-dir>   — print the full ProjectGraph as JSON
 
@@ -48,7 +48,7 @@ fn fail(message: &str) -> ExitCode {
 
 fn run_parse(path: Option<&str>) -> ExitCode {
     let Some(path) = path else {
-        return fail("usage: codechart-cli parse <file.ts|tsx>");
+        return fail("usage: codechart-cli parse <file.ts|tsx|rs|cs>");
     };
     let Some(adapter) = registry_for_path(path) else {
         return fail(&format!("no adapter for: {path}"));

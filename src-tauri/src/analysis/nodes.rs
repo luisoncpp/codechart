@@ -26,6 +26,7 @@ pub fn language_for(path: &str) -> Language {
     match path.rsplit('.').next() {
         Some("tsx") => Language::Tsx,
         Some("rs") => Language::Rust,
+        Some("cs") => Language::CSharp,
         _ => Language::TypeScript,
     }
 }

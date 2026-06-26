@@ -17,6 +17,7 @@ mod resolve;
 mod soft;
 mod tauri_ipc;
 mod test_module;
+mod csharp;
 
 #[cfg(test)]
 mod tests;
@@ -26,12 +27,14 @@ pub use interface_seams::classify_interface_seams;
 pub use soft::classify_soft;
 pub use tauri_ipc::classify_tauri_ipc;
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contract::{Diagnostic, DiagnosticKind, Edge, EdgeKind, Severity};
 use crate::language_adapter::{ParsedImport, ParsedModule};
 
 use resolve::{is_relative, resolve_relative};
+
+use csharp::{index_namespaces, resolve_namespace, uses_namespace_resolution};
 
 /// Edges + diagnostics derived from import resolution, consumed by `analysis`.
 pub struct ResolvedReferences {
@@ -45,12 +48,13 @@ pub struct ResolvedReferences {
 /// module ids are the parsed paths themselves (caller owns id = path).
 pub fn resolve_references(parsed: &[ParsedModule]) -> ResolvedReferences {
     let known: BTreeSet<&str> = parsed.iter().map(|m| m.path.as_str()).collect();
+    let namespaces = index_namespaces(parsed);
     let mut targets: Vec<(String, String)> = Vec::new();
     let mut diagnostics: Vec<Diagnostic> = Vec::new();
     let mut modules: Vec<&ParsedModule> = parsed.iter().collect();
     modules.sort_by(|a, b| a.path.cmp(&b.path));
     for module in modules {
-        resolve_module(module, &known, &mut targets, &mut diagnostics);
+        resolve_module(module, &known, &namespaces, &mut targets, &mut diagnostics);
     }
     ResolvedReferences {
         edges: build_edges(targets),
@@ -62,16 +66,26 @@ pub fn resolve_references(parsed: &[ParsedModule]) -> ResolvedReferences {
 fn resolve_module(
     module: &ParsedModule,
     known: &BTreeSet<&str>,
+    namespaces: &BTreeMap<String, Vec<String>>,
     targets: &mut Vec<(String, String)>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     for import in module.imports.iter().chain(module.reexports.iter()) {
-        if !is_relative(&import.specifier) {
+        if is_relative(&import.specifier) {
+            match resolve_relative(&module.path, &import.specifier, known) {
+                Some(target) => targets.push((module.path.clone(), target)),
+                None => diagnostics.push(unresolved(&module.path, import)),
+            }
             continue;
         }
-        match resolve_relative(&module.path, &import.specifier, known) {
-            Some(target) => targets.push((module.path.clone(), target)),
-            None => diagnostics.push(unresolved(&module.path, import)),
+        if !uses_namespace_resolution(&module.path) {
+            continue;
+        }
+        let Some(targets_for_ns) = resolve_namespace(&import.specifier, namespaces) else {
+            continue;
+        };
+        for target in targets_for_ns {
+            targets.push((module.path.clone(), target));
         }
     }
 }

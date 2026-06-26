@@ -17,6 +17,25 @@ fn module(path: &str, specifiers: &[&str]) -> ParsedModule {
     ParsedModule { path: path.to_string(), imports, ..Default::default() }
 }
 
+fn csharp_module(path: &str, namespace: &str, usings: &[&str]) -> ParsedModule {
+    let imports = usings
+        .iter()
+        .map(|s| ParsedImport {
+            specifier: (*s).to_string(),
+            kind: ImportKind::SideEffect,
+            names: vec![],
+            is_type_only: false,
+            is_reexport: false,
+        })
+        .collect();
+    ParsedModule {
+        path: path.to_string(),
+        declared_namespace: Some(namespace.to_string()),
+        imports,
+        ..Default::default()
+    }
+}
+
 fn edge_targets(parsed: &[ParsedModule]) -> Vec<(String, String)> {
     resolve_references(parsed)
         .edges
@@ -116,6 +135,26 @@ fn package_import_is_external_metadata() {
     let refs = resolve_references(&parsed);
     assert!(refs.edges.is_empty(), "no edge for a package import");
     assert!(refs.diagnostics.is_empty(), "no diagnostic for a package import");
+}
+
+#[test]
+fn resolves_csharp_namespace_using() {
+    let parsed = vec![
+        csharp_module("src/ui/App.cs", "MyApp.UI", &["MyApp.Services"]),
+        csharp_module("src/services/Store.cs", "MyApp.Services", &[]),
+    ];
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/ui/App.cs".into(), "src/services/Store.cs".into())]
+    );
+}
+
+#[test]
+fn external_csharp_using_is_metadata() {
+    let parsed = vec![csharp_module("src/App.cs", "MyApp.UI", &["System"])];
+    let refs = resolve_references(&parsed);
+    assert!(refs.edges.is_empty(), "no edge for an external namespace");
+    assert!(refs.diagnostics.is_empty(), "no diagnostic for an external namespace");
 }
 
 #[test]

@@ -7,6 +7,7 @@
 
 mod typescript;
 mod rust;
+mod csharp;
 
 /// How a dependency specifier is brought into a module.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,6 +86,8 @@ pub struct ParsedModule {
     pub ipc_invokes: Vec<String>,
     /// `#[tauri::command]` handler names, in source order (Rust modules only).
     pub ipc_commands: Vec<String>,
+    /// Declared `namespace` for this file (C# only).
+    pub declared_namespace: Option<String>,
     /// Lines of code (newline count + 1 for non-empty files).
     pub loc: u32,
 }
@@ -111,6 +114,7 @@ pub fn registry_for(ext: &str) -> Option<Box<dyn LanguageAdapter>> {
             Some(Box::new(typescript::TypeScriptAdapter::new(ext == "tsx")))
         }
         "rs" => Some(Box::new(rust::RustAdapter::new())),
+        "cs" => Some(Box::new(csharp::CSharpAdapter::new())),
         _ => None,
     }
 }
