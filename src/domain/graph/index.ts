@@ -24,6 +24,13 @@ export {
   groupParentMap,
 } from "./Private/zoom-projection";
 export { isTestModule, filterTestModules } from "./Private/test-modules";
+export {
+  isGroupDisconnected,
+  isModuleDisconnected,
+  filterDisconnectedEdges,
+  defaultDisconnectedSets,
+  countHiddenEdges,
+} from "./Private/connection-filter";
 export type { ZoomLevel } from "./Private/zoom-projection";
 export type {
   ProjectedGraph,

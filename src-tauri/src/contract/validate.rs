@@ -181,7 +181,7 @@ mod tests {
             parent_id: parent.map(Into::into),
             color: None,
             facade_module_ids: facades.iter().map(|s| (*s).into()).collect(),
-            annotation: None,
+            ..Default::default()
         }
     }
 

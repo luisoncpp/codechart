@@ -14,6 +14,8 @@ export interface GroupNodeData extends Record<string, unknown> {
   descriptionLong?: string;
   /** True when this group is rendered collapsed (semantic zoom). */
   collapsed?: boolean;
+  /** True when this group's connections are hidden (treated as external). */
+  disconnected?: boolean;
   /** True at L1.5+ (symbols visible): the in-group description shows the long text. */
   showLong?: boolean;
   /** Geometry (parent-relative) of the layout-reserved in-body description box, so
@@ -41,6 +43,8 @@ export interface ModuleNodeData extends Record<string, unknown> {
   snippet?: string;
   /** Relative source file path of the module. */
   path?: string;
+  /** True when this module's connections are hidden (treated as external). */
+  disconnected?: boolean;
 }
 
 /** Data carried by an exported-symbol box nested under a module. */

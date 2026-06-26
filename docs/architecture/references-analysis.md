@@ -114,6 +114,9 @@ pure import-resolution stays group-agnostic. An edge `S → T` is a **violation*
 - `S` lives **outside** the group's subtree — `S`'s group is neither the target
   group nor a descendant of it (a module nested *deeper* than the facade's group
   is still "inside" the boundary).
+- `S` is **not** a test module — paths matching `*.test.*` / `*.spec.*` or living
+  under a `test` / `tests` / `__tests__` segment are skipped (tests often import
+  private modules on purpose).
 
 The diagnostic (`Severity::Warning`, `kind: ArchitectureViolation`) is keyed
 `architectureViolation:<edge-id>`, links `module_id = S` (the importer at fault)

@@ -21,6 +21,9 @@ struct RawFrontmatter {
     ignore: Option<Vec<String>>,
     #[serde(rename = "descriptionShort")]
     description_short: Option<String>,
+    disconnected: Option<bool>,
+    #[serde(rename = "disconnectedModules")]
+    disconnected_modules: Option<Vec<String>>,
 }
 
 /// Split a `*.group.md` file into (frontmatter yaml, body markdown). The body is
@@ -70,6 +73,8 @@ pub fn parse_group_def(path: &str, content: &str) -> Result<GroupDef, ConfigErro
         ignore: raw.ignore.unwrap_or_default(),
         description_short: raw.description_short.or_else(|| first_paragraph(body)),
         description_long: (!body.is_empty()).then(|| body.to_string()),
+        disconnected: raw.disconnected.unwrap_or(false),
+        disconnected_modules: raw.disconnected_modules.unwrap_or_default(),
     })
 }
 

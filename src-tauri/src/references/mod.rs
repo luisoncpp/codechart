@@ -16,6 +16,7 @@ mod interface_seams;
 mod resolve;
 mod soft;
 mod tauri_ipc;
+mod test_module;
 
 #[cfg(test)]
 mod tests;

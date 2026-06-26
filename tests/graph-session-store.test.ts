@@ -307,3 +307,20 @@ describe("GraphSessionStore hide tests", () => {
     expect(store.getLayout()?.modules.some((m) => m.id === "src/services/http.ts")).toBe(true);
   });
 });
+
+describe("GraphSessionStore connection disconnect", () => {
+  it("seeds disconnected groups from graph defaults on load", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    expect(store.getDisconnectedGroupIds().has("shared")).toBe(true);
+    expect(store.getReducedGraph()!.edges.length).toBeLessThan(graph.edges.length);
+  });
+
+  it("reconnecting a group restores its edges in the reduced graph", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    const hidden = store.getReducedGraph()!.edges.length;
+    store.toggleGroupConnection("shared", /*disconnect=*/ false);
+    expect(store.getReducedGraph()!.edges.length).toBeGreaterThan(hidden);
+  });
+});

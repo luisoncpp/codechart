@@ -37,7 +37,7 @@ fn infer_one(
         parent_id: nearest_dir_group(dir, dirs),
         color: None,
         facade_module_ids,
-        annotation: None,
+        ..Default::default()
     }
 }
 

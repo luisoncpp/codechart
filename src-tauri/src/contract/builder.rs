@@ -93,7 +93,7 @@ mod tests {
                 parent_id: None,
                 color: None,
                 facade_module_ids: vec!["src/index.ts".into()],
-                annotation: None,
+                ..Default::default()
             })
             .module(ModuleNode {
                 id: "src/index.ts".into(),

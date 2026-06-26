@@ -154,6 +154,19 @@ fn folder_inference_when_no_group_files() {
     assert!(r.facades.contains("src/core/index.ts"));
 }
 
+#[test]
+fn disconnected_defaults_map_to_group_node_fields() {
+    let mut shared = def("shared", "");
+    shared.disconnected = true;
+    shared.disconnected_modules = vec!["src/core/todo.ts".into()];
+    shared.files = vec!["src/core/todo.ts".into(), "src/services/types.ts".into()];
+    let fs = files(&["src/core/todo.ts", "src/services/types.ts"]);
+    let r = resolve_groups(&fs, &[shared]);
+    let g = group(&r, "shared");
+    assert!(g.disconnected_by_default);
+    assert_eq!(g.disconnected_module_ids, vec!["src/core/todo.ts".to_string()]);
+}
+
 /// End-to-end against the real fixture: parse the five `*.group.md` files and the
 /// 13 module paths, then check the assignment matches `golden/project-graph.json`.
 #[test]

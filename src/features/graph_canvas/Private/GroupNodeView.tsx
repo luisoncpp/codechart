@@ -1,8 +1,10 @@
 // @Architecture(descriptionShort="Renders group boundaries, titles, and descriptions")
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { GroupRFNode, GroupNodeData } from "../../../domain/graph";
-import { DESC_BOX, PRESETS } from "../../../domain/layout";
-import { iconGlyph } from "./icon-map";
+import { DESC_BOX, PRESETS, fitDescriptionFontSize } from "../../../domain/layout";
+import { iconFontSize, iconGlyph } from "./icon-map";
+import { ConnectionToggle } from "./ConnectionToggle";
+import { ChevronIcon } from "./ChevronIcon";
 import { useZoomCounterScale } from "./use-zoom-counter-scale";
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
@@ -44,6 +46,7 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
       {/* Invisible handles so a collapsed group can be an edge endpoint (L0
           group→group edges). FloatingEdge ignores their position. */}
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
+      <ConnectionToggle disconnected={!!data.disconnected} scale={scale} />
       {data.collapsed ? (
         <CollapsedCard data={data} scale={scale} width={width} height={height} />
       ) : (
@@ -62,10 +65,13 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
  *  `l1FontSize`; L1.5+ (`showLong`) shows the long text at the smaller `fontSize`.
  *  The box fits both (`descriptionBoxSize`), so neither variant truncates. */
 function GroupDescription({ data }: { data: GroupNodeData }) {
-  const text =
-    (data.showLong ? data.descriptionLong : undefined) ?? data.descriptionShort;
+  const showingLong = !!(data.showLong && data.descriptionLong);
+  const text = (showingLong ? data.descriptionLong : undefined) ?? data.descriptionShort;
   if (!text || !data.descriptionBox) return null;
-  const font = data.showLong ? DESC_BOX.fontSize : DESC_BOX.l1FontSize;
+  const { width, height } = data.descriptionBox;
+  const font = showingLong
+    ? DESC_BOX.fontSize
+    : fitDescriptionFontSize(text, width, height);
   return (
     <p style={bandDescriptionStyle(darken(data.color), data.descriptionBox, font)} title={text}>
       {text}
@@ -81,7 +87,11 @@ function ExpandedHeader({ data, scale }: { data: GroupNodeData; scale: number })
   return (
     <div style={headerStyle(data.color, scale)}>
       <ToggleButton color={data.color} scale={scale} collapsed={false} />
-      {glyph && <span aria-hidden>{glyph}</span>}
+      {glyph && (
+        <span aria-hidden style={{ fontSize: iconFontSize(14, scale), lineHeight: 1, flexShrink: 0 }}>
+          {glyph}
+        </span>
+      )}
       <span>{data.label}</span>
     </div>
   );
@@ -107,7 +117,11 @@ function ToggleButton({
       title={collapsed ? "Expand" : "Collapse"}
       style={toggleButtonStyle(color, scale)}
     >
-      {collapsed ? "▸" : "▾"}
+      <ChevronIcon
+        direction={collapsed ? "right" : "down"}
+        size={18 * scale}
+        color={color}
+      />
     </button>
   );
 }
@@ -143,7 +157,11 @@ function CollapsedCard({
     >
       <div style={cardLabelStyle(data.color, scale)}>
         <ToggleButton color={data.color} scale={scale} collapsed />
-        {glyph && <span aria-hidden>{glyph}</span>}
+        {glyph && (
+          <span aria-hidden style={{ fontSize: iconFontSize(18, scale), lineHeight: 1, flexShrink: 0 }}>
+            {glyph}
+          </span>
+        )}
         <span>{data.label}</span>
       </div>
       {description && (
@@ -209,16 +227,16 @@ function toggleButtonStyle(color: string, scale: number) {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    width: 16 * scale,
-    height: 16 * scale,
+    width: 24 * scale,
+    height: 24 * scale,
     padding: 0,
     border: "none",
     borderRadius: 4 * scale,
     background: "transparent",
     color,
-    fontSize: 11 * scale,
     lineHeight: 1,
     cursor: "pointer",
+    flexShrink: 0,
   };
 }
 
@@ -279,5 +297,7 @@ function bandDescriptionStyle(
     color,
     overflow: "hidden",
     pointerEvents: "none" as const,
+    display: "flex",
+    alignItems: "center",
   };
 }

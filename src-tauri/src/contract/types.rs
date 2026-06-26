@@ -105,9 +105,17 @@ pub struct GroupNode {
     #[ts(optional)]
     pub color: Option<String>,
     pub facade_module_ids: Vec<String>,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub disconnected_by_default: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub disconnected_module_ids: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub annotation: Option<Annotation>,
+}
+
+fn is_false(v: &bool) -> bool {
+    !*v
 }
 
 #[derive(Serialize, Deserialize, TS, Debug, Clone, PartialEq)]

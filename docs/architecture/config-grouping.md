@@ -18,7 +18,8 @@ which module belongs to which group, each group's parent and facades, and
 Public surface (`project_config::`):
 - `GroupDef` — parsed config: id, label, `dir` (folder of the file, `""` = root),
   color, icon, `facades`, membership (`match_globs`/`files`/`group_refs`/`exclude`),
-  root-only `ignore`, `description_short`/`description_long`.
+  root-only `ignore`, `description_short`/`description_long`, `disconnected` (hide all
+  group connections by default), `disconnected_modules` (module paths relative to `dir`).
 - `parse_group_def(path, content) -> Result<GroupDef, ConfigError>` — one file.
 - `discover_group_defs(source) -> (Vec<GroupDef>, Vec<Diagnostic>)` — walk a
   `ProjectSource`, parse every `*.group.md`, parse failures → `configError`s.
@@ -56,6 +57,12 @@ module).
 **Facades:** explicit `facades` (must name group members, else
 `configError:facade:…`), else default to `index.ts`/`index.tsx` in `dir` when
 present. A facade-less group is public (§10 drift never flags imports into it).
+
+**Disconnect defaults:** `disconnected: true` marks the whole group disconnected
+by default (canvas hides its edges on load). `disconnectedModules` lists module
+paths (joined onto `dir`, like `files`) whose edges are hidden individually;
+unknown paths → `configError:disconnect:…`. Resolved ids land on
+`GroupNode.disconnectedByDefault` / `disconnectedModuleIds` in the contract.
 
 **Folder inference (`infer.rs`):** with **no** `*.group.md` at all, infer one
 `folder:<dir>` group per directory containing source files, `index.ts/tsx` facade,

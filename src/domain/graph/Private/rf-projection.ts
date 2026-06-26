@@ -7,6 +7,10 @@ import type { GroupNode } from "../GroupNode";
 import type { ModuleNode } from "../ModuleNode";
 import type { Edge } from "../Edge";
 import { groupParentMap, isModuleExpanded } from "./zoom-projection";
+import {
+  isGroupDisconnected,
+  isModuleDisconnected,
+} from "./connection-filter";
 import type {
   GroupRFNode,
   ModuleRFNode,
@@ -23,6 +27,8 @@ type BoxIndex = Map<string, LayoutBox>;
  *  lazily-fetched source snippets to show in module boxes at L2. */
 export interface RenderOptions {
   collapsedGroupIds?: Set<string>;
+  disconnectedGroupIds?: Set<string>;
+  disconnectedModuleIds?: Set<string>;
   /** When true, symbol child boxes are emitted (L1.5+). */
   showSymbols?: boolean;
   /** moduleId → source; presence (at L2) turns on the in-box snippet. */
@@ -50,13 +56,23 @@ export function projectGraph(
   const moduleById = new Map(graph.modules.map((m) => [m.id, m]));
   const collapsed = options?.collapsedGroupIds;
   const parentOf = groupParentMap(graph);
+  const disconnectedGroups = options?.disconnectedGroupIds;
+  const disconnectedModules = options?.disconnectedModuleIds;
   const moduleVisible = (m: ModuleNode) =>
     !collapsed?.size || isModuleExpanded(m.groupId, collapsed, parentOf);
+  const groupDisconnected = (groupId: string) =>
+    !!disconnectedGroups?.size &&
+    isGroupDisconnected(groupId, disconnectedGroups, parentOf);
+  const moduleDisconnected = (moduleId: string) =>
+    (!!disconnectedGroups?.size || !!disconnectedModules?.size) &&
+    isModuleDisconnected(moduleId, graph, disconnectedGroups ?? new Set(), disconnectedModules ?? new Set());
 
   const ctx: ProjectionCtx = {
     index,
     options,
     moduleVisible,
+    groupDisconnected,
+    moduleDisconnected,
     descriptionByGroup,
     childBoxesByGroup,
   };
@@ -106,6 +122,8 @@ interface ProjectionCtx {
   index: BoxIndex;
   options?: RenderOptions;
   moduleVisible: (m: ModuleNode) => boolean;
+  groupDisconnected: (groupId: string) => boolean;
+  moduleDisconnected: (moduleId: string) => boolean;
   descriptionByGroup: Map<string | null, LayoutBox>;
   childBoxesByGroup: Map<string | null, LayoutBox[]>;
 }
@@ -153,6 +171,7 @@ function groupNode(
       descriptionShort: group.annotation?.descriptionShort,
       descriptionLong: group.annotation?.descriptionLong,
       collapsed: ctx.options?.collapsedGroupIds?.has(group.id) ?? false,
+      disconnected: ctx.groupDisconnected(group.id),
       showLong: ctx.options?.showSymbols ?? false,
       descriptionBox: descriptionBoxGeometry(group.id, box, ctx),
       minChildY,
@@ -211,6 +230,7 @@ function moduleNode(
       showSymbols,
       snippet: ctx.options?.snippets?.get(module.id),
       path: module.path,
+      disconnected: ctx.moduleDisconnected(module.id),
     },
   };
 }

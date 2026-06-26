@@ -8,15 +8,20 @@ function spyStore() {
   return {
     select: vi.fn(),
     toggleGroup: vi.fn(),
+    toggleGroupConnection: vi.fn(),
+    toggleModuleConnection: vi.fn(),
     setZoomLevel: vi.fn(),
   };
 }
 
-/** A click whose target is (or is not) inside the collapse/expand button. */
-function clickEvent(onToggleButton: boolean): React.MouseEvent {
+/** A click whose target is inside an optional affordance button. */
+function clickEvent(opts: { onCollapse?: boolean; onConnection?: boolean } = {}): React.MouseEvent {
   const target = {
-    closest: (sel: string) =>
-      onToggleButton && sel === "[data-group-toggle]" ? {} : null,
+    closest: (sel: string) => {
+      if (opts.onCollapse && sel === "[data-group-toggle]") return {};
+      if (opts.onConnection && sel === "[data-connection-toggle]") return {};
+      return null;
+    },
   } as unknown as HTMLElement;
   return { target } as unknown as React.MouseEvent;
 }
@@ -28,7 +33,7 @@ describe("GraphCanvasController.onNodeClick", () => {
     const store = spyStore();
     new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
       groupNode,
-      clickEvent(/*onToggleButton=*/ true),
+      clickEvent({ onCollapse: true }),
     );
     expect(store.toggleGroup).toHaveBeenCalledWith("g1");
     expect(store.select).not.toHaveBeenCalled();
@@ -38,7 +43,7 @@ describe("GraphCanvasController.onNodeClick", () => {
     const store = spyStore();
     new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
       groupNode,
-      clickEvent(/*onToggleButton=*/ false),
+      clickEvent(),
     );
     expect(store.toggleGroup).not.toHaveBeenCalled();
     expect(store.select).not.toHaveBeenCalled();
@@ -48,7 +53,7 @@ describe("GraphCanvasController.onNodeClick", () => {
     const store = spyStore();
     const onSymbolClick = vi.fn();
     const symbolNode = { id: "s1", type: "symbol", parentId: "m1" } as unknown as Node;
-    const evt = clickEvent(/*onToggleButton=*/ false);
+    const evt = clickEvent();
 
     new GraphCanvasController(
       store as unknown as GraphSessionStore,
@@ -57,5 +62,24 @@ describe("GraphCanvasController.onNodeClick", () => {
 
     expect(store.select).toHaveBeenCalledWith("m1");
     expect(onSymbolClick).toHaveBeenCalledWith(symbolNode, evt);
+  });
+
+  it("toggles group connections when the plug button is clicked", () => {
+    const store = spyStore();
+    new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
+      groupNode,
+      clickEvent({ onConnection: true }),
+    );
+    expect(store.toggleGroupConnection).toHaveBeenCalledWith("g1");
+  });
+
+  it("toggles module connections when the plug button is clicked", () => {
+    const store = spyStore();
+    const moduleNode = { id: "m1", type: "module" } as unknown as Node;
+    new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
+      moduleNode,
+      clickEvent({ onConnection: true }),
+    );
+    expect(store.toggleModuleConnection).toHaveBeenCalledWith("m1");
   });
 });

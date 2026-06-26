@@ -185,6 +185,23 @@ fn import_through_the_facade_is_not_a_violation() {
 }
 
 #[test]
+fn test_module_bypassing_a_facade_is_not_a_violation() {
+    let bounds = boundaries(
+        &[
+            ("src/foo.test.ts", "ui"),
+            ("core/index.ts", "core"),
+            ("core/store.ts", "core"),
+        ],
+        &["core/index.ts"],
+        &[],
+    );
+    let mut edges = vec![edge("src/foo.test.ts", "core/store.ts")];
+    let diags = flag_drift(&mut edges, &bounds);
+    assert!(!edges[0].is_violation);
+    assert!(diags.is_empty());
+}
+
+#[test]
 fn import_into_a_private_module_from_outside_is_a_violation() {
     let bounds = boundaries(
         &[("ui/a.ts", "ui"), ("core/index.ts", "core"), ("core/store.ts", "core")],

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isTestModule, filterTestModules, projectForZoom } from "../src/domain/graph";
+import { isTestModule, filterTestModules, projectForZoom, architectureViolations } from "../src/domain/graph";
 import type { ProjectGraph } from "../src/domain/graph";
 
 function module(id: string, groupId: string | null = null) {
@@ -104,5 +104,32 @@ describe("filterTestModules", () => {
     const filtered = filterTestModules(withUngroupedTest);
     const zoomedAfterFilter = projectForZoom(filtered, collapsed);
     expect(zoomedAfterFilter.groups.map((g) => g.id)).toEqual(["app"]);
+  });
+});
+
+describe("architectureViolations", () => {
+  it("omits facade bypasses from test importers", () => {
+    const graph: ProjectGraph = {
+      ...base,
+      diagnostics: [
+        {
+          id: "architectureViolation:prod",
+          severity: "warning",
+          kind: "architectureViolation",
+          message: "src/app.ts imports src/core/store.ts, bypassing the core facade",
+          moduleId: "src/app.ts",
+        },
+        {
+          id: "architectureViolation:test",
+          severity: "warning",
+          kind: "architectureViolation",
+          message: "src/app.test.ts imports src/core/store.ts, bypassing the core facade",
+          moduleId: "src/app.test.ts",
+        },
+      ],
+    };
+    const violations = architectureViolations(graph);
+    expect(violations).toHaveLength(1);
+    expect(violations[0].moduleId).toBe("src/app.ts");
   });
 });

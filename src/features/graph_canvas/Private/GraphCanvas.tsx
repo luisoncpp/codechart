@@ -17,6 +17,7 @@ import { nodeTypes } from "./node-types";
 import { edgeTypes } from "./edge-types";
 import { styleEdge } from "./edge-style";
 import { FitView } from "./FitView";
+import { CANVAS_MIN_ZOOM } from "./use-zoom-counter-scale";
 import { GraphCanvasController } from "./graph-canvas-controller";
 import { SymbolSourceWidget } from "./SymbolSourceWidget";
 import { LevelBadge } from "./LevelBadge";
@@ -130,6 +131,8 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
       if (!graph || !layout) return null;
       const options: RenderOptions = {
         collapsedGroupIds: session.getCollapsedGroupIds(),
+        disconnectedGroupIds: session.getDisconnectedGroupIds(),
+        disconnectedModuleIds: session.getDisconnectedModuleIds(),
         showSymbols: level >= 1.5,
         snippets: level === 2 ? session.getSourceCache() : undefined,
       };
@@ -165,7 +168,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
           onMoveEnd={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}
           fitView
           fitViewOptions={fitOptions}
-          minZoom={0.15}
+          minZoom={CANVAS_MIN_ZOOM}
           maxZoom={12}
           proOptions={{ hideAttribution: true }}
           nodesDraggable={false}

@@ -48,6 +48,7 @@
       "parentId": null,
       "color": "#f59e0b",
       "facadeModuleIds": [],
+      "disconnectedByDefault": true,
       "annotation": {
         "descriptionShort": "Cross-cutting types",
         "descriptionLong": "Cross-cutting type modules pulled from multiple folders: services/types.ts via a glob (`match`) and core/todo.ts via an explicit `files` entry. The core and services groups cede these files via `exclude`, so claims stay disjoint (no overlap). Declares no facade, so its members are public to every group (drift detection never flags imports into it).",

@@ -4,6 +4,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contract::{Diagnostic, DiagnosticKind, Edge, Severity};
 
+use super::test_module::is_test_module;
+
 /// Group facts drift needs: each module's owning group, the group tree, the
 /// groups that keep their members private (have ≥1 facade), and the facade set.
 pub struct GroupBoundaries {
@@ -33,6 +35,9 @@ pub fn flag_drift(edges: &mut [Edge], bounds: &GroupBoundaries) -> Vec<Diagnosti
 
 /// The private group whose facade `edge` bypasses, or `None` when allowed.
 fn bypassed_group<'a>(edge: &Edge, bounds: &'a GroupBoundaries) -> Option<&'a str> {
+    if is_test_module(&edge.source) {
+        return None; // tests often import private modules on purpose
+    }
     let group = bounds.module_group.get(&edge.target)?;
     if !bounds.faceted_groups.contains(group) {
         return None; // facade-less group is public

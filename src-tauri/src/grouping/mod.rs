@@ -9,6 +9,7 @@
 // configErrors — the rest of the tree still builds (partial-results discipline).
 
 mod claim;
+mod disconnect;
 mod infer;
 mod matcher;
 mod nesting;
@@ -22,6 +23,7 @@ use crate::contract::{Annotation, Diagnostic, GroupNode};
 use crate::project_config::GroupDef;
 
 use claim::{assign_modules, facades_for};
+use disconnect::resolve_disconnect;
 use infer::infer_groups;
 use nesting::resolve_nesting;
 
@@ -57,8 +59,16 @@ fn build_from_defs(files: &[String], defs: &[GroupDef]) -> ResolvedGroups {
         let members = members_of(&def.id, &assignment.module_group);
         let (facade_ids, facade_diags) = facades_for(def, &members);
         diagnostics.extend(facade_diags);
+        let disconnect = resolve_disconnect(def, &members);
+        diagnostics.extend(disconnect.diagnostics);
         facades.extend(facade_ids.iter().cloned());
-        groups.push(build_node(def, &nesting.parent_of, facade_ids));
+        groups.push(build_node(
+            def,
+            &nesting.parent_of,
+            facade_ids,
+            disconnect.by_default,
+            disconnect.module_ids,
+        ));
     }
     groups.sort_by(|a, b| a.id.cmp(&b.id));
     ResolvedGroups {
@@ -81,6 +91,8 @@ fn build_node(
     def: &GroupDef,
     parent_of: &BTreeMap<String, String>,
     facade_module_ids: Vec<String>,
+    disconnected_by_default: bool,
+    disconnected_module_ids: Vec<String>,
 ) -> GroupNode {
     GroupNode {
         id: def.id.clone(),
@@ -88,6 +100,8 @@ fn build_node(
         parent_id: parent_of.get(&def.id).cloned(),
         color: def.color.clone(),
         facade_module_ids,
+        disconnected_by_default,
+        disconnected_module_ids,
         annotation: annotation_from(def),
     }
 }

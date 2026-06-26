@@ -57,6 +57,15 @@ fn group_refs_and_ignore_parse() {
 }
 
 #[test]
+fn disconnected_config_parses() {
+    let md = "---\nid: shared\ndisconnected: true\n\
+              disconnectedModules:\n  - types.ts\n---\n";
+    let def = parse_group_def("shared.group.md", md).expect("valid");
+    assert!(def.disconnected);
+    assert_eq!(def.disconnected_modules, vec!["types.ts".to_string()]);
+}
+
+#[test]
 fn missing_frontmatter_is_a_config_error() {
     let err = parse_group_def("bad.group.md", "no fence here\n").unwrap_err();
     assert_eq!(err, ConfigError::MissingFrontmatter);

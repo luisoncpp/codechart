@@ -3,6 +3,7 @@ id: shared
 label: Shared
 color: "#f59e0b"
 icon: share
+disconnected: true
 match:
   - "src/**/types.ts"
 files:

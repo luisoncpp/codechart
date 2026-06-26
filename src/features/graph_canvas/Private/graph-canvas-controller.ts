@@ -15,6 +15,11 @@ export class GraphCanvasController {
   ) {}
 
   onNodeClick(node: Node, event: React.MouseEvent) {
+    if ((event.target as HTMLElement).closest("[data-connection-toggle]")) {
+      if (node.type === "group") this.store.toggleGroupConnection(node.id);
+      else if (node.type === "module") this.store.toggleModuleConnection(node.id);
+      return;
+    }
     if (node.type === "symbol") {
       this.store.select(node.parentId ?? null);
       this.onSymbolClick?.(node, event);

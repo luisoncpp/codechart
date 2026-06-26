@@ -1,5 +1,6 @@
 // @Architecture(descriptionShort="Selector functions for querying the projected graph state")
 import type { ProjectGraph } from "../ProjectGraph";
+import { isTestModule } from "./test-modules";
 import type { ModuleNode } from "../ModuleNode";
 import type { GroupNode } from "../GroupNode";
 import type { Edge } from "../Edge";
@@ -53,5 +54,15 @@ export function diagnosticsFor(graph: ProjectGraph, id: string): Diagnostic[] {
 
 /** Every facade-bypass (`architectureViolation`) diagnostic in the project. */
 export function architectureViolations(graph: ProjectGraph): Diagnostic[] {
-  return graph.diagnostics.filter((d) => d.kind === "architectureViolation");
+  return graph.diagnostics.filter(
+    (d) =>
+      d.kind === "architectureViolation" &&
+      !isTestImporter(graph, d),
+  );
+}
+
+function isTestImporter(graph: ProjectGraph, diagnostic: Diagnostic): boolean {
+  if (!diagnostic.moduleId) return false;
+  const module = findModule(graph, diagnostic.moduleId);
+  return module ? isTestModule(module.path) : false;
 }

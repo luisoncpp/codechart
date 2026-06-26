@@ -2,8 +2,10 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { ModuleRFNode, ModuleNodeData } from "../../../domain/graph";
 import { fitLabelFontSize, MODULE_BOX } from "../../../domain/layout";
-import { iconGlyph } from "./icon-map";
+import { iconGlyph, MODULE_ICON_LAYOUT, moduleIconVisualScale, ICON_EMOJI_BOOST } from "./icon-map";
+import { ConnectionToggle } from "./ConnectionToggle";
 import { L2DocumentNode } from "./L2DocumentNode";
+import { useZoomCounterScale } from "./use-zoom-counter-scale";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 const SNIPPET_LINES = 12;
@@ -44,13 +46,21 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
   const fontSize = detail
     ? 9
     : fitLabelFontSize(data.label, width ?? MODULE_BOX.minWidth, height ?? MODULE_BOX.minHeight);
+  const zoomScale = useZoomCounterScale();
 
   const cardOpts = { color, textColor, isFacade: data.isFacade, selected, detail };
   return (
     <div style={cardStyle(cardOpts)} title={data.descriptionShort ?? data.label}>
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
+      <ConnectionToggle disconnected={!!data.disconnected} scale={zoomScale} />
       {data.snippet && <Snippet source={data.snippet} />}
-      <Header data={data} textColor={textColor} detail={detail} fontSize={fontSize} />
+      <Header
+        data={data}
+        textColor={textColor}
+        detail={detail}
+        fontSize={fontSize}
+        zoomScale={zoomScale}
+      />
       {data.showSymbols && data.descriptionShort && (
         <div style={{ ...DESCRIPTION_STYLE, color: textColor }}>
           {data.descriptionShort}
@@ -65,6 +75,7 @@ interface HeaderProps {
   textColor: string;
   detail: boolean;
   fontSize: number;
+  zoomScale: number;
 }
 
 const labelStyle = (detail: boolean): React.CSSProperties => ({
@@ -75,20 +86,66 @@ const labelStyle = (detail: boolean): React.CSSProperties => ({
   fontWeight: detail ? "bold" : "normal",
 });
 
-const headerStyle = (detail: boolean, fontSize: number): React.CSSProperties => {
-  const base = { display: "flex" as const, alignItems: "center", gap: 4, flexShrink: 0, overflow: "hidden", fontSize, lineHeight: 1.15, pointerEvents: "none" as const, zIndex: 1 };
+const headerStyle = (
+  detail: boolean,
+  fontSize: number,
+  zoomScale: number,
+): React.CSSProperties => {
+  const gap = detail ? 4 * zoomScale : 4;
+  const base = {
+    display: "flex" as const,
+    alignItems: "center",
+    gap,
+    flexShrink: 0,
+    overflow: detail ? ("visible" as const) : ("hidden" as const),
+    fontSize,
+    lineHeight: 1.15,
+    pointerEvents: "none" as const,
+    zIndex: 1,
+  };
   return detail
-    ? { ...base, position: "relative" as const, padding: "2px 4px 0" }
-    : { ...base, position: "absolute" as const, inset: 0, justifyContent: "center", padding: "0 8px" };
+    ? {
+        ...base,
+        position: "relative" as const,
+        padding: `${2 * zoomScale}px ${MODULE_BOX.hPaddingRight * zoomScale}px 0 ${4 * zoomScale}px`,
+      }
+    : {
+        ...base,
+        position: "absolute" as const,
+        inset: 0,
+        justifyContent: "center",
+        padding: `0 ${MODULE_BOX.hPaddingRight}px 0 ${MODULE_BOX.hPaddingLeft}px`,
+      };
 };
 
 /** Label scales with the box (world units, no camera counter-scale): the box is
  *  laid out to fit this size, so the text never overflows it as you zoom. */
-function Header({ data, textColor, detail, fontSize }: HeaderProps) {
+function Header({ data, textColor, detail, fontSize, zoomScale }: HeaderProps) {
   const glyph = iconGlyph(data.icon);
+  const iconStyle = detail
+    ? {
+        fontSize: MODULE_ICON_LAYOUT,
+        transform: `scale(${moduleIconVisualScale(zoomScale)})`,
+        transformOrigin: "left center" as const,
+      }
+    : {
+        fontSize: Math.min(fontSize, MODULE_ICON_LAYOUT) * ICON_EMOJI_BOOST,
+      };
   return (
-    <div style={headerStyle(detail, fontSize)}>
-      {glyph && <span aria-hidden>{glyph}</span>}
+    <div style={headerStyle(detail, fontSize, zoomScale)}>
+      {glyph && (
+        <span
+          aria-hidden
+          style={{
+            lineHeight: 1,
+            flexShrink: 0,
+            display: "inline-block",
+            ...iconStyle,
+          }}
+        >
+          {glyph}
+        </span>
+      )}
       {data.isFacade && (
         <span aria-hidden style={{ color: textColor, fontSize }}>
           ★

@@ -14,8 +14,14 @@ export const MODULE_BOX = {
   fontSize: 11,
   /** Monospace glyph advance at `fontSize` (generous so labels rarely clip). */
   charWidth: 6.7,
-  /** Horizontal padding around the centered label (`0 8px` both sides). */
-  hPadding: 16,
+  /** Left padding for the centered label (`padding-left` in `ModuleNodeView`). */
+  hPaddingLeft: 8,
+  /** `ConnectionToggle` inset from the right edge at zoom scale 1. */
+  connectionToggleInset: 6,
+  /** `ConnectionToggle` button size at zoom scale 1. */
+  connectionToggleSize: 18,
+  /** Right label padding — reserves the full toggle footprint (inset + size). */
+  hPaddingRight: 6 + 18,
   lineHeight: 14,
   vPadding: 12,
   /** Base footprint — boxes never go below this (it sits at the 4:3 edge). */
@@ -41,7 +47,7 @@ export const LABEL_FIT = {
  *  instead of floating tiny at the 11px floor; floored at the base so it never
  *  regresses, capped at `maxFont` so it never dominates. */
 export function fitLabelFontSize(label: string, width: number, height: number): number {
-  const innerW = width - MODULE_BOX.hPadding;
+  const innerW = width - MODULE_BOX.hPaddingLeft - MODULE_BOX.hPaddingRight;
   const innerH = height - MODULE_BOX.vPadding;
   const len = Math.max(1, label.length);
   for (let font = LABEL_FIT.maxFont; font > MODULE_BOX.fontSize; font--) {
@@ -85,6 +91,31 @@ export function descriptionBoxSize(
   const long = boxFor(longText, DESC_BOX.fontSize);
   const short = boxFor(shortText, DESC_BOX.l1FontSize);
   return { width: Math.max(long.width, short.width), height: Math.max(long.height, short.height) };
+}
+
+/** Largest font (px) at which `text` fits a description box. Short blurbs grow to
+ *  fill a slot that was also packed for long prose; pass `maxFont` to cap (long text). */
+export function fitDescriptionFontSize(
+  text: string,
+  width: number,
+  height: number,
+  maxFont?: number,
+): number {
+  const innerW = width - 2 * DESC_BOX.padding;
+  const innerH = height - 2 * DESC_BOX.padding;
+  const len = Math.max(1, text.length);
+  const boxCeiling = Math.min(
+    48,
+    Math.floor(innerH / DESC_BOX.lineRatio),
+    Math.floor(innerW / DESC_BOX.charRatio),
+  );
+  const ceiling = Math.min(maxFont ?? boxCeiling, boxCeiling);
+  for (let font = ceiling; font >= DESC_BOX.fontSize; font--) {
+    const charsPerLine = Math.max(1, Math.floor(innerW / (font * DESC_BOX.charRatio)));
+    const lines = Math.ceil(len / charsPerLine);
+    if (lines * font * DESC_BOX.lineRatio <= innerH) return font;
+  }
+  return DESC_BOX.fontSize;
 }
 
 function boxFor(text: string, font: number): { width: number; height: number } {
@@ -143,7 +174,9 @@ export function moduleBoxSize(
 /** Height needed for the filename wrapped at the base width. */
 function wrappedLabelHeight(label: string): number {
   const textWidth = label.length * MODULE_BOX.charWidth;
-  const lines = Math.max(1, Math.ceil(textWidth / (MODULE_BOX.minWidth - MODULE_BOX.hPadding)));
+  const innerW =
+    MODULE_BOX.minWidth - MODULE_BOX.hPaddingLeft - MODULE_BOX.hPaddingRight;
+  const lines = Math.max(1, Math.ceil(textWidth / innerW));
   return lines * MODULE_BOX.lineHeight + MODULE_BOX.vPadding;
 }
 

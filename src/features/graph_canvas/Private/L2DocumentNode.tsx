@@ -3,6 +3,7 @@ import { Handle, Position, useStore } from "@xyflow/react";
 import type { ModuleNodeData } from "../../../domain/graph";
 import { L2Header } from "./L2Header";
 import { L2Description, L2CodeBlock } from "./L2Content";
+import { ConnectionToggle } from "./ConnectionToggle";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 /** Visible thumb thickness on screen (px); divided by canvas zoom inside the node. */
@@ -356,6 +357,7 @@ export function L2DocumentNode({
       }}
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
+      <ConnectionToggle disconnected={!!data.disconnected} scale={1 / zoom} />
       {inFov && (
         <div style={clampedStyles}>
           <L2Header label={data.label} color={color} zoom={zoom} />

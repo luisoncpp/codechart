@@ -9,6 +9,8 @@ import {
   MODULE_BOX,
   LABEL_FIT,
   fitLabelFontSize,
+  fitDescriptionFontSize,
+  DESC_BOX,
 } from "../src/domain/layout/Private/module-box-metrics";
 
 const graph = goldenGraph as ProjectGraph;
@@ -229,6 +231,20 @@ describe("fitLabelFontSize", () => {
     expect(fitLabelFontSize("averyverylongunbreakablefilename.tsx", 30, 20)).toBe(
       MODULE_BOX.fontSize,
     );
+  });
+});
+
+describe("fitDescriptionFontSize", () => {
+  it("grows a short blurb past the 22px floor when the box was sized for long prose", () => {
+    const { width, height } = { width: 340, height: 180 };
+    const font = fitDescriptionFontSize("React Flow map renderer", width, height);
+    expect(font).toBeGreaterThan(DESC_BOX.l1FontSize);
+  });
+
+  it("caps long prose at the dense render size", () => {
+    const long =
+      "Renders the layouted graph as an interactive React Flow map and drives selection via its controller.";
+    expect(fitDescriptionFontSize(long, 340, 180, DESC_BOX.fontSize)).toBe(DESC_BOX.fontSize);
   });
 });
 

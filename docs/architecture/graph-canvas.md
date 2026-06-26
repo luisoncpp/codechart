@@ -186,10 +186,19 @@ hidden by zoom collapse.
   and calls `store.toggleGroup` on a single click; double-clicking anywhere on the group still toggles via
   `onNodeDoubleClick`. Keep the `data-group-toggle` attribute — it's how the controller distinguishes a
   toggle click from a select/body click without threading a callback through the pure projection.
+- **Connection disconnect affordance:** every group and module renders a plug toggle (`ConnectionToggle`, 🔌)
+  at the **upper-right** corner, tagged `data-connection-toggle`. Click → `store.toggleGroupConnection` /
+  `toggleModuleConnection`. Disconnected nodes stay visible; edges touching them are dropped by
+  `filterDisconnectedEdges` (`domain/graph/Private/connection-filter.ts`, pure) in `GraphSessionStore.reduceForView`.
+  Defaults come from `GroupNode.disconnectedByDefault` / `disconnectedModuleIds` (parsed from `*.group.md`
+  `disconnected` / `disconnectedModules`); session state seeds on load and user toggles layer on top.
+  Modules inherit a parent group's disconnect (ancestor chain). Inspection still lists imports on the raw graph.
 - **Symbol Source Preview Widget (L1.5):** Clicking an exported symbol node in the L1.5 zoom view selects its parent module and opens a resizable, scrollable popup widget (`SymbolSourceWidget`) next to the symbol. The widget displays the module's source code, automatically locating and scrolling to focus on the line containing the symbol's definition (matching class/function/const/etc. patterns). It automatically dismisses when the canvas viewport is moved, when selecting another node or clicking the pane, or on any click outside the widget.
 
-Store surface (TDD §5.1): `getZoomLevel`, `getReducedGraph`, `getCollapsedGroupIds`, `getSourceCache`,
-`setZoomLevel`, `expandGroup`/`collapseGroup`/`toggleGroup`; emits `zoom-changed` + `layout-changed`.
+Store surface (TDD §5.1): `getZoomLevel`, `getReducedGraph`, `getCollapsedGroupIds`,
+`getDisconnectedGroupIds`, `getDisconnectedModuleIds`, `getSourceCache`,
+`setZoomLevel`, `expandGroup`/`collapseGroup`/`toggleGroup`,
+`toggleGroupConnection`/`toggleModuleConnection`; emits `zoom-changed` + `layout-changed` + `view-changed`.
 The canvas renders from `getReducedGraph()` + `getLayout()`, not the raw graph.
 
 ## Invariants to preserve
