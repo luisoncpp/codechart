@@ -1,5 +1,6 @@
 // @Architecture(descriptionShort="Calculates dimensions and font sizes for module and description boxes")
 import { SYMBOL_BOX, symbolBoxWidth } from "./symbol-box-metrics";
+import { countWrappedLines } from "./wrap-identifier";
 
 /** Typography + box sizing shared by ELK layout and `ModuleNodeView`.
  *
@@ -42,21 +43,25 @@ export const LABEL_FIT = {
   lineRatio: 1.3,
 } as const;
 
-/** Largest font (px) at which `label` fits a centered, wrap-anywhere block inside
+/** Largest font (px) at which `label` fits a centered, word-aware wrapped block inside
  *  a `width`×`height` box. A short filename in a base-or-larger box gets drawn big
  *  instead of floating tiny at the 11px floor; floored at the base so it never
  *  regresses, capped at `maxFont` so it never dominates. */
 export function fitLabelFontSize(label: string, width: number, height: number): number {
   const innerW = width - MODULE_BOX.hPaddingLeft - MODULE_BOX.hPaddingRight;
   const innerH = height - MODULE_BOX.vPadding;
-  const len = Math.max(1, label.length);
   for (let font = LABEL_FIT.maxFont; font > MODULE_BOX.fontSize; font--) {
-    const charsPerLine = Math.floor(innerW / (font * LABEL_FIT.charRatio));
-    if (charsPerLine < 1) continue;
-    const lines = Math.ceil(len / charsPerLine);
+    const charsPerLine = labelCharsPerLine(width, font);
+    const lines = countWrappedLines(label, charsPerLine);
     if (lines * font * LABEL_FIT.lineRatio <= innerH) return font;
   }
   return MODULE_BOX.fontSize;
+}
+
+/** Monospace chars that fit on one label line at `fontSize` inside `width`. */
+export function labelCharsPerLine(width: number, fontSize: number): number {
+  const innerW = width - MODULE_BOX.hPaddingLeft - MODULE_BOX.hPaddingRight;
+  return Math.max(1, Math.floor(innerW / (fontSize * LABEL_FIT.charRatio)));
 }
 
 /** Typography + footprint for a group's in-body description box (sized like a
@@ -173,10 +178,11 @@ export function moduleBoxSize(
 
 /** Height needed for the filename wrapped at the base width. */
 function wrappedLabelHeight(label: string): number {
-  const textWidth = label.length * MODULE_BOX.charWidth;
-  const innerW =
-    MODULE_BOX.minWidth - MODULE_BOX.hPaddingLeft - MODULE_BOX.hPaddingRight;
-  const lines = Math.max(1, Math.ceil(textWidth / innerW));
+  const charsPerLine = labelCharsPerLine(
+    MODULE_BOX.minWidth,
+    MODULE_BOX.fontSize,
+  );
+  const lines = countWrappedLines(label, charsPerLine);
   return lines * MODULE_BOX.lineHeight + MODULE_BOX.vPadding;
 }
 

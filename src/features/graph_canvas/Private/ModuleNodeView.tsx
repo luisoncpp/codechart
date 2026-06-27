@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="Renders module cards showing name, symbols, and snippets")
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { ModuleRFNode, ModuleNodeData } from "../../../domain/graph";
-import { fitLabelFontSize, MODULE_BOX } from "../../../domain/layout";
+import { fitLabelFontSize, labelCharsPerLine, MODULE_BOX, wrapIdentifierLines } from "../../../domain/layout";
 import { iconGlyph, MODULE_ICON_LAYOUT, moduleIconVisualScale, ICON_EMOJI_BOOST } from "./icon-map";
 import { ConnectionToggle } from "./ConnectionToggle";
 import { L2DocumentNode } from "./L2DocumentNode";
@@ -60,6 +60,7 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
         detail={detail}
         fontSize={fontSize}
         zoomScale={zoomScale}
+        boxWidth={width ?? MODULE_BOX.minWidth}
       />
       {data.showSymbols && data.descriptionShort && (
         <div style={{ ...DESCRIPTION_STYLE, color: textColor }}>
@@ -76,12 +77,11 @@ interface HeaderProps {
   detail: boolean;
   fontSize: number;
   zoomScale: number;
+  boxWidth: number;
 }
 
 const labelStyle = (detail: boolean): React.CSSProperties => ({
   overflow: "hidden",
-  overflowWrap: "anywhere",
-  wordBreak: "break-word",
   textAlign: detail ? "left" : "center",
   fontWeight: detail ? "bold" : "normal",
 });
@@ -120,8 +120,12 @@ const headerStyle = (
 
 /** Label scales with the box (world units, no camera counter-scale): the box is
  *  laid out to fit this size, so the text never overflows it as you zoom. */
-function Header({ data, textColor, detail, fontSize, zoomScale }: HeaderProps) {
+function Header({ data, textColor, detail, fontSize, zoomScale, boxWidth }: HeaderProps) {
   const glyph = iconGlyph(data.icon);
+  const labelLines = wrapIdentifierLines(
+    data.label,
+    labelCharsPerLine(boxWidth, fontSize),
+  );
   const iconStyle = detail
     ? {
         fontSize: MODULE_ICON_LAYOUT,
@@ -151,7 +155,9 @@ function Header({ data, textColor, detail, fontSize, zoomScale }: HeaderProps) {
           ★
         </span>
       )}
-      <span style={labelStyle(detail)}>{data.label}</span>
+      <span style={{ ...labelStyle(detail), whiteSpace: "pre-line" }}>
+        {labelLines.join("\n")}
+      </span>
     </div>
   );
 }

@@ -8,8 +8,10 @@ export { ElkLayoutEngine } from "./Private/elk-layout-engine";
 export {
   fitDescriptionFontSize,
   fitLabelFontSize,
+  labelCharsPerLine,
   MODULE_BOX,
   DESC_BOX,
   wrappedDescriptionHeight,
 } from "./Private/module-box-metrics";
+export { wrapIdentifierLines } from "./Private/wrap-identifier";
 export { PRESETS } from "./Private/elk-input";

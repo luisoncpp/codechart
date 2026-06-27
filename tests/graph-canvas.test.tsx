@@ -138,7 +138,7 @@ describe("GraphCanvas", () => {
     );
     const nodeL15 = containerL15.querySelector(`[data-id="src/core/store.ts"]`)!;
     const labelSpanL15 = Array.from(nodeL15.querySelectorAll("span")).find(
-      (el) => el.textContent === "store.ts",
+      (el) => el.textContent?.replace(/\s/g, "") === "store.ts",
     )!;
     expect(labelSpanL15.style.fontWeight).toBe("bold");
 
@@ -149,7 +149,7 @@ describe("GraphCanvas", () => {
     );
     const nodeL1 = containerL1.querySelector(`[data-id="src/core/store.ts"]`)!;
     const labelSpanL1 = Array.from(nodeL1.querySelectorAll("span")).find(
-      (el) => el.textContent === "store.ts",
+      (el) => el.textContent?.replace(/\s/g, "") === "store.ts",
     )!;
     expect(labelSpanL1.style.fontWeight).toBe("normal");
   });

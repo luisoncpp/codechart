@@ -37,7 +37,8 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 - **Module node:** card tinted to its **owning group's color** (matches the sample) — `color` text +
   `color + "1a"` fill + `color` border (2px facade w/ `★`, else 1px); selected → blue outline; compact
   11px **monospace** label (matches the sample's bracketed filenames; text darkened ~55% toward black
-  for legibility). The filename **wraps across multiple lines** (`overflowWrap/wordBreak`, no ellipsis);
+  for legibility). The filename **wraps across multiple lines** at camelCase and separator boundaries
+  (`wrap-identifier.ts` + explicit `<br>` in `ModuleNodeView`, no ellipsis);
   the box is sized to fit it (see **Module box sizing**). Group headers use a bold uppercase **sans-serif** stack. Projection
   copies the group color onto each grouped module's `data.color`
   (group `color` ?? `colorForGroup` hash); ungrouped modules fall back to slate `#64748b`.
@@ -175,7 +176,7 @@ hidden by zoom collapse.
   *not* counter-scale** against the camera (still world units, so they can't overflow the box). But the
   L1 centered label is **fit to its box** rather than fixed at 11px: `fitLabelFontSize(label, w, h)`
   (`module-box-metrics.ts`, pure) picks the largest font (capped `LABEL_FIT.maxFont` 22px, floored at the
-  11px base) at which the wrap-anywhere filename fits the box — so a short name like `index.ts` fills a
+  11px base) at which the camelCase-aware wrapped filename fits the box — so a short name like `index.ts` fills a
   large box instead of floating tiny in it. `ModuleNodeView` reads the node's laid-out `width`/`height`
   (`NodeProps`) to compute it; L2 detail labels stay at the compact 9px. Net L1 hierarchy: zoom out → group
   headers grow and dominate, module labels shrink with their boxes and always fit. `InspectionPanel` gains a

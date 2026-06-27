@@ -5,7 +5,7 @@
 // blocks and maps the recognized keys onto an `Annotation`. Unknown keys are
 // ignored; malformed blocks degrade gracefully (best-effort, never panics).
 
-use crate::contract::types::Annotation;
+use crate::contract::Annotation;
 
 /// Parse every `@Architecture(...)` block found in `text` into an `Annotation`.
 /// Multiple blocks yield multiple annotations, in source order.
