@@ -1,3 +1,5 @@
+/// <reference types="@testing-library/jest-dom" />
+import React from "react";
 import { describe, expect, it, beforeEach } from "vitest";
 import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import goldenGraph from "./fixtures/golden/project-graph.json";
@@ -34,11 +36,12 @@ describe("GraphCanvas", () => {
     });
   });
 
-  it("mounts the edge layer (edge counts covered by the projection test)", async () => {
+  it("mounts the edge svg layer inside React Flow", async () => {
     const { container } = render(<GraphCanvas store={store} />);
-    await waitFor(() =>
-      expect(container.querySelector(".react-flow__edges")).toBeTruthy(),
-    );
+    await waitFor(() => {
+      expect(container.querySelector(".codechart-edge-layer")).toBeTruthy();
+      expect(container.querySelectorAll(".codechart-edge-layer path").length).toBeGreaterThan(0);
+    });
   });
 
   it("gives group nodes source+target handles so collapsed groups can be edge endpoints (L0)", async () => {

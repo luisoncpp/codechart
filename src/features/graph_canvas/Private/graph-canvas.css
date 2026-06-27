@@ -25,6 +25,13 @@
   pointer-events: none;
 }
 
+/* Matches React Flow's per-edge svg chrome; paths use absolute flow coordinates. */
+.codechart-edge-layer {
+  overflow: visible;
+  position: absolute;
+  pointer-events: none;
+}
+
 /* ── Symbol boxes (L1.5): kind badge + tinted fill inside the group outline ── */
 
 .symbol-box {

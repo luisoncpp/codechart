@@ -14,8 +14,8 @@ import { projectGraph } from "../../../domain/graph";
 import type { RFNode, RenderOptions, ZoomLevel } from "../../../domain/graph";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { nodeTypes } from "./node-types";
-import { edgeTypes } from "./edge-types";
-import { styleEdge } from "./edge-style";
+import { EdgeLayer } from "./EdgeLayer";
+import { useStyledEdges } from "./use-styled-edges";
 import { FitView } from "./FitView";
 import { CANVAS_MIN_ZOOM } from "./use-zoom-counter-scale";
 import { GraphCanvasController } from "./graph-canvas-controller";
@@ -143,13 +143,14 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
     [graph, layout, level, session, cacheVersion],
   );
 
+  const styledEdges = useStyledEdges(projected, selectedId);
+
   if (!projected) return null;
 
   const nodes: RFNode[] = projected.nodes.map((n) => ({
     ...n,
     selected: n.id === selectedId,
   }));
-  const edges = projected.edges.map((e) => styleEdge(e, selectedId));
   const fitOptions = fitOptionsForLevel(level);
 
   return (
@@ -157,9 +158,8 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
       <div ref={containerRef} style={{ position: "relative", width: "100%", height: "100%" }}>
         <ReactFlow
           nodes={nodes}
-          edges={edges}
+          edges={[]}
           nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
           colorMode="light"
           onNodeClick={(e, node) => controller.onNodeClick(node, e)}
           onNodeDoubleClick={(_e, node) => controller.onNodeDoubleClick(node)}
@@ -176,6 +176,7 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
           style={{ background: "#ffffff" }}
         >
           <FitView options={fitOptions} />
+          <EdgeLayer edges={styledEdges} nodes={nodes} />
           <Background color="#e2e8f0" gap={20} />
           <Controls showInteractive={false} />
         </ReactFlow>
