@@ -34,7 +34,7 @@ use crate::language_adapter::{ParsedImport, ParsedModule};
 
 use resolve::{is_relative, resolve_relative};
 
-use csharp::{index_namespaces, resolve_namespace, uses_namespace_resolution};
+use csharp::{index_exports, resolve_import, resolve_qualified_references, uses_namespace_resolution};
 
 /// Edges + diagnostics derived from import resolution, consumed by `analysis`.
 pub struct ResolvedReferences {
@@ -48,13 +48,13 @@ pub struct ResolvedReferences {
 /// module ids are the parsed paths themselves (caller owns id = path).
 pub fn resolve_references(parsed: &[ParsedModule]) -> ResolvedReferences {
     let known: BTreeSet<&str> = parsed.iter().map(|m| m.path.as_str()).collect();
-    let namespaces = index_namespaces(parsed);
+    let exports = index_exports(parsed);
     let mut targets: Vec<(String, String)> = Vec::new();
     let mut diagnostics: Vec<Diagnostic> = Vec::new();
     let mut modules: Vec<&ParsedModule> = parsed.iter().collect();
     modules.sort_by(|a, b| a.path.cmp(&b.path));
     for module in modules {
-        resolve_module(module, &known, &namespaces, &mut targets, &mut diagnostics);
+        resolve_module(module, &known, &exports, &mut targets, &mut diagnostics);
     }
     ResolvedReferences {
         edges: build_edges(targets),
@@ -66,25 +66,37 @@ pub fn resolve_references(parsed: &[ParsedModule]) -> ResolvedReferences {
 fn resolve_module(
     module: &ParsedModule,
     known: &BTreeSet<&str>,
-    namespaces: &BTreeMap<String, Vec<String>>,
+    exports: &BTreeMap<(String, String), Vec<String>>,
     targets: &mut Vec<(String, String)>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
+    if uses_namespace_resolution(&module.path) {
+        resolve_csharp_module(module, exports, targets);
+        return;
+    }
     for import in module.imports.iter().chain(module.reexports.iter()) {
-        if is_relative(&import.specifier) {
-            match resolve_relative(&module.path, &import.specifier, known) {
-                Some(target) => targets.push((module.path.clone(), target)),
-                None => diagnostics.push(unresolved(&module.path, import)),
-            }
+        if !is_relative(&import.specifier) {
             continue;
         }
-        if !uses_namespace_resolution(&module.path) {
-            continue;
+        match resolve_relative(&module.path, &import.specifier, known) {
+            Some(target) => targets.push((module.path.clone(), target)),
+            None => diagnostics.push(unresolved(&module.path, import)),
         }
-        let Some(targets_for_ns) = resolve_namespace(&import.specifier, namespaces) else {
-            continue;
-        };
-        for target in targets_for_ns {
+    }
+}
+
+fn resolve_csharp_module(
+    module: &ParsedModule,
+    exports: &BTreeMap<(String, String), Vec<String>>,
+    targets: &mut Vec<(String, String)>,
+) {
+    let mut resolved = BTreeSet::new();
+    for import in module.imports.iter().chain(module.reexports.iter()) {
+        resolved.extend(resolve_import(import, &module.referenced_symbols, exports));
+    }
+    resolved.extend(resolve_qualified_references(&module.referenced_symbols, exports));
+    for target in resolved {
+        if target != module.path {
             targets.push((module.path.clone(), target));
         }
     }

@@ -3,6 +3,7 @@
 
 mod extract;
 mod implements;
+mod symbols;
 
 use tree_sitter::Parser;
 
@@ -29,8 +30,10 @@ impl LanguageAdapter for CSharpAdapter {
             loc: loc(source),
             ..Default::default()
         };
-        extract::walk_compilation_unit(tree.root_node(), source, &mut module);
-        module.implements = implements::collect_implements(tree.root_node(), source);
+        let root = tree.root_node();
+        extract::walk_compilation_unit(root, source, &mut module);
+        module.implements = implements::collect_implements(root, source);
+        module.referenced_symbols = symbols::collect_referenced_symbols(root, source);
         Ok(module)
     }
 }

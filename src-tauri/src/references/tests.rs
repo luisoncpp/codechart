@@ -36,6 +36,26 @@ fn csharp_module(path: &str, namespace: &str, usings: &[&str]) -> ParsedModule {
     }
 }
 
+fn csharp_api(path: &str, namespace: &str, exports: &[&str]) -> ParsedModule {
+    ParsedModule {
+        path: path.to_string(),
+        declared_namespace: Some(namespace.to_string()),
+        exported_symbols: exports.iter().map(|s| (*s).to_string()).collect(),
+        ..Default::default()
+    }
+}
+
+fn csharp_consumer(
+    path: &str,
+    namespace: &str,
+    usings: &[&str],
+    referenced: &[&str],
+) -> ParsedModule {
+    let mut module = csharp_module(path, namespace, usings);
+    module.referenced_symbols = referenced.iter().map(|s| (*s).to_string()).collect();
+    module
+}
+
 fn edge_targets(parsed: &[ParsedModule]) -> Vec<(String, String)> {
     resolve_references(parsed)
         .edges
@@ -140,12 +160,31 @@ fn package_import_is_external_metadata() {
 #[test]
 fn resolves_csharp_namespace_using() {
     let parsed = vec![
-        csharp_module("src/ui/App.cs", "MyApp.UI", &["MyApp.Services"]),
-        csharp_module("src/services/Store.cs", "MyApp.Services", &[]),
+        csharp_consumer("src/ui/App.cs", "MyApp.UI", &["MyApp.Services"], &["Store"]),
+        csharp_api("src/services/Store.cs", "MyApp.Services", &["Store"]),
     ];
     assert_eq!(
         edge_targets(&parsed),
         [("src/ui/App.cs".into(), "src/services/Store.cs".into())]
+    );
+}
+
+#[test]
+fn csharp_symbol_resolution_skips_unused_namespace_members() {
+    let parsed = vec![
+        csharp_consumer(
+            "Save/CharacterRecord.cs",
+            "MyApp.Save",
+            &["MyApp.Arena2"],
+            &["Arch3dFile"],
+        ),
+        csharp_api("API/Arch3dFile.cs", "MyApp.Arena2", &["Arch3dFile"]),
+        csharp_api("API/BioFile.cs", "MyApp.Arena2", &["BioFile"]),
+        csharp_api("API/BaseImageFile.cs", "MyApp.Arena2", &["BaseImageFile"]),
+    ];
+    assert_eq!(
+        edge_targets(&parsed),
+        [("Save/CharacterRecord.cs".into(), "API/Arch3dFile.cs".into())]
     );
 }
 

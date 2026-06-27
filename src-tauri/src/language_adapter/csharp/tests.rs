@@ -69,3 +69,25 @@ fn global_using_is_recorded() {
     let m = parse("GlobalUsings.cs", "global using MyApp.Services;\n");
     assert_eq!(specifiers(&m), vec!["MyApp.Services"]);
 }
+
+#[test]
+fn collects_type_references_from_source() {
+    let source = r#"
+using MyApp.Arena2;
+namespace MyApp.Save;
+public class CharacterRecord {
+    Arch3dFile file;
+    BioFile bio;
+}
+"#;
+    let m = parse("Save/CharacterRecord.cs", source);
+    assert!(m.referenced_symbols.contains(&"Arch3dFile".to_string()));
+    assert!(m.referenced_symbols.contains(&"BioFile".to_string()));
+}
+
+#[test]
+fn collects_base_list_interfaces_as_referenced_symbols() {
+    let source = "public class Store : IStorage {}\n";
+    let m = parse("src/Store.cs", source);
+    assert_eq!(m.referenced_symbols, vec!["IStorage"]);
+}

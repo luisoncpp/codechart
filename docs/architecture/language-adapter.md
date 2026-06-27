@@ -68,9 +68,11 @@ skipped. External crates (`serde`, `std`, …) are skipped when the path has no
 `using Alias = …` (alias target's final segment in `import.names`),
 file-scoped and block `namespace` declarations (`declared_namespace`), and
 `public` classes/interfaces/structs/enums/records/delegates as exports.
-`: IFoo` base lists populate `implements`. External namespaces (`System`, …)
-produce no edges; in-project namespace matches become solid `import` edges via
-`references::csharp`.
+Type names used in the file body populate `referenced_symbols` (types, bases,
+`new` targets). `: IFoo` base lists populate `implements`. External namespaces
+(`System`, …) produce no edges; in-project matches become solid `import` edges
+via `references::csharp` — only to modules exporting referenced symbols, not
+every file in the namespace.
 
 ## `semantic_comments::parse_annotations(text) -> Vec<Annotation>`
 

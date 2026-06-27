@@ -88,6 +88,8 @@ pub struct ParsedModule {
     pub ipc_commands: Vec<String>,
     /// Declared `namespace` for this file (C# only).
     pub declared_namespace: Option<String>,
+    /// Type names referenced in source (C# only; drives symbol-level import edges).
+    pub referenced_symbols: Vec<String>,
     /// Lines of code (newline count + 1 for non-empty files).
     pub loc: u32,
 }

@@ -24,8 +24,10 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
 - **Non-relative** specifier on **non-C#** modules → external metadata: neither edge nor
   diagnostic.
 - **Non-relative** specifier on **`.cs`** modules → looked up against in-project
-  `declared_namespace` values (`references::csharp`). Match → solid `import` edge;
-  miss (e.g. `System`) → external metadata.
+  `declared_namespace` + `exported_symbols` using `referenced_symbols` from the
+  importer (`references::csharp`). A `using` only produces edges to modules that
+  export types actually referenced in the file; fully-qualified type names resolve
+  without a matching `using`. Miss (e.g. `System`) → external metadata.
 
 **Edge id** = `${source}->${target}:import:${ordinal}`. Edges are sorted by
 `(source, target)`; `ordinal` disambiguates repeated same-pair imports (0-based).
