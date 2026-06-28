@@ -24,7 +24,7 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 | `GraphSessionStore` | `state/graph-session` | Now also owns `LayoutedGraph` (computed via injected `LayoutEngine` on load) and `selectedId`. Emits `phase-changed` + `selection-changed`. |
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules only) → `store.select`; pane click → clear. |
-| `InspectionPanel` | `features/inspection_panel` | Selected module's path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections** (Events / Interface seams / Tauri IPC — trigger-prefix labels), diagnostics. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. |
+| `InspectionPanel` | `features/inspection_panel` | Selected module's path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections** (Events / Interface seams / Tauri IPC / **Unity scripts & prefabs** — trigger-prefix labels), diagnostics. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. |
 
 ## Aesthetic rules (the visual gate)
 

@@ -28,6 +28,7 @@ pub enum DiagnosticKind {
     ParseError,
     UnresolvedImport,
     UnresolvedIpc,
+    UnresolvedUnityAsset,
     ConfigError,
     ArchitectureViolation,
 }
@@ -40,6 +41,9 @@ pub enum Language {
     Tsx,
     Rust,
     CSharp,
+    #[serde(rename = "unityPrefab")]
+    #[ts(rename = "unityPrefab")]
+    UnityPrefab,
 }
 
 #[derive(Serialize, Deserialize, TS, Debug, Clone, PartialEq, Default)]

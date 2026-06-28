@@ -11,6 +11,9 @@ const DEFAULT_IGNORE: &[&str] = &[
     "build/**",
     ".next/**",
     "coverage/**",
+    "Library/**",
+    "Temp/**",
+    "Logs/**",
 ];
 
 /// Built-in ignore globs merged with root-placed group `ignore` fields.

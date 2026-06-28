@@ -16,6 +16,7 @@ mod interface_seams;
 mod resolve;
 mod soft;
 mod tauri_ipc;
+mod unity;
 mod test_module;
 mod csharp;
 
@@ -26,6 +27,7 @@ pub use drift::{flag_drift, GroupBoundaries};
 pub use interface_seams::classify_interface_seams;
 pub use soft::classify_soft;
 pub use tauri_ipc::classify_tauri_ipc;
+pub use unity::classify_unity_assets;
 
 use std::collections::{BTreeMap, BTreeSet};
 

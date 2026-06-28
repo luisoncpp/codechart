@@ -8,6 +8,7 @@
 mod typescript;
 mod rust;
 mod csharp;
+mod unity_prefab;
 
 /// How a dependency specifier is brought into a module.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,6 +91,10 @@ pub struct ParsedModule {
     pub declared_namespace: Option<String>,
     /// Type names referenced in source (C# only; drives symbol-level import edges).
     pub referenced_symbols: Vec<String>,
+    /// `m_Script` guids from Unity prefab YAML (prefab adapter only).
+    pub unity_script_guids: Vec<String>,
+    /// Non-script guid refs from prefab YAML (nested prefabs, serialized fields).
+    pub unity_asset_guids: Vec<String>,
     /// Lines of code (newline count + 1 for non-empty files).
     pub loc: u32,
 }
@@ -117,6 +122,7 @@ pub fn registry_for(ext: &str) -> Option<Box<dyn LanguageAdapter>> {
         }
         "rs" => Some(Box::new(rust::RustAdapter::new())),
         "cs" => Some(Box::new(csharp::CSharpAdapter::new())),
+        "prefab" => Some(Box::new(unity_prefab::UnityPrefabAdapter::new())),
         _ => None,
     }
 }

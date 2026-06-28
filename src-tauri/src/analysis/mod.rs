@@ -22,9 +22,10 @@ use crate::language_adapter::{registry_for_path, ParsedModule};
 use crate::project_config::{discover_group_defs, ignore_patterns, is_group_file, retain_unignored};
 use crate::project_source::ProjectSource;
 use crate::references::{
-    classify_interface_seams, classify_soft, classify_tauri_ipc, flag_drift, resolve_references,
-    GroupBoundaries,
+    classify_interface_seams, classify_soft, classify_tauri_ipc, classify_unity_assets,
+    flag_drift, resolve_references, GroupBoundaries,
 };
+use crate::unity_assets::index_meta_files;
 
 use nodes::{build_modules, language_for, ParsedFile};
 
@@ -46,12 +47,13 @@ pub fn analyze_project(
     let (defs, config_diags) = discover_group_defs(source);
     let patterns = ignore_patterns(&defs);
     let files = retain_unignored(source.list_files().unwrap_or_default(), &patterns);
+    let meta_index = index_meta_files(source, &files);
     let (parsed, parse_diags) = parse_sources(source, &files);
 
     let module_paths: Vec<String> = parsed.iter().map(|f| f.module.path.clone()).collect();
     let groups = resolve_groups(&module_paths, &defs);
     let parsed_modules: Vec<ParsedModule> = parsed.iter().map(|f| f.module.clone()).collect();
-    let (edges, ref_diags) = resolve_edges(&parsed_modules, &groups);
+    let (edges, ref_diags) = resolve_edges(&parsed_modules, &groups, &meta_index);
 
     let parts = GraphParts {
         modules: build_modules(&parsed, &groups),
@@ -68,6 +70,7 @@ pub fn analyze_project(
 fn resolve_edges(
     parsed: &[ParsedModule],
     groups: &ResolvedGroups,
+    meta_index: &std::collections::BTreeMap<String, String>,
 ) -> (Vec<Edge>, Vec<Diagnostic>) {
     let mut refs = resolve_references(parsed);
     let bounds = group_boundaries(groups);
@@ -77,9 +80,12 @@ fn resolve_edges(
     refs.edges.extend(classify_interface_seams(parsed, &bounds, &import_pairs));
     let (ipc_edges, ipc_diags) = classify_tauri_ipc(parsed);
     refs.edges.extend(ipc_edges);
+    let (unity_edges, unity_diags) = classify_unity_assets(parsed, meta_index);
+    refs.edges.extend(unity_edges);
     let mut diagnostics = refs.diagnostics;
     diagnostics.extend(violations);
     diagnostics.extend(ipc_diags);
+    diagnostics.extend(unity_diags);
     (refs.edges, diagnostics)
 }
 

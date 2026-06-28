@@ -6,7 +6,7 @@ interface SoftEdgeSectionsProps {
   moduleId: string;
 }
 
-type TriggerPrefix = "event:" | "interface:" | "ipc:";
+type TriggerPrefix = "event:" | "interface:" | "ipc:" | "unity:script:" | "unity:prefab:";
 
 const SECTIONS: {
   prefix: TriggerPrefix;
@@ -31,6 +31,18 @@ const SECTIONS: {
     title: "Tauri IPC",
     outgoing: (target) => `invokes → ${target}`,
     incoming: (source) => `handled by ← ${source}`,
+  },
+  {
+    prefix: "unity:script:",
+    title: "Scripts used",
+    outgoing: (target) => `uses → ${target}`,
+    incoming: (source) => `used by ← ${source}`,
+  },
+  {
+    prefix: "unity:prefab:",
+    title: "Nested prefabs",
+    outgoing: (target) => `references → ${target}`,
+    incoming: (source) => `referenced by ← ${source}`,
   },
 ];
 

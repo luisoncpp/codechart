@@ -112,6 +112,8 @@ function getRulesForFile(filepath: string): Rule[] {
       return rustRules;
     case "cs":
       return csharpRules;
+    case "prefab":
+      return defaultRules;
     case "py":
       return pythonRules;
     case "go":

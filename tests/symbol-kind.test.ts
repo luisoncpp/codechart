@@ -25,4 +25,9 @@ describe("inferSymbolKind", () => {
     expect(inferSymbolKind("default", "typescript")).toBe("default");
     expect(inferSymbolKind("MAX_RETRIES", "typescript")).toBe("constant");
   });
+
+  it("treats prefab serialized fields as constants", () => {
+    expect(inferSymbolKind("speed", "unityPrefab")).toBe("constant");
+    expect(inferSymbolKind("weaponPrefab", "unityPrefab")).toBe("constant");
+  });
 });

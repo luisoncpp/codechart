@@ -22,6 +22,7 @@ const CLASS_SUFFIX =
 /** Classify an exported symbol name for canvas styling. */
 export function inferSymbolKind(name: string, language?: Language): SymbolKind {
   if (name === "default") return "default";
+  if (language === "unityPrefab") return "constant";
 
   if (/^use[A-Z]/.test(name)) return "hook";
   if (/^I[A-Z]/.test(name)) return "interface";

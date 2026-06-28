@@ -10,6 +10,7 @@ pub mod project_source;
 pub mod references;
 pub mod semantic_comments;
 pub mod tauri_api;
+pub mod unity_assets;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

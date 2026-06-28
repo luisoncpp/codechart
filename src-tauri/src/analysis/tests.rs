@@ -136,3 +136,51 @@ fn tauri_mini_project_ipc_seams_and_orphan_diagnostic() {
     assert_eq!(orphans[0].module_id.as_deref(), Some("src/ipc/orphan.ts"));
 }
 
+const UNITY_FIXTURE_DIR: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/unity-mini-project");
+const UNITY_FIXTURE_ROOT: &str = "tests/fixtures/unity-mini-project";
+
+#[test]
+fn unity_mini_project_prefab_script_and_prefab_edges() {
+    let source = FsProjectSource::new(UNITY_FIXTURE_DIR);
+    let graph = analyze_project(&source, UNITY_FIXTURE_ROOT).expect("builds");
+    let player = "Assets/Prefabs/Player.prefab";
+    let script = "Assets/Scripts/PlayerController.cs";
+    let weapon = "Assets/Prefabs/Weapon.prefab";
+    let shield = "Assets/Prefabs/Shield.prefab";
+
+    let player_mod = graph.modules.iter().find(|m| m.id == player).expect("player prefab");
+    assert_eq!(player_mod.language, crate::contract::Language::UnityPrefab);
+    assert_eq!(player_mod.exported_symbols, vec!["speed", "weaponPrefab"]);
+
+    let unity: Vec<_> = graph
+        .edges
+        .iter()
+        .filter(|e| e.trigger.starts_with("unity:"))
+        .collect();
+    assert_eq!(unity.len(), 3, "script + weapon field + nested shield");
+
+    let script_edge = unity
+        .iter()
+        .find(|e| e.trigger.starts_with("unity:script:"))
+        .expect("prefab → script");
+    assert_eq!(script_edge.source, player);
+    assert_eq!(script_edge.target, script);
+
+    let prefab_edges: Vec<_> = unity
+        .iter()
+        .filter(|e| e.trigger.starts_with("unity:prefab:"))
+        .collect();
+    assert_eq!(prefab_edges.len(), 2);
+    assert!(prefab_edges.iter().any(|e| e.target == weapon));
+    assert!(prefab_edges.iter().any(|e| e.target == shield));
+
+    let reverse: Vec<_> = graph
+        .edges
+        .iter()
+        .filter(|e| e.target == script && e.trigger.starts_with("unity:script:"))
+        .collect();
+    assert_eq!(reverse.len(), 1);
+    assert_eq!(reverse[0].source, player);
+}
+

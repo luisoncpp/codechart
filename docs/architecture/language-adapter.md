@@ -14,7 +14,7 @@ TypeScript is the first impl, C++ a future one with no pipeline change.
 
 `language_adapter::`
 - `trait LanguageAdapter { fn parse(&self, path, source) -> Result<ParsedModule, ParseError> }`
-- `registry_for(ext) -> Option<Box<dyn LanguageAdapter>>` — pick by extension (`ts`/`tsx`/`mts`/`cts`/`rs`/`cs`).
+- `registry_for(ext) -> Option<Box<dyn LanguageAdapter>>` — pick by extension (`ts`/`tsx`/`mts`/`cts`/`rs`/`cs`/`prefab`).
 - `registry_for_path(path)` — convenience over the path's extension.
 - Data: `ParsedModule`, `ParsedImport`, `ImportKind`, `CommentBlock`.
 
@@ -73,6 +73,13 @@ Type names used in the file body populate `referenced_symbols` (types, bases,
 (`System`, …) produce no edges; in-project matches become solid `import` edges
 via `references::csharp` — only to modules exporting referenced symbols, not
 every file in the namespace.
+
+### Unity prefab forms handled
+
+Text YAML ( `%YAML` header) `.prefab` files via `unity_prefab/`:
+`m_Script` guids, nested prefab guids (`m_SourcePrefab`, serialized prefab fields),
+and custom `MonoBehaviour` serialized fields → `exported_symbols`. Resolution in
+`references::unity` (see [unity-prefabs.md](./unity-prefabs.md)).
 
 ## `semantic_comments::parse_annotations(text) -> Vec<Annotation>`
 

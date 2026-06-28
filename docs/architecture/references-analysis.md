@@ -104,6 +104,17 @@ An invoke with no matching handler → `unresolvedIpc` diagnostic (severity
 `generate_handler![…]` not parsed. Wrapped IPC clients hide call sites behind
 solid import edges — the seam is where `invoke` lives.
 
+## `references::classify_unity_assets` — Unity prefab seams
+
+`classify_unity_assets(parsed, &MetaIndex) -> (Vec<Edge>, Vec<Diagnostic>)`
+(`unity.rs`). Post-pass wired in `analysis::resolve_edges` after Tauri IPC.
+
+The prefab adapter records `unity_script_guids` and `unity_asset_guids`. The
+classifier resolves guids through `unity_assets::index_meta_files`:
+prefab → `.cs` (`unity:script:<guid>`) and prefab → `.prefab`
+(`unity:prefab:<guid>`). Miss → `unresolvedUnityAsset` diagnostic. See
+[unity-prefabs.md](./unity-prefabs.md).
+
 ## `references::flag_drift` — facade-bypass drift (Phase 8)
 
 `flag_drift(&mut edges, &GroupBoundaries) -> Vec<Diagnostic>` (`drift.rs`). A
