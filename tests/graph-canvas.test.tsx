@@ -154,6 +154,56 @@ describe("GraphCanvas", () => {
     )!;
     expect(labelSpanL1.style.fontWeight).toBe("normal");
   });
+
+  it("shows green + and red - line counts next to the filename in diff mode at L1", async () => {
+    store.applyDiffFromPaste(
+      [
+        "diff --git a/src/core/store.ts b/src/core/store.ts",
+        "--- a/src/core/store.ts",
+        "+++ b/src/core/store.ts",
+        "@@ -1,2 +1,3 @@",
+        " context",
+        "-removed",
+        "+added",
+      ].join("\n"),
+    );
+    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
+    );
+    const node = container.querySelector(`[data-id="src/core/store.ts"]`)!;
+    const add = Array.from(node.querySelectorAll("span")).find((el) => el.textContent === "+1");
+    const remove = Array.from(node.querySelectorAll("span")).find((el) => el.textContent === "-1");
+    expect(add).toBeTruthy();
+    expect(remove).toBeTruthy();
+    expect(add).toHaveStyle({ color: "#16a34a" });
+    expect(remove).toHaveStyle({ color: "#dc2626" });
+  });
+
+  it("shows diff line counts at L1.5 as well", async () => {
+    store.setZoomLevel(1.5);
+    store.applyDiffFromPaste(
+      [
+        "diff --git a/src/core/store.ts b/src/core/store.ts",
+        "--- a/src/core/store.ts",
+        "+++ b/src/core/store.ts",
+        "@@ -1 +1 @@",
+        "-x",
+        "+y",
+      ].join("\n"),
+    );
+    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
+    );
+    const node = container.querySelector(`[data-id="src/core/store.ts"]`)!;
+    expect(
+      Array.from(node.querySelectorAll("span")).some((el) => el.textContent === "+1"),
+    ).toBe(true);
+    expect(
+      Array.from(node.querySelectorAll("span")).some((el) => el.textContent === "-1"),
+    ).toBe(true);
+  });
 });
 
 describe("edgeRole (selection-aware coloring)", () => {

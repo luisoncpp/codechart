@@ -6,6 +6,8 @@ import {
   overlayFromPastedDiff,
   pathsFromUnifiedDiff,
   mergeCommitOverlay,
+  lineDiffsFromUnified,
+  countLineDiffStats,
 } from "../src/domain/diff";
 
 const base = golden as unknown as ProjectGraph;
@@ -57,8 +59,20 @@ describe("compareGraphs", () => {
     const diff = compareGraphs({ before: base, after });
     expect(diff.deletedModuleIds.has("src/core/validate.ts")).toBe(true);
     expect(diff.addedEdgeIds.has("src/main.ts->src/core/store.ts:import:99")).toBe(true);
-    expect(diff.affectedModuleIds.has("src/main.ts")).toBe(true);
-    expect(diff.affectedModuleIds.has("src/core/store.ts")).toBe(true);
+    expect(diff.affectedModuleIds.has("src/main.ts")).toBe(false);
+    expect(diff.affectedModuleIds.has("src/core/store.ts")).toBe(false);
+  });
+
+  it("does not mark edge endpoints when only edges change", () => {
+    const edge = base.edges[0]!;
+    const after: ProjectGraph = {
+      ...base,
+      edges: base.edges.filter((e) => e.id !== edge.id),
+    };
+    const diff = compareGraphs({ before: base, after });
+    expect(diff.removedEdges).toHaveLength(1);
+    expect(diff.affectedModuleIds.has(edge.source)).toBe(false);
+    expect(diff.affectedModuleIds.has(edge.target)).toBe(false);
   });
 
   it("ignores export-only metadata changes on existing modules", () => {
@@ -101,5 +115,24 @@ describe("overlayFromPastedDiff", () => {
     const overlay = overlayFromPastedDiff(text, base);
     expect(overlay.affectedModuleIds.has("src/core/store.ts")).toBe(true);
     expect(overlay.addedEdgeIds.size).toBe(0);
+  });
+});
+
+describe("countLineDiffStats", () => {
+  it("counts added and removed lines from a parsed file diff", () => {
+    const text = [
+      "diff --git a/src/foo.ts b/src/foo.ts",
+      "--- a/src/foo.ts",
+      "+++ b/src/foo.ts",
+      "@@ -1,3 +1,4 @@",
+      " keep",
+      "-old",
+      "+new1",
+      "+new2",
+    ].join("\n");
+    const diffs = lineDiffsFromUnified(text);
+    const stats = countLineDiffStats(diffs.get("src/foo.ts")!);
+    expect(stats.added).toBe(2);
+    expect(stats.removed).toBe(1);
   });
 });

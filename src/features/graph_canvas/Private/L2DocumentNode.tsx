@@ -3,7 +3,7 @@ import { Handle, Position, useStore } from "@xyflow/react";
 import type { ModuleNodeData } from "../../../domain/graph";
 import { L2Header } from "./L2Header";
 import { L2Description, L2CodeBlock } from "./L2Content";
-import { moduleDiffBorder, moduleDiffOpacity } from "./DiffCodeLines";
+import { moduleDiffBorder, moduleDiffBorderWidth, moduleDiffOpacity } from "./DiffCodeLines";
 import { ConnectionToggle } from "./ConnectionToggle";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
@@ -24,10 +24,18 @@ interface L2ScrollableBodyProps {
   padding: string;
   gap: string;
   layoutKey: string;
+  scrollbarInsetPx: number;
   children: React.ReactNode;
 }
 
-function L2ScrollableBody({ zoom, padding, gap, layoutKey, children }: L2ScrollableBodyProps) {
+function L2ScrollableBody({
+  zoom,
+  padding,
+  gap,
+  layoutKey,
+  scrollbarInsetPx,
+  children,
+}: L2ScrollableBodyProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const vDragRef = useRef<{ startY: number; startScrollTop: number } | null>(null);
   const hDragRef = useRef<{ startX: number; startScrollLeft: number } | null>(null);
@@ -169,7 +177,7 @@ function L2ScrollableBody({ zoom, padding, gap, layoutKey, children }: L2Scrolla
           style={{
             position: "absolute",
             top: vThumb.offset,
-            right: 0,
+            right: scrollbarInsetPx,
             width: bar,
             height: vThumb.size,
             display: "flex",
@@ -200,7 +208,7 @@ function L2ScrollableBody({ zoom, padding, gap, layoutKey, children }: L2Scrolla
           style={{
             position: "absolute",
             left: hThumb.offset,
-            bottom: 0,
+            bottom: scrollbarInsetPx,
             height: bar,
             width: hThumb.size,
             display: "flex",
@@ -341,6 +349,7 @@ export function L2DocumentNode({
   const gapSize = `${8 / zoom}px`;
   const diffState = data.diffState;
   const shellOpacity = moduleDiffOpacity(diffState);
+  const scrollbarInsetPx = moduleDiffBorderWidth(diffState, /*fallbackPx=*/0);
   const border = moduleDiffBorder(diffState, `2px solid ${color}`);
 
   return (
@@ -371,6 +380,7 @@ export function L2DocumentNode({
             padding={bodyPadding}
             gap={gapSize}
             layoutKey={layoutKeyFromStyles(clampedStyles)}
+            scrollbarInsetPx={scrollbarInsetPx}
           >
             <L2Description description={description} color={color} zoom={zoom} />
             <L2CodeBlock

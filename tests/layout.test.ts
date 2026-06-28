@@ -12,6 +12,7 @@ import {
   fitDescriptionFontSize,
   DESC_BOX,
 } from "../src/domain/layout/Private/module-box-metrics";
+import { fitModuleHeaderFontSize } from "../src/domain/layout/Private/fit-module-header-font";
 
 const graph = goldenGraph as ProjectGraph;
 
@@ -231,6 +232,23 @@ describe("fitLabelFontSize", () => {
     expect(fitLabelFontSize("averyverylongunbreakablefilename.tsx", 30, 20)).toBe(
       MODULE_BOX.fontSize,
     );
+  });
+});
+
+describe("fitModuleHeaderFontSize", () => {
+  it("matches fitLabelFontSize when there is no diff suffix", () => {
+    const w = MODULE_BOX.minWidth;
+    const h = MODULE_BOX.minHeight;
+    expect(fitModuleHeaderFontSize("index.ts", 0, w, h, /*detail=*/false)).toBe(
+      fitLabelFontSize("index.ts", w, h),
+    );
+  });
+
+  it("shrinks below the L1.5 default when the filename plus suffix would overflow", () => {
+    const long = "very-long-module-name-that-wraps.ts";
+    const suffixLen = 8; // " +999 -99"
+    const font = fitModuleHeaderFontSize(long, suffixLen, MODULE_BOX.minWidth, 90, /*detail=*/true);
+    expect(font).toBeLessThan(9);
   });
 });
 

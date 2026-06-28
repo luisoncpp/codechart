@@ -13,5 +13,6 @@ export {
   DESC_BOX,
   wrappedDescriptionHeight,
 } from "./Private/module-box-metrics";
+export { fitModuleHeaderFontSize } from "./Private/fit-module-header-font";
 export { wrapIdentifierLines } from "./Private/wrap-identifier";
 export { PRESETS } from "./Private/elk-input";

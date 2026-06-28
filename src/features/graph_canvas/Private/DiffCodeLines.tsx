@@ -129,6 +129,14 @@ export function moduleDiffOpacity(
   return 1;
 }
 
+export function moduleDiffBorderWidth(
+  diffState: "affected" | "deleted" | "unchanged" | undefined,
+  fallbackPx = 2,
+): number {
+  if (diffState === "affected" || diffState === "deleted") return 3;
+  return fallbackPx;
+}
+
 export function moduleDiffBorder(
   diffState: "affected" | "deleted" | "unchanged" | undefined,
   fallback: string,

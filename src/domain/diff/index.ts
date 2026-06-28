@@ -5,6 +5,8 @@ export { compareGraphs } from "./Private/compare-graphs";
 export { pathsFromUnifiedDiff, normalizeDiffPath } from "./Private/parse-unified-diff";
 export { lineDiffsFromUnified } from "./Private/parse-line-diff";
 export { buildModuleDiffDisplay } from "./Private/module-diff-display";
+export { countLineDiffStats, diffStatsSuffixLength } from "./Private/line-diff-stats";
+export type { LineDiffStats } from "./Private/line-diff-stats";
 export { overlayFromPastedDiff } from "./Private/overlay-from-paths";
 export { applyDiffOverlay } from "./Private/apply-diff-overlay";
 export { attachLineDiff } from "./Private/attach-line-diff";

@@ -23,18 +23,10 @@ export function compareGraphs(input: GraphDiffInput): Omit<GraphDiffCore, "befor
   const removedEdges: Edge[] = [];
 
   for (const [id, edge] of afterEdges) {
-    if (!beforeEdges.has(id)) {
-      addedEdgeIds.add(id);
-      affectedModuleIds.add(edge.source);
-      affectedModuleIds.add(edge.target);
-    }
+    if (!beforeEdges.has(id)) addedEdgeIds.add(id);
   }
   for (const [id, edge] of beforeEdges) {
-    if (!afterEdges.has(id)) {
-      removedEdges.push(edge);
-      affectedModuleIds.add(edge.source);
-      affectedModuleIds.add(edge.target);
-    }
+    if (!afterEdges.has(id)) removedEdges.push(edge);
   }
 
   const ghostModules = before.modules.filter((m) => deletedModuleIds.has(m.id));
