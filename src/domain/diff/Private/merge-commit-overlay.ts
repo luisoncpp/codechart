@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Merges git path overlay with structural graph diff results")
 import type { ModuleNode, ProjectGraph } from "../../graph";
 import type { GraphDiffCore } from "./types";
 

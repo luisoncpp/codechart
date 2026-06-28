@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Core types for graph diff overlays and parsed path sets")
 import type { Edge, ModuleNode, ProjectGraph } from "../../graph";
 import type { FileLineDiff } from "./line-diff-types";
 

@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Line-level diff types and unchanged-module opacity constant")
 /** One parsed file section from a unified diff. */
 export interface FileLineDiff {
   /** New-file line numbers (1-indexed) that were added. */

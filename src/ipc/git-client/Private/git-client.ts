@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Git commit metadata returned by the backend")
+// @Architecture(descriptionShort="Defines the abstract interface for the git client")
 export interface GitCommit {
   hash: string;
   message: string;

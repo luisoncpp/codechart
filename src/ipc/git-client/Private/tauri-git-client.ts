@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Tauri IPC implementation of the git client")
 import { invoke } from "@tauri-apps/api/core";
 import type { ProjectGraph } from "../../../domain/graph";
 import type { GitClient, GitCommit } from "./git-client";

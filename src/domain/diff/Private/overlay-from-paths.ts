@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Builds a module-only diff overlay from pasted unified diff text")
 import type { ModuleNode, ProjectGraph } from "../../graph";
 import { pathsFromUnifiedDiff } from "./parse-unified-diff";
 import type { GraphDiffCore } from "./types";

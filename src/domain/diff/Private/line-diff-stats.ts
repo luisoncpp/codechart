@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Counts added/removed lines and sizes diff stat suffixes")
 import type { FileLineDiff } from "./line-diff-types";
 
 export interface LineDiffStats {

@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Parses unified diff hunks into per-file line add/remove maps")
 import { normalizeDiffPath } from "./parse-unified-diff";
 import type { FileLineDiff } from "./line-diff-types";
 

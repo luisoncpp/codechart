@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Compares before/after ProjectGraphs into overlay data")
 import type { Edge, ModuleNode } from "../../graph";
 import type { GraphDiffInput, GraphDiffCore } from "./types";
 

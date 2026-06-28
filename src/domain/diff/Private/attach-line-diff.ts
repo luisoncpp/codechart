@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Attaches parsed line-level diff data to a graph overlay")
 import type { GraphDiffOverlay } from "./types";
 import { lineDiffsFromUnified } from "./parse-line-diff";
 

@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Stamps diff state onto projected React Flow nodes and edges")
 import type { Edge, ProjectedGraph, RFEdgeT, RFNode } from "../../graph";
 import type { LayoutBox } from "../../layout";
 import type { GraphDiffOverlay } from "./types";

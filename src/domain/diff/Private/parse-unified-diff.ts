@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Extracts added, modified, and deleted paths from unified diffs")
 import type { ParsedDiffPaths } from "./types";
 
 /** Normalize a path from a diff header (`a/foo`, `b/foo`, `foo`). */

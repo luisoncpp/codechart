@@ -1,3 +1,4 @@
+// @Architecture(descriptionShort="Merges live source with parsed file diff into display rows")
 import type { DiffDisplayRow, FileLineDiff } from "./line-diff-types";
 
 /** Merge live source with a parsed file diff into renderable rows. */
