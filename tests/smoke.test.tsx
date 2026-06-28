@@ -1,12 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ProjectLoaderPanel } from "../src/features/project_loader";
-import { GraphSessionStore } from "../src/state/graph-session";
-import { createMockAnalysisClient } from "../src/ipc/analysis-client";
-import { ElkLayoutEngine } from "../src/domain/layout";
+import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 
 function makeStore() {
-  return new GraphSessionStore(createMockAnalysisClient(), new ElkLayoutEngine());
+  return testGraphSessionStore();
 }
 
 describe("ProjectLoaderPanel", () => {

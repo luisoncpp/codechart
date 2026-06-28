@@ -45,3 +45,4 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [open-project.md](./open-project.md) | Open folder → IPC → live diagram: the UI front of the analysis pipeline (session phases) |
 | [select-module.md](./select-module.md) | Click a module on the canvas → selection → inspection panel (pure UI state) |
 | [preview-symbol.md](./preview-symbol.md) | Click a symbol in L1.5 zoom → selection + resizable preview code widget next to it |
+| [visualize-diff.md](./visualize-diff.md) | Visualize diff modal → overlay green/red modules and green/red edges on the canvas |

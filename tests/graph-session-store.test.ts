@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import goldenGraph from "./fixtures/golden/project-graph.json";
 import { GraphSessionStore } from "../src/state/graph-session";
-import { ElkLayoutEngine } from "../src/domain/layout";
 import type { AnalysisClient } from "../src/ipc/analysis-client";
 import type { ProjectGraph } from "../src/domain/graph";
+import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 
 const graph = goldenGraph as unknown as ProjectGraph;
 
@@ -12,7 +12,7 @@ function clientReturning(g: ProjectGraph): AnalysisClient {
 }
 
 function newStore(client: AnalysisClient): GraphSessionStore {
-  return new GraphSessionStore(client, new ElkLayoutEngine());
+  return testGraphSessionStore(client);
 }
 
 /** Resolve once the store finishes its next async re-layout. */

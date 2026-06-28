@@ -1,5 +1,7 @@
 // @Architecture(descriptionShort="Manages the global project, layout, and selection states")
 import { AnalysisClient } from "../../../ipc/analysis-client";
+import { GitClient } from "../../../ipc/git-client";
+import type { GraphDiffOverlay } from "../../../domain/diff";
 import {
   ProjectGraph,
   projectForZoom,
@@ -15,6 +17,7 @@ import {
 } from "../../../domain/graph";
 import { LayoutEngine, LayoutedGraph, LayoutOptions } from "../../../domain/layout";
 import { EventEmitter } from "./event-emitter";
+import { buildCommitDiffOverlay, buildPasteDiffOverlay } from "./build-diff-overlay";
 
 export type SessionPhase = "idle" | "loading" | "ready" | "failed" | "empty";
 
@@ -37,9 +40,12 @@ export class GraphSessionStore extends EventEmitter {
    *  group keeps its own expanded size instead of shrinking. */
   private expandedGroupSizes = new Map<string, { width: number; height: number }>();
   private layoutSeq = 0;
+  private diffOverlay: GraphDiffOverlay | null = null;
+  private diffError: string | null = null;
 
   constructor(
     private client: AnalysisClient,
+    private git: GitClient,
     private layoutEngine: LayoutEngine,
   ) {
     super();
@@ -58,6 +64,42 @@ export class GraphSessionStore extends EventEmitter {
   getHideTests = () => this.hideTests;
   getSourceCache = () => this.sourceCache;
   getSourceCacheVersion = () => this.sourceCacheVersion;
+  getProjectRoot = () => this.root;
+  getDiffOverlay = () => this.diffOverlay;
+  getDiffError = () => this.diffError;
+
+  clearDiffOverlay() {
+    if (!this.diffOverlay && !this.diffError) return;
+    this.diffOverlay = null;
+    this.diffError = null;
+    this.emit("diff-changed");
+  }
+
+  async applyDiffFromCommits(baseRef: string, headRef: string) {
+    if (!this.root || !this.graph) return;
+    this.diffError = null;
+    try {
+      this.diffOverlay = await buildCommitDiffOverlay(
+        this.client,
+        this.git,
+        this.layoutEngine,
+        this.root,
+        baseRef,
+        headRef,
+      );
+      this.emit("diff-changed");
+    } catch (e) {
+      this.diffError = e instanceof Error ? e.message : String(e);
+      this.emit("diff-changed");
+    }
+  }
+
+  applyDiffFromPaste(text: string) {
+    if (!this.graph) return;
+    this.diffError = null;
+    this.diffOverlay = buildPasteDiffOverlay(text, this.graph);
+    this.emit("diff-changed");
+  }
 
   select(id: string | null) {
     if (this.selectedId === id) return;
@@ -165,6 +207,8 @@ export class GraphSessionStore extends EventEmitter {
     this.error = null;
     this.selectedId = null;
     this.resetZoom();
+    this.diffOverlay = null;
+    this.diffError = null;
     this.emit("phase-changed");
 
     try {

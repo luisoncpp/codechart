@@ -3,6 +3,7 @@ import { Handle, Position, useStore } from "@xyflow/react";
 import type { ModuleNodeData } from "../../../domain/graph";
 import { L2Header } from "./L2Header";
 import { L2Description, L2CodeBlock } from "./L2Content";
+import { moduleDiffBorder, moduleDiffOpacity } from "./DiffCodeLines";
 import { ConnectionToggle } from "./ConnectionToggle";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
@@ -338,6 +339,9 @@ export function L2DocumentNode({
   const description = data.descriptionLong || data.descriptionShort;
   const bodyPadding = `${Math.max(2, 8 / zoom)}px`;
   const gapSize = `${8 / zoom}px`;
+  const diffState = data.diffState;
+  const shellOpacity = moduleDiffOpacity(diffState);
+  const border = moduleDiffBorder(diffState, `2px solid ${color}`);
 
   return (
     <div
@@ -350,9 +354,10 @@ export function L2DocumentNode({
         fontFamily: 'ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace',
         background: "#ffffff",
         borderRadius: 8,
-        border: `2px solid ${color}`,
+        border,
         outline: selected ? "3px solid #2563eb" : "none",
         overflow: "hidden",
+        opacity: shellOpacity,
         boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
       }}
     >
@@ -368,7 +373,12 @@ export function L2DocumentNode({
             layoutKey={layoutKeyFromStyles(clampedStyles)}
           >
             <L2Description description={description} color={color} zoom={zoom} />
-            <L2CodeBlock snippet={data.snippet} path={data.path} zoom={zoom} />
+            <L2CodeBlock
+              snippet={data.snippet}
+              path={data.path}
+              zoom={zoom}
+              fileDiff={data.diffLineDiff}
+            />
           </L2ScrollableBody>
         </div>
       )}

@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { tokenizeCode } from "./highlighter";
+import type { FileLineDiff } from "../../../domain/diff";
+import { DiffCodeLines } from "./DiffCodeLines";
 
 interface DescriptionProps {
   description?: string;
@@ -53,64 +53,14 @@ export function L2Description({ description, color, zoom }: DescriptionProps) {
   );
 }
 
-interface CodeLineProps {
-  lineTokens: ReturnType<typeof tokenizeCode>[number];
-  idx: number;
-  zoom: number;
-}
-
-function L2CodeLine({ lineTokens, idx, zoom }: CodeLineProps) {
-  const fontSize = 12.5 / zoom;
-  const linePadding = `0 ${8 / zoom}px`;
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        padding: linePadding,
-        whiteSpace: "pre",
-      }}
-    >
-      <span
-        style={{
-          flex: `0 0 ${18 / zoom}px`,
-          textAlign: "right",
-          paddingRight: 6 / zoom,
-          color: "#94a3b8",
-          userSelect: "none",
-          fontSize: fontSize * 0.9,
-        }}
-      >
-        {idx + 1}
-      </span>
-      <span style={{ flex: 1 }}>
-        {lineTokens.length === 0 ? (
-          " "
-        ) : (
-          lineTokens.map((token, tokenIdx) => (
-            <span key={tokenIdx} className={`hl-${token.type}`}>
-              {token.text}
-            </span>
-          ))
-        )}
-      </span>
-    </div>
-  );
-}
-
 interface CodeBlockProps {
   snippet?: string;
   path?: string;
   zoom: number;
+  fileDiff?: FileLineDiff;
 }
 
-export function L2CodeBlock({ snippet, path, zoom }: CodeBlockProps) {
-  const lines = useMemo(() => {
-    if (!snippet) return [];
-    return tokenizeCode(snippet, path ?? "");
-  }, [snippet, path]);
-
-  const fontSize = 12.5 / zoom;
+export function L2CodeBlock({ snippet, path, zoom, fileDiff }: CodeBlockProps) {
   const codePadding = `${6 / zoom}px 0`;
 
   return (
@@ -135,15 +85,22 @@ export function L2CodeBlock({ snippet, path, zoom }: CodeBlockProps) {
           background: "#fafafa",
           border: "1px solid rgba(0, 0, 0, 0.05)",
           borderRadius: 4 / zoom,
-          fontFamily: 'ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace',
-          fontSize,
+          fontFamily:
+            'ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace',
+          fontSize: 12.5 / zoom,
           lineHeight: 1.4,
           color: "#334155",
         }}
       >
-        {lines.map((lineTokens, idx) => (
-          <L2CodeLine key={idx} lineTokens={lineTokens} idx={idx} zoom={zoom} />
-        ))}
+        {snippet ? (
+          <DiffCodeLines
+            source={snippet}
+            path={path ?? ""}
+            fileDiff={fileDiff}
+            zoom={zoom}
+            lineClassPrefix="diff-code"
+          />
+        ) : null}
       </pre>
     </div>
   );

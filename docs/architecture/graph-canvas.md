@@ -72,6 +72,16 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   arrowheads kept, whether or not a selection is active — context stays legible instead of nearly
   vanishing. Both live in `edge-style.ts` (`GraphCanvas` passes `selectedId` per render); pure
   `edgeRole`/`edgeOpacity`/`borderAnchor` are the testable seams (edges don't render under jsdom).
+- **Diff overlay (narrative diff visualizer):** optional session overlay from `GraphSessionStore.getDiffOverlay()`.
+  Enter via **Visualize diff…** (`DiffModal`: paste unified diff or pick two git commits when the
+  project root is a repo). `domain/diff` compares before/after graphs (git mode) or parses diff paths
+  (paste mode); **unchanged modules render at ~40% opacity** so affected/deleted modules pop.
+  `applyDiffOverlay` stamps `ModuleNodeData.diffState` (`affected` → **green** 3px border,
+  `deleted` → **red** 3px border, `unchanged` → dimmed, ghost modules positioned from the before
+  snapshot layout) and `EdgeData.diffState` (`added` → **green** full-opacity arrow, `removed` → **red**
+  line with **X** head). **L2 source panels and the symbol preview widget** show unified-diff rows:
+  green `+` lines for additions, red `-` lines for deletions (`DiffCodeLines`). Diff styling wins over
+  selection dimming for stamped edges. **Stop visualizing diff** clears overlay state; reload clears it too.
 - **Icons:** sparing, name → glyph map (`icon-map.tsx`); unknown names render no glyph.
 
 ## Semantic zoom L0/L1/L2 + metadata (Phase 10)

@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Crate root: Tauri bootstrap and module exports")
 
 pub mod analysis;
+pub mod git;
 pub mod contract;
 pub mod diagnostics;
 pub mod grouping;
@@ -19,7 +20,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             tauri_api::analyze_project,
-            tauri_api::read_module_source
+            tauri_api::analyze_project_at_ref,
+            tauri_api::read_module_source,
+            tauri_api::git_is_repo,
+            tauri_api::git_list_commits,
+            tauri_api::git_diff_refs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

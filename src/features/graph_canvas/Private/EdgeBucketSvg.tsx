@@ -10,6 +10,7 @@ interface EdgeBucketSvgProps {
 export function EdgeBucketSvg({ bucket, markerId }: EdgeBucketSvgProps) {
   const { style, segments } = bucket;
   const dash = style.dash?.join(" ") ?? undefined;
+  const useCross = style.marker === "cross";
   return (
     <g
       fill="none"
@@ -20,8 +21,52 @@ export function EdgeBucketSvg({ bucket, markerId }: EdgeBucketSvgProps) {
       strokeLinecap="round"
     >
       {segments.map((segment, index) => (
-        <path key={index} d={segment.path} markerEnd={`url(#${markerId})`} />
+        <g key={index}>
+          <path
+            d={segment.path}
+            markerEnd={useCross ? undefined : `url(#${markerId})`}
+          />
+          {useCross && (
+            <CrossHead
+              tip={segment.arrowTip}
+              angle={segment.arrowAngle}
+              color={style.stroke}
+            />
+          )}
+        </g>
       ))}
+    </g>
+  );
+}
+
+function CrossHead({
+  tip,
+  angle,
+  color,
+}: {
+  tip: { x: number; y: number };
+  angle: number;
+  color: string;
+}) {
+  const size = 5;
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const dx = size * c;
+  const dy = size * s;
+  const px = -s * size * 0.7;
+  const py = c * size * 0.7;
+  const x1 = tip.x - dx + px;
+  const y1 = tip.y - dy + py;
+  const x2 = tip.x - dx - px;
+  const y2 = tip.y - dy - py;
+  const x3 = tip.x + dx + px;
+  const y3 = tip.y + dy + py;
+  const x4 = tip.x + dx - px;
+  const y4 = tip.y + dy - py;
+  return (
+    <g stroke={color} strokeWidth={2}>
+      <line x1={x1} y1={y1} x2={x3} y2={y3} />
+      <line x1={x2} y1={y2} x2={x4} y2={y4} />
     </g>
   );
 }

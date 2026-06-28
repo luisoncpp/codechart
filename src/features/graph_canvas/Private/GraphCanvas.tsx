@@ -11,8 +11,11 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./graph-canvas.css";
 import { projectGraph } from "../../../domain/graph";
+import { applyDiffOverlay } from "../../../domain/diff";
 import type { RFNode, RenderOptions, ZoomLevel } from "../../../domain/graph";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
+import { DiffModal, DiffOverlayBar } from "../../diff_visualizer";
+import type { GitClient } from "../../../ipc/git-client";
 import { nodeTypes } from "./node-types";
 import { EdgeLayer } from "./EdgeLayer";
 import { useStyledEdges } from "./use-styled-edges";
@@ -25,6 +28,7 @@ import { ViewControls } from "./ViewControls";
 
 interface GraphCanvasProps {
   store: GraphSessionStore;
+  git: GitClient;
 }
 
 function fitOptionsForLevel(level: ZoomLevel): FitViewOptions {
@@ -54,12 +58,14 @@ function computeWidgetPosition(
   return { top, left };
 }
 
-export function GraphCanvas({ store }: GraphCanvasProps) {
+export function GraphCanvas({ store, git }: GraphCanvasProps) {
   const session = useGraphSession(store);
   const graph = session.getReducedGraph();
   const layout = session.getLayout();
   const level = session.getZoomLevel();
   const selectedId = session.getSelectedId();
+  const diffOverlay = session.getDiffOverlay();
+  const [diffModalOpen, setDiffModalOpen] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeSymbol, setActiveSymbol] = useState<{
@@ -143,11 +149,17 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
     [graph, layout, level, session, cacheVersion],
   );
 
-  const styledEdges = useStyledEdges(projected, selectedId);
+  const displayProjected = useMemo(() => {
+    if (!projected) return null;
+    if (!diffOverlay) return projected;
+    return applyDiffOverlay(projected, diffOverlay);
+  }, [projected, diffOverlay]);
 
-  if (!projected) return null;
+  const styledEdges = useStyledEdges(displayProjected, selectedId);
 
-  const nodes: RFNode[] = projected.nodes.map((n) => ({
+  if (!displayProjected) return null;
+
+  const nodes: RFNode[] = displayProjected.nodes.map((n) => ({
     ...n,
     selected: n.id === selectedId,
   }));
@@ -181,15 +193,27 @@ export function GraphCanvas({ store }: GraphCanvasProps) {
           <Controls showInteractive={false} />
         </ReactFlow>
         <LevelBadge level={level} />
+        {diffOverlay && (
+          <DiffOverlayBar onStop={() => store.clearDiffOverlay()} />
+        )}
         <ViewControls
           hideTests={session.getHideTests()}
           onHideTestsChange={(hide) => store.setHideTests(hide)}
+          diffActive={!!diffOverlay}
+          onVisualizeDiff={() => setDiffModalOpen(true)}
+        />
+        <DiffModal
+          store={store}
+          git={git}
+          open={diffModalOpen}
+          onClose={() => setDiffModalOpen(false)}
         />
         {activeSymbol && (
           <SymbolSourceWidget
             symbolName={activeSymbol.symbolName}
             modulePath={activeSymbol.modulePath}
             sourceText={activeSymbol.sourceText}
+            fileDiff={diffOverlay?.lineDiffByPath.get(activeSymbol.modulePath)}
             top={activeSymbol.top}
             left={activeSymbol.left}
             onClose={() => setActiveSymbol(null)}

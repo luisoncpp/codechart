@@ -25,6 +25,7 @@ export interface EdgeDrawStyle {
   lineWidth: number;
   opacity: number;
   dash: number[] | null;
+  marker: "arrow" | "cross";
 }
 
 export interface EdgeSegment {
@@ -39,17 +40,19 @@ export interface EdgeSegment {
 
 export function drawStyleFromEdge(edge: RFEdgeT): EdgeDrawStyle {
   const style = edge.style ?? {};
+  const marker = edge.data?.diffState === "removed" ? "cross" : "arrow";
   return {
     stroke: String(style.stroke ?? "#94a3b8"),
     lineWidth: Number(style.strokeWidth ?? 1.2),
     opacity: Number(style.opacity ?? 1),
     dash: parseDash(style.strokeDasharray),
+    marker,
   };
 }
 
 export function styleKeyFromDrawStyle(style: EdgeDrawStyle): string {
   const dash = style.dash?.join(",") ?? "";
-  return `${style.stroke}|${style.lineWidth}|${style.opacity}|${dash}`;
+  return `${style.stroke}|${style.lineWidth}|${style.opacity}|${dash}|${style.marker}`;
 }
 
 /** Closed arrowhead polyline matching React Flow's ArrowClosed marker. */

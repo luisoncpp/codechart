@@ -48,7 +48,6 @@ export const LABEL_FIT = {
  *  instead of floating tiny at the 11px floor; floored at the base so it never
  *  regresses, capped at `maxFont` so it never dominates. */
 export function fitLabelFontSize(label: string, width: number, height: number): number {
-  const innerW = width - MODULE_BOX.hPaddingLeft - MODULE_BOX.hPaddingRight;
   const innerH = height - MODULE_BOX.vPadding;
   for (let font = LABEL_FIT.maxFont; font > MODULE_BOX.fontSize; font--) {
     const charsPerLine = labelCharsPerLine(width, font);

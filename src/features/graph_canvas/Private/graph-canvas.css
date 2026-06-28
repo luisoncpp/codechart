@@ -323,3 +323,31 @@
   height: 0 !important;
 }
 
+/* ── Diff code line highlights (L2 + symbol widget) ── */
+.diff-code__line--add,
+.symbol-widget__line--add {
+  background: #dcfce7;
+}
+
+.diff-code__line--remove,
+.symbol-widget__line--remove {
+  background: #fee2e2;
+}
+
+.diff-code__gutter--add,
+.symbol-widget__gutter--add {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.diff-code__gutter--remove,
+.symbol-widget__gutter--remove {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.diff-code__gutter--context,
+.symbol-widget__gutter--context {
+  color: #cbd5e1;
+}
+

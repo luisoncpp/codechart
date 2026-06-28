@@ -1,5 +1,6 @@
 // @Architecture(descriptionShort="TypeScript interfaces and types for projection nodes")
 import type { Node, Edge as RFEdge } from "@xyflow/react";
+import type { FileLineDiff } from "../../diff";
 import type { Language } from "../Language";
 import type { SymbolKind } from "./symbol-kind";
 
@@ -45,6 +46,10 @@ export interface ModuleNodeData extends Record<string, unknown> {
   path?: string;
   /** True when this module's connections are hidden (treated as external). */
   disconnected?: boolean;
+  /** Diff overlay highlight — green for affected, red for deleted, dimmed when unchanged. */
+  diffState?: "affected" | "deleted" | "unchanged";
+  /** Parsed line diff for code panels (add/remove highlights). */
+  diffLineDiff?: FileLineDiff;
 }
 
 /** Data carried by an exported-symbol box nested under a module. */
@@ -63,6 +68,8 @@ export interface EdgeData extends Record<string, unknown> {
    * anchors its arrow on this group's border instead of the facade box (Idea 2).
    */
   groupTargetId?: string;
+  /** Diff overlay — green added edge or red removed edge (X head). */
+  diffState?: "added" | "removed";
 }
 
 export type GroupRFNode = Node<GroupNodeData, "group">;

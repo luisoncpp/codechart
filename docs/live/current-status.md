@@ -115,7 +115,7 @@
 **MVP Milestone 1 + all planned fast-follows (Phases 0–10) are complete.** Remaining work is the
 post-M1 roadmap (TDD §11), each mapping to an existing seam — no rework on the contract:
 
-- Narrative diff visualizer (diff input to `analyze_project` + render overlay).
+- ~~Narrative diff visualizer~~ — **done**: paste or git-commit diff → green/red module borders, green added edges, red removed edges with X head; see [visualize-diff.md](../flows/visualize-diff.md).
 - Git time-travel (new `ProjectSource` over revisions).
 - Activity heatmaps (`ModuleNode.metrics` + render layer).
 - Global symbol resolution / LSP / stack-graphs (upgrade inside `references`).

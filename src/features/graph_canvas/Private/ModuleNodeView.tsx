@@ -5,6 +5,7 @@ import { fitLabelFontSize, labelCharsPerLine, MODULE_BOX, wrapIdentifierLines } 
 import { iconGlyph, MODULE_ICON_LAYOUT, moduleIconVisualScale, ICON_EMOJI_BOOST } from "./icon-map";
 import { ConnectionToggle } from "./ConnectionToggle";
 import { L2DocumentNode } from "./L2DocumentNode";
+import { moduleDiffBorder, moduleDiffOpacity } from "./DiffCodeLines";
 import { useZoomCounterScale } from "./use-zoom-counter-scale";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
@@ -37,6 +38,7 @@ const DESCRIPTION_STYLE: React.CSSProperties = {
 export function ModuleNodeView({ data, selected, width, height }: NodeProps<ModuleRFNode>) {
   const color = data.color ?? "#64748b";
   const textColor = darken(color);
+  const zoomScale = useZoomCounterScale();
 
   if (data.snippet !== undefined) {
     return <L2DocumentNode data={data} selected={selected} color={color} textColor={textColor} />;
@@ -46,9 +48,15 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
   const fontSize = detail
     ? 9
     : fitLabelFontSize(data.label, width ?? MODULE_BOX.minWidth, height ?? MODULE_BOX.minHeight);
-  const zoomScale = useZoomCounterScale();
 
-  const cardOpts = { color, textColor, isFacade: data.isFacade, selected, detail };
+  const cardOpts = {
+    color,
+    textColor,
+    isFacade: data.isFacade,
+    selected,
+    detail,
+    diffState: data.diffState,
+  };
   return (
     <div style={cardStyle(cardOpts)} title={data.descriptionShort ?? data.label}>
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
@@ -192,9 +200,18 @@ interface CardStyleOptions {
   isFacade: boolean;
   selected: boolean;
   detail: boolean;
+  diffState?: "affected" | "deleted" | "unchanged";
 }
 
-function cardStyle({ color, textColor, isFacade, selected, detail }: CardStyleOptions) {
+function cardStyle({
+  color,
+  textColor,
+  isFacade,
+  selected,
+  detail,
+  diffState,
+}: CardStyleOptions) {
+  const diffBorder = moduleDiffBorder(diffState, `${isFacade ? 2 : 1}px solid ${color}`);
   return {
     position: "relative" as const,
     width: "100%",
@@ -205,8 +222,9 @@ function cardStyle({ color, textColor, isFacade, selected, detail }: CardStyleOp
     color: textColor,
     background: detail ? `${color}0d` : `${color}1a`,
     borderRadius: 6,
-    border: `${isFacade ? 2 : 1}px solid ${color}`,
+    border: diffBorder,
     outline: selected ? "2px solid #2563eb" : "none",
     overflow: "hidden",
+    opacity: moduleDiffOpacity(diffState),
   };
 }

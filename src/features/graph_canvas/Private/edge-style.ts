@@ -2,19 +2,23 @@
 import { MarkerType } from "@xyflow/react";
 import type { RFEdgeT } from "../../../domain/graph";
 
-export type EdgeRole = "import" | "export" | "violation" | "neutral";
+export type EdgeRole = "import" | "export" | "violation" | "neutral" | "diff-added" | "diff-removed";
 
 const COLOR: Record<EdgeRole, string> = {
-  import: "#ea580c", // orange — the selected module's outgoing imports
+  import: "#ea580c",
   export: "#2563eb",
-  violation: "#dc2626", // red — reserved for facade-bypass violations
+  violation: "#dc2626",
   neutral: "#94a3b8",
+  "diff-added": "#16a34a",
+  "diff-removed": "#dc2626",
 };
 
 /** An edge's role relative to the selected node (module or collapsed group). */
 export function edgeRole(edge: RFEdgeT, selectedId: string | null): EdgeRole {
-  if (selectedId && edge.source === selectedId) return "import"; // outgoing from selection
-  if (selectedId && edge.target === selectedId) return "export"; // incoming to selection
+  if (edge.data?.diffState === "added") return "diff-added";
+  if (edge.data?.diffState === "removed") return "diff-removed";
+  if (selectedId && edge.source === selectedId) return "import";
+  if (selectedId && edge.target === selectedId) return "export";
   if (edge.data?.isViolation) return "violation";
   return "neutral";
 }
@@ -25,6 +29,7 @@ export function edgeRole(edge: RFEdgeT, selectedId: string | null): EdgeRole {
  * context stays legible instead of nearly disappearing.
  */
 export function edgeOpacity(role: EdgeRole): number {
+  if (role === "diff-added" || role === "diff-removed") return 1;
   return role === "neutral" ? 0.45 : 1;
 }
 
@@ -35,13 +40,16 @@ export function styleEdge(edge: RFEdgeT, selectedId: string | null): RFEdgeT {
   const color = COLOR[role];
   const focused = role !== "neutral";
   const dashed = edge.data?.kind === "soft";
+  const isRemoved = role === "diff-removed";
   return {
     ...edge,
     type: "floating",
-    markerEnd: { type: MarkerType.ArrowClosed, color, width: 14, height: 14 },
+    markerEnd: isRemoved
+      ? undefined
+      : { type: MarkerType.ArrowClosed, color, width: 14, height: 14 },
     style: {
       stroke: color,
-      strokeWidth: focused ? 2 : 1.2,
+      strokeWidth: focused || isRemoved ? 2 : 1.2,
       opacity: edgeOpacity(role),
       ...(dashed ? { strokeDasharray: "6 4" } : {}),
     },

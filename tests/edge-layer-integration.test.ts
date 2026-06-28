@@ -3,15 +3,10 @@ import { projectGraph } from "../src/domain/graph";
 import { styleEdge } from "../src/features/graph_canvas";
 import { buildEdgeLayerModel } from "../src/features/graph_canvas/Private/edge-layer-cache";
 import { boxesFromFlowNodes } from "../src/features/graph_canvas/Private/node-boxes";
-import { GraphSessionStore } from "../src/state/graph-session";
-import { ElkLayoutEngine } from "../src/domain/layout";
-import { createMockAnalysisClient } from "../src/ipc/analysis-client";
+import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 
 async function readyProjected() {
-  const store = new GraphSessionStore(
-    createMockAnalysisClient(),
-    new ElkLayoutEngine(),
-  );
+  const store = testGraphSessionStore();
   await store.loadProject("/sample");
   const graph = store.getReducedGraph()!;
   const layout = store.getLayout()!;
