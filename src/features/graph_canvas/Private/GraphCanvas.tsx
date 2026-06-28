@@ -16,6 +16,8 @@ import type { RFNode, RenderOptions, ZoomLevel } from "../../../domain/graph";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { DiffModal, DiffOverlayBar } from "../../diff_visualizer";
 import type { GitClient } from "../../../ipc/git-client";
+import type { ShellClient } from "../../../ipc/shell-client";
+import { ModuleContextMenu, type ModuleContextMenuState } from "./ModuleContextMenu";
 import { nodeTypes } from "./node-types";
 import { EdgeLayer } from "./EdgeLayer";
 import { useStyledEdges } from "./use-styled-edges";
@@ -29,6 +31,7 @@ import { ViewControls } from "./ViewControls";
 interface GraphCanvasProps {
   store: GraphSessionStore;
   git: GitClient;
+  shell: ShellClient;
 }
 
 function fitOptionsForLevel(level: ZoomLevel): FitViewOptions {
@@ -58,7 +61,7 @@ function computeWidgetPosition(
   return { top, left };
 }
 
-export function GraphCanvas({ store, git }: GraphCanvasProps) {
+export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
   const session = useGraphSession(store);
   const graph = session.getReducedGraph();
   const layout = session.getLayout();
@@ -66,6 +69,7 @@ export function GraphCanvas({ store, git }: GraphCanvasProps) {
   const selectedId = session.getSelectedId();
   const diffOverlay = session.getDiffOverlay();
   const [diffModalOpen, setDiffModalOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState<ModuleContextMenuState | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeSymbol, setActiveSymbol] = useState<{
@@ -175,7 +179,17 @@ export function GraphCanvas({ store, git }: GraphCanvasProps) {
           colorMode="light"
           onNodeClick={(e, node) => controller.onNodeClick(node, e)}
           onNodeDoubleClick={(_e, node) => controller.onNodeDoubleClick(node)}
-          onPaneClick={() => controller.onPaneClick()}
+          onNodeContextMenu={(e, node) => {
+            e.preventDefault();
+            if ((e.target as HTMLElement).closest("[data-connection-toggle]")) return;
+            const modulePath = controller.modulePathForContextMenu(node);
+            if (!modulePath) return;
+            setContextMenu({ x: e.clientX, y: e.clientY, modulePath });
+          }}
+          onPaneClick={() => {
+            controller.onPaneClick();
+            setContextMenu(null);
+          }}
           onMoveStart={() => setActiveSymbol(null)}
           onMoveEnd={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}
           fitView
@@ -207,6 +221,12 @@ export function GraphCanvas({ store, git }: GraphCanvasProps) {
           git={git}
           open={diffModalOpen}
           onClose={() => setDiffModalOpen(false)}
+        />
+        <ModuleContextMenu
+          menu={contextMenu}
+          projectRoot={session.getProjectRoot()}
+          shell={shell}
+          onClose={() => setContextMenu(null)}
         />
         {activeSymbol && (
           <SymbolSourceWidget

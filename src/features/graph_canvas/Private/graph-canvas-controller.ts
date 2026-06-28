@@ -45,6 +45,16 @@ export class GraphCanvasController {
     this.store.toggleGroup(node.id);
   }
 
+  /** Module or symbol right-click: return the module path for a context menu, else null. */
+  modulePathForContextMenu(node: Node): string | null {
+    if (node.type !== "module" && node.type !== "symbol") return null;
+    const graph = this.store.getReducedGraph();
+    if (!graph) return null;
+    const moduleId = node.type === "module" ? node.id : node.parentId;
+    if (!moduleId) return null;
+    return graph.modules.find((m) => m.id === moduleId)?.path ?? null;
+  }
+
   onPaneClick() {
     this.store.select(null);
   }

@@ -12,4 +12,5 @@ Covers only what's already implemented. For architecture docs of not implemented
 | [references-analysis.md](./references-analysis.md) | `references` (`resolve_references`) + `diagnostics` + `analysis` (`analyze_project`) | Imports → edges + diagnostics; full backend pipeline → golden `ProjectGraph` |
 | [layout.md](./layout.md) | `domain/layout` (`LayoutEngine` + `ElkLayoutEngine`) | `ProjectGraph` → `LayoutedGraph` (absolute nested boxes) via elkjs; deterministic |
 | [graph-canvas.md](./graph-canvas.md) | `GraphProjector` + `features/graph_canvas` (React Flow) + `inspection_panel` + session selection/layout | `ProjectGraph` + layout → rendered map (sample aesthetic) + selection-driven inspection |
+| [shell-client.md](./shell-client.md) | `ipc/shell-client` | Reveal a module file in the OS explorer via Tauri opener plugin |
 | [unity-prefabs.md](./unity-prefabs.md) | `unity_assets` + `unity_prefab` adapter + `references::unity` | `.prefab` YAML → script/nested-prefab soft edges; serialized fields as `exportedSymbols` |

@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import { createTauriAnalysisClient } from "../../ipc/analysis-client";
 import { createTauriGitClient } from "../../ipc/git-client";
+import { createTauriShellClient } from "../../ipc/shell-client";
 import { ElkLayoutEngine } from "../../domain/layout";
 import { GraphSessionStore, useGraphSession } from "../../state/graph-session";
 import { ProjectLoaderPanel } from "../../features/project_loader";
@@ -10,6 +11,7 @@ import { InspectionPanel } from "../../features/inspection_panel";
 
 export function App() {
   const git = useMemo(/*build git client*/ () => createTauriGitClient(), []);
+  const shell = useMemo(/*build shell client*/ () => createTauriShellClient(), []);
   const store = useMemo(
     /*build session store*/ () =>
       new GraphSessionStore(createTauriAnalysisClient(), git, new ElkLayoutEngine()),
@@ -24,7 +26,7 @@ export function App() {
       {ready && (
         <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <GraphCanvas store={store} git={git} />
+            <GraphCanvas store={store} git={git} shell={shell} />
           </div>
           <InspectionPanel store={store} />
         </div>

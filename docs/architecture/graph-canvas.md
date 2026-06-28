@@ -23,7 +23,8 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 | selectors | `domain/graph/Private/selectors.ts` | `findModule`, `groupOf`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. `importsOf`/`importedBy` filter to `kind === "import"` (soft edges don't leak into the import lists); `softEdgesOf` returns soft edges on either endpoint; `architectureViolations` returns all facade-bypass diagnostics project-wide. |
 | `GraphSessionStore` | `state/graph-session` | Now also owns `LayoutedGraph` (computed via injected `LayoutEngine` on load) and `selectedId`. Emits `phase-changed` + `selection-changed`. |
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. |
-| `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules only) → `store.select`; pane click → clear. |
+| `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules only) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
+| `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; **Reveal in file explorer** via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
 | `InspectionPanel` | `features/inspection_panel` | Selected module's path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections** (Events / Interface seams / Tauri IPC / **Unity scripts & prefabs** — trigger-prefix labels), diagnostics. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. |
 
 ## Aesthetic rules (the visual gate)

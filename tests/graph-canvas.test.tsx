@@ -1,6 +1,6 @@
 /// <reference types="@testing-library/jest-dom" />
 import React from "react";
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
 import goldenGraph from "./fixtures/golden/project-graph.json";
 import { GraphCanvas, edgeRole, styleEdge } from "../src/features/graph_canvas";
@@ -8,10 +8,19 @@ import { projectForZoom, allGroupIds } from "../src/domain/graph";
 import { InspectionPanel } from "../src/features/inspection_panel";
 import { GraphSessionStore } from "../src/state/graph-session";
 import { createMockGitClient } from "../src/ipc/git-client";
+import { createMockShellClient } from "../src/ipc/shell-client";
+import type { ShellClient } from "../src/ipc/shell-client";
 import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 import type { ProjectGraph } from "../src/domain/graph";
 
 const graph = goldenGraph as unknown as ProjectGraph;
+
+function renderCanvas(
+  store: GraphSessionStore,
+  shell: ShellClient = createMockShellClient(),
+) {
+  return render(<GraphCanvas store={store} git={createMockGitClient()} shell={shell} />);
+}
 
 async function readyStore(): Promise<GraphSessionStore> {
   const store = testGraphSessionStore();
@@ -26,7 +35,7 @@ describe("GraphCanvas", () => {
   });
 
   it("renders one React Flow node per group and module", async () => {
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() => {
       const nodes = container.querySelectorAll(".react-flow__node");
       expect(nodes).toHaveLength(graph.groups.length + graph.modules.length);
@@ -34,7 +43,7 @@ describe("GraphCanvas", () => {
   });
 
   it("mounts the edge svg layer inside React Flow", async () => {
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() => {
       expect(container.querySelector(".codechart-edge-layer")).toBeTruthy();
       expect(container.querySelectorAll(".codechart-edge-layer path").length).toBeGreaterThan(0);
@@ -44,7 +53,7 @@ describe("GraphCanvas", () => {
   it("gives group nodes source+target handles so collapsed groups can be edge endpoints (L0)", async () => {
     // Regression: at L0 edges re-route onto group boxes; without handles React
     // Flow drops them (error #008) and the overview shows no edges at all.
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() =>
       expect(container.querySelector(`[data-id="app"]`)).toBeTruthy(),
     );
@@ -54,7 +63,7 @@ describe("GraphCanvas", () => {
   });
 
   it("clicking a module selects it in the store", async () => {
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() =>
       expect(container.querySelector(".react-flow__node")).toBeTruthy(),
     );
@@ -64,9 +73,25 @@ describe("GraphCanvas", () => {
     expect(store.getSelectedId()).toBe(facade.id);
   });
 
+  it("right-clicking a module opens reveal-in-explorer menu", async () => {
+    const revealInExplorer = vi.fn();
+    const shell: ShellClient = { revealInExplorer };
+    const { container } = renderCanvas(store, shell);
+    await waitFor(() =>
+      expect(container.querySelector(".react-flow__node")).toBeTruthy(),
+    );
+    const module = graph.modules.find((m) => m.path === "src/core/store.ts")!;
+    const node = container.querySelector(`[data-id="${module.id}"]`)!;
+    fireEvent.contextMenu(node);
+    const item = await screen.findByRole("menuitem", { name: /Reveal in file explorer/i });
+    fireEvent.click(item);
+    expect(revealInExplorer).toHaveBeenCalledWith("/sample/src/core/store.ts");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+  });
+
   it("renders exported symbols as child boxes at L1.5", async () => {
     store.setZoomLevel(1.5);
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() =>
       expect(
         container.querySelector(`[data-id="src/core/store.ts::TodoStore"]`),
@@ -79,7 +104,7 @@ describe("GraphCanvas", () => {
   });
 
   it("shows the group's short description in its reserved band at L1", async () => {
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() =>
       expect(container.querySelector(`[data-id="core"]`)).toBeTruthy(),
     );
@@ -89,7 +114,7 @@ describe("GraphCanvas", () => {
 
   it("upgrades the in-band description to the long text at L1.5", async () => {
     store.setZoomLevel(1.5);
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() =>
       expect(container.querySelector(`[data-id="core"]`)).toBeTruthy(),
     );
@@ -99,7 +124,7 @@ describe("GraphCanvas", () => {
 
   it("prefers the long description on a collapsed group card at L0", async () => {
     store.setZoomLevel(0);
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() =>
       expect(container.querySelector(`[data-id="services"]`)).toBeTruthy(),
     );
@@ -110,7 +135,7 @@ describe("GraphCanvas", () => {
 
   it("clicking a collapsed group at L0 selects it in the store", async () => {
     store.setZoomLevel(0);
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() =>
       expect(container.querySelector(`[data-id="app"]`)).toBeTruthy(),
     );
@@ -119,7 +144,7 @@ describe("GraphCanvas", () => {
   });
 
   it("does not select an expanded group header (L1)", async () => {
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() =>
       expect(container.querySelector(`[data-id="app"]`)).toBeTruthy(),
     );
@@ -129,9 +154,7 @@ describe("GraphCanvas", () => {
 
   it("uses bold for module filenames at L1.5 and normal at L1", async () => {
     store.setZoomLevel(1.5);
-    const { container: containerL15 } = render(
-      <GraphCanvas store={store} git={createMockGitClient()} />,
-    );
+    const { container: containerL15 } = renderCanvas(store);
     await waitFor(() =>
       expect(containerL15.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
     );
@@ -142,9 +165,7 @@ describe("GraphCanvas", () => {
     expect(labelSpanL15.style.fontWeight).toBe("bold");
 
     store.setZoomLevel(1.0);
-    const { container: containerL1 } = render(
-      <GraphCanvas store={store} git={createMockGitClient()} />,
-    );
+    const { container: containerL1 } = renderCanvas(store);
     await waitFor(() =>
       expect(containerL1.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
     );
@@ -167,7 +188,7 @@ describe("GraphCanvas", () => {
         "+added",
       ].join("\n"),
     );
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() =>
       expect(container.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
     );
@@ -192,7 +213,7 @@ describe("GraphCanvas", () => {
         "+y",
       ].join("\n"),
     );
-    const { container } = render(<GraphCanvas store={store} git={createMockGitClient()} />);
+    const { container } = renderCanvas(store);
     await waitFor(() =>
       expect(container.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
     );
