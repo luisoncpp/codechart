@@ -88,6 +88,20 @@ const csharpRules: Rule[] = [
   { type: "whitespace", regex: /^\s+/ },
 ];
 
+const cssRules: Rule[] = [
+  { type: "comment", regex: /^\/\*[\s\S]*?\*\// },
+  { type: "string", regex: /^"(?:[^"\\]|\\.)*"|^'(?:[^'\\]|\\.)*'/ },
+  { type: "keyword", regex: /^@(?:import|layer|media|supports|keyframes|font-face)\b|^\b(?:important|from|to|and|or|not|only)\b/ },
+  { type: "selector", regex: /^[.#][a-zA-Z0-9_-]+|^::?[a-zA-Z-]+/ },
+  { type: "number", regex: /^\b\d+(?:\.\d+)?(?:px|em|rem|vh|vw|%|deg|ms|s)?\b/ },
+  { type: "builtin", regex: /^\b(var|calc|rgb|rgba|hsl|hsla|url|linear-gradient|radial-gradient)\b/ },
+  { type: "operator", regex: /^[:;,>+~]/ },
+  { type: "punctuation", regex: /^[{}()[\].]/ },
+  { type: "text", regex: /^[a-zA-Z0-9_-]+/ },
+  { type: "text", regex: /^[^\s"'`{}()[\].,;:>+~#]+/ },
+  { type: "whitespace", regex: /^\s+/ },
+];
+
 const defaultRules: Rule[] = [
   { type: "comment", regex: /^\/\/.*|^\/\*[\s\S]*?\*\/|^#.*/ },
   { type: "string", regex: /^"(?:[^"\\]|\\.)*"|^'(?:[^'\\]|\\.)*'/ },
@@ -114,6 +128,8 @@ function getRulesForFile(filepath: string): Rule[] {
       return csharpRules;
     case "prefab":
       return defaultRules;
+    case "css":
+      return cssRules;
     case "py":
       return pythonRules;
     case "go":

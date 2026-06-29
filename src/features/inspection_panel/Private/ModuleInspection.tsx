@@ -12,6 +12,7 @@ import { EdgeList } from "./EdgeList";
 import { SoftEdgeSections } from "./SoftEdgeSections";
 import { MetadataSection } from "./MetadataSection";
 import { PanelChrome, Row } from "./PanelParts";
+import { SymbolList } from "./SymbolList";
 
 interface ModuleInspectionProps {
   graph: ProjectGraph;
@@ -32,6 +33,7 @@ export function ModuleInspection({ graph, module, onHide }: ModuleInspectionProp
         <Row label="LOC" value={String(module.metrics.loc)} />
       </dl>
       <MetadataSection module={module} group={group} />
+      <SymbolList symbols={module.exportedSymbols} language={module.language} />
       <EdgeList title="Imports" edges={importsOf(graph, module.id)} field="target" />
       <EdgeList
         title="Imported by"

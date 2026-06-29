@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="Renders individual exported symbol boxes inside modules")
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { SymbolRFNode } from "../../../domain/graph";
-import { SYMBOL_KIND_DISPLAY } from "./symbol-kind-display";
+import { SYMBOL_KIND_DISPLAY } from "../../../domain/graph";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 

@@ -7,7 +7,10 @@ import { ElkLayoutEngine } from "../../domain/layout";
 import { GraphSessionStore, useGraphSession } from "../../state/graph-session";
 import { ProjectLoaderPanel } from "../../features/project_loader";
 import { GraphCanvas } from "../../features/graph_canvas";
-import { InspectionPanel } from "../../features/inspection_panel";
+import {
+  DEFAULT_INSPECTOR_WIDTH,
+  InspectionPanel,
+} from "../../features/inspection_panel";
 
 export function App() {
   const git = useMemo(/*build git client*/ () => createTauriGitClient(), []);
@@ -20,17 +23,23 @@ export function App() {
   const session = useGraphSession(store);
   const ready = session.getPhase() === "ready";
   const [inspectorOpen, setInspectorOpen] = useState(/*defaultOpen=*/true);
+  const [inspectorWidth, setInspectorWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+    <div style={appShellStyle}>
       <ProjectLoaderPanel store={store} />
       {ready && (
-        <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
+          <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
             <GraphCanvas store={store} git={git} shell={shell} />
           </div>
           {inspectorOpen ? (
-            <InspectionPanel store={store} onHide={() => setInspectorOpen(false)} />
+            <InspectionPanel
+              store={store}
+              width={inspectorWidth}
+              onWidthChange={setInspectorWidth}
+              onHide={() => setInspectorOpen(false)}
+            />
           ) : (
             <button
               type="button"
@@ -47,6 +56,13 @@ export function App() {
     </div>
   );
 }
+
+const appShellStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  height: "100%",
+  overflow: "hidden",
+};
 
 const showInspectorBtnStyle: React.CSSProperties = {
   flexShrink: 0,

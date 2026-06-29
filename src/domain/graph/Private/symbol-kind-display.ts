@@ -1,5 +1,4 @@
-// @Architecture(descriptionShort="Maps symbol kinds to specific visual badges and colors")
-import type { SymbolKind } from "../../../domain/graph";
+import type { SymbolKind } from "./symbol-kind";
 
 /** IDE-style glyph + human label for each inferred symbol kind. */
 export const SYMBOL_KIND_DISPLAY: Record<

@@ -28,6 +28,7 @@ pub fn language_for(path: &str) -> Language {
         Some("rs") => Language::Rust,
         Some("cs") => Language::CSharp,
         Some("prefab") => Language::UnityPrefab,
+        Some("css") => Language::Css,
         _ => Language::TypeScript,
     }
 }

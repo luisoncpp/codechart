@@ -15,6 +15,7 @@ export type { RenderOptions } from "./Private/rf-projection";
 export { symbolBoxId, symbolNameFromId } from "./Private/symbol-id";
 export { inferSymbolKind } from "./Private/symbol-kind";
 export type { SymbolKind } from "./Private/symbol-kind";
+export { SYMBOL_KIND_DISPLAY } from "./Private/symbol-kind-display";
 export {
   projectForZoom,
   allGroupIds,

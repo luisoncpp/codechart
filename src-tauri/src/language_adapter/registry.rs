@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="Picks a LanguageAdapter by file extension")
 
 use crate::language_adapter::adapter_types::LanguageAdapter;
-use super::{csharp, rust, typescript, unity_prefab};
+use super::{csharp, css, rust, typescript, unity_prefab};
 
 /// Pick an adapter for a file extension (no leading dot), or `None` if the
 /// extension is unsupported. Extensions are matched case-sensitively.
@@ -13,6 +13,7 @@ pub fn registry_for(ext: &str) -> Option<Box<dyn LanguageAdapter>> {
         "rs" => Some(Box::new(rust::RustAdapter::new())),
         "cs" => Some(Box::new(csharp::CSharpAdapter::new())),
         "prefab" => Some(Box::new(unity_prefab::UnityPrefabAdapter::new())),
+        "css" => Some(Box::new(css::CssAdapter::new())),
         _ => None,
     }
 }
@@ -46,6 +47,11 @@ mod tests {
     #[test]
     fn picks_prefab_adapter() {
         assert!(registry_for("prefab").is_some());
+    }
+
+    #[test]
+    fn picks_css_adapter() {
+        assert!(registry_for_path("graph-canvas.css").is_some());
     }
 
     #[test]

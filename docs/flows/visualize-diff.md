@@ -13,7 +13,7 @@ User clicks **Visualize diff…** on the canvas (top-right, when no diff is acti
 ## Sequence
 
 1. **Paste mode** — user pastes unified diff text → `overlayFromPastedDiff` maps file paths to module ids on the loaded graph (module borders only; no edge overlay).
-2. **Git commits mode** (repo root must be a git checkout) — user picks base + head → parallel `git diff` + two `analyzeProjectAtRef` snapshots → git paths drive **module** highlights; graph comparison drives **edge** add/remove → `LayoutEngine.layout(before)` supplies ghost positions for deleted modules.
+2. **Git commits mode** (repo root must be a git checkout) — user picks **before** (left) and **after** (right) via searchable commit menus (last 100 commits). Selecting **after** with **before** empty auto-fills **before** with the parent commit in the loaded log. Then parallel `git diff` + two `analyzeProjectAtRef` snapshots → git paths drive **module** highlights; graph comparison drives **edge** add/remove → `LayoutEngine.layout(before)` supplies ghost positions for deleted modules.
 3. Store sets `diffOverlay` and emits `diff-changed`.
 4. `GraphCanvas` re-projects the reduced graph, then `applyDiffOverlay` stamps `data.diffState` on nodes/edges, sets `diffVisualizing` on group nodes, and injects ghost modules + phantom removed edges.
 5. `edge-style` / `EdgeLayer` render added edges **green** (full opacity) and removed edges **red** with an **X** head instead of an arrow.

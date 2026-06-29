@@ -5,6 +5,8 @@ color: "#991b1b"
 icon: box
 facades:
   - lib.rs
+exclude:
+  - bin/**
 descriptionShort: Crate root & Tauri entry
 ---
 

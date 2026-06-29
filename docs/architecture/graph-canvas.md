@@ -25,7 +25,7 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules + groups) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
 | `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; **Reveal in file explorer** via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
-| `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. |
+| `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
 
 ## Aesthetic rules (the visual gate)
 
@@ -233,4 +233,5 @@ The canvas renders from `getReducedGraph()` + `getLayout()`, not the raw graph.
 
 `app` composes `createMockAnalysisClient()` (returns the golden fixture — runs the whole UI with zero
 Rust, Phase 7 swaps in Tauri) + `ElkLayoutEngine` into the store, then renders the loader bar above
-`GraphCanvas` + `InspectionPanel` when `phase === "ready"`.
+`GraphCanvas` + a collapsible, drag-resizable `InspectionPanel` when `phase === "ready"`.
+`App` holds `inspectorOpen` and `inspectorWidth`; the panel facade accepts `width` / `onWidthChange`.

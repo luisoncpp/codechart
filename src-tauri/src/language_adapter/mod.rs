@@ -11,6 +11,7 @@ mod typescript;
 mod rust;
 mod csharp;
 mod unity_prefab;
+mod css;
 
 pub use adapter_types::{
     CommentBlock, CommSignal, ImportKind, LanguageAdapter, ParseError, ParsedImport,

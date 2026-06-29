@@ -12,6 +12,7 @@ CodeChart uses pluggable **language adapters** (tree-sitter parsers behind a com
 | **Rust** | `.rs` | `mod` / `use` / `pub use`, exported items, `impl Trait for Type`, `#[tauri::command]` handlers |
 | **C#** | `.cs` | `using` / `global using`, namespaces, exported types, type references in the file body, `: IFoo` implementations |
 | **Unity prefabs** | `.prefab` | YAML-serialized assets: `m_Script` GUIDs → `.cs` modules, nested prefab refs, custom `MonoBehaviour` fields as exported symbols (requires a Unity project with `.meta` files) |
+| **CSS** | `.css` | Relative `@import` rules (side-effect dependency edges) |
 
 Annotations (`@Architecture(…)`) are parsed from comment text in **any** supported language — they are not TypeScript-specific.
 
@@ -23,7 +24,7 @@ Unsupported extensions are skipped during analysis. Package / external imports (
 
 - **Open any folder** via the native directory picker; the Rust backend analyzes it and streams a `ProjectGraph` over Tauri IPC.
 - **ELK layout** + **React Flow** canvas: nested colored group containers, module cards, floating import arrows, deterministic positioning.
-- **Inspection panel** for the selected module: path, group, facade status, language, LOC, imports, imported-by, diagnostics, and annotation metadata.
+- **Inspection panel** for the selected module or group: path, group, facade status, language, LOC, imports, imported-by, diagnostics, and annotation metadata. Drag the left edge to resize (200–720px); hide/show preserves width for the session.
 - **Reveal in file explorer** from the module/symbol context menu.
 
 ### Groups & configuration

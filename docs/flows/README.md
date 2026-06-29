@@ -44,6 +44,7 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [analyze-project.md](./analyze-project.md) | Folder → `ProjectGraph`: the full backend pipeline (parse → group → resolve → build) |
 | [open-project.md](./open-project.md) | Open folder → IPC → live diagram: the UI front of the analysis pipeline (session phases) |
 | [select-module.md](./select-module.md) | Click a module or group on the canvas → selection → inspection panel (pure UI state) |
+| [resize-inspector.md](./resize-inspector.md) | Drag the inspection panel's left edge to resize; hide/show preserves width for the session |
 | [reveal-in-explorer.md](./reveal-in-explorer.md) | Right-click a module/symbol → context menu → reveal file in the OS explorer |
 | [preview-symbol.md](./preview-symbol.md) | Click a symbol in L1.5 zoom → selection + resizable preview code widget next to it |
 | [visualize-diff.md](./visualize-diff.md) | Visualize diff modal → overlay green/red modules and green/red edges on the canvas |

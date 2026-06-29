@@ -323,6 +323,16 @@ describe("styleEdge (focus + context dimming)", () => {
 });
 
 describe("InspectionPanel", () => {
+  it("lists exported symbols with their inferred kinds for the selected module", async () => {
+    const store = await readyStore();
+    store.select("src/core/store.ts");
+    render(<InspectionPanel store={store} />);
+
+    const section = screen.getByText(/^Exported symbols/).closest("div")!;
+    expect(within(section).getByText("TodoStore")).toBeInTheDocument();
+    expect(within(section).getByText("Class")).toBeInTheDocument();
+  });
+
   it("shows imports and imported-by for the selected module", async () => {
     const store = await readyStore();
     const edge = graph.edges[0];

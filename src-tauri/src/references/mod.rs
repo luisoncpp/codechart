@@ -34,7 +34,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::contract::{Diagnostic, DiagnosticKind, Edge, EdgeKind, Severity};
 use crate::language_adapter::{ParsedImport, ParsedModule};
 
-use resolve::{is_relative, resolve_relative};
+use resolve::{is_asset_import, is_relative, resolve_relative};
 
 use csharp::{index_exports, resolve_import, resolve_qualified_references, uses_namespace_resolution};
 
@@ -77,7 +77,7 @@ fn resolve_module(
         return;
     }
     for import in module.imports.iter().chain(module.reexports.iter()) {
-        if !is_relative(&import.specifier) {
+        if !is_relative(&import.specifier) || is_asset_import(&import.specifier) {
             continue;
         }
         match resolve_relative(

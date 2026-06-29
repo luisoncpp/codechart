@@ -77,6 +77,21 @@ fn resolves_explicit_extension() {
 }
 
 #[test]
+fn resolves_css_side_effect_import() {
+    let parsed = vec![
+        module("src/GraphCanvas.tsx", &["./graph-canvas.css"]),
+        ParsedModule {
+            path: "src/graph-canvas.css".to_string(),
+            ..Default::default()
+        },
+    ];
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/GraphCanvas.tsx".into(), "src/graph-canvas.css".into())]
+    );
+}
+
+#[test]
 fn resolves_js_extension_to_ts_source() {
     let parsed = vec![
         module("electron/ipc/handlers/project-handlers/order-handlers.ts", &[
@@ -235,6 +250,17 @@ fn package_import_is_external_metadata() {
     let refs = resolve_references(&parsed);
     assert!(refs.edges.is_empty(), "no edge for a package import");
     assert!(refs.diagnostics.is_empty(), "no diagnostic for a package import");
+}
+
+#[test]
+fn json_asset_import_is_external_metadata() {
+    let parsed = vec![module(
+        "src/ipc/analysis-client/Private/mock-analysis-client.ts",
+        &["../../../../tests/fixtures/golden/project-graph.json"],
+    )];
+    let refs = resolve_references(&parsed);
+    assert!(refs.edges.is_empty(), "no edge for a JSON asset import");
+    assert!(refs.diagnostics.is_empty(), "no diagnostic for a JSON asset import");
 }
 
 #[test]

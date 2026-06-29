@@ -8,6 +8,22 @@ pub fn is_relative(specifier: &str) -> bool {
     specifier.starts_with('.')
 }
 
+/// Static asset extensions bundled at build time (JSON fixtures, images, fonts, …).
+/// These are not parsed modules — no edge and no `unresolvedImport` diagnostic.
+const ASSET_EXTENSIONS: &[&str] = &[
+    "json", "svg", "png", "jpg", "jpeg", "gif", "webp", "ico", "woff", "woff2", "ttf", "eot",
+    "mp3", "mp4", "wav", "webm",
+];
+
+/// True when `specifier` points at a static asset rather than a source module.
+pub fn is_asset_import(specifier: &str) -> bool {
+    let path = specifier.split('?').next().unwrap_or(specifier);
+    match path.rsplit('.').next().filter(|e| *e != path) {
+        Some(ext) => ASSET_EXTENSIONS.contains(&ext),
+        None => false,
+    }
+}
+
 /// Resolve a relative `specifier` imported from `importer` to a known module id,
 /// or `None` when no candidate exists. Tries extensionless `.ts`/`.tsx`/`.rs`/`.cs`, an
 /// explicit extension, `.js`/`.jsx`/`.mjs` (TS ESM → source `.ts`), then
@@ -78,6 +94,7 @@ fn candidates(base: &str) -> Vec<String> {
         || base.ends_with(".tsx")
         || base.ends_with(".rs")
         || base.ends_with(".cs")
+        || base.ends_with(".css")
     {
         return vec![base.to_string()];
     }
@@ -103,6 +120,7 @@ fn extensionless_candidates(base: &str) -> Vec<String> {
         format!("{base}.tsx"),
         format!("{base}.rs"),
         format!("{base}.cs"),
+        format!("{base}.css"),
         format!("{base}/index.ts"),
         format!("{base}/index.tsx"),
         format!("{base}/mod.rs"),

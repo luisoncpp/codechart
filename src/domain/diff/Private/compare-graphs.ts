@@ -23,7 +23,7 @@ export function compareGraphs(input: GraphDiffInput): Omit<GraphDiffCore, "befor
   const addedEdgeIds = new Set<string>();
   const removedEdges: Edge[] = [];
 
-  for (const [id, edge] of afterEdges) {
+  for (const [id, ] of afterEdges) {
     if (!beforeEdges.has(id)) addedEdgeIds.add(id);
   }
   for (const [id, edge] of beforeEdges) {

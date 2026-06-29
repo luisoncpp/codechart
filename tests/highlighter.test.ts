@@ -96,6 +96,21 @@ describe("tokenizeCode", () => {
     expect(lines[2].some((t) => t.type === "builtin" && t.text === "make")).toBe(true);
   });
 
+  it("tokenizes CSS code correctly", () => {
+    const code = `
+      /* canvas chrome */
+      @import url("./tokens.css");
+      .react-flow__node-module { overflow: hidden; }
+    `.trim();
+
+    const lines = tokenizeCode(code, "graph-canvas.css");
+    expect(lines[0].some((t) => t.type === "comment")).toBe(true);
+    expect(lines[1].some((t) => t.type === "keyword" && t.text === "@import")).toBe(true);
+    expect(lines[2].some((t) => t.type === "selector" && t.text === ".react-flow__node-module")).toBe(
+      true,
+    );
+  });
+
   it("tokenizes unknown file using default fallback rules", () => {
     const code = `
       let x = "fallback";

@@ -22,8 +22,11 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
   `index.ts`/`index.tsx`/`mod.rs`. Hit → solid `import` edge. Miss → for `.rs`
   importers only, walk up parent path segments (Rust item imports such as
   `../analysis/analyze_project` where `analyze_project` is a fn in `analysis/mod.rs`,
-  not a submodule file). Still no hit → `unresolvedImport` diagnostic (severity
+  not a submodule file).   Still no hit → `unresolvedImport` diagnostic (severity
   `warning`, no ghost edge in M1).
+- **Relative asset** specifier (`.json`, images, fonts, media, … — see
+  `resolve::is_asset_import`) → external metadata: neither edge nor diagnostic.
+  Bundled fixtures and static assets are not parsed modules.
 - **Non-relative** specifier on **non-C#** modules → external metadata: neither edge nor
   diagnostic.
 - **Non-relative** specifier on **`.cs`** modules → looked up against in-project

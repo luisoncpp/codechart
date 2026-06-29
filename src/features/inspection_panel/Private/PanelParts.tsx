@@ -1,5 +1,7 @@
 // @Architecture(descriptionShort="Shared chrome and layout rows for the inspection panel")
 import type React from "react";
+import { useInspectorLayout } from "./InspectorLayoutContext";
+import { PanelResizeHandle } from "./PanelResizeHandle";
 
 export function PanelChrome({
   onHide,
@@ -8,8 +10,11 @@ export function PanelChrome({
   onHide?: () => void;
   children: React.ReactNode;
 }) {
+  const { width } = useInspectorLayout();
+
   return (
-    <aside style={panelStyle}>
+    <aside style={{ ...panelStyle, width, flexShrink: 0 }}>
+      <PanelResizeHandle />
       <div style={headerStyle}>
         <span style={headerLabelStyle}>Inspector</span>
         {onHide && (
@@ -39,7 +44,10 @@ export function Row({ label, value }: { label: string; value: string }) {
 }
 
 const panelStyle = {
-  width: 280,
+  position: "relative",
+  boxSizing: "border-box",
+  height: "100%",
+  minHeight: 0,
   padding: 16,
   borderLeft: "1px solid #e2e8f0",
   background: "#f8fafc",
