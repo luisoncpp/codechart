@@ -66,21 +66,20 @@ fn super_module_base(importer: &str) -> Option<String> {
 }
 
 fn crate_root_dir(importer: &str) -> Option<String> {
-    let importer_dir = parent_dir(importer).to_string();
-    let mut dir = importer_dir.clone();
+    let mut dir = parent_dir(importer).to_string();
     loop {
         for root_file in ["lib.rs", "main.rs"] {
-            let root_path = if dir.is_empty() {
+            let root_module = if dir.is_empty() {
                 root_file.to_string()
             } else {
                 format!("{dir}/{root_file}")
             };
-            if importer == root_path {
+            if importer == root_module {
                 return Some(dir.clone());
             }
-            if importer.starts_with(&format!("{dir}/")) && dir != importer_dir {
-                return Some(dir.clone());
-            }
+        }
+        if importer.starts_with(&format!("{dir}/")) && is_crate_root_dir(&dir) {
+            return Some(dir.clone());
         }
         if dir.is_empty() {
             break;
@@ -88,6 +87,12 @@ fn crate_root_dir(importer: &str) -> Option<String> {
         dir = parent_dir(&dir).to_string();
     }
     None
+}
+
+/// Cargo crate roots live at `src/lib.rs` / `src/main.rs` (or a top-level `lib.rs`).
+/// `mod.rs`-only folders such as `language_adapter/` are nested modules, not crates.
+fn is_crate_root_dir(dir: &str) -> bool {
+    dir.is_empty() || dir.ends_with("/src") || dir == "src"
 }
 
 fn join_path(base: &str, segments: &[String]) -> String {

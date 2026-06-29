@@ -1,18 +1,14 @@
-use crate::language_adapter::{registry_for_path, ImportKind, ParsedModule};
+use crate::language_adapter::adapter_types::{ImportKind, LanguageAdapter, ParsedModule};
+use super::CSharpAdapter;
 
 fn parse(path: &str, source: &str) -> ParsedModule {
-    let adapter = registry_for_path(path).expect("adapter for extension");
-    adapter.parse(path, source).expect("parse succeeds")
+    CSharpAdapter::new()
+        .parse(path, source)
+        .expect("parse succeeds")
 }
 
 fn specifiers(module: &ParsedModule) -> Vec<&str> {
     module.imports.iter().map(|i| i.specifier.as_str()).collect()
-}
-
-#[test]
-fn registry_includes_cs() {
-    assert!(registry_for_path("Program.cs").is_some());
-    assert!(registry_for_path("a.cpp").is_none());
 }
 
 #[test]

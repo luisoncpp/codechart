@@ -2,7 +2,7 @@
 
 use tree_sitter::Node;
 
-use crate::language_adapter::{CommSignal, SignalRole};
+use crate::language_adapter::adapter_types::{CommSignal, SignalRole};
 
 /// Callee names that publish an event.
 const EMIT: [&str; 4] = ["emit", "dispatch", "publish", "send"];

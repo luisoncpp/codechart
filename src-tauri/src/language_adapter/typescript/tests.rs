@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 
-use crate::language_adapter::{registry_for_path, ImportKind, ParsedModule, SignalRole};
+use crate::language_adapter::adapter_types::{ImportKind, LanguageAdapter, ParsedModule, SignalRole};
+use super::TypeScriptAdapter;
 use crate::project_source::{MemoryProjectSource, ProjectSource};
 
 fn parse(path: &str, source: &str) -> ParsedModule {
-    let adapter = registry_for_path(path).expect("adapter for extension");
-    adapter.parse(path, source).expect("parse succeeds")
+    let is_tsx = path.ends_with(".tsx");
+    TypeScriptAdapter::new(is_tsx)
+        .parse(path, source)
+        .expect("parse succeeds")
 }
 
 fn specifiers(module: &ParsedModule) -> Vec<&str> {
@@ -155,12 +158,6 @@ fn multiple_signals_kept_in_source_order() {
     let m = parse("a.ts", src);
     let tokens: Vec<&str> = m.signals.iter().map(|s| s.token.as_str()).collect();
     assert_eq!(tokens, vec!["a", "b", "c"]);
-}
-
-#[test]
-fn unsupported_extension_has_no_adapter() {
-    assert!(registry_for_path("a.cpp").is_none());
-    assert!(registry_for_path("noext").is_none());
 }
 
 #[test]

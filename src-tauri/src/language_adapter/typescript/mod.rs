@@ -8,7 +8,7 @@ mod signals;
 
 use tree_sitter::Parser;
 
-use super::{LanguageAdapter, ParseError, ParsedModule};
+use crate::language_adapter::adapter_types::{LanguageAdapter, ParseError, ParsedModule};
 
 pub struct TypeScriptAdapter {
     is_tsx: bool,

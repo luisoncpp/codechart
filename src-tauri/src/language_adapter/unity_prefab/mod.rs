@@ -4,7 +4,7 @@
 mod fields;
 mod guid;
 
-use super::{LanguageAdapter, ParseError, ParsedModule};
+use crate::language_adapter::adapter_types::{LanguageAdapter, ParseError, ParsedModule};
 
 pub struct UnityPrefabAdapter;
 

@@ -2,7 +2,7 @@
 
 use tree_sitter::Node;
 
-use crate::language_adapter::ParsedImport;
+use crate::language_adapter::adapter_types::ParsedImport;
 
 /// Collect every `invoke("command")` call in the tree when the module imports
 /// from `@tauri-apps/api`.

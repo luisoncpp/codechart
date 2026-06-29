@@ -2,7 +2,7 @@
 
 use tree_sitter::Node;
 
-use crate::language_adapter::{CommentBlock, ImportKind, ParsedImport, ParsedModule};
+use crate::language_adapter::adapter_types::{CommentBlock, ImportKind, ParsedImport, ParsedModule};
 
 use super::path::{mod_specifier, use_module_paths, use_specifier};
 

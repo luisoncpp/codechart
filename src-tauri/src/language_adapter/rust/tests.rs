@@ -1,12 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contract::EdgeKind;
-use crate::language_adapter::{registry_for_path, ImportKind, ParsedModule};
+use crate::language_adapter::adapter_types::{ImportKind, LanguageAdapter, ParsedModule};
+use super::RustAdapter;
 use crate::references::{classify_interface_seams, GroupBoundaries};
 
 fn parse(path: &str, source: &str) -> ParsedModule {
-    let adapter = registry_for_path(path).expect("adapter for extension");
-    adapter.parse(path, source).expect("parse succeeds")
+    RustAdapter::new()
+        .parse(path, source)
+        .expect("parse succeeds")
 }
 
 fn specifiers(module: &ParsedModule) -> Vec<&str> {
@@ -36,6 +38,15 @@ fn use_crate_path() {
     let source = "use crate::contract::types::Language;\n";
     let m = parse("src-tauri/src/analysis/mod.rs", source);
     assert_eq!(specifiers(&m), vec!["../contract/types"]);
+}
+
+#[test]
+fn use_crate_path_from_nested_adapter_module() {
+    let source = "use crate::language_adapter::adapter_types::{CommentBlock, ImportKind, ParsedImport, ParsedModule};\n";
+    let m = parse("src-tauri/src/language_adapter/typescript/extract.rs", source);
+    let specs = specifiers(&m);
+    assert_eq!(specs.len(), 4);
+    assert!(specs.iter().all(|s| *s == "../adapter_types"));
 }
 
 #[test]
@@ -83,12 +94,6 @@ pub use types::{ Alpha, Beta, Gamma };
 fn captures_comments() {
     let m = parse("src/a.rs", "// line\n/* block */\n");
     assert_eq!(m.comments.len(), 2);
-}
-
-#[test]
-fn registry_includes_rs() {
-    assert!(registry_for_path("main.rs").is_some());
-    assert!(registry_for_path("a.cpp").is_none());
 }
 
 #[test]

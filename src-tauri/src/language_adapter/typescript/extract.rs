@@ -2,7 +2,7 @@
 
 use tree_sitter::Node;
 
-use crate::language_adapter::{CommentBlock, ImportKind, ParsedImport, ParsedModule};
+use crate::language_adapter::adapter_types::{CommentBlock, ImportKind, ParsedImport, ParsedModule};
 
 pub fn walk_top_level(root: Node, src: &str, module: &mut ParsedModule) {
     let mut cursor = root.walk();

@@ -7,7 +7,7 @@ mod symbols;
 
 use tree_sitter::Parser;
 
-use super::{LanguageAdapter, ParseError, ParsedModule};
+use crate::language_adapter::adapter_types::{LanguageAdapter, ParseError, ParsedModule};
 
 pub struct CSharpAdapter;
 

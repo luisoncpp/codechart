@@ -33,10 +33,10 @@ fn extracts_serialized_public_fields() {
 
 #[test]
 fn adapter_rejects_binary_prefab() {
-    use crate::language_adapter::LanguageAdapter;
+    use crate::language_adapter::adapter_types::{LanguageAdapter, ParseError};
     use super::UnityPrefabAdapter;
     let err = UnityPrefabAdapter::new()
         .parse("x.prefab", "binary blob")
         .expect_err("non-yaml fails");
-    assert!(matches!(err, crate::language_adapter::ParseError::Language(_)));
+    assert!(matches!(err, ParseError::Language(_)));
 }
