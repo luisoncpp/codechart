@@ -150,6 +150,49 @@ fn resolves_rust_mod_file() {
 }
 
 #[test]
+fn rust_item_import_falls_back_to_parent_module() {
+    let parsed = vec![
+        module(
+            "src-tauri/src/tauri_api/mod.rs",
+            &["../analysis/analyze_project"],
+        ),
+        module("src-tauri/src/analysis/mod.rs", &[]),
+    ];
+    let refs = resolve_references(&parsed);
+    assert_eq!(
+        edge_targets(&parsed),
+        [(
+            "src-tauri/src/tauri_api/mod.rs".into(),
+            "src-tauri/src/analysis/mod.rs".into(),
+        )]
+    );
+    assert!(
+        refs.diagnostics.is_empty(),
+        "item imports must not produce unresolvedImport"
+    );
+}
+
+#[test]
+fn rust_nested_module_item_import_resolves_to_mod_rs() {
+    let parsed = vec![
+        module(
+            "src-tauri/src/language_adapter/csharp/tests.rs",
+            &["../language_adapter/registry_for_path"],
+        ),
+        module("src-tauri/src/language_adapter/mod.rs", &[]),
+    ];
+    let refs = resolve_references(&parsed);
+    assert_eq!(
+        edge_targets(&parsed),
+        [(
+            "src-tauri/src/language_adapter/csharp/tests.rs".into(),
+            "src-tauri/src/language_adapter/mod.rs".into(),
+        )]
+    );
+    assert!(refs.diagnostics.is_empty());
+}
+
+#[test]
 fn package_import_is_external_metadata() {
     let parsed = vec![module("src/a.ts", &["react"])];
     let refs = resolve_references(&parsed);

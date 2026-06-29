@@ -208,6 +208,26 @@ describe("GraphSessionStore semantic zoom", () => {
     store.setZoomLevel(1);
     expect(store.getReducedGraph()?.modules.length).toBe(graph.modules.length);
   });
+
+  it("refuses L0 while a diff overlay is active", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.applyDiffFromPaste("diff --git a/src/core/store.ts b/src/core/store.ts\n");
+    store.setZoomLevel(0);
+    expect(store.getZoomLevel()).toBe(1);
+    expect(store.getCollapsedGroupIds().size).toBe(0);
+    expect(store.getReducedGraph()?.modules.length).toBe(graph.modules.length);
+  });
+
+  it("bumps L0 to L1 when entering diff mode", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.setZoomLevel(0);
+    expect(store.getZoomLevel()).toBe(0);
+    store.applyDiffFromPaste("diff --git a/src/core/store.ts b/src/core/store.ts\n");
+    expect(store.getZoomLevel()).toBe(1);
+    expect(store.getReducedGraph()?.modules.length).toBe(graph.modules.length);
+  });
 });
 
 describe("GraphSessionStore hide tests", () => {

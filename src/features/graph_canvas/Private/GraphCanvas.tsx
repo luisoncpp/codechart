@@ -13,6 +13,7 @@ import "./graph-canvas.css";
 import { projectGraph } from "../../../domain/graph";
 import { applyDiffOverlay } from "../../../domain/diff";
 import type { RFNode, RenderOptions, ZoomLevel } from "../../../domain/graph";
+import { edgeFocusForSelection } from "../../../domain/graph";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { DiffModal, DiffOverlayBar } from "../../diff_visualizer";
 import type { GitClient } from "../../../ipc/git-client";
@@ -67,6 +68,10 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
   const layout = session.getLayout();
   const level = session.getZoomLevel();
   const selectedId = session.getSelectedId();
+  const edgeFocus = useMemo(
+    () => (graph ? edgeFocusForSelection(graph, selectedId) : null),
+    [graph, selectedId],
+  );
   const diffOverlay = session.getDiffOverlay();
   const [diffModalOpen, setDiffModalOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<ModuleContextMenuState | null>(null);
@@ -159,7 +164,7 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
     return applyDiffOverlay(projected, diffOverlay);
   }, [projected, diffOverlay]);
 
-  const styledEdges = useStyledEdges(displayProjected, selectedId);
+  const styledEdges = useStyledEdges(displayProjected, edgeFocus);
 
   if (!displayProjected) return null;
 

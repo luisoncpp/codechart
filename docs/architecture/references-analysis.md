@@ -19,8 +19,11 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
 - **Relative** specifier (`./x`, `../x`) → resolved against known ids using the
   §7 rules (`resolve.rs`): extensionless `.ts`/`.tsx`/`.cs`, explicit extensions,
   `.js`/`.jsx`/`.mjs` (TS ESM convention → source `.ts`/`.tsx`), then
-  `index.ts`/`index.tsx`/`mod.rs`. Hit → solid `import` edge. Miss → `unresolvedImport`
-  diagnostic (severity `warning`, no ghost edge in M1).
+  `index.ts`/`index.tsx`/`mod.rs`. Hit → solid `import` edge. Miss → for `.rs`
+  importers only, walk up parent path segments (Rust item imports such as
+  `../analysis/analyze_project` where `analyze_project` is a fn in `analysis/mod.rs`,
+  not a submodule file). Still no hit → `unresolvedImport` diagnostic (severity
+  `warning`, no ghost edge in M1).
 - **Non-relative** specifier on **non-C#** modules → external metadata: neither edge nor
   diagnostic.
 - **Non-relative** specifier on **`.cs`** modules → looked up against in-project

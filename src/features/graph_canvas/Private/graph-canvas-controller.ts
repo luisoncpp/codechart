@@ -35,8 +35,7 @@ export class GraphCanvasController {
       this.store.toggleGroup(node.id);
       return;
     }
-    // Collapsed groups are edge endpoints (L0 overview); select like a module.
-    if (node.data?.collapsed) this.store.select(node.id);
+    this.store.select(node.id);
   }
 
   /** Double-click a group to collapse/expand just it (per-group override). */
@@ -61,6 +60,7 @@ export class GraphCanvasController {
 
   /** Scroll-zoom drives the discrete detail level (guarded against no-ops). */
   onViewportZoom(zoom: number) {
-    this.store.setZoomLevel(levelFromZoom(zoom));
+    const disableL0 = this.store.getDiffOverlay() !== null;
+    this.store.setZoomLevel(levelFromZoom(zoom, { disableL0 }));
   }
 }

@@ -18,8 +18,9 @@ User clicks **Visualize diff…** on the canvas (top-right, when no diff is acti
 4. `GraphCanvas` re-projects the reduced graph, then `applyDiffOverlay` stamps `data.diffState` on nodes/edges and injects ghost modules + phantom removed edges.
 5. `edge-style` / `EdgeLayer` render added edges **green** (full opacity) and removed edges **red** with an **X** head instead of an arrow.
 6. Unchanged modules render at **~40% opacity**; affected/deleted keep full opacity + colored borders.
-7. **L2 code blocks** and the **symbol source widget** show `+` green / `-` red diff rows when line diff data exists for that file.
-8. **Stop visualizing diff** (`DiffOverlayBar`) → `store.clearDiffOverlay()`.
+7. **L0 is disabled** while diff is active — scroll zoom floors at **L1** so module diff highlights stay visible; normal L0 returns when diff is cleared.
+8. **L2 code blocks** and the **symbol source widget** show `+` green / `-` red diff rows when line diff data exists for that file.
+9. **Stop visualizing diff** (`DiffOverlayBar`) → `store.clearDiffOverlay()`.
 
 ## Reads
 

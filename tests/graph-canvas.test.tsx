@@ -143,13 +143,13 @@ describe("GraphCanvas", () => {
     expect(store.getSelectedId()).toBe("app");
   });
 
-  it("does not select an expanded group header (L1)", async () => {
+  it("selects an expanded group on click (L1)", async () => {
     const { container } = renderCanvas(store);
     await waitFor(() =>
       expect(container.querySelector(`[data-id="app"]`)).toBeTruthy(),
     );
     fireEvent.click(container.querySelector(`[data-id="app"]`)!);
-    expect(store.getSelectedId()).toBeNull();
+    expect(store.getSelectedId()).toBe("app");
   });
 
   it("uses bold for module filenames at L1.5 and normal at L1", async () => {
@@ -294,6 +294,22 @@ describe("styleEdge (focus + context dimming)", () => {
     expect(styleEdge(rfEdge, "no-such-id").style?.opacity).toBe(0.45);
   });
 
+  it("keeps an expanded group's cross-boundary edges fully opaque at L1", () => {
+    const focus = { groupId: "core", moduleIds: new Set(["src/core/index.ts"]) };
+    const crossBoundary = graph.edges.find(
+      (e) => e.kind === "import" && e.source.startsWith("src/core/"),
+    );
+    expect(crossBoundary).toBeDefined();
+    const rfEdge = {
+      id: crossBoundary!.id,
+      source: crossBoundary!.source,
+      target: crossBoundary!.target,
+      data: { isViolation: false, kind: "import" },
+    };
+    expect(styleEdge(rfEdge, focus).style?.opacity).toBe(1);
+    expect(styleEdge(rfEdge, "no-such-id").style?.opacity).toBe(0.45);
+  });
+
   it("dims unrelated edges to one quiet level — selected or not", () => {
     const baseline = styleEdge(rfEdge, null).style?.opacity;
     const whileFocusing = styleEdge(rfEdge, "no-such-id").style?.opacity;
@@ -317,10 +333,10 @@ describe("InspectionPanel", () => {
     expect(within(imports).getByText(edge.target)).toBeInTheDocument();
   });
 
-  it("prompts to select a module when nothing is selected", async () => {
+  it("prompts to select a node when nothing is selected", async () => {
     const store = await readyStore();
     render(<InspectionPanel store={store} />);
-    expect(screen.getByText(/Select a module/)).toBeInTheDocument();
+    expect(screen.getByText(/Select a module or group/)).toBeInTheDocument();
   });
 
   it("renders @Architecture metadata for an annotated module (Phase 10)", async () => {
@@ -352,6 +368,18 @@ describe("InspectionPanel", () => {
     const message = screen.getByText(/bypassing the core facade/);
     expect(message).toBeInTheDocument();
     expect(message).toHaveStyle({ color: "#dc2626" }); // red, matches the edge
+  });
+
+  it("shows group metadata and cross-boundary imports when a group is selected", async () => {
+    const store = await readyStore();
+    store.select("core");
+    render(<InspectionPanel store={store} />);
+
+    expect(screen.getByText("Core")).toBeInTheDocument();
+    expect(screen.getByText("Application")).toBeInTheDocument(); // parent
+    expect(screen.getByText("src/core/index.ts")).toBeInTheDocument(); // facade
+    expect(screen.getByText(/^Imports/)).toBeInTheDocument();
+    expect(screen.getByText("Domain types & state")).toBeInTheDocument(); // annotation
   });
 });
 

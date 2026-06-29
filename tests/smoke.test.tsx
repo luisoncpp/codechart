@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { ProjectLoaderPanel } from "../src/features/project_loader";
 import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 
@@ -36,7 +36,7 @@ describe("ProjectLoaderPanel", () => {
     expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();
   });
 
-  it("lists facade bypasses in a copyable textarea", async () => {
+  it("lists facade bypasses in a modal with a copyable textarea", async () => {
     const writeText = vi.fn();
     Object.assign(navigator, { clipboard: { writeText } });
 
@@ -50,22 +50,26 @@ describe("ProjectLoaderPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open folder…" }));
 
     await waitFor(() => {
-      expect(screen.getByText("1 facade bypass")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "1 facade bypass" })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("1 facade bypass"));
+    fireEvent.click(screen.getByRole("button", { name: "1 facade bypass" }));
 
-    const textarea = screen.getByRole("textbox");
+    const dialog = screen.getByRole("dialog");
+    const textarea = within(dialog).getByRole("textbox");
     expect(textarea).toHaveValue(
       "src/ui/TodoList.tsx imports src/core/store.ts, bypassing the core facade",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy list" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Copy list" }));
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(
         "src/ui/TodoList.tsx imports src/core/store.ts, bypassing the core facade",
       );
     });
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("stays idle when the picker is cancelled", async () => {

@@ -20,12 +20,12 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 | `projectGraph(graph, layout)` | `domain/graph/Private/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
 | `FloatingEdge` | `features/graph_canvas/Private/FloatingEdge.tsx` | Custom RF edge: computes both endpoints via `borderAnchor` from live node geometry (`useInternalNode`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
 | `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
-| selectors | `domain/graph/Private/selectors.ts` | `findModule`, `groupOf`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. `importsOf`/`importedBy` filter to `kind === "import"` (soft edges don't leak into the import lists); `softEdgesOf` returns soft edges on either endpoint; `architectureViolations` returns all facade-bypass diagnostics project-wide. |
+| selectors | `domain/graph/Private/selectors.ts` | `findModule`, `findGroup`, `groupOf`, `modulesInGroup`, `childGroupsOf`, `groupImportsOf`, `groupImportedBy`, `diagnosticsForGroup`, `edgeFocusForSelection`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. |
 | `GraphSessionStore` | `state/graph-session` | Now also owns `LayoutedGraph` (computed via injected `LayoutEngine` on load) and `selectedId`. Emits `phase-changed` + `selection-changed`. |
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. |
-| `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules only) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
+| `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules + groups) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
 | `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; **Reveal in file explorer** via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
-| `InspectionPanel` | `features/inspection_panel` | Selected module's path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections** (Events / Interface seams / Tauri IPC / **Unity scripts & prefabs** — trigger-prefix labels), diagnostics. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. |
+| `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. |
 
 ## Aesthetic rules (the visual gate)
 
@@ -63,16 +63,17 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   source/target handles** so a collapsed group can be an edge endpoint at L0 — React Flow silently
   drops any edge whose endpoint node lacks a Handle (error #008). Edge aggregation (folding N→1) is
   done by `projectForZoom` at L0 (group→group, deduped — see the semantic-zoom section).
-- **Selection-aware edges + focus/context dimming:** when a module is selected, `edgeRole(edge,
-  selectedId)` colors edges by role relative to it — edges leaving it (`source === selectedId`, its
-  imports) render **orange**, edges entering it (`target === selectedId`, exports / imported-by) render
-  **blue**. Selection wins over `isViolation` (so a selected module's import is orange, not red);
-  unselected violation edges stay **red**, keeping a wrong import visually distinct from a selected
-  import. `edgeOpacity(role)` then applies **single-level** focus
+- **Selection-aware edges + focus/context dimming:** when a module or group is selected,
+  `edgeFocusForSelection(graph, selectedId)` yields either a module id, a collapsed group id,
+  or `{ groupId, moduleIds }` for an expanded group. `edgeRole(edge, focus)` colors edges by role
+  relative to it — edges leaving the focus (`source` in scope) render **orange**, edges entering it
+  (`target` in scope) render **blue**. Selection wins over `isViolation` (so a selected module's
+  import is orange, not red); unselected violation edges stay **red**, keeping a wrong import
+  visually distinct from a selected import. `edgeOpacity(role)` then applies **single-level** focus
   dimming: a node's own edges stay opaque (1.0); every other edge sits at one quiet level (0.45),
   arrowheads kept, whether or not a selection is active — context stays legible instead of nearly
-  vanishing. Both live in `edge-style.ts` (`GraphCanvas` passes `selectedId` per render); pure
-  `edgeRole`/`edgeOpacity`/`borderAnchor` are the testable seams (edges don't render under jsdom).
+  vanishing. Both live in `edge-style.ts` (`GraphCanvas` passes `edgeFocusForSelection` per render);
+  pure `edgeRole`/`edgeOpacity`/`borderAnchor` are the testable seams (edges don't render under jsdom).
 - **Diff overlay (narrative diff visualizer):** optional session overlay from `GraphSessionStore.getDiffOverlay()`.
   Enter via **Visualize diff…** (`DiffModal`: paste unified diff or pick two git commits when the
   project root is a repo). `domain/diff` compares before/after graphs (git mode) or parses diff paths
@@ -80,7 +81,9 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   `applyDiffOverlay` stamps `ModuleNodeData.diffState` (`affected` → **green** 3px border,
   `deleted` → **red** 3px border, `unchanged` → dimmed, ghost modules positioned from the before
   snapshot layout) and `EdgeData.diffState` (`added` → **green** full-opacity arrow, `removed` → **red**
-  line with **X** head). **L2 source panels and the symbol preview widget** show unified-diff rows:
+  line with **X** head). **L0 bird's-eye is disabled** while diff is active — scroll zoom floors at L1
+  so module-level highlights remain visible; clearing the overlay restores normal L0 behavior.
+  **L2 source panels and the symbol preview widget** show unified-diff rows:
   green `+` lines for additions, red `-` lines for deletions (`DiffCodeLines`). Diff styling wins over
   selection dimming for stamped edges. **Stop visualizing diff** clears overlay state; reload clears it too.
 - **Icons:** sparing, name → glyph map (`icon-map.tsx`); unknown names render no glyph.

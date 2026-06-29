@@ -80,7 +80,12 @@ fn resolve_module(
         if !is_relative(&import.specifier) {
             continue;
         }
-        match resolve_relative(&module.path, &import.specifier, known) {
+        match resolve_relative(
+            &module.path,
+            &import.specifier,
+            known,
+            /*item_fallback=*/module.path.ends_with(".rs"),
+        ) {
             Some(target) => targets.push((module.path.clone(), target)),
             None => diagnostics.push(unresolved(&module.path, import)),
         }

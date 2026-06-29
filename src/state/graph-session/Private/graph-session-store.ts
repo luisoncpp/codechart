@@ -87,6 +87,7 @@ export class GraphSessionStore extends EventEmitter {
         baseRef,
         headRef,
       );
+      this.ensureDiffZoomFloor();
       this.emit("diff-changed");
     } catch (e) {
       this.diffError = e instanceof Error ? e.message : String(e);
@@ -98,6 +99,7 @@ export class GraphSessionStore extends EventEmitter {
     if (!this.graph) return;
     this.diffError = null;
     this.diffOverlay = buildPasteDiffOverlay(text, this.graph);
+    this.ensureDiffZoomFloor();
     this.emit("diff-changed");
   }
 
@@ -128,6 +130,7 @@ export class GraphSessionStore extends EventEmitter {
 
   /** Switch detail level. Collapse state updates for L0; layout stays fixed (projection-only). */
   setZoomLevel(level: ZoomLevel) {
+    if (this.diffOverlay && level === 0) level = 1;
     if (level === this.zoomLevel) return;
     const prev = this.zoomLevel;
     this.zoomLevel = level;
@@ -287,6 +290,11 @@ export class GraphSessionStore extends EventEmitter {
     this.layout = layout;
     this.captureExpandedSizes(layout);
     this.emit("layout-changed");
+  }
+
+  /** Diff mode needs module boxes visible — never stay at L0 bird's-eye. */
+  private ensureDiffZoomFloor() {
+    if (this.zoomLevel === 0) this.setZoomLevel(1);
   }
 
   /** L2 source fetch without a full re-layout (footprint is zoom-independent). */

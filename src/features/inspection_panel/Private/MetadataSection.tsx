@@ -2,21 +2,20 @@
 import type { Annotation, GroupNode, ModuleNode } from "../../../domain/graph";
 
 interface MetadataSectionProps {
-  module: ModuleNode;
-  group: GroupNode | undefined;
+  module?: ModuleNode;
+  group?: GroupNode;
 }
 
-/** Render the `@Architecture` annotations (Phase 10 metadata) for the selected
- *  module and its group. Renders nothing when neither carries an annotation, so
- *  un-annotated graphs degrade gracefully. */
+/** Render the `@Architecture` annotations for a module and/or group. Renders
+ *  nothing when neither carries an annotation. */
 export function MetadataSection({ module, group }: MetadataSectionProps) {
-  const hasModule = !!module.annotation;
+  const hasModule = !!module?.annotation;
   const hasGroup = !!group?.annotation;
   if (!hasModule && !hasGroup) return null;
   return (
     <div style={{ marginTop: 12 }}>
       <h3 style={{ fontSize: 12, margin: "0 0 4px" }}>Architecture</h3>
-      {hasModule && <Block title={typeLabel(module.annotation!)} note={module.annotation!} />}
+      {hasModule && <Block title={typeLabel(module!.annotation!)} note={module!.annotation!} />}
       {hasGroup && <Block title={`Group · ${group!.label}`} note={group!.annotation!} />}
     </div>
   );

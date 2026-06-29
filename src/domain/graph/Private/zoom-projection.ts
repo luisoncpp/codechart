@@ -16,8 +16,11 @@ export function allGroupIds(graph: ProjectGraph): string[] {
 }
 
 /** Map React Flow's continuous zoom factor to a discrete detail level. */
-export function levelFromZoom(factor: number): ZoomLevel {
-  if (factor < 0.45) return 0;
+export function levelFromZoom(
+  factor: number,
+  opts?: { disableL0?: boolean },
+): ZoomLevel {
+  if (factor < 0.45) return opts?.disableL0 ? 1 : 0;
   if (factor < 0.9) return 1;
   if (factor < 3.5) return 1.5;
   return 2;

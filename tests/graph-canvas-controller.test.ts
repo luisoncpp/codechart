@@ -11,6 +11,7 @@ function spyStore() {
     toggleGroupConnection: vi.fn(),
     toggleModuleConnection: vi.fn(),
     setZoomLevel: vi.fn(),
+    getDiffOverlay: vi.fn(() => null),
   };
 }
 
@@ -39,14 +40,14 @@ describe("GraphCanvasController.onNodeClick", () => {
     expect(store.select).not.toHaveBeenCalled();
   });
 
-  it("does not toggle for a body click on an expanded group", () => {
+  it("does not toggle for a body click on an expanded group but selects it", () => {
     const store = spyStore();
     new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
       groupNode,
       clickEvent(),
     );
     expect(store.toggleGroup).not.toHaveBeenCalled();
-    expect(store.select).not.toHaveBeenCalled();
+    expect(store.select).toHaveBeenCalledWith("g1");
   });
 
   it("selects the parent module and triggers the callback when a symbol node is clicked", () => {
@@ -81,5 +82,20 @@ describe("GraphCanvasController.onNodeClick", () => {
       clickEvent({ onConnection: true }),
     );
     expect(store.toggleModuleConnection).toHaveBeenCalledWith("m1");
+  });
+});
+
+describe("GraphCanvasController.onViewportZoom", () => {
+  it("maps scroll zoom to the detail level", () => {
+    const store = spyStore();
+    new GraphCanvasController(store as unknown as GraphSessionStore).onViewportZoom(0.3);
+    expect(store.setZoomLevel).toHaveBeenCalledWith(0);
+  });
+
+  it("floors at L1 when diff overlay is active", () => {
+    const store = spyStore();
+    store.getDiffOverlay.mockReturnValue({ moduleStates: new Map() });
+    new GraphCanvasController(store as unknown as GraphSessionStore).onViewportZoom(0.3);
+    expect(store.setZoomLevel).toHaveBeenCalledWith(1);
   });
 });

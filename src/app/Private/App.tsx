@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Root React App component containing the layout and canvas")
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createTauriAnalysisClient } from "../../ipc/analysis-client";
 import { createTauriGitClient } from "../../ipc/git-client";
 import { createTauriShellClient } from "../../ipc/shell-client";
@@ -19,6 +19,7 @@ export function App() {
   );
   const session = useGraphSession(store);
   const ready = session.getPhase() === "ready";
+  const [inspectorOpen, setInspectorOpen] = useState(/*defaultOpen=*/true);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
@@ -28,9 +29,32 @@ export function App() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <GraphCanvas store={store} git={git} shell={shell} />
           </div>
-          <InspectionPanel store={store} />
+          {inspectorOpen ? (
+            <InspectionPanel store={store} onHide={() => setInspectorOpen(false)} />
+          ) : (
+            <button
+              type="button"
+              aria-label="Show inspector"
+              title="Show inspector"
+              onClick={() => setInspectorOpen(true)}
+              style={showInspectorBtnStyle}
+            >
+              ◀
+            </button>
+          )}
         </div>
       )}
     </div>
   );
 }
+
+const showInspectorBtnStyle: React.CSSProperties = {
+  flexShrink: 0,
+  width: 28,
+  border: "none",
+  borderLeft: "1px solid #e2e8f0",
+  background: "#f8fafc",
+  color: "#475569",
+  fontSize: 11,
+  cursor: "pointer",
+};

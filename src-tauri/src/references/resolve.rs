@@ -16,11 +16,33 @@ pub fn resolve_relative(
     importer: &str,
     specifier: &str,
     known: &BTreeSet<&str>,
+    item_fallback: bool,
 ) -> Option<String> {
-    let base = normalize_join(parent_dir(importer), specifier);
-    candidates(&base)
+    let mut base = normalize_join(parent_dir(importer), specifier);
+    loop {
+        if let Some(found) = resolve_base(&base, known) {
+            return Some(found);
+        }
+        if !item_fallback {
+            return None;
+        }
+        base = match parent_base(&base) {
+            Some(parent) => parent,
+            None => return None,
+        };
+    }
+}
+
+fn resolve_base(base: &str, known: &BTreeSet<&str>) -> Option<String> {
+    candidates(base)
         .into_iter()
         .find(|candidate| known.contains(candidate.as_str()))
+}
+
+/// Drop the last path segment so `foo/bar/baz` can fall back to `foo/bar` when
+/// `baz` is a Rust item (fn/const) rather than a module file.
+fn parent_base(base: &str) -> Option<String> {
+    base.rsplit_once('/').map(|(parent, _)| parent.to_string())
 }
 
 /// The folder containing `path` (`""` for a top-level file).

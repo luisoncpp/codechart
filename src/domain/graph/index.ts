@@ -46,6 +46,14 @@ export type {
 } from "./Private/node-data";
 export {
   findModule,
+  findGroup,
+  modulesInGroup,
+  childGroupsOf,
+  moduleIdsInGroupTree,
+  groupImportsOf,
+  groupImportedBy,
+  diagnosticsForGroup,
+  edgeFocusForSelection,
   groupOf,
   importsOf,
   importedBy,
@@ -53,3 +61,4 @@ export {
   diagnosticsFor,
   architectureViolations,
 } from "./Private/selectors";
+export type { EdgeFocus } from "./Private/selectors";

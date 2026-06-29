@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="Applies strokes, patterns, and colors to visual edges")
 import { MarkerType } from "@xyflow/react";
-import type { RFEdgeT } from "../../../domain/graph";
+import type { EdgeFocus, RFEdgeT } from "../../../domain/graph";
 
 export type EdgeRole = "import" | "export" | "violation" | "neutral" | "diff-added" | "diff-removed";
 
@@ -13,14 +13,28 @@ const COLOR: Record<EdgeRole, string> = {
   "diff-removed": "#dc2626",
 };
 
-/** An edge's role relative to the selected node (module or collapsed group). */
-export function edgeRole(edge: RFEdgeT, selectedId: string | null): EdgeRole {
+/** An edge's role relative to the selected node (module or group). */
+export function edgeRole(edge: RFEdgeT, focus: EdgeFocus | null): EdgeRole {
   if (edge.data?.diffState === "added") return "diff-added";
   if (edge.data?.diffState === "removed") return "diff-removed";
-  if (selectedId && edge.source === selectedId) return "import";
-  if (selectedId && edge.target === selectedId) return "export";
+  const role = roleForFocus(edge, focus);
+  if (role) return role;
   if (edge.data?.isViolation) return "violation";
   return "neutral";
+}
+
+function roleForFocus(edge: RFEdgeT, focus: EdgeFocus | null): EdgeRole | null {
+  if (!focus) return null;
+  if (typeof focus === "string") {
+    if (edge.source === focus) return "import";
+    if (edge.target === focus) return "export";
+    return null;
+  }
+  if (edge.source === focus.groupId) return "import";
+  if (edge.target === focus.groupId) return "export";
+  if (focus.moduleIds.has(edge.source)) return "import";
+  if (focus.moduleIds.has(edge.target)) return "export";
+  return null;
 }
 
 /**
@@ -35,8 +49,8 @@ export function edgeOpacity(role: EdgeRole): number {
 
 /** Apply the sample's edge aesthetic + focus dimming (floating routing).
  *  Soft (event/runtime) edges render dashed; direction color still applies. */
-export function styleEdge(edge: RFEdgeT, selectedId: string | null): RFEdgeT {
-  const role = edgeRole(edge, selectedId);
+export function styleEdge(edge: RFEdgeT, focus: EdgeFocus | null): RFEdgeT {
+  const role = edgeRole(edge, focus);
   const color = COLOR[role];
   const focused = role !== "neutral";
   const dashed = edge.data?.kind === "soft";
