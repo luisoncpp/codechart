@@ -77,7 +77,8 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 - **Diff overlay (narrative diff visualizer):** optional session overlay from `GraphSessionStore.getDiffOverlay()`.
   Enter via **Visualize diff…** (`DiffModal`: paste unified diff or pick two git commits when the
   project root is a repo). `domain/diff` compares before/after graphs (git mode) or parses diff paths
-  (paste mode); **unchanged modules render at ~40% opacity** so affected/deleted modules pop.
+  (paste mode); **unchanged modules render at ~40% opacity** so affected/deleted modules pop;
+  **group titles and descriptions dim to the same level** so module diff highlights read first.
   `applyDiffOverlay` stamps `ModuleNodeData.diffState` (`affected` → **green** 3px border,
   `deleted` → **red** 3px border, `unchanged` → dimmed, ghost modules positioned from the before
   snapshot layout) and `EdgeData.diffState` (`added` → **green** full-opacity arrow, `removed` → **red**

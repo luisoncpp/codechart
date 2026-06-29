@@ -24,6 +24,8 @@ export interface GroupNodeData extends Record<string, unknown> {
   descriptionBox?: { x: number; y: number; width: number; height: number };
   /** Parent-relative y coordinate of the top-most subgroup or child box. */
   minChildY?: number;
+  /** True while a diff overlay is active — group title/description render dimmed. */
+  diffVisualizing?: boolean;
 }
 
 /** Data carried by a custom module node. */

@@ -57,16 +57,16 @@ function CrossHead({
   const py = c * size * 0.7;
   const x1 = tip.x - dx + px;
   const y1 = tip.y - dy + py;
-  const x2 = tip.x - dx - px;
-  const y2 = tip.y - dy - py;
-  const x3 = tip.x + dx + px;
-  const y3 = tip.y + dy + py;
-  const x4 = tip.x + dx - px;
-  const y4 = tip.y + dy - py;
+  const x2 = tip.x + dx - px;
+  const y2 = tip.y + dy - py;
+  const x3 = tip.x - dx - px;
+  const y3 = tip.y - dy - py;
+  const x4 = tip.x + dx + px;
+  const y4 = tip.y + dy + py;
   return (
-    <g stroke={color} strokeWidth={2}>
-      <line x1={x1} y1={y1} x2={x3} y2={y3} />
-      <line x1={x2} y1={y2} x2={x4} y2={y4} />
+    <g stroke={color} strokeWidth={2} strokeLinecap="round">
+      <line x1={x1} y1={y1} x2={x2} y2={y2} />
+      <line x1={x3} y1={y3} x2={x4} y2={y4} />
     </g>
   );
 }

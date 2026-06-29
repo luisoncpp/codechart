@@ -15,9 +15,9 @@ User clicks **Visualize diff…** on the canvas (top-right, when no diff is acti
 1. **Paste mode** — user pastes unified diff text → `overlayFromPastedDiff` maps file paths to module ids on the loaded graph (module borders only; no edge overlay).
 2. **Git commits mode** (repo root must be a git checkout) — user picks base + head → parallel `git diff` + two `analyzeProjectAtRef` snapshots → git paths drive **module** highlights; graph comparison drives **edge** add/remove → `LayoutEngine.layout(before)` supplies ghost positions for deleted modules.
 3. Store sets `diffOverlay` and emits `diff-changed`.
-4. `GraphCanvas` re-projects the reduced graph, then `applyDiffOverlay` stamps `data.diffState` on nodes/edges and injects ghost modules + phantom removed edges.
+4. `GraphCanvas` re-projects the reduced graph, then `applyDiffOverlay` stamps `data.diffState` on nodes/edges, sets `diffVisualizing` on group nodes, and injects ghost modules + phantom removed edges.
 5. `edge-style` / `EdgeLayer` render added edges **green** (full opacity) and removed edges **red** with an **X** head instead of an arrow.
-6. Unchanged modules render at **~40% opacity**; affected/deleted keep full opacity + colored borders.
+6. Unchanged modules render at **~40% opacity**; affected/deleted keep full opacity + colored borders. Group titles and descriptions dim to the same level.
 7. **L0 is disabled** while diff is active — scroll zoom floors at **L1** so module diff highlights stay visible; normal L0 returns when diff is cleared.
 8. **L2 code blocks** and the **symbol source widget** show `+` green / `-` red diff rows when line diff data exists for that file.
 9. **Stop visualizing diff** (`DiffOverlayBar`) → `store.clearDiffOverlay()`.
@@ -44,7 +44,7 @@ User clicks **Visualize diff…** on the canvas (top-right, when no diff is acti
 | Overlay on RF models | `domain/diff/Private/apply-diff-overlay.ts` |
 | Session API | `state/graph-session/Private/graph-session-store.ts` |
 | Modal + stop bar | `features/diff_visualizer` |
-| Edge/module styling | `edge-style.ts`, `EdgeBucketSvg.tsx`, `ModuleNodeView.tsx` |
+| Edge/module styling | `edge-style.ts`, `EdgeBucketSvg.tsx`, `ModuleNodeView.tsx`, `GroupNodeView.tsx` |
 | Git IPC | `src-tauri/src/git`, `ipc/git-client` |
 
 ## Common failure modes

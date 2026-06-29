@@ -150,6 +150,8 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
 
     diffState: data.diffState,
 
+    counterScale: zoomScale,
+
   };
 
   return (
@@ -260,6 +262,8 @@ interface CardStyleOptions {
 
   diffState?: "affected" | "deleted" | "unchanged";
 
+  counterScale: number;
+
 }
 
 
@@ -278,9 +282,15 @@ function cardStyle({
 
   diffState,
 
+  counterScale,
+
 }: CardStyleOptions) {
 
-  const diffBorder = moduleDiffBorder(diffState, `${isFacade ? 2 : 1}px solid ${color}`);
+  const diffBorder = moduleDiffBorder(
+    diffState,
+    `${isFacade ? 2 : 1}px solid ${color}`,
+    counterScale,
+  );
 
   return {
 

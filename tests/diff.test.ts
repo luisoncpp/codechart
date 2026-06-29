@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import golden from "./fixtures/golden/project-graph.json";
 import type { ProjectGraph } from "../src/domain/graph";
 import {
+  applyDiffOverlay,
   compareGraphs,
   overlayFromPastedDiff,
   pathsFromUnifiedDiff,
@@ -115,6 +116,25 @@ describe("overlayFromPastedDiff", () => {
     const overlay = overlayFromPastedDiff(text, base);
     expect(overlay.affectedModuleIds.has("src/core/store.ts")).toBe(true);
     expect(overlay.addedEdgeIds.size).toBe(0);
+  });
+});
+
+describe("applyDiffOverlay", () => {
+  it("stamps diffVisualizing on group nodes", () => {
+    const projected = {
+      nodes: [
+        {
+          id: "core",
+          type: "group" as const,
+          position: { x: 0, y: 0 },
+          data: { label: "Core", color: "#2563eb" },
+        },
+      ],
+      edges: [],
+    };
+    const overlay = overlayFromPastedDiff("", base);
+    const stamped = applyDiffOverlay(projected, overlay);
+    expect(stamped.nodes[0]?.data.diffVisualizing).toBe(true);
   });
 });
 

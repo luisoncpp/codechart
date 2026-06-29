@@ -17,6 +17,12 @@ export function applyDiffOverlay(
 
 function stampNode(overlay: GraphDiffOverlay) {
   return (node: RFNode): RFNode => {
+    if (node.type === "group") {
+      return {
+        ...node,
+        data: { ...node.data, diffVisualizing: true },
+      };
+    }
     if (node.type !== "module") return node;
     const diffState = moduleDiffState(node.id, overlay);
     const path = node.data.path ?? node.id;

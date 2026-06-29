@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Renders group boundaries, titles, and descriptions")
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { GroupRFNode, GroupNodeData } from "../../../domain/graph";
+import { UNCHANGED_MODULE_DIFF_OPACITY } from "../../../domain/diff";
 import { DESC_BOX, PRESETS, fitDescriptionFontSize } from "../../../domain/layout";
 import { iconFontSize, iconGlyph } from "./icon-map";
 import { ConnectionToggle } from "./ConnectionToggle";
@@ -9,6 +10,10 @@ import { useZoomCounterScale } from "./use-zoom-counter-scale";
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
+
+function groupLabelOpacity(data: GroupNodeData): number {
+  return data.diffVisualizing ? UNCHANGED_MODULE_DIFF_OPACITY : 1;
+}
 
 /** Darken a #rrggbb color toward black so description text reads against the tint. */
 function darken(hex: string, factor = 0.55): string {
@@ -73,7 +78,13 @@ function GroupDescription({ data }: { data: GroupNodeData }) {
     ? DESC_BOX.fontSize
     : fitDescriptionFontSize(text, width, height);
   return (
-    <p style={bandDescriptionStyle(darken(data.color), data.descriptionBox, font)} title={text}>
+    <p
+      style={{
+        ...bandDescriptionStyle(darken(data.color), data.descriptionBox, font),
+        opacity: groupLabelOpacity(data),
+      }}
+      title={text}
+    >
       {text}
     </p>
   );
@@ -87,12 +98,14 @@ function ExpandedHeader({ data, scale }: { data: GroupNodeData; scale: number })
   return (
     <div style={headerStyle(data.color, scale)}>
       <ToggleButton color={data.color} scale={scale} collapsed={false} />
-      {glyph && (
-        <span aria-hidden style={{ fontSize: iconFontSize(14, scale), lineHeight: 1, flexShrink: 0 }}>
-          {glyph}
-        </span>
-      )}
-      <span>{data.label}</span>
+      <div style={{ ...headerLabelStyle(scale), opacity: groupLabelOpacity(data) }}>
+        {glyph && (
+          <span aria-hidden style={{ fontSize: iconFontSize(14, scale), lineHeight: 1, flexShrink: 0 }}>
+            {glyph}
+          </span>
+        )}
+        <span>{data.label}</span>
+      </div>
     </div>
   );
 }
@@ -157,15 +170,22 @@ function CollapsedCard({
     >
       <div style={cardLabelStyle(data.color, scale)}>
         <ToggleButton color={data.color} scale={scale} collapsed />
-        {glyph && (
-          <span aria-hidden style={{ fontSize: iconFontSize(18, scale), lineHeight: 1, flexShrink: 0 }}>
-            {glyph}
-          </span>
-        )}
-        <span>{data.label}</span>
+        <div style={{ ...cardLabelTextStyle(scale), opacity: groupLabelOpacity(data) }}>
+          {glyph && (
+            <span aria-hidden style={{ fontSize: iconFontSize(18, scale), lineHeight: 1, flexShrink: 0 }}>
+              {glyph}
+            </span>
+          )}
+          <span>{data.label}</span>
+        </div>
       </div>
       {description && (
-        <p style={cardDescriptionStyle(darken(data.color), scale, description.lines)}>
+        <p
+          style={{
+            ...cardDescriptionStyle(darken(data.color), scale, description.lines),
+            opacity: groupLabelOpacity(data),
+          }}
+        >
           {description.text}
         </p>
       )}
@@ -213,12 +233,20 @@ function headerStyle(color: string, scale: number) {
     alignItems: "center",
     gap: 6 * scale,
     padding: `${4 * scale}px ${10 * scale}px`,
+    color,
+  };
+}
+
+function headerLabelStyle(scale: number) {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 6 * scale,
     fontSize: 12 * scale,
     fontFamily: SANS,
     fontWeight: 700,
     letterSpacing: 0.4,
     textTransform: "uppercase" as const,
-    color,
   };
 }
 
@@ -245,13 +273,21 @@ function cardLabelStyle(color: string, scale: number) {
     display: "flex",
     alignItems: "center",
     gap: 6 * scale,
+    color,
+  };
+}
+
+function cardLabelTextStyle(scale: number) {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 6 * scale,
     fontSize: 15 * scale,
     fontFamily: SANS,
     fontWeight: 700,
     letterSpacing: 0.5,
     textTransform: "uppercase" as const,
     lineHeight: 1.1,
-    color,
   };
 }
 
