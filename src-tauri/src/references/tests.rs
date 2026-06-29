@@ -193,6 +193,43 @@ fn rust_nested_module_item_import_resolves_to_mod_rs() {
 }
 
 #[test]
+fn rust_external_and_local_imports_skip_false_unresolved() {
+    use crate::language_adapter::registry_for_path;
+
+    fn parse(path: &str, source: &str) -> ParsedModule {
+        registry_for_path(path)
+            .unwrap()
+            .parse(path, source)
+            .expect("parse succeeds")
+    }
+
+    let parsed = vec![
+        parse(
+            "src-tauri/src/language_adapter/mod.rs",
+            "mod adapter_types;\nmod registry;\npub use adapter_types::CommSignal;\npub use registry::registry_for;\n",
+        ),
+        parse(
+            "src-tauri/src/language_adapter/adapter_types.rs",
+            "pub struct CommSignal;\n",
+        ),
+        parse(
+            "src-tauri/src/language_adapter/registry.rs",
+            "pub fn registry_for() {}\n",
+        ),
+        parse(
+            "src-tauri/src/language_adapter/rust/mod.rs",
+            "use tree_sitter::Parser;\nuse std::collections::BTreeSet;\n",
+        ),
+    ];
+    let refs = resolve_references(&parsed);
+    assert!(
+        refs.diagnostics.is_empty(),
+        "unexpected diagnostics: {:?}",
+        refs.diagnostics
+    );
+}
+
+#[test]
 fn package_import_is_external_metadata() {
     let parsed = vec![module("src/a.ts", &["react"])];
     let refs = resolve_references(&parsed);

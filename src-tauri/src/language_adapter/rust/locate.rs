@@ -5,7 +5,17 @@ pub fn mod_specifier(importer: &str, child: &str) -> Option<String> {
     Some(relative_specifier(parent_dir(importer), &format!("{base}/{child}")))
 }
 
-pub fn use_specifier(importer: &str, segments: &[String]) -> Option<String> {
+pub fn use_specifier(
+    importer: &str,
+    segments: &[String],
+    local_mods: &[String],
+) -> Option<String> {
+    if segments.is_empty() || is_built_in_external(&segments[0]) {
+        return None;
+    }
+    if !is_crate_scoped(segments) && !local_mods.contains(&segments[0]) {
+        return None;
+    }
     let segments = trim_item_segment(segments.to_vec());
     if segments.is_empty() {
         return None;
@@ -29,8 +39,8 @@ fn resolve_segments(importer: &str, segments: &[String]) -> Option<String> {
             Some(join_path(&parent, &segments[1..]))
         }
         _ => {
-            let root = crate_root_dir(importer)?;
-            Some(join_path(&root, segments))
+            let base = self_module_base(importer)?;
+            Some(join_path(&base, segments))
         }
     }
 }
@@ -45,8 +55,16 @@ fn self_module_base(importer: &str) -> Option<String> {
     }
 }
 
+fn is_crate_scoped(segments: &[String]) -> bool {
+    matches!(segments.first().map(String::as_str), Some("crate" | "self" | "super"))
+}
+
+fn is_built_in_external(root: &str) -> bool {
+    matches!(root, "std" | "core" | "alloc" | "proc_macro" | "test")
+}
+
 fn trim_item_segment(mut segments: Vec<String>) -> Vec<String> {
-    if segments.len() > 2
+    if segments.len() >= 2
         && segments
             .last()
             .is_some_and(|s| s.chars().next().is_some_and(|c| c.is_uppercase()))

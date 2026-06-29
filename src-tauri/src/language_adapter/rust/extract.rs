@@ -7,13 +7,14 @@ use crate::language_adapter::adapter_types::{CommentBlock, ImportKind, ParsedImp
 use super::path::{mod_specifier, use_module_paths, use_specifier};
 
 pub fn walk_top_level(root: Node, src: &str, module: &mut ParsedModule) {
+    let local_mods = collect_mod_names(root, src);
     let mut cursor = root.walk();
     for node in root.children(&mut cursor) {
         match node.kind() {
             "line_comment" | "block_comment" => module.comments.push(comment_block(node, src)),
             "use_declaration" => {
                 let reexport = is_pub(node, src);
-                push_use(node, src, module, reexport);
+                push_use(node, src, module, reexport, &local_mods);
             }
             "mod_item" => push_mod(node, src, module),
             "function_item" | "struct_item" | "enum_item" | "trait_item" | "type_item"
@@ -28,7 +29,31 @@ pub fn walk_top_level(root: Node, src: &str, module: &mut ParsedModule) {
     }
 }
 
-fn push_use(node: Node, src: &str, module: &mut ParsedModule, is_reexport: bool) {
+fn collect_mod_names(root: Node, src: &str) -> Vec<String> {
+    let mut names = Vec::new();
+    let mut cursor = root.walk();
+    for node in root.children(&mut cursor) {
+        if node.kind() != "mod_item" {
+            continue;
+        }
+        let Some(name) = node.child_by_field_name("name") else {
+            continue;
+        };
+        if node.child_by_field_name("body").is_some() {
+            continue;
+        }
+        names.push(text_of(name, src).to_string());
+    }
+    names
+}
+
+fn push_use(
+    node: Node,
+    src: &str,
+    module: &mut ParsedModule,
+    is_reexport: bool,
+    local_mods: &[String],
+) {
     let Some(argument) = node.child_by_field_name("argument") else {
         return;
     };
@@ -37,7 +62,7 @@ fn push_use(node: Node, src: &str, module: &mut ParsedModule, is_reexport: bool)
     let paths = use_module_paths(argument, src, &mut names);
     for (i, rust_path) in paths.iter().enumerate() {
         let import_names = import_names_for_path(i, &paths, &names);
-        let specifier = use_specifier(importer, rust_path);
+        let specifier = use_specifier(importer, rust_path, local_mods);
         if specifier.is_none() && import_names.is_empty() {
             continue;
         }

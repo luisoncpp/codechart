@@ -15,6 +15,15 @@ fn specifiers(module: &ParsedModule) -> Vec<&str> {
     module.imports.iter().map(|i| i.specifier.as_str()).collect()
 }
 
+fn relative_specifiers(module: &ParsedModule) -> Vec<&str> {
+    module
+        .imports
+        .iter()
+        .filter(|i| i.specifier.starts_with('.'))
+        .map(|i| i.specifier.as_str())
+        .collect()
+}
+
 fn seam_bounds(members: &[(&str, &str)]) -> GroupBoundaries {
     let module_group: BTreeMap<String, String> =
         members.iter().map(|(m, g)| ((*m).into(), (*g).into())).collect();
@@ -149,6 +158,42 @@ pub fn greet(name: String) -> String {
 "#;
     let m = parse("src-tauri/src/commands.rs", src);
     assert_eq!(m.ipc_commands, vec!["greet"]);
+}
+
+#[test]
+fn external_crate_use_has_no_relative_specifier() {
+    let m = parse(
+        "src-tauri/src/language_adapter/rust/mod.rs",
+        "use tree_sitter::Parser;\n",
+    );
+    assert!(relative_specifiers(&m).is_empty());
+}
+
+#[test]
+fn std_use_has_no_relative_specifier() {
+    let m = parse(
+        "src-tauri/src/grouping/mod.rs",
+        "use std::collections::BTreeSet;\n",
+    );
+    assert!(relative_specifiers(&m).is_empty());
+}
+
+#[test]
+fn bare_sibling_pub_use_resolves_to_module() {
+    let source = "mod adapter_types;\npub use adapter_types::CommSignal;\n";
+    let m = parse("src-tauri/src/language_adapter/mod.rs", source);
+    let reexport_specs: Vec<_> = m.reexports.iter().map(|i| i.specifier.as_str()).collect();
+    assert_eq!(reexport_specs, vec!["./adapter_types"]);
+}
+
+#[test]
+fn bare_local_use_resolves_to_sibling_module() {
+    let source = "mod claim;\nuse claim::{assign_modules, facades_for};\n";
+    let m = parse("src-tauri/src/grouping/mod.rs", source);
+    assert_eq!(
+        specifiers(&m),
+        vec!["./claim", "./claim/assign_modules", "./claim/facades_for"]
+    );
 }
 
 #[test]
