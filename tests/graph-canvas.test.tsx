@@ -5,7 +5,7 @@ import { render, screen, waitFor, within, fireEvent } from "@testing-library/rea
 import goldenGraph from "./fixtures/golden/project-graph.json";
 import { GraphCanvas, edgeRole, styleEdge } from "../src/features/graph_canvas";
 import { projectForZoom, allGroupIds } from "../src/domain/graph";
-import { InspectionPanel } from "../src/features/inspection_panel";
+import { renderInspectionPanel } from "./helpers/render-inspection-panel";
 import { GraphSessionStore } from "../src/state/graph-session";
 import { createMockGitClient } from "../src/ipc/git-client";
 import { createMockShellClient } from "../src/ipc/shell-client";
@@ -326,7 +326,7 @@ describe("InspectionPanel", () => {
   it("lists exported symbols with their inferred kinds for the selected module", async () => {
     const store = await readyStore();
     store.select("src/core/store.ts");
-    render(<InspectionPanel store={store} />);
+    renderInspectionPanel(store);
 
     const section = screen.getByText(/^Exported symbols/).closest("div")!;
     expect(within(section).getByText("TodoStore")).toBeInTheDocument();
@@ -337,7 +337,7 @@ describe("InspectionPanel", () => {
     const store = await readyStore();
     const edge = graph.edges[0];
     store.select(edge.source);
-    render(<InspectionPanel store={store} />);
+    renderInspectionPanel(store);
 
     const imports = screen.getByText(/^Imports/).closest("div")!;
     expect(within(imports).getByText(edge.target)).toBeInTheDocument();
@@ -345,14 +345,14 @@ describe("InspectionPanel", () => {
 
   it("prompts to select a node when nothing is selected", async () => {
     const store = await readyStore();
-    render(<InspectionPanel store={store} />);
+    renderInspectionPanel(store);
     expect(screen.getByText(/Select a module or group/)).toBeInTheDocument();
   });
 
   it("renders @Architecture metadata for an annotated module (Phase 10)", async () => {
     const store = await readyStore();
     store.select("src/services/http.ts"); // the fixture's annotated module
-    render(<InspectionPanel store={store} />);
+    renderInspectionPanel(store);
     expect(screen.getByText("Architecture")).toBeInTheDocument();
     expect(screen.getByText("HTTP transport")).toBeInTheDocument();
     expect(
@@ -363,7 +363,7 @@ describe("InspectionPanel", () => {
   it("omits the Architecture section for a module with no annotation", async () => {
     const store = await readyStore();
     store.select("src/ui/index.ts"); // no annotation (barrel file), and its group has one
-    render(<InspectionPanel store={store} />);
+    renderInspectionPanel(store);
     // The group (ui) is annotated, so the section shows the group block but the
     // module has no "This module" block.
     expect(screen.queryByText(/^This module/)).not.toBeInTheDocument();
@@ -373,7 +373,7 @@ describe("InspectionPanel", () => {
     const store = await readyStore();
     const violation = graph.edges.find((e) => e.isViolation)!;
     store.select(violation.source); // src/ui/TodoList.tsx
-    render(<InspectionPanel store={store} />);
+    renderInspectionPanel(store);
 
     const message = screen.getByText(/bypassing the core facade/);
     expect(message).toBeInTheDocument();
@@ -383,7 +383,7 @@ describe("InspectionPanel", () => {
   it("shows group metadata and cross-boundary imports when a group is selected", async () => {
     const store = await readyStore();
     store.select("core");
-    render(<InspectionPanel store={store} />);
+    renderInspectionPanel(store);
 
     expect(screen.getByText("Core")).toBeInTheDocument();
     expect(screen.getByText("Application")).toBeInTheDocument(); // parent
@@ -411,7 +411,7 @@ describe("soft edges (Phase 9)", () => {
   it("lists the event seam under Events and keeps it out of Imports", async () => {
     const store = await readyStore();
     store.select(soft.source); // src/core/store.ts (the emitter)
-    render(<InspectionPanel store={store} />);
+    renderInspectionPanel(store);
 
     const events = screen.getByText(/^Events/).closest("div")!;
     // store.ts emits to App.tsx (the event seam line).
