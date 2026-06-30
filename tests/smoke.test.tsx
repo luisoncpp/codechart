@@ -16,7 +16,7 @@ describe("ProjectLoaderPanel", () => {
     expect(screen.getByText("Codechart")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open folder…" })).toBeInTheDocument();
     expect(
-      screen.getByText("Open a TypeScript project to map it."),
+      screen.getByText("Open a project folder to map it."),
     ).toBeInTheDocument();
   });
 
@@ -52,7 +52,7 @@ describe("ProjectLoaderPanel", () => {
     clickOpenFolder();
     await waitFor(() => {
       expect(
-        screen.getByText("Open a TypeScript project to map it."),
+        screen.getByText("Open a project folder to map it."),
       ).toBeInTheDocument();
     });
   });

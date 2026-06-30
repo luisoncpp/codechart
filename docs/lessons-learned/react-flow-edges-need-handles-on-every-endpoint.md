@@ -13,7 +13,7 @@ handle id: "null" … error#008` and **silently drops the edge** — no element,
 it vanished. The data was right; the node was missing a handle.
 
 **The fix:** give `GroupNodeView` the same invisible handles `ModuleNodeView` uses
-(`type="source"`/`type="target"`, `opacity:0`, 1×1). `FloatingEdge` ignores their
+(`type="source"`/`type="target"`, `opacity:0`, 1×1). `EdgeLayer` ignores their
 position (it border-anchors from live geometry) — the handles exist purely so React Flow
 will wire the edge.
 

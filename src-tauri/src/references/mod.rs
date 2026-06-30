@@ -19,6 +19,7 @@ mod tauri_ipc;
 mod unity;
 mod test_module;
 mod csharp;
+mod cpp;
 
 #[cfg(test)]
 mod tests;
@@ -33,10 +34,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contract::{Diagnostic, DiagnosticKind, Edge, EdgeKind, Severity};
 use crate::language_adapter::{ParsedImport, ParsedModule};
+use crate::unreal_config::UnrealOptions;
 
 use resolve::{is_asset_import, is_relative, resolve_relative};
 
 use csharp::{index_exports, resolve_import, resolve_qualified_references, uses_namespace_resolution};
+use cpp::{is_cpp_path, resolve_cpp_import, CppResolution};
 
 /// Edges + diagnostics derived from import resolution, consumed by `analysis`.
 pub struct ResolvedReferences {
@@ -49,6 +52,13 @@ pub struct ResolvedReferences {
 /// Resolve every import/re-export in `parsed` into edges and diagnostics. Known
 /// module ids are the parsed paths themselves (caller owns id = path).
 pub fn resolve_references(parsed: &[ParsedModule]) -> ResolvedReferences {
+    resolve_references_with_options(parsed, &UnrealOptions::default())
+}
+
+pub fn resolve_references_with_options(
+    parsed: &[ParsedModule],
+    options: &UnrealOptions,
+) -> ResolvedReferences {
     let known: BTreeSet<&str> = parsed.iter().map(|m| m.path.as_str()).collect();
     let exports = index_exports(parsed);
     let mut targets: Vec<(String, String)> = Vec::new();
@@ -56,7 +66,8 @@ pub fn resolve_references(parsed: &[ParsedModule]) -> ResolvedReferences {
     let mut modules: Vec<&ParsedModule> = parsed.iter().collect();
     modules.sort_by(|a, b| a.path.cmp(&b.path));
     for module in modules {
-        resolve_module(module, &known, &exports, &mut targets, &mut diagnostics);
+        let ctx = ResolveContext { known: &known, exports: &exports, options };
+        resolve_module(module, &ctx, &mut targets, &mut diagnostics);
     }
     ResolvedReferences {
         edges: build_edges(targets),
@@ -64,16 +75,25 @@ pub fn resolve_references(parsed: &[ParsedModule]) -> ResolvedReferences {
     }
 }
 
+struct ResolveContext<'a> {
+    known: &'a BTreeSet<&'a str>,
+    exports: &'a BTreeMap<(String, String), Vec<String>>,
+    options: &'a UnrealOptions,
+}
+
 /// Resolve one module's imports + re-exports, appending edge targets / diagnostics.
 fn resolve_module(
     module: &ParsedModule,
-    known: &BTreeSet<&str>,
-    exports: &BTreeMap<(String, String), Vec<String>>,
+    ctx: &ResolveContext,
     targets: &mut Vec<(String, String)>,
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     if uses_namespace_resolution(&module.path) {
-        resolve_csharp_module(module, exports, targets);
+        resolve_csharp_module(module, ctx.exports, targets);
+        return;
+    }
+    if is_cpp_path(&module.path) {
+        resolve_cpp_module(module, ctx, targets, diagnostics);
         return;
     }
     for import in module.imports.iter().chain(module.reexports.iter()) {
@@ -83,11 +103,29 @@ fn resolve_module(
         match resolve_relative(
             &module.path,
             &import.specifier,
-            known,
+            ctx.known,
             /*item_fallback=*/module.path.ends_with(".rs"),
         ) {
             Some(target) => targets.push((module.path.clone(), target)),
             None => diagnostics.push(unresolved(&module.path, import)),
+        }
+    }
+}
+
+fn resolve_cpp_module(
+    module: &ParsedModule,
+    ctx: &ResolveContext,
+    targets: &mut Vec<(String, String)>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    for import in module.imports.iter().chain(module.reexports.iter()) {
+        if !is_relative(&import.specifier) || is_asset_import(&import.specifier) {
+            continue;
+        }
+        match resolve_cpp_import(&module.path, import, ctx.known, ctx.options) {
+            CppResolution::Resolved(target) => targets.push((module.path.clone(), target)),
+            CppResolution::External => {}
+            CppResolution::Unresolved => diagnostics.push(unresolved(&module.path, import)),
         }
     }
 }

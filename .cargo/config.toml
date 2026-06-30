@@ -1,2 +1,4 @@
 ﻿[env]
 TS_RS_EXPORT_DIR = { value = "../src/domain/graph", relative = true }
+LIB = { value = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\lib\\x64", relative = false }
+INCLUDE = { value = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\include", relative = false }

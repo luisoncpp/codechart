@@ -14,6 +14,6 @@ export class ElkLayoutEngine implements LayoutEngine {
     const moduleIds = new Set(graph.modules.map((m) => m.id));
     const descriptionIds = new Set(graph.groups.map((g) => descriptionBoxId(g.id)));
     const result = await this.elk.layout(buildElkGraph(graph, options));
-    return toLayoutedGraph(result, groupIds, moduleIds, descriptionIds);
+    return toLayoutedGraph(result, { groupIds, moduleIds, descriptionIds });
   }
 }

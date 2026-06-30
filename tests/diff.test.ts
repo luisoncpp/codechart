@@ -6,12 +6,22 @@ import {
   compareGraphs,
   overlayFromPastedDiff,
   pathsFromUnifiedDiff,
+  normalizeDiffPath,
   mergeCommitOverlay,
   lineDiffsFromUnified,
   countLineDiffStats,
 } from "../src/domain/diff";
 
 const base = golden as unknown as ProjectGraph;
+
+describe("normalizeDiffPath", () => {
+  it("strips a/ and b/ prefixes, quotes, and backslashes", () => {
+    expect(normalizeDiffPath("a/src/foo.ts")).toBe("src/foo.ts");
+    expect(normalizeDiffPath("b/src/foo.ts")).toBe("src/foo.ts");
+    expect(normalizeDiffPath('"src/foo.ts"')).toBe("src/foo.ts");
+    expect(normalizeDiffPath("src\\foo.ts")).toBe("src/foo.ts");
+  });
+});
 
 describe("pathsFromUnifiedDiff", () => {
   it("classifies modified, added, and deleted paths", () => {
@@ -36,6 +46,30 @@ describe("pathsFromUnifiedDiff", () => {
     expect(paths.modified).toEqual(["src/old.ts"]);
     expect(paths.deleted).toEqual(["src/removed.ts"]);
     expect(paths.added).toEqual(["src/new.ts"]);
+  });
+
+  it("classifies renames as deleted plus added", () => {
+    const text = [
+      "diff --git a/src/old-name.ts b/src/new-name.ts",
+      "--- a/src/old-name.ts",
+      "+++ b/src/new-name.ts",
+    ].join("\n");
+
+    const paths = pathsFromUnifiedDiff(text);
+    expect(paths.modified).toEqual([]);
+    expect(paths.deleted).toEqual(["src/old-name.ts"]);
+    expect(paths.added).toEqual(["src/new-name.ts"]);
+  });
+
+  it("ignores malformed diff --git lines without a/ b/ paths", () => {
+    const text = ["diff --git foo bar", "--- a/x.ts", "+++ b/x.ts"].join("\n");
+    const paths = pathsFromUnifiedDiff(text);
+    expect(paths.modified).toEqual(["x.ts"]);
+  });
+
+  it("handles CRLF line endings", () => {
+    const text = "diff --git a/a.ts b/a.ts\r\n--- a/a.ts\r\n+++ b/a.ts\r\n";
+    expect(pathsFromUnifiedDiff(text).modified).toEqual(["a.ts"]);
   });
 });
 

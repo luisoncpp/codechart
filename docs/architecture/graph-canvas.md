@@ -21,7 +21,7 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 | Piece | File | Role |
 |-------|------|------|
 | `projectGraph(graph, layout)` | `domain/graph/Private/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
-| `FloatingEdge` | `features/graph_canvas/Private/FloatingEdge.tsx` | Custom RF edge: computes both endpoints via `borderAnchor` from live node geometry (`useInternalNode`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
+| `EdgeLayer` + `segmentForEdge` | `features/graph_canvas/Private/EdgeLayer.tsx`, `edge-path.ts` | Custom SVG edge layer (portal into RF's `.react-flow__edges`); React Flow receives `edges={[]}`. `segmentForEdge` computes both endpoints via `borderAnchor` from live node boxes (`boxesFromFlowNodes`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
 | `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
 | selectors | `domain/graph/Private/selectors.ts` | `findModule`, `findGroup`, `groupOf`, `modulesInGroup`, `childGroupsOf`, `groupImportsOf`, `groupImportedBy`, `diagnosticsForGroup`, `edgeFocusForSelection`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. |
 | `GraphSessionStore` | `state/graph-session` | Now also owns `LayoutedGraph` (computed via injected `LayoutEngine` on load) and `selectedId`. Emits `phase-changed` + `selection-changed` + `focus-requested`. `focusOn(moduleId)` selects a module, expands collapsed ancestor groups when needed, and asks the canvas to center on it. |
@@ -56,7 +56,7 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   Edges are **display-only** (no `onEdgeClick`/hover handlers), so `graph-canvas.css` sets
   `pointer-events: none` on `.react-flow__edge` — React Flow's invisible edge interaction path would
   otherwise swallow a `pointerdown` and break pan-by-drag that starts on an edge.
-- **Edge routing (floating, no ELK routing):** ELK never routes edges — `FloatingEdge` draws them.
+- **Edge routing (floating, no ELK routing):** ELK never routes edges — `EdgeLayer` draws them via `segmentForEdge`.
   Each endpoint floats to the border **facing the other node** (`borderAnchor`) instead of a fixed
   handle, so a node's out-edges fan across its border rather than sharing one right-side point
   (**Idea 1**). For an import that enters a facade **from outside its group**, the arrow anchors on

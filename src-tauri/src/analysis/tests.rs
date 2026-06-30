@@ -80,6 +80,30 @@ fn unresolved_import_produces_a_warning_diagnostic_and_no_edge() {
     assert_eq!(graph.diagnostics[0].kind, DiagnosticKind::UnresolvedImport);
 }
 
+#[test]
+fn unreal_defaults_hide_generated_files_and_resolve_include_roots() {
+    let source = memory(&[
+        ("Game.uproject", "{}"),
+        ("Source/Game/Game.Build.cs", ""),
+        ("Source/Game/Public/Characters/Player.h", "class Player {};"),
+        (
+            "Source/Game/Private/Player.cpp",
+            "#include \"Characters/Player.h\"\n#include \"CoreMinimal.h\"\n",
+        ),
+        ("Source/Game/Private/Player.generated.h", "class Generated {};"),
+    ]);
+    let graph = analyze_project(&source, "mem").expect("builds");
+    assert!(
+        graph.modules.iter().all(|m| !m.id.ends_with(".generated.h")),
+        "generated Unreal headers should not become graph modules"
+    );
+    assert!(graph.diagnostics.is_empty(), "engine header should be external");
+    assert!(graph.edges.iter().any(|e| {
+        e.source == "Source/Game/Private/Player.cpp"
+            && e.target == "Source/Game/Public/Characters/Player.h"
+    }));
+}
+
 /// A source whose `b.ts` cannot be read — exercises the `parseError` partial path.
 struct FlakySource;
 
@@ -152,6 +176,9 @@ fn tauri_mini_project_ipc_seams_and_orphan_diagnostic() {
 const UNITY_FIXTURE_DIR: &str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/unity-mini-project");
 const UNITY_FIXTURE_ROOT: &str = "tests/fixtures/unity-mini-project";
+const UNREAL_FIXTURE_DIR: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/unreal-mini-project");
+const UNREAL_FIXTURE_ROOT: &str = "tests/fixtures/unreal-mini-project";
 
 #[test]
 fn unity_mini_project_prefab_script_and_prefab_edges() {
@@ -195,5 +222,21 @@ fn unity_mini_project_prefab_script_and_prefab_edges() {
         .collect();
     assert_eq!(reverse.len(), 1);
     assert_eq!(reverse[0].source, player);
+}
+
+#[test]
+fn unreal_mini_project_resolves_includes_and_hides_generated_files() {
+    let source = FsProjectSource::new(UNREAL_FIXTURE_DIR);
+    let graph = analyze_project(&source, UNREAL_FIXTURE_ROOT).expect("builds");
+    let source_file = "Source/MiniGame/Private/MiniPlayer.cpp";
+    let header = "Source/MiniGame/Public/Characters/MiniPlayer.h";
+    assert!(graph.modules.iter().any(|m| m.id == source_file));
+    assert!(graph.modules.iter().any(|m| m.id == header));
+    assert!(
+        graph.modules.iter().all(|m| !m.id.ends_with(".generated.h")),
+        "generated Unreal headers should stay hidden"
+    );
+    assert!(graph.diagnostics.is_empty(), "engine includes should be external");
+    assert!(graph.edges.iter().any(|e| e.source == source_file && e.target == header));
 }
 

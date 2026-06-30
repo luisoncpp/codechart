@@ -2,6 +2,10 @@ import type React from "react";
 import type { Node } from "@xyflow/react";
 import type { GraphSessionStore } from "../../../state/graph-session";
 
+function clickedIn(event: React.MouseEvent, selector: string): boolean {
+  return (event.target as HTMLElement).closest(selector) !== null;
+}
+
 export class GraphCanvasNodeHandlers {
   constructor(
     private store: GraphSessionStore,
@@ -9,9 +13,8 @@ export class GraphCanvasNodeHandlers {
   ) {}
 
   onNodeClick(node: Node, event: React.MouseEvent) {
-    if ((event.target as HTMLElement).closest("[data-connection-toggle]")) {
-      if (node.type === "group") this.store.toggleGroupConnection(node.id);
-      else if (node.type === "module") this.store.toggleModuleConnection(node.id);
+    if (clickedIn(event, "[data-connection-toggle]")) {
+      this.toggleConnection(node);
       return;
     }
     if (node.type === "symbol") {
@@ -23,13 +26,7 @@ export class GraphCanvasNodeHandlers {
       this.store.select(node.id);
       return;
     }
-    if (node.type !== "group") return;
-    // The header's collapse/expand button: single-click toggles just this group.
-    if ((event.target as HTMLElement).closest("[data-group-toggle]")) {
-      this.store.toggleGroup(node.id);
-      return;
-    }
-    this.store.select(node.id);
+    if (node.type === "group") this.clickGroup(node, event);
   }
 
   /** Double-click a group to collapse/expand just it (per-group override). */
@@ -41,10 +38,21 @@ export class GraphCanvasNodeHandlers {
   /** Module or symbol right-click: return the module path for a context menu, else null. */
   modulePathForContextMenu(node: Node): string | null {
     if (node.type !== "module" && node.type !== "symbol") return null;
-    const graph = this.store.getReducedGraph();
-    if (!graph) return null;
     const moduleId = node.type === "module" ? node.id : node.parentId;
     if (!moduleId) return null;
-    return graph.modules.find((m) => m.id === moduleId)?.path ?? null;
+    return this.store.getReducedGraph()?.modules.find((m) => m.id === moduleId)?.path ?? null;
+  }
+
+  private toggleConnection(node: Node) {
+    if (node.type === "group") this.store.toggleGroupConnection(node.id);
+    if (node.type === "module") this.store.toggleModuleConnection(node.id);
+  }
+
+  private clickGroup(node: Node, event: React.MouseEvent) {
+    if (clickedIn(event, "[data-group-toggle]")) {
+      this.store.toggleGroup(node.id);
+      return;
+    }
+    this.store.select(node.id);
   }
 }

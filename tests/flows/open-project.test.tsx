@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { ProjectLoaderPanel } from "../../src/features/project_loader";
 import type { ProjectGraph } from "../../src/domain/graph";
+import { defaultProjectConfig, type ProjectConfig } from "../../src/ipc/project-config-client";
 import goldenGraph from "../fixtures/golden/project-graph.json";
 import { testGraphSessionStore } from "../helpers/test-graph-session-store";
 import {
@@ -36,7 +37,7 @@ describe("flow: open-project", () => {
     clickOpenFolder();
     await waitFor(() => {
       expect(
-        screen.getByText("Open a TypeScript project to map it."),
+        screen.getByText("Open a project folder to map it."),
       ).toBeInTheDocument();
     });
   });
@@ -59,6 +60,40 @@ describe("flow: open-project", () => {
     });
     await waitFor(() => expect(analyzeProject).toHaveBeenCalledTimes(2));
     expect(analyzeProject).toHaveBeenLastCalledWith("/my/project");
+  });
+
+  it("saving Unreal paths writes config and reloads the project", async () => {
+    const { store, analyzeProject } = spiedStore();
+    const config = defaultProjectConfig();
+    const readProjectConfig = vi.fn(async () => config);
+    const writeProjectConfig = vi.fn(async (_path: string, _config: ProjectConfig) => {});
+    render(
+      <ProjectLoaderPanel
+        store={store}
+        pickFolder={async () => "/my/project"}
+        configClient={{ readProjectConfig, writeProjectConfig }}
+      />,
+    );
+    await act(async () => {
+      clickOpenFolder();
+    });
+    await waitFor(() => expect(store.getPhase()).toBe("ready"));
+    fireEvent.click(screen.getByRole("button", { name: "Configure paths..." }));
+    await waitFor(() => expect(readProjectConfig).toHaveBeenCalledWith("/my/project"));
+    fireEvent.click(await screen.findByRole("button", { name: "Add path" }));
+    fireEvent.change(screen.getByPlaceholderText("Source/Game/Public"), {
+      target: { value: "Source/Game/Public" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save and reload" }));
+    await waitFor(() => expect(writeProjectConfig).toHaveBeenCalledOnce());
+    expect(writeProjectConfig).toHaveBeenCalledWith("/my/project", {
+      unreal: {
+        knownPaths: ["Source/Game/Public"],
+        hideGeneratedFiles: true,
+        excludeEngineReferences: true,
+      },
+    });
+    await waitFor(() => expect(analyzeProject).toHaveBeenCalledTimes(2));
   });
 
   it("clicking Copy list copies the facade bypass list", async () => {

@@ -12,6 +12,7 @@ pub mod references;
 pub mod semantic_comments;
 pub mod tauri_api;
 pub mod unity_assets;
+pub mod unreal_config;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -22,6 +23,8 @@ pub fn run() {
             tauri_api::analyze_project,
             tauri_api::analyze_project_at_ref,
             tauri_api::read_module_source,
+            tauri_api::read_project_config,
+            tauri_api::write_project_config,
             tauri_api::git_is_repo,
             tauri_api::git_list_commits,
             tauri_api::git_diff_refs,

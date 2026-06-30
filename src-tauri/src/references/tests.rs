@@ -107,6 +107,48 @@ fn resolves_cpp_quoted_include() {
 }
 
 #[test]
+fn resolves_unreal_include_from_known_path() {
+    let parsed = vec![
+        module("Source/Game/Private/Player.cpp", &["./Characters/Player.h"]),
+        ParsedModule {
+            path: "Source/Game/Public/Characters/Player.h".to_string(),
+            ..Default::default()
+        },
+    ];
+    let options = crate::unreal_config::UnrealOptions {
+        known_paths: vec!["Source/Game/Public".into()],
+        ..Default::default()
+    };
+    let edges = resolve_references_with_options(&parsed, &options).edges;
+    assert_eq!(edges[0].source, "Source/Game/Private/Player.cpp");
+    assert_eq!(edges[0].target, "Source/Game/Public/Characters/Player.h");
+}
+
+#[test]
+fn skips_unreal_engine_headers() {
+    let parsed = vec![module("Source/Game/Private/Player.cpp", &[
+        "./CoreMinimal.h",
+        "./GameFramework/Actor.h",
+    ])];
+    let options = crate::unreal_config::UnrealOptions {
+        exclude_engine_references: true,
+        ..Default::default()
+    };
+    let refs = resolve_references_with_options(&parsed, &options);
+    assert!(refs.edges.is_empty());
+    assert!(refs.diagnostics.is_empty());
+}
+
+#[test]
+fn unresolved_project_cpp_include_still_warns() {
+    let parsed = vec![module("Source/Game/Private/Player.cpp", &["./MissingLocal.h"])];
+    let refs = resolve_references_with_options(&parsed, &Default::default());
+    assert!(refs.edges.is_empty());
+    assert_eq!(refs.diagnostics.len(), 1);
+    assert_eq!(refs.diagnostics[0].kind, DiagnosticKind::UnresolvedImport);
+}
+
+#[test]
 fn resolves_js_extension_to_ts_source() {
     let parsed = vec![
         module("electron/ipc/handlers/project-handlers/order-handlers.ts", &[

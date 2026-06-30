@@ -2,11 +2,19 @@
 import { useState } from "react";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { architectureViolations, projectGraphSummary } from "../../../domain/graph";
+import {
+  createMockProjectConfigClient,
+  type ProjectConfigClient,
+} from "../../../ipc/project-config-client";
+import { UnrealConfigModal } from "../../project_config";
 import { FolderPicker, pickFolder as defaultPickFolder } from "./pick-folder";
 import { FacadeBypassList } from "./FacadeBypassList";
 
+const defaultConfigClient = createMockProjectConfigClient();
+
 interface ProjectLoaderPanelProps {
   store: GraphSessionStore;
+  configClient?: ProjectConfigClient;
   /** Injectable for tests; defaults to the native Tauri directory dialog. */
   pickFolder?: FolderPicker;
 }
@@ -14,10 +22,12 @@ interface ProjectLoaderPanelProps {
 /** Top bar: pick a folder to analyze, reload it, and show session phase/summary. */
 export function ProjectLoaderPanel({
   store,
+  configClient = defaultConfigClient,
   pickFolder = defaultPickFolder,
 }: ProjectLoaderPanelProps) {
   const session = useGraphSession(store);
   const [path, setPath] = useState<string | null>(null);
+  const [configOpen, setConfigOpen] = useState(false);
   const phase = session.getPhase();
   const graph = session.getGraph();
   const summary = graph ? projectGraphSummary(graph) : null;
@@ -45,6 +55,15 @@ export function ProjectLoaderPanel({
           Reload
         </button>
       )}
+      {path && (
+        <button
+          type="button"
+          onClick={() => setConfigOpen(true)}
+          disabled={phase === "loading"}
+        >
+          Configure paths...
+        </button>
+      )}
       <StatusText
         phase={phase}
         path={path}
@@ -52,6 +71,13 @@ export function ProjectLoaderPanel({
         error={session.getError()}
       />
       {phase === "ready" && <FacadeBypassList violations={bypasses} />}
+      <UnrealConfigModal
+        open={configOpen}
+        root={path}
+        client={configClient}
+        onClose={() => setConfigOpen(false)}
+        onSaved={() => path && session.loadProject(path)}
+      />
     </header>
   );
 }
@@ -66,9 +92,9 @@ interface StatusTextProps {
 /** The right-hand status message — varies by session phase. */
 function StatusText({ phase, path, summary, error }: StatusTextProps) {
   if (phase === "idle")
-    return <span style={hintStyle}>Open a TypeScript project to map it.</span>;
+    return <span style={hintStyle}>Open a project folder to map it.</span>;
   if (phase === "empty")
-    return <span style={hintStyle}>No TypeScript files found in {path}.</span>;
+    return <span style={hintStyle}>No supported source files found in {path}.</span>;
   if (phase === "failed")
     return <span style={{ ...hintStyle, color: "#dc2626" }}>Error: {error}</span>;
   if (summary)

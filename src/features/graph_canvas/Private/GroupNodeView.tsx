@@ -43,7 +43,7 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
       }}
     >
       {/* Invisible handles so a collapsed group can be an edge endpoint (L0
-          group→group edges). FloatingEdge ignores their position. */}
+          group→group edges). EdgeLayer ignores their position. */}
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <ConnectionToggle disconnected={!!data.disconnected} scale={scale} />
       {data.collapsed ? (

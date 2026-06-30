@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Root React App component containing the layout and canvas")
 import { useMemo, useState } from "react";
 import { createTauriAnalysisClient } from "../../ipc/analysis-client";
+import { createTauriProjectConfigClient } from "../../ipc/project-config-client";
 import { createTauriGitClient } from "../../ipc/git-client";
 import { createTauriShellClient } from "../../ipc/shell-client";
 import { ElkLayoutEngine } from "../../domain/layout";
@@ -14,6 +15,10 @@ import {
 
 export function App() {
   const git = useMemo(/*build git client*/ () => createTauriGitClient(), []);
+  const config = useMemo(
+    /*build config client*/ () => createTauriProjectConfigClient(),
+    [],
+  );
   const shell = useMemo(/*build shell client*/ () => createTauriShellClient(), []);
   const store = useMemo(
     /*build session store*/ () =>
@@ -27,7 +32,7 @@ export function App() {
 
   return (
     <div style={appShellStyle}>
-      <ProjectLoaderPanel store={store} />
+      <ProjectLoaderPanel store={store} configClient={config} />
       {ready && (
         <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
           <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>

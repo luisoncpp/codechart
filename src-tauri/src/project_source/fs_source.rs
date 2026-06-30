@@ -5,7 +5,18 @@ use std::path::{Path, PathBuf};
 use super::{ProjectSource, ProjectSourceError};
 
 /// Directory names skipped during a walk (the §7 ignore defaults, dir form).
-const IGNORED_DIRS: &[&str] = &[".git", "node_modules", "dist", "build", ".next", "coverage"];
+const IGNORED_DIRS: &[&str] = &[
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    ".next",
+    "coverage",
+    "Intermediate",
+    "Binaries",
+    "Saved",
+    "DerivedDataCache",
+];
 
 pub struct FsProjectSource {
     root: PathBuf,

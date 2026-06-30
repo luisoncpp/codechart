@@ -13,7 +13,7 @@ mod parse;
 #[cfg(test)]
 mod tests;
 
-pub use ignore::{ignore_patterns, is_ignored, retain_unignored};
+pub use ignore::{ignore_patterns, ignore_patterns_with_unreal, is_ignored, retain_unignored};
 pub use parse::parse_group_def;
 
 use std::collections::BTreeSet;

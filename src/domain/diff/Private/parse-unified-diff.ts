@@ -9,79 +9,103 @@ export function normalizeDiffPath(raw: string): string {
   return path.replace(/\\/g, "/");
 }
 
+interface PathBuckets {
+  modified: Set<string>;
+  deleted: Set<string>;
+  added: Set<string>;
+}
+
+interface DiffPathState {
+  oldPath: string | null;
+  newPath: string | null;
+}
+
 /** Extract repo-relative file paths touched by a unified diff. */
 export function pathsFromUnifiedDiff(text: string): ParsedDiffPaths {
-  const modified = new Set<string>();
-  const deleted = new Set<string>();
-  const added = new Set<string>();
-
-  let oldPath: string | null = null;
-  let newPath: string | null = null;
+  const buckets: PathBuckets = {
+    modified: new Set(),
+    deleted: new Set(),
+    added: new Set(),
+  };
+  const state: DiffPathState = { oldPath: null, newPath: null };
 
   for (const line of text.split(/\r?\n/)) {
-    if (line.startsWith("diff --git ")) {
-      flushFile(oldPath, newPath, modified, deleted, added);
-      oldPath = null;
-      newPath = null;
-      const match = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
-      if (match) {
-        oldPath = normalizeDiffPath(match[1]!);
-        newPath = normalizeDiffPath(match[2]!);
-      }
-      continue;
-    }
-    if (line.startsWith("--- ")) {
-      const p = parseDiffHeaderPath(line.slice(4));
-      if (p === "/dev/null") oldPath = "/dev/null";
-      else if (p) oldPath = p;
-      continue;
-    }
-    if (line.startsWith("+++ ")) {
-      const p = parseDiffHeaderPath(line.slice(4));
-      if (p === "/dev/null") newPath = "/dev/null";
-      else if (p) newPath = p;
-    }
+    processDiffLine(line, state, buckets);
   }
-  flushFile(oldPath, newPath, modified, deleted, added);
+  applyFilePaths(state.oldPath, state.newPath, buckets);
 
   return {
-    modified: [...modified],
-    deleted: [...deleted],
-    added: [...added],
+    modified: [...buckets.modified],
+    deleted: [...buckets.deleted],
+    added: [...buckets.added],
+  };
+}
+
+function processDiffLine(line: string, state: DiffPathState, buckets: PathBuckets): void {
+  if (line.startsWith("diff --git ")) {
+    applyFilePaths(state.oldPath, state.newPath, buckets);
+    state.oldPath = null;
+    state.newPath = null;
+    const gitPaths = pathsFromDiffGitLine(line);
+    if (gitPaths) {
+      state.oldPath = gitPaths.oldPath;
+      state.newPath = gitPaths.newPath;
+    }
+    return;
+  }
+  if (line.startsWith("--- ")) {
+    const updated = headerPathUpdate(line.slice(4));
+    if (updated !== undefined) state.oldPath = updated;
+    return;
+  }
+  if (line.startsWith("+++ ")) {
+    const updated = headerPathUpdate(line.slice(4));
+    if (updated !== undefined) state.newPath = updated;
+  }
+}
+
+function pathsFromDiffGitLine(line: string): { oldPath: string; newPath: string } | null {
+  const match = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
+  if (!match) return null;
+  return {
+    oldPath: normalizeDiffPath(match[1]!),
+    newPath: normalizeDiffPath(match[2]!),
   };
 }
 
 function parseDiffHeaderPath(raw: string): string | null {
   const trimmed = raw.trim();
   if (trimmed === "/dev/null") return "/dev/null";
-  if (trimmed.startsWith("a/") || trimmed.startsWith("b/")) {
-    return normalizeDiffPath(trimmed);
-  }
-  return normalizeDiffPath(trimmed);
+  const path = normalizeDiffPath(trimmed);
+  return path || null;
 }
 
-function flushFile(
+/** Returns `undefined` when the header line does not update the path. */
+function headerPathUpdate(raw: string): string | null | undefined {
+  const path = parseDiffHeaderPath(raw);
+  if (path === null) return undefined;
+  return path;
+}
+
+function applyFilePaths(
   oldPath: string | null,
   newPath: string | null,
-  modified: Set<string>,
-  deleted: Set<string>,
-  added: Set<string>,
-) {
+  buckets: PathBuckets,
+): void {
   if (!oldPath && !newPath) return;
   if (oldPath === "/dev/null" && newPath) {
-    added.add(newPath);
+    buckets.added.add(newPath);
     return;
   }
   if (newPath === "/dev/null" && oldPath) {
-    deleted.add(oldPath);
+    buckets.deleted.add(oldPath);
+    return;
+  }
+  if (oldPath && newPath && oldPath !== newPath) {
+    buckets.deleted.add(oldPath);
+    buckets.added.add(newPath);
     return;
   }
   const path = newPath ?? oldPath;
-  if (!path) return;
-  if (oldPath && newPath && oldPath !== newPath) {
-    deleted.add(oldPath);
-    added.add(newPath);
-    return;
-  }
-  modified.add(path);
+  if (path) buckets.modified.add(path);
 }

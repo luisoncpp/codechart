@@ -95,7 +95,8 @@ relative); angle-bracket `#include <…>` skipped (system/external). Top-level
 and namespace-scoped `class`/`struct`/`enum`/`union` names and function
 declarations/definitions populate `exported_symbols`. `: Base, IFoo` base lists
 populate `implements`. Resolution uses the standard relative-import pass with
-`.cpp`/`.h`/`.hpp` extension candidates.
+`.cpp`/`.h`/`.hpp` extension candidates, then Unreal configured include roots
+when present (see [unreal-config.md](./unreal-config.md)).
 
 ## `semantic_comments::parse_annotations(text) -> Vec<Annotation>`
 
