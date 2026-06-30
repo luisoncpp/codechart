@@ -113,6 +113,19 @@ const TAURI_FIXTURE_DIR: &str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/tauri-mini-project");
 const TAURI_FIXTURE_ROOT: &str = "tests/fixtures/tauri-mini-project";
 
+fn tauri_mini_golden() -> ProjectGraph {
+    let json = include_str!("../../../tests/fixtures/golden/tauri-mini-project-graph.json");
+    serde_json::from_str(json).expect("tauri-mini golden project-graph.json parses")
+}
+
+#[test]
+fn analyze_matches_the_tauri_mini_golden_fixture() {
+    let source = FsProjectSource::new(TAURI_FIXTURE_DIR);
+    let graph =
+        analyze_project(&source, TAURI_FIXTURE_ROOT).expect("tauri-mini fixture analysis builds");
+    assert_eq!(graph, tauri_mini_golden());
+}
+
 #[test]
 fn tauri_mini_project_ipc_seams_and_orphan_diagnostic() {
     let source = FsProjectSource::new(TAURI_FIXTURE_DIR);

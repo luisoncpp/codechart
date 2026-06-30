@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import trivialGraph from "./fixtures/trivial-graph.json";
 import goldenGraph from "./fixtures/golden/project-graph.json";
+import tauriMiniGraph from "./fixtures/golden/tauri-mini-project-graph.json";
 import { ProjectGraph, architectureViolations } from "../src/domain/graph";
 
 describe("ProjectGraph contract", () => {
@@ -59,5 +60,28 @@ describe("ProjectGraph contract", () => {
       .filter((m) => m.groupId === "shared")
       .map((m) => m.id);
     expect(shared).toEqual(["src/core/todo.ts", "src/services/types.ts"]);
+  });
+
+  it("parses the tauri-mini golden JSON on the TypeScript side", () => {
+    const graph = tauriMiniGraph as ProjectGraph;
+
+    expect(graph.root).toBe("tests/fixtures/tauri-mini-project");
+    expect(graph.groups).toHaveLength(1);
+    expect(graph.modules).toHaveLength(5);
+    expect(graph.edges).toHaveLength(3);
+    expect(graph.diagnostics).toHaveLength(1);
+
+    const languages = new Set(graph.modules.map((m) => m.language));
+    expect(languages).toEqual(new Set(["rust", "typescript"]));
+
+    const ipc = graph.edges.find((e) => e.trigger === "ipc:greet");
+    expect(ipc?.kind).toBe("soft");
+    expect(ipc?.source).toBe("src/ipc/client.ts");
+    expect(ipc?.target).toBe("src-tauri/src/commands.rs");
+
+    const orphan = graph.diagnostics[0];
+    expect(orphan.kind).toBe("unresolvedIpc");
+    expect(orphan.moduleId).toBe("src/ipc/orphan.ts");
+    expect(orphan.unresolvedTarget).toBe("missing_cmd");
   });
 });

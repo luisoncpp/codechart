@@ -22,5 +22,9 @@ Object.defineProperties(global.HTMLElement.prototype, {
   offsetWidth: { get() { return 800; } },
 });
 
+if (!global.HTMLElement.prototype.scrollIntoView) {
+  global.HTMLElement.prototype.scrollIntoView = () => {};
+}
+
 (global.SVGElement.prototype as unknown as { getBBox: () => object }).getBBox =
   () => ({ x: 0, y: 0, width: 0, height: 0 });

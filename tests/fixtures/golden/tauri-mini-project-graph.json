@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "root": "tests/fixtures/tauri-mini-project",
+  "groups": [
+    {
+      "id": "app",
+      "label": "Tauri Mini App",
+      "parentId": null,
+      "color": "#64748b",
+      "facadeModuleIds": [],
+      "annotation": {
+        "descriptionShort": "Minimal Tauri fixture for IPC seam detection tests",
+        "descriptionLong": "Minimal frontend + backend layout for testing Tauri IPC seam detection."
+      }
+    }
+  ],
+  "modules": [
+    {
+      "id": "src-tauri/src/commands.rs",
+      "path": "src-tauri/src/commands.rs",
+      "label": "commands.rs",
+      "language": "rust",
+      "groupId": "app",
+      "isFacade": false,
+      "metrics": { "loc": 4 },
+      "exportedSymbols": ["greet"]
+    },
+    {
+      "id": "src-tauri/src/lib.rs",
+      "path": "src-tauri/src/lib.rs",
+      "label": "lib.rs",
+      "language": "rust",
+      "groupId": "app",
+      "isFacade": false,
+      "metrics": { "loc": 8 },
+      "exportedSymbols": ["run"]
+    },
+    {
+      "id": "src/app.ts",
+      "path": "src/app.ts",
+      "label": "app.ts",
+      "language": "typescript",
+      "groupId": "app",
+      "isFacade": false,
+      "metrics": { "loc": 5 },
+      "exportedSymbols": ["run"]
+    },
+    {
+      "id": "src/ipc/client.ts",
+      "path": "src/ipc/client.ts",
+      "label": "client.ts",
+      "language": "typescript",
+      "groupId": "app",
+      "isFacade": false,
+      "metrics": { "loc": 5 },
+      "exportedSymbols": ["greet"]
+    },
+    {
+      "id": "src/ipc/orphan.ts",
+      "path": "src/ipc/orphan.ts",
+      "label": "orphan.ts",
+      "language": "typescript",
+      "groupId": "app",
+      "isFacade": false,
+      "metrics": { "loc": 5 },
+      "exportedSymbols": ["missing"]
+    }
+  ],
+  "edges": [
+    {
+      "id": "src-tauri/src/lib.rs->src-tauri/src/commands.rs:import:0",
+      "source": "src-tauri/src/lib.rs",
+      "target": "src-tauri/src/commands.rs",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/app.ts->src/ipc/client.ts:import:0",
+      "source": "src/app.ts",
+      "target": "src/ipc/client.ts",
+      "kind": "import",
+      "trigger": "import",
+      "isViolation": false
+    },
+    {
+      "id": "src/ipc/client.ts->src-tauri/src/commands.rs:ipc:0",
+      "source": "src/ipc/client.ts",
+      "target": "src-tauri/src/commands.rs",
+      "kind": "soft",
+      "trigger": "ipc:greet",
+      "isViolation": false
+    }
+  ],
+  "diagnostics": [
+    {
+      "id": "unresolved-ipc:src/ipc/orphan.ts:missing_cmd",
+      "severity": "warning",
+      "kind": "unresolvedIpc",
+      "message": "invoke(\"missing_cmd\") has no matching #[tauri::command] handler",
+      "moduleId": "src/ipc/orphan.ts",
+      "unresolvedTarget": "missing_cmd"
+    }
+  ]
+}
