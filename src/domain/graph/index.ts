@@ -12,18 +12,20 @@ export type { Severity } from "./Severity";
 export { projectGraphSummary } from "./Private/graph-projector";
 export { projectGraph } from "./Private/rf-projection";
 export type { RenderOptions } from "./Private/rf-projection";
-export { symbolBoxId, symbolNameFromId } from "./Private/symbol-id";
+export { symbolBoxId, symbolNameFromId } from "./symbol-id";
 export { inferSymbolKind } from "./Private/symbol-kind";
 export type { SymbolKind } from "./Private/symbol-kind";
 export { SYMBOL_KIND_DISPLAY } from "./Private/symbol-kind-display";
 export {
   projectForZoom,
-  allGroupIds,
-  topLevelGroupIds,
-  levelFromZoom,
   isModuleExpanded,
   groupParentMap,
 } from "./Private/zoom-projection";
+export {
+  allGroupIds,
+  topLevelGroupIds,
+  levelFromZoom,
+} from "./Private/zoom-level";
 export { isTestModule, filterTestModules } from "./Private/test-modules";
 export {
   isGroupDisconnected,
@@ -32,8 +34,8 @@ export {
   defaultDisconnectedSets,
   countHiddenEdges,
 } from "./Private/connection-filter";
-export type { ZoomLevel } from "./Private/zoom-projection";
-export type { HeatmapMode, ModuleHeat, HeatProjection } from "./Private/heat-scores";
+export type { ZoomLevel } from "./Private/zoom-level";
+export type { HeatmapMode, ModuleHeat, HeatProjection } from "./Private/heat-types";
 export {
   computeHeatProjection,
   rawHeatValue,

@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Maps normalized heat scores to activity/risk tints")
-import type { HeatmapMode } from "./heat-scores";
+import type { HeatmapMode } from "./heat-types";
 
 const ACTIVITY_STOPS = ["#3b82f6", "#f59e0b"] as const;
 const RISK_STOPS = ["#94a3b8", "#f43f5e"] as const;

@@ -1,6 +1,8 @@
 // @Architecture(descriptionShort="Converts internal project graph model to React Flow projection")
-import { type LayoutBox, type LayoutedGraph, PRESETS, DESC_BOX } from "../../layout";
-import { symbolNameFromId } from "./symbol-id";
+import type { LayoutBox, LayoutedGraph } from "../../layout/Private/layout-types";
+import { DESC_BOX } from "../../layout/Private/module-box-metrics";
+import { PRESETS } from "../../layout/Private/layout-presets";
+import { symbolNameFromId } from "../symbol-id";
 import { inferSymbolKind } from "./symbol-kind";
 import type { ProjectGraph } from "../ProjectGraph";
 import type { GroupNode } from "../GroupNode";
@@ -20,7 +22,7 @@ import type {
   RFNode,
 } from "./node-data";
 import { colorForGroup } from "./colors";
-import type { HeatProjection } from "./heat-scores";
+import type { HeatProjection } from "./heat-types";
 
 type BoxIndex = Map<string, LayoutBox>;
 

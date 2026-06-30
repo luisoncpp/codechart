@@ -15,4 +15,4 @@ export {
 } from "./Private/module-box-metrics";
 export { fitModuleHeaderFontSize } from "./Private/fit-module-header-font";
 export { wrapIdentifierLines } from "./Private/wrap-identifier";
-export { PRESETS } from "./Private/elk-input";
+export { PRESETS } from "./Private/layout-presets";
