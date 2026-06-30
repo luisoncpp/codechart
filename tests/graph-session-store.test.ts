@@ -204,6 +204,27 @@ describe("GraphSessionStore semantic zoom", () => {
     );
   });
 
+  it("L2 lazily fetches architecture docs for groups that declare one", async () => {
+    const withDoc: ProjectGraph = {
+      ...graph,
+      groups: graph.groups.map((g) =>
+        g.id === "core"
+          ? { ...g, architectureDoc: "docs/architecture/contract.md" }
+          : g,
+      ),
+    };
+    const client: AnalysisClient = {
+      analyzeProject: async () => withDoc,
+      readModuleSource: async (_root, path) => `# Doc for ${path}`,
+    };
+    const store = newStore(client);
+    await store.loadProject("/x");
+    const done = nextLayout(store);
+    store.setZoomLevel(2);
+    await done;
+    expect(store.getGroupDocCache().get("core")).toContain("Doc for docs/architecture/contract.md");
+  });
+
   it("a collapsed group keeps its expanded footprint (does not shrink)", async () => {
     const store = newStore(clientReturning(graph));
     await store.loadProject("/x");

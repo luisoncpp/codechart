@@ -6,6 +6,7 @@ icon: git-branch
 facades:
   - mod.rs
 descriptionShort: Imports → edges & drift
+architectureDoc: docs/architecture/references-analysis.md
 ---
 
 Resolves relative imports to solid edges or `unresolvedImport` diagnostics. Post-passes: facade-bypass drift (`flag_drift`), event soft edges (`classify_soft`), cross-group interface seams (`classify_interface_seams`), and Tauri IPC seams (`classify_tauri_ipc`).

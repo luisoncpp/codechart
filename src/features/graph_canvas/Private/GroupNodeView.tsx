@@ -6,6 +6,7 @@ import { DESC_BOX, PRESETS, fitDescriptionFontSize } from "../../../domain/layou
 import { iconFontSize, iconGlyph } from "./icon-map";
 import { ConnectionToggle } from "./ConnectionToggle";
 import { ChevronIcon } from "./ChevronIcon";
+import { GroupL2Description } from "./GroupL2Description";
 import { useZoomCounterScale } from "./use-zoom-counter-scale";
 import { groupShellStyle, groupTextColors } from "./heat-node-styles";
 
@@ -59,10 +60,18 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
       ) : (
         <>
           <ExpandedHeader data={data} text={text} scale={scale} />
-          <GroupDescription
-            data={data}
-            descColor={data.heatmapActive ? text.description : darken(text.description)}
-          />
+          {data.architectureDocContent !== undefined ? (
+            <GroupL2Description
+              data={data}
+              descColor={data.heatmapActive ? text.description : darken(text.description)}
+              opacity={groupLabelOpacity(data)}
+            />
+          ) : (
+            <GroupDescription
+              data={data}
+              descColor={data.heatmapActive ? text.description : darken(text.description)}
+            />
+          )}
         </>
       )}
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />

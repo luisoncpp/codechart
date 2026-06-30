@@ -148,6 +148,7 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
   }, [activeSymbol]);
 
   const cacheVersion = session.getSourceCacheVersion();
+  const groupDocCacheVersion = session.getGroupDocCacheVersion();
   const heatOptions = useMemo(() => {
     if (!heatGraph || !heatmapEnabled || diffOverlay) return undefined;
     const moduleIds = new Set(
@@ -168,13 +169,15 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
         disconnectedModuleIds: session.getDisconnectedModuleIds(),
         showSymbols: level >= 1.5,
         snippets: level === 2 ? session.getSourceCache() : undefined,
+        groupDocs: level === 2 ? session.getGroupDocCache() : undefined,
         heat: heatOptions,
       };
-      // cacheVersion busts memo when source cache updates without session identity change
+      // cacheVersion busts memo when L2 caches update without session identity change
       void cacheVersion;
+      void groupDocCacheVersion;
       return projectGraph(graph, layout, options);
     },
-    [graph, layout, level, session, cacheVersion, heatOptions],
+    [graph, layout, level, session, cacheVersion, groupDocCacheVersion, heatOptions],
   );
 
   const displayProjected = useMemo(() => {

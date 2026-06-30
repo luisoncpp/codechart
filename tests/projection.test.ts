@@ -216,6 +216,22 @@ describe("render options (Phase 10 metadata + zoom)", () => {
     expect(http?.data.snippet).toBe("export const x = 1;");
   });
 
+  it("threads architectureDoc content into group node data at L2", () => {
+    const withDoc: ProjectGraph = {
+      ...graph,
+      groups: graph.groups.map((g) =>
+        g.id === "core"
+          ? { ...g, architectureDoc: "docs/architecture/contract.md" }
+          : g,
+      ),
+    };
+    const groupDocs = new Map([["core", "# Contract\n\nBody text."]]);
+    const { nodes } = projectGraph(withDoc, layout, { groupDocs, showSymbols: true });
+    const core = nodes.find((n) => n.id === "core");
+    expect(core?.data.architectureDoc).toBe("docs/architecture/contract.md");
+    expect(core?.data.architectureDocContent).toBe("# Contract\n\nBody text.");
+  });
+
   it("attaches descriptionLong, path, and snippet and hides symbols at L2", () => {
     const snippets = new Map([["src/services/http.ts", "export const x = 1;"]]);
     const { nodes } = projectGraph(graph, layout, { showSymbols: true, snippets });

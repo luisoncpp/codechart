@@ -13,6 +13,10 @@ export interface GroupNodeData extends Record<string, unknown> {
   descriptionShort?: string;
   /** Full annotation prose; preferred over the short one at L0 / L1.5+ when it fits. */
   descriptionLong?: string;
+  /** Repo-relative path to an extended architecture markdown doc. */
+  architectureDoc?: string;
+  /** Lazily fetched markdown body for `architectureDoc` (L2 only). */
+  architectureDocContent?: string;
   /** True when this group is rendered collapsed (semantic zoom). */
   collapsed?: boolean;
   /** True when this group's connections are hidden (treated as external). */

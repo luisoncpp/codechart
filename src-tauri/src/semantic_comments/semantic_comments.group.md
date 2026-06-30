@@ -6,6 +6,7 @@ icon: message-square
 facades:
   - mod.rs
 descriptionShort: "@Architecture block parser"
+architectureDoc: docs/architecture/language-adapter.md
 ---
 
 Scans source text for `@Architecture(key=value, …)` blocks and maps recognized keys onto `Annotation`. Quote-aware, partial/malformed-safe; decoupled from tree-sitter.

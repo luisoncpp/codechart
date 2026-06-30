@@ -124,6 +124,9 @@ pub struct GroupNode {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub annotation: Option<Annotation>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub architecture_doc: Option<String>,
 }
 
 fn is_false(v: &bool) -> bool {

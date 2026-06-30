@@ -182,6 +182,12 @@ hidden by zoom collapse.
   - **L1.5+ (`showLong`):** same box shows `descriptionLong` (falls back to `descriptionShort`) at the
     smaller `DESC_BOX.fontSize` (16): the long prose is denser, so a modest font keeps the box compact
     while L1's short blurb still reads large. The two fonts are independent on purpose.
+  - **L2 (`architectureDoc`):** when a group declares `architectureDoc` in its `*.group.md`
+    frontmatter, the description box becomes a scrollable **rendered markdown** panel (not source).
+    Content is lazy-fetched via `read_module_source` and cached in `GraphSessionStore.groupDocCache`;
+    `GroupL2Description` + `MarkdownBody` (`marked`) render headings, lists, code, and tables with
+    custom scrollbars (`L2ScrollableBody`). The scroll region is **viewport-clamped** via the shared
+    `useL2ClampedLayout` hook (same as module L2 documents). Until the fetch completes, L1.5 long text still shows.
   - **Reserved layout space (packed, not a band):** `elk-input` injects a **real leaf box** per annotated
     group (`descriptionBoxId(groupId)`) into the group's layered flow, sized by
     `descriptionBoxSize(short, long)` (the *same* content-fit philosophy as `moduleBoxSize` — width

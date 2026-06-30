@@ -34,6 +34,8 @@ export interface RenderOptions {
   showSymbols?: boolean;
   /** moduleId → source; presence (at L2) turns on the in-box snippet. */
   snippets?: Map<string, string>;
+  /** groupId → markdown; presence (at L2) turns on the architecture doc panel. */
+  groupDocs?: Map<string, string>;
   /** Normalized heat scores when the heatmap overlay is enabled. */
   heat?: HeatProjection & { mode: "activity" | "risk" };
 }
@@ -173,6 +175,8 @@ function groupNode(
       icon: group.annotation?.icon,
       descriptionShort: group.annotation?.descriptionShort,
       descriptionLong: group.annotation?.descriptionLong,
+      architectureDoc: group.architectureDoc,
+      architectureDocContent: ctx.options?.groupDocs?.get(group.id),
       collapsed: ctx.options?.collapsedGroupIds?.has(group.id) ?? false,
       disconnected: ctx.groupDisconnected(group.id),
       showLong: ctx.options?.showSymbols ?? false,

@@ -46,6 +46,8 @@ pub struct GroupDef {
     pub ignore: Vec<String>,
     pub description_short: Option<String>,
     pub description_long: Option<String>,
+    /// Repo-relative path to an extended markdown architecture doc (L2 canvas).
+    pub architecture_doc: Option<String>,
     /// When true, the group's connections are hidden by default in the canvas.
     pub disconnected: bool,
     /// Module paths (relative to `dir`) whose connections are hidden by default.

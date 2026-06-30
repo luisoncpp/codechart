@@ -38,6 +38,8 @@ export class GraphSessionStore extends EventEmitter {
   private hideTests = false;
   private sourceCache = new Map<string, string>();
   private sourceCacheVersion = 0;
+  private groupDocCache = new Map<string, string>();
+  private groupDocCacheVersion = 0;
   /** Each group's footprint from the full (uncollapsed) layout, so a collapsed
    *  group keeps its own expanded size instead of shrinking. */
   private expandedGroupSizes = new Map<string, { width: number; height: number }>();
@@ -72,6 +74,8 @@ export class GraphSessionStore extends EventEmitter {
   getHideTests = () => this.hideTests;
   getSourceCache = () => this.sourceCache;
   getSourceCacheVersion = () => this.sourceCacheVersion;
+  getGroupDocCache = () => this.groupDocCache;
+  getGroupDocCacheVersion = () => this.groupDocCacheVersion;
   getProjectRoot = () => this.root;
   getDiffOverlay = () => this.diffOverlay;
   getDiffError = () => this.diffError;
@@ -191,7 +195,7 @@ export class GraphSessionStore extends EventEmitter {
     this.syncReduced();
     this.emit("zoom-changed");
     if (level === 2 && prev !== 2) {
-      void this.fetchSources();
+      void this.fetchL2Assets();
     }
   }
 
@@ -300,6 +304,8 @@ export class GraphSessionStore extends EventEmitter {
     this.heatmapSaved = null;
     this.sourceCache = new Map();
     this.sourceCacheVersion = 0;
+    this.groupDocCache = new Map();
+    this.groupDocCacheVersion = 0;
     this.expandedGroupSizes = new Map();
     this.reduced = null;
     this.layout = null;
@@ -356,11 +362,15 @@ export class GraphSessionStore extends EventEmitter {
     if (this.zoomLevel === 0) this.setZoomLevel(1);
   }
 
-  /** L2 source fetch without a full re-layout (footprint is zoom-independent). */
-  private async fetchSources() {
+  /** L2 source/doc fetch without a full re-layout (footprint is zoom-independent). */
+  private async fetchL2Assets() {
     const modules = this.reduced?.modules;
-    if (!modules) return;
-    await this.ensureSources(modules);
+    const groups = this.reduced?.groups;
+    if (!modules && !groups) return;
+    await Promise.all([
+      modules ? this.ensureSources(modules) : Promise.resolve(),
+      groups ? this.ensureGroupDocs(groups) : Promise.resolve(),
+    ]);
     this.emit("layout-changed");
   }
 
@@ -388,6 +398,29 @@ export class GraphSessionStore extends EventEmitter {
       }),
     );
     this.sourceCacheVersion++;
+  }
+
+  /** Lazily fetch + cache architecture markdown for visible groups (L2). */
+  private async ensureGroupDocs(groups: ProjectGraph["groups"]) {
+    if (!this.root) return;
+    const pending = groups.filter(
+      (g) => g.architectureDoc && !this.groupDocCache.has(g.id),
+    );
+    if (pending.length === 0) return;
+    await Promise.all(
+      pending.map(async (g) => {
+        const path = g.architectureDoc!;
+        try {
+          this.groupDocCache.set(
+            g.id,
+            await this.client.readModuleSource(this.root!, path),
+          );
+        } catch {
+          this.groupDocCache.set(g.id, `_Could not load \`${path}\`._`);
+        }
+      }),
+    );
+    this.groupDocCacheVersion++;
   }
 
   private pauseHeatForDiff() {

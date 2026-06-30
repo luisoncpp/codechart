@@ -16,3 +16,8 @@ overflow is real and thumbs appear.
 **Counter-intuitive takeaway:** anything drawn inside a zoomed React Flow node that should look a fixed
 size on screen — text, scroll thumbs, padding — must be **counter-scaled** (`value / transform[2]`),
 same as L2 typography. Native platform scrollbars cannot be counter-scaled.
+
+**Related:** viewport-clamped L2 panels also need the inner sticky layer inset by **screen-pixel** border
+thickness when sizing from `getBoundingClientRect()` — see
+[node-border-clips-absolute-sticky-children.md](./node-border-clips-absolute-sticky-children.md). Wrong inset
+shows up as “scroll thumbs work when clamped but disappear when the full box is on screen”.

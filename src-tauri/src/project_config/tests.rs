@@ -57,6 +57,16 @@ fn group_refs_and_ignore_parse() {
 }
 
 #[test]
+fn architecture_doc_parses() {
+    let md = "---\nid: core\narchitectureDoc: docs/architecture/contract.md\n---\n";
+    let def = parse_group_def("src/core/core.group.md", md).expect("valid");
+    assert_eq!(
+        def.architecture_doc.as_deref(),
+        Some("docs/architecture/contract.md"),
+    );
+}
+
+#[test]
 fn disconnected_config_parses() {
     let md = "---\nid: shared\ndisconnected: true\n\
               disconnectedModules:\n  - types.ts\n---\n";

@@ -22,3 +22,5 @@ const nodeContentRightInScreen = nodeRect.right - borderPhysicalPx - parentRect.
 ```
 
 This ensures the sticky container matches the exact dimensions of the content area and fits perfectly without being clipped by the parent's `overflow: hidden`.
+
+**Counter-scaled borders:** when the node border is written as `3 / zoom` px (constant thickness on screen), `borderInset` must still be **3 screen pixels** — not `3 / zoom`. Using node-local px in a `getBoundingClientRect()` adjustment shrinks the inset as zoom rises; the sticky layer then spans into the border band and right/bottom overlays (custom L2 scroll thumbs) vanish. Partial viewport clamping can mask this because the visible slice is already narrower than the full box.

@@ -7,7 +7,7 @@ import { AnalysisClient } from "./analysis-client";
 // runs with zero Rust (jsdom/browser have no fs). Keyed by glob path; matched by
 // repo-relative suffix below.
 const FIXTURE_SOURCES = import.meta.glob(
-  "../../../../tests/fixtures/ts-basic-project/**/*.{ts,tsx}",
+  "../../../../tests/fixtures/ts-basic-project/**/*.{ts,tsx,md}",
   { eager: true, query: "?raw", import: "default" },
 ) as Record<string, string>;
 

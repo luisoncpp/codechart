@@ -103,6 +103,7 @@ fn build_node(
         disconnected_by_default,
         disconnected_module_ids,
         annotation: annotation_from(def),
+        architecture_doc: def.architecture_doc.clone(),
     }
 }
 

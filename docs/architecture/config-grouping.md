@@ -19,7 +19,8 @@ Public surface (`project_config::`):
 - `GroupDef` — parsed config: id, label, `dir` (folder of the file, `""` = root),
   color, icon, `facades`, membership (`match_globs`/`files`/`group_refs`/`exclude`),
   root-only `ignore`, `description_short`/`description_long`, `disconnected` (hide all
-  group connections by default), `disconnected_modules` (module paths relative to `dir`).
+  group connections by default), `disconnected_modules` (module paths relative to `dir`),
+  `architecture_doc` (repo-relative path to extended markdown for L2 canvas).
 - `parse_group_def(path, content) -> Result<GroupDef, ConfigError>` — one file.
 - `discover_group_defs(source) -> (Vec<GroupDef>, Vec<Diagnostic>)` — walk a
   `ProjectSource`, parse every `*.group.md`, parse failures → `configError`s.
@@ -28,8 +29,9 @@ Public surface (`project_config::`):
 A `*.group.md` is **YAML frontmatter + markdown body**. Frontmatter parsing
 (`parse.rs`, private) is forgiving: every field optional, unknown keys ignored,
 defaults derived from the folder path. `description_long` = body;
-`description_short` = frontmatter or first body paragraph. Missing/invalid
-frontmatter → `ConfigError` (becomes a per-file `configError`, partial results).
+`description_short` = frontmatter or first body paragraph. `architectureDoc` =
+repo-relative path to extended markdown (stored on `GroupNode`, fetched lazily at
+L2). Missing/invalid frontmatter → `ConfigError` (becomes a per-file `configError`, partial results).
 
 ## `grouping`
 
