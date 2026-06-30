@@ -55,8 +55,12 @@ pub fn analyze_project(
     let parsed_modules: Vec<ParsedModule> = parsed.iter().map(|f| f.module.clone()).collect();
     let (edges, ref_diags) = resolve_edges(&parsed_modules, &groups, &meta_index);
 
+    let mut modules = build_modules(&parsed, &groups);
+    if crate::git::is_git_repo(root) {
+        crate::git::enrich_module_metrics(root, &mut modules);
+    }
     let parts = GraphParts {
-        modules: build_modules(&parsed, &groups),
+        modules,
         diagnostics: merge(vec![config_diags, groups.diagnostics, ref_diags, parse_diags]),
         groups: groups.groups,
         edges,

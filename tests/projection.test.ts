@@ -8,6 +8,7 @@ import {
   importedBy,
   allGroupIds,
   projectForZoom,
+  computeHeatProjection,
 } from "../src/domain/graph";
 import type { ProjectGraph } from "../src/domain/graph";
 import { collapsedDescription } from "../src/features/graph_canvas/Private/GroupNodeView";
@@ -103,6 +104,35 @@ describe("render options (Phase 10 metadata + zoom)", () => {
       (n) => n.id === "core",
     );
     expect(long?.data.showLong).toBe(true);
+  });
+
+  it("threads heat scores onto group and module nodes", () => {
+    const withMetrics: ProjectGraph = {
+      ...graph,
+      modules: graph.modules.map((m) =>
+        m.id === "src/core/store.ts"
+          ? { ...m, metrics: { ...m.metrics, churn: 12 } }
+          : m,
+      ),
+    };
+    const ids = new Set(withMetrics.modules.map((m) => m.id));
+    const heat = { ...computeHeatProjection(withMetrics, "activity", ids), mode: "activity" as const };
+    const { nodes } = projectGraph(withMetrics, layout, { heat });
+    const coreGroup = nodes.find((n) => n.id === "core");
+    const store = nodes.find((n) => n.id === "src/core/store.ts");
+    expect(coreGroup?.data.heatVisible).toBe(true);
+    expect(coreGroup?.data.heatMode).toBe("activity");
+    expect(store?.data.heatVisible).toBe(true);
+  });
+
+  it("marks every node heatmapActive while the overlay is on", () => {
+    const ids = new Set(graph.modules.map((m) => m.id));
+    const heat = { ...computeHeatProjection(graph, "activity", ids), mode: "activity" as const };
+    const { nodes } = projectGraph(graph, layout, { heat });
+    const module = nodes.find((n) => n.id === "src/core/store.ts");
+    expect(module?.data.heatmapActive).toBe(true);
+    expect(module?.data.heatScore).toBe(0);
+    expect(module?.data.heatVisible).toBe(true);
   });
 
   it("raises the description box to the content top when its column is clear", () => {

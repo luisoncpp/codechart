@@ -2,6 +2,11 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { SymbolRFNode } from "../../../domain/graph";
 import { SYMBOL_KIND_DISPLAY } from "../../../domain/graph";
+import {
+  symbolBorderColor,
+  symbolHeatMixPercent,
+  symbolHeatTintVar,
+} from "./heat-node-styles";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 
@@ -11,10 +16,18 @@ export function SymbolNodeView({ data, selected }: NodeProps<SymbolRFNode>) {
   const kind = data.kind ?? "function";
   const { glyph, label: kindLabel } = SYMBOL_KIND_DISPLAY[kind];
 
+  const borderColor = symbolBorderColor(data, color);
+  const heatTint = symbolHeatTintVar(data);
+  const heatMix = symbolHeatMixPercent(data);
+  const heatClass = data.heatmapActive ? " symbol-box--heat" : "";
+
   return (
     <div
-      className={`symbol-box symbol-box--${kind}${selected ? " symbol-box--selected" : ""}`}
-      style={{ "--symbol-group-color": color } as React.CSSProperties}
+      className={`symbol-box symbol-box--${kind}${selected ? " symbol-box--selected" : ""}${heatClass}`}
+      style={{
+        "--symbol-group-color": borderColor,
+        ...(heatTint ? { "--heat-tint": heatTint, "--heat-mix": `${heatMix}%` } : {}),
+      } as React.CSSProperties}
       title={`${kindLabel}: ${data.label}`}
       data-kind={kind}
     >

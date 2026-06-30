@@ -20,6 +20,7 @@ import type {
   RFNode,
 } from "./node-data";
 import { colorForGroup } from "./colors";
+import type { HeatProjection } from "./heat-scores";
 
 type BoxIndex = Map<string, LayoutBox>;
 
@@ -33,6 +34,8 @@ export interface RenderOptions {
   showSymbols?: boolean;
   /** moduleId → source; presence (at L2) turns on the in-box snippet. */
   snippets?: Map<string, string>;
+  /** Normalized heat scores when the heatmap overlay is enabled. */
+  heat?: HeatProjection & { mode: "activity" | "risk" };
 }
 
 /** Project a `ProjectGraph` + its layout into React Flow nodes/edges (pure). */
@@ -175,8 +178,22 @@ function groupNode(
       showLong: ctx.options?.showSymbols ?? false,
       descriptionBox: descriptionBoxGeometry(group.id, box, ctx),
       minChildY,
+      ...heatFields(ctx.options?.heat?.groups.get(group.id), ctx.options?.heat?.mode),
+      ...heatmapSessionFields(ctx),
     },
   };
+}
+
+function heatFields(
+  heat: { score: number; visible: boolean } | undefined,
+  mode: "activity" | "risk" | undefined,
+) {
+  if (mode === undefined) return {};
+  return { heatScore: heat?.score ?? 0, heatVisible: true, heatMode: mode };
+}
+
+function heatmapSessionFields(ctx: ProjectionCtx) {
+  return ctx.options?.heat ? { heatmapActive: true as const } : {};
 }
 
 /** Parent-relative geometry of a group's reserved description box, pulled up to
@@ -231,6 +248,8 @@ function moduleNode(
       snippet: ctx.options?.snippets?.get(module.id),
       path: module.path,
       disconnected: ctx.moduleDisconnected(module.id),
+      ...heatFields(ctx.options?.heat?.modules.get(module.id), ctx.options?.heat?.mode),
+      ...heatmapSessionFields(ctx),
     },
   };
 }
@@ -246,6 +265,8 @@ function symbolNode(
     throw new Error(`symbol ${box.id} has no parent module`);
   }
   const label = symbolNameFromId(box.id);
+  const parentHeat = _ctx.options?.heat?.modules.get(moduleId);
+  const mode = _ctx.options?.heat?.mode;
   return {
     id: box.id,
     type: "symbol",
@@ -258,6 +279,8 @@ function symbolNode(
     data: {
       label,
       kind: inferSymbolKind(label, module.language),
+      ...heatFields(parentHeat, mode),
+      ...heatmapSessionFields(_ctx),
     },
   };
 }

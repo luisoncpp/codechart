@@ -13,7 +13,7 @@ import "./graph-canvas.css";
 import { projectGraph } from "../../../domain/graph";
 import { applyDiffOverlay } from "../../../domain/diff";
 import type { RFNode, RenderOptions, ZoomLevel } from "../../../domain/graph";
-import { edgeFocusForSelection } from "../../../domain/graph";
+import { edgeFocusForSelection, computeHeatProjection, isTestModule } from "../../../domain/graph";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { DiffModal, DiffOverlayBar } from "../../diff_visualizer";
 import type { GitClient } from "../../../ipc/git-client";
@@ -65,6 +65,7 @@ function computeWidgetPosition(
 export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
   const session = useGraphSession(store);
   const graph = session.getReducedGraph();
+  const heatGraph = session.getGraph();
   const layout = session.getLayout();
   const level = session.getZoomLevel();
   const selectedId = session.getSelectedId();
@@ -73,6 +74,11 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
     [graph, selectedId],
   );
   const diffOverlay = session.getDiffOverlay();
+  const hideTests = session.getHideTests();
+  const heatmapEnabled = session.getHeatmapEnabled();
+  const heatmapMode = session.getHeatmapMode();
+  const heatmapGitAvailable = session.getIsGitRepo() === true;
+  const heatmapLoading = session.getPhase() === "loading";
   const [diffModalOpen, setDiffModalOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<ModuleContextMenuState | null>(null);
 
@@ -141,6 +147,17 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
   }, [activeSymbol]);
 
   const cacheVersion = session.getSourceCacheVersion();
+  const heatOptions = useMemo(() => {
+    if (!heatGraph || !heatmapEnabled || diffOverlay) return undefined;
+    const moduleIds = new Set(
+      heatGraph.modules
+        .filter((m) => !hideTests || !isTestModule(m.path))
+        .map((m) => m.id),
+    );
+    const projection = computeHeatProjection(heatGraph, heatmapMode, moduleIds);
+    return { ...projection, mode: heatmapMode };
+  }, [heatGraph, heatmapEnabled, heatmapMode, hideTests, diffOverlay]);
+
   const projected = useMemo(
     /*reproject on model/zoom change*/ () => {
       if (!graph || !layout) return null;
@@ -150,12 +167,13 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
         disconnectedModuleIds: session.getDisconnectedModuleIds(),
         showSymbols: level >= 1.5,
         snippets: level === 2 ? session.getSourceCache() : undefined,
+        heat: heatOptions,
       };
       // cacheVersion busts memo when source cache updates without session identity change
       void cacheVersion;
       return projectGraph(graph, layout, options);
     },
-    [graph, layout, level, session, cacheVersion],
+    [graph, layout, level, session, cacheVersion, heatOptions],
   );
 
   const displayProjected = useMemo(() => {
@@ -216,10 +234,16 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
           <DiffOverlayBar onStop={() => store.clearDiffOverlay()} />
         )}
         <ViewControls
-          hideTests={session.getHideTests()}
+          hideTests={hideTests}
           onHideTestsChange={(hide) => store.setHideTests(hide)}
           diffActive={!!diffOverlay}
           onVisualizeDiff={() => setDiffModalOpen(true)}
+          heatmapEnabled={heatmapEnabled}
+          heatmapMode={heatmapMode}
+          heatmapGitAvailable={heatmapGitAvailable}
+          heatmapLoading={heatmapLoading}
+          onHeatmapEnabledChange={(enabled) => store.setHeatmapEnabled(enabled)}
+          onHeatmapModeChange={(mode) => store.setHeatmapMode(mode)}
         />
         <DiffModal
           store={store}

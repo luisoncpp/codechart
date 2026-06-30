@@ -5,6 +5,7 @@ import { L2Header } from "./L2Header";
 import { L2Description, L2CodeBlock } from "./L2Content";
 import { moduleDiffBorder, moduleDiffBorderWidth, moduleDiffOpacity } from "./DiffCodeLines";
 import { ConnectionToggle } from "./ConnectionToggle";
+import { l2HeatBorder, l2HeatHeaderBar } from "./heat-node-styles";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 /** Visible thumb thickness on screen (px); divided by canvas zoom inside the node. */
@@ -350,7 +351,8 @@ export function L2DocumentNode({
   const diffState = data.diffState;
   const shellOpacity = moduleDiffOpacity(diffState);
   const scrollbarInsetPx = moduleDiffBorderWidth(diffState, /*fallbackPx=*/0);
-  const border = moduleDiffBorder(diffState, `2px solid ${color}`);
+  const border = moduleDiffBorder(diffState, l2HeatBorder(data, `2px solid ${color}`));
+  const heatBar = l2HeatHeaderBar(data);
 
   return (
     <div
@@ -375,6 +377,7 @@ export function L2DocumentNode({
       {inFov && (
         <div style={clampedStyles}>
           <L2Header label={data.label} color={color} zoom={zoom} />
+          {heatBar && <div style={heatBar} />}
           <L2ScrollableBody
             zoom={zoom}
             padding={bodyPadding}

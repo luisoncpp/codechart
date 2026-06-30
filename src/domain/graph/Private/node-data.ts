@@ -26,6 +26,10 @@ export interface GroupNodeData extends Record<string, unknown> {
   minChildY?: number;
   /** True while a diff overlay is active — group title/description render dimmed. */
   diffVisualizing?: boolean;
+  heatScore?: number;
+  heatVisible?: boolean;
+  heatMode?: "activity" | "risk";
+  heatmapActive?: boolean;
 }
 
 /** Data carried by a custom module node. */
@@ -52,6 +56,14 @@ export interface ModuleNodeData extends Record<string, unknown> {
   diffState?: "affected" | "deleted" | "unchanged";
   /** Parsed line diff for code panels (add/remove highlights). */
   diffLineDiff?: FileLineDiff;
+  /** Normalized heat score in [0, 1] when heatmap overlay is active. */
+  heatScore?: number;
+  /** False when score is at or below the cold percentile. */
+  heatVisible?: boolean;
+  /** Active heat mode — drives tint hue. */
+  heatMode?: "activity" | "risk";
+  /** True while the heatmap overlay is enabled (cold nodes use neutral chrome). */
+  heatmapActive?: boolean;
 }
 
 /** Data carried by an exported-symbol box nested under a module. */
@@ -59,6 +71,10 @@ export interface SymbolNodeData extends Record<string, unknown> {
   label: string;
   kind: SymbolKind;
   color?: string;
+  heatScore?: number;
+  heatVisible?: boolean;
+  heatMode?: "activity" | "risk";
+  heatmapActive?: boolean;
 }
 
 /** Data carried by an import edge. */

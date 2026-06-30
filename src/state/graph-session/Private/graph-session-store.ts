@@ -14,6 +14,7 @@ import {
   isModuleDisconnected as moduleIsDisconnected,
   groupParentMap,
   type ZoomLevel,
+  type HeatmapMode,
 } from "../../../domain/graph";
 import { LayoutEngine, LayoutedGraph, LayoutOptions } from "../../../domain/layout";
 import { EventEmitter } from "./event-emitter";
@@ -42,6 +43,10 @@ export class GraphSessionStore extends EventEmitter {
   private layoutSeq = 0;
   private diffOverlay: GraphDiffOverlay | null = null;
   private diffError: string | null = null;
+  private heatmapEnabled = false;
+  private heatmapMode: HeatmapMode = "activity";
+  private isGitRepo: boolean | null = null;
+  private heatmapSaved: { enabled: boolean; mode: HeatmapMode } | null = null;
 
   constructor(
     private client: AnalysisClient,
@@ -67,12 +72,28 @@ export class GraphSessionStore extends EventEmitter {
   getProjectRoot = () => this.root;
   getDiffOverlay = () => this.diffOverlay;
   getDiffError = () => this.diffError;
+  getHeatmapEnabled = () => this.heatmapEnabled;
+  getHeatmapMode = () => this.heatmapMode;
+  getIsGitRepo = () => this.isGitRepo;
 
   clearDiffOverlay() {
     if (!this.diffOverlay && !this.diffError) return;
     this.diffOverlay = null;
     this.diffError = null;
+    this.restoreHeatAfterDiff();
     this.emit("diff-changed");
+  }
+
+  setHeatmapEnabled(enabled: boolean) {
+    if (enabled === this.heatmapEnabled || this.diffOverlay) return;
+    this.heatmapEnabled = enabled;
+    this.emit("heatmap-changed");
+  }
+
+  setHeatmapMode(mode: HeatmapMode) {
+    if (mode === this.heatmapMode || this.diffOverlay) return;
+    this.heatmapMode = mode;
+    this.emit("heatmap-changed");
   }
 
   async applyDiffFromCommits(baseRef: string, headRef: string) {
@@ -87,6 +108,7 @@ export class GraphSessionStore extends EventEmitter {
         baseRef,
         headRef,
       );
+      this.pauseHeatForDiff();
       this.ensureDiffZoomFloor();
       this.emit("diff-changed");
     } catch (e) {
@@ -99,6 +121,7 @@ export class GraphSessionStore extends EventEmitter {
     if (!this.graph) return;
     this.diffError = null;
     this.diffOverlay = buildPasteDiffOverlay(text, this.graph);
+    this.pauseHeatForDiff();
     this.ensureDiffZoomFloor();
     this.emit("diff-changed");
   }
@@ -212,9 +235,14 @@ export class GraphSessionStore extends EventEmitter {
     this.resetZoom();
     this.diffOverlay = null;
     this.diffError = null;
+    this.heatmapSaved = null;
+    this.isGitRepo = null;
+    this.heatmapEnabled = false;
+    this.heatmapMode = "activity";
     this.emit("phase-changed");
 
     try {
+      this.isGitRepo = await this.git.isGitRepo(path);
       this.graph = await this.client.analyzeProject(path);
       if (this.graph.modules.length === 0) this.phase = "empty";
       else {
@@ -239,6 +267,9 @@ export class GraphSessionStore extends EventEmitter {
     this.disconnectedGroupIds = new Set();
     this.disconnectedModuleIds = new Set();
     this.hideTests = false;
+    this.heatmapEnabled = false;
+    this.heatmapMode = "activity";
+    this.heatmapSaved = null;
     this.sourceCache = new Map();
     this.sourceCacheVersion = 0;
     this.expandedGroupSizes = new Map();
@@ -329,5 +360,19 @@ export class GraphSessionStore extends EventEmitter {
       }),
     );
     this.sourceCacheVersion++;
+  }
+
+  private pauseHeatForDiff() {
+    this.heatmapSaved = { enabled: this.heatmapEnabled, mode: this.heatmapMode };
+    this.heatmapEnabled = false;
+    this.emit("heatmap-changed");
+  }
+
+  private restoreHeatAfterDiff() {
+    if (!this.heatmapSaved) return;
+    this.heatmapEnabled = this.heatmapSaved.enabled;
+    this.heatmapMode = this.heatmapSaved.mode;
+    this.heatmapSaved = null;
+    this.emit("heatmap-changed");
   }
 }

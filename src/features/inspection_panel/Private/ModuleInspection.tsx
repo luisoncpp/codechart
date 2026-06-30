@@ -13,14 +13,16 @@ import { SoftEdgeSections } from "./SoftEdgeSections";
 import { MetadataSection } from "./MetadataSection";
 import { PanelChrome, Row } from "./PanelParts";
 import { SymbolList } from "./SymbolList";
+import { ModuleHeatRows } from "./ModuleHeatRows";
 
 interface ModuleInspectionProps {
   graph: ProjectGraph;
   module: ModuleNode;
+  hideTests: boolean;
   onHide?: () => void;
 }
 
-export function ModuleInspection({ graph, module, onHide }: ModuleInspectionProps) {
+export function ModuleInspection({ graph, module, hideTests, onHide }: ModuleInspectionProps) {
   const group = groupOf(graph, module.id);
   return (
     <PanelChrome onHide={onHide}>
@@ -31,6 +33,7 @@ export function ModuleInspection({ graph, module, onHide }: ModuleInspectionProp
         <Row label="Facade" value={module.isFacade ? "Yes" : "No"} />
         <Row label="Language" value={module.language} />
         <Row label="LOC" value={String(module.metrics.loc)} />
+        <ModuleHeatRows graph={graph} module={module} hideTests={hideTests} />
       </dl>
       <MetadataSection module={module} group={group} />
       <SymbolList symbols={module.exportedSymbols} language={module.language} />

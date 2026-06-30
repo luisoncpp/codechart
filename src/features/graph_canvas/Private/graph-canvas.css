@@ -155,6 +155,21 @@
   color: #475569;
 }
 
+/* Heat tint at L1.5 — color-mix with kind background, badges stay saturated. */
+.symbol-box--heat {
+  background: color-mix(in srgb, var(--heat-tint) var(--heat-mix, 15%), var(--symbol-bg, #ffffff));
+}
+
+.symbol-box--heat.symbol-box--function { --symbol-bg: #f8fbff; }
+.symbol-box--heat.symbol-box--component { --symbol-bg: #faf8ff; }
+.symbol-box--heat.symbol-box--class { --symbol-bg: #fffdf5; }
+.symbol-box--heat.symbol-box--interface { --symbol-bg: #f4fcfd; }
+.symbol-box--heat.symbol-box--type { --symbol-bg: #f4fdfb; }
+.symbol-box--heat.symbol-box--hook { --symbol-bg: #fdfaff; }
+.symbol-box--heat.symbol-box--predicate { --symbol-bg: #f6fef8; }
+.symbol-box--heat.symbol-box--constant { --symbol-bg: #fffaf5; }
+.symbol-box--heat.symbol-box--default { --symbol-bg: #f8fafc; }
+
 /* Types get a hairline dashed inner edge — the "erased at compile time" cue. */
 .symbol-box--type,
 .symbol-box--interface {

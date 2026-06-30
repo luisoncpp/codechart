@@ -18,7 +18,12 @@ import { moduleDiffBorder, moduleDiffOpacity } from "./DiffCodeLines";
 
 import { useZoomCounterScale } from "./use-zoom-counter-scale";
 
-
+import {
+  l15HeatBarStyle,
+  moduleCardBackground,
+  moduleCardBorder,
+  moduleLabelColor,
+} from "./heat-node-styles";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 
@@ -137,21 +142,14 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
   const fontSize = moduleHeaderFontSize(data, detail, boxW, boxH);
 
   const cardOpts = {
-
+    data,
     color,
-
-    textColor,
-
+    textColor: moduleLabelColor(data, textColor),
     isFacade: data.isFacade,
-
     selected,
-
     detail,
-
     diffState: data.diffState,
-
     counterScale: zoomScale,
-
   };
 
   return (
@@ -161,6 +159,8 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
 
       <ConnectionToggle disconnected={!!data.disconnected} scale={zoomScale} />
+
+      {detail && <div style={l15HeatBarStyle(data)} />}
 
       {data.snippet && <Snippet source={data.snippet} />}
 
@@ -249,78 +249,43 @@ function Snippet({ source }: { source: string }) {
 
 
 interface CardStyleOptions {
-
+  data: ModuleRFNode["data"];
   color: string;
-
   textColor: string;
-
   isFacade: boolean;
-
   selected: boolean;
-
   detail: boolean;
-
   diffState?: "affected" | "deleted" | "unchanged";
-
   counterScale: number;
-
 }
 
-
-
 function cardStyle({
-
+  data,
   color,
-
   textColor,
-
   isFacade,
-
   selected,
-
   detail,
-
   diffState,
-
   counterScale,
-
 }: CardStyleOptions) {
-
-  const diffBorder = moduleDiffBorder(
-    diffState,
-    `${isFacade ? 2 : 1}px solid ${color}`,
-    counterScale,
-  );
+  const defaultBorder = moduleCardBorder(data, color, isFacade);
+  const diffBorder = moduleDiffBorder(diffState, defaultBorder, counterScale);
 
   return {
-
     position: "relative" as const,
-
     width: "100%",
-
     height: "100%",
-
     boxSizing: "border-box" as const,
-
     fontFamily:
-
       'ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace',
-
     color: textColor,
-
-    background: detail ? `${color}0d` : `${color}1a`,
-
+    background: moduleCardBackground(data, color, detail),
     borderRadius: 6,
-
     border: diffBorder,
-
     outline: selected ? "2px solid #2563eb" : "none",
-
     overflow: "hidden",
-
     opacity: moduleDiffOpacity(diffState),
-
   };
-
 }
 

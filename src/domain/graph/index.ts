@@ -33,6 +33,14 @@ export {
   countHiddenEdges,
 } from "./Private/connection-filter";
 export type { ZoomLevel } from "./Private/zoom-projection";
+export type { HeatmapMode, ModuleHeat, HeatProjection } from "./Private/heat-scores";
+export {
+  computeHeatProjection,
+  rawHeatValue,
+  heatBand,
+  formatChurn,
+} from "./Private/heat-scores";
+export { heatColor, heatFill, heatFillOpacity, heatLegendGradient } from "./Private/heat-colors";
 export type {
   ProjectedGraph,
   GroupNodeData,

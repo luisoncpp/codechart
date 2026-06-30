@@ -1,4 +1,9 @@
 // @Architecture(descriptionShort="Git helpers for listing commits and reading tree snapshots")
+mod metrics;
+mod metrics_log;
+
+pub use metrics::{enrich_module_metrics, metrics_window_days};
+
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::path::Path;

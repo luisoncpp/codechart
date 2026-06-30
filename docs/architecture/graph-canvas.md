@@ -87,6 +87,16 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   **L2 source panels and the symbol preview widget** show unified-diff rows:
   green `+` lines for additions, red `-` lines for deletions (`DiffCodeLines`). Diff styling wins over
   selection dimming for stamped edges. **Stop visualizing diff** clears overlay state; reload clears it too.
+  **Mutually exclusive with the activity heatmap** — diff on pauses heat controls and restores prior heat state when cleared.
+- **Activity heatmap (git metrics overlay):** when the project root is a git repo, `analyze_project`
+  stamps `ModuleMetrics.churn`, `bugRisk`, and `fixCommits` (90-day window, Rust `git::enrich_module_metrics`).
+  `ViewControls` exposes a **Heatmap** toggle + **Activity | Risk** segmented switch (Activity default);
+  disabled without git (tooltip: “Requires a git repository”). `computeHeatProjection` (`heat-scores.ts`,
+  pure) percentile-ranks visible modules (respecting **Hide tests**) into `heatScore`/`heatVisible` on
+  projected nodes. Group scores use the **full** graph (not the L0-reduced view) so
+  collapsed bird's-eye boxes match expanded L1 tints. Every module/group gets a score in
+  `[0, 1]` (inactive = `0`, coldest gradient stop); brand colors are never used while the
+  overlay is on. Visual stack: diff > selection > violation > heat > default chrome.
 - **Icons:** sparing, name → glyph map (`icon-map.tsx`); unknown names render no glyph.
 
 ## Semantic zoom L0/L1/L2 + metadata (Phase 10)

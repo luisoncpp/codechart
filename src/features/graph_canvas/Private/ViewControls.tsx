@@ -1,9 +1,18 @@
 // @Architecture(descriptionShort="Canvas overlay toggles for view filters such as hiding tests")
+import { HeatmapControls } from "./HeatmapControls";
+import type { HeatmapMode } from "../../../domain/graph";
+
 interface ViewControlsProps {
   hideTests: boolean;
   onHideTestsChange: (hide: boolean) => void;
   diffActive: boolean;
   onVisualizeDiff: () => void;
+  heatmapEnabled: boolean;
+  heatmapMode: HeatmapMode;
+  heatmapGitAvailable: boolean;
+  heatmapLoading: boolean;
+  onHeatmapEnabledChange: (enabled: boolean) => void;
+  onHeatmapModeChange: (mode: HeatmapMode) => void;
 }
 
 /** Small overlay for graph view filters (top-right, below the level badge). */
@@ -12,6 +21,12 @@ export function ViewControls({
   onHideTestsChange,
   diffActive,
   onVisualizeDiff,
+  heatmapEnabled,
+  heatmapMode,
+  heatmapGitAvailable,
+  heatmapLoading,
+  onHeatmapEnabledChange,
+  onHeatmapModeChange,
 }: ViewControlsProps) {
   return (
     <div style={wrapStyle}>
@@ -24,9 +39,19 @@ export function ViewControls({
         Hide tests
       </label>
       {!diffActive && (
-        <button type="button" onClick={onVisualizeDiff} style={buttonStyle}>
-          Visualize diff…
-        </button>
+        <>
+          <HeatmapControls
+            enabled={heatmapEnabled}
+            mode={heatmapMode}
+            gitAvailable={heatmapGitAvailable}
+            loading={heatmapLoading}
+            onEnabledChange={onHeatmapEnabledChange}
+            onModeChange={onHeatmapModeChange}
+          />
+          <button type="button" onClick={onVisualizeDiff} style={buttonStyle}>
+            Visualize diff…
+          </button>
+        </>
       )}
     </div>
   );

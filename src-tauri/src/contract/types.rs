@@ -92,12 +92,18 @@ pub struct ModuleNode {
 #[serde(rename_all = "camelCase")]
 pub struct ModuleMetrics {
     pub loc: u32,
+    /// Relative activity: (lines added + deleted) / max(loc, 1) over the git window.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
-    pub churn: Option<u32>,
+    pub churn: Option<f64>,
+    /// Bugspots time-weighted risk score over the git window.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
-    pub complexity: Option<u32>,
+    pub bug_risk: Option<f64>,
+    /// Bug-fix commits touching this module in the git window.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub fix_commits: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, TS, Debug, Clone, PartialEq, Default)]

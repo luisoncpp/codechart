@@ -344,3 +344,17 @@ describe("GraphSessionStore connection disconnect", () => {
     expect(store.getReducedGraph()!.edges.length).toBeGreaterThan(hidden);
   });
 });
+
+describe("GraphSessionStore heatmap", () => {
+  it("pauses heatmap during diff overlay and restores after clear", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.setHeatmapEnabled(true);
+    store.setHeatmapMode("risk");
+    store.applyDiffFromPaste("diff --git a/src/core/store.ts b/src/core/store.ts\n");
+    expect(store.getHeatmapEnabled()).toBe(false);
+    store.clearDiffOverlay();
+    expect(store.getHeatmapEnabled()).toBe(true);
+    expect(store.getHeatmapMode()).toBe("risk");
+  });
+});

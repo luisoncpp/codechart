@@ -28,6 +28,7 @@ export function InspectionPanel({
       <InspectionPanelBody
         graph={graph}
         selectedId={selectedId}
+        hideTests={session.getHideTests()}
         onHide={onHide}
       />
     </InspectorLayoutProvider>
@@ -37,10 +38,12 @@ export function InspectionPanel({
 function InspectionPanelBody({
   graph,
   selectedId,
+  hideTests,
   onHide,
 }: {
   graph: ProjectGraph | null;
   selectedId: string | null;
+  hideTests: boolean;
   onHide?: () => void;
 }) {
   if (!graph || !selectedId) {
@@ -55,7 +58,7 @@ function InspectionPanelBody({
 
   const module = findModule(graph, selectedId);
   if (module) {
-    return <ModuleInspection graph={graph} module={module} onHide={onHide} />;
+    return <ModuleInspection graph={graph} module={module} hideTests={hideTests} onHide={onHide} />;
   }
 
   const group = findGroup(graph, selectedId);

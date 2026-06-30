@@ -7,6 +7,7 @@ import { iconFontSize, iconGlyph } from "./icon-map";
 import { ConnectionToggle } from "./ConnectionToggle";
 import { ChevronIcon } from "./ChevronIcon";
 import { useZoomCounterScale } from "./use-zoom-counter-scale";
+import { groupShellStyle, groupTextColors } from "./heat-node-styles";
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
@@ -36,6 +37,8 @@ function fitsBox(text: string, w: number, h: number, font: number): boolean {
  *  A collapsed group (semantic zoom) shows a readable card with its annotation. */
 export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
   const scale = useZoomCounterScale();
+  const shell = groupShellStyle(data);
+  const text = groupTextColors(data);
   return (
     <div
       style={{
@@ -43,9 +46,8 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
         width: "100%",
         height: "100%",
         boxSizing: "border-box",
-        border: `2px solid ${data.color}`,
         borderRadius: 10,
-        background: `${data.color}14`,
+        ...shell,
       }}
     >
       {/* Invisible handles so a collapsed group can be an edge endpoint (L0
@@ -53,11 +55,14 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <ConnectionToggle disconnected={!!data.disconnected} scale={scale} />
       {data.collapsed ? (
-        <CollapsedCard data={data} scale={scale} width={width} height={height} />
+        <CollapsedCard data={data} text={text} scale={scale} width={width} height={height} />
       ) : (
         <>
-          <ExpandedHeader data={data} scale={scale} />
-          <GroupDescription data={data} />
+          <ExpandedHeader data={data} text={text} scale={scale} />
+          <GroupDescription
+            data={data}
+            descColor={data.heatmapActive ? text.description : darken(text.description)}
+          />
         </>
       )}
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
@@ -69,7 +74,13 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
  *  geometry, so modules pack around it. L1 shows the short text at the larger
  *  `l1FontSize`; L1.5+ (`showLong`) shows the long text at the smaller `fontSize`.
  *  The box fits both (`descriptionBoxSize`), so neither variant truncates. */
-function GroupDescription({ data }: { data: GroupNodeData }) {
+function GroupDescription({
+  data,
+  descColor,
+}: {
+  data: GroupNodeData;
+  descColor: string;
+}) {
   const showingLong = !!(data.showLong && data.descriptionLong);
   const text = (showingLong ? data.descriptionLong : undefined) ?? data.descriptionShort;
   if (!text || !data.descriptionBox) return null;
@@ -80,7 +91,7 @@ function GroupDescription({ data }: { data: GroupNodeData }) {
   return (
     <p
       style={{
-        ...bandDescriptionStyle(darken(data.color), data.descriptionBox, font),
+        ...bandDescriptionStyle(descColor, data.descriptionBox, font),
         opacity: groupLabelOpacity(data),
       }}
       title={text}
@@ -93,11 +104,19 @@ function GroupDescription({ data }: { data: GroupNodeData }) {
 /** Expanded: a quiet header strip; the modules inside carry the detail.
  *  Counter-scales with the camera so the group name stays legible when zoomed
  *  out — the level at which the group, not its modules, is what you read. */
-function ExpandedHeader({ data, scale }: { data: GroupNodeData; scale: number }) {
+function ExpandedHeader({
+  data,
+  text,
+  scale,
+}: {
+  data: GroupNodeData;
+  text: ReturnType<typeof groupTextColors>;
+  scale: number;
+}) {
   const glyph = iconGlyph(data.icon);
   return (
-    <div style={headerStyle(data.color, scale)}>
-      <ToggleButton color={data.color} scale={scale} collapsed={false} />
+    <div style={headerStyle(text.label, scale)}>
+      <ToggleButton color={text.control} scale={scale} collapsed={false} />
       <div style={{ ...headerLabelStyle(scale), opacity: groupLabelOpacity(data) }}>
         {glyph && (
           <span aria-hidden style={{ fontSize: iconFontSize(14, scale), lineHeight: 1, flexShrink: 0 }}>
@@ -146,17 +165,20 @@ const L0_DESC_FONT = 14;
 
 function CollapsedCard({
   data,
+  text,
   scale,
   width,
   height,
 }: {
   data: GroupNodeData;
+  text: ReturnType<typeof groupTextColors>;
   scale: number;
   width?: number;
   height?: number;
 }) {
   const glyph = iconGlyph(data.icon);
   const description = collapsedDescription(data, scale, { width, height });
+  const descColor = data.heatmapActive ? text.description : darken(text.description);
   return (
     <div
       style={{
@@ -168,8 +190,8 @@ function CollapsedCard({
         gap: 8 * scale,
       }}
     >
-      <div style={cardLabelStyle(data.color, scale)}>
-        <ToggleButton color={data.color} scale={scale} collapsed />
+      <div style={cardLabelStyle(text.label, scale)}>
+        <ToggleButton color={text.control} scale={scale} collapsed />
         <div style={{ ...cardLabelTextStyle(scale), opacity: groupLabelOpacity(data) }}>
           {glyph && (
             <span aria-hidden style={{ fontSize: iconFontSize(18, scale), lineHeight: 1, flexShrink: 0 }}>
@@ -182,7 +204,7 @@ function CollapsedCard({
       {description && (
         <p
           style={{
-            ...cardDescriptionStyle(darken(data.color), scale, description.lines),
+            ...cardDescriptionStyle(descColor, scale, description.lines),
             opacity: groupLabelOpacity(data),
           }}
         >
