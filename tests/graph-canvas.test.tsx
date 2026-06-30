@@ -1,41 +1,48 @@
 /// <reference types="@testing-library/jest-dom" />
-import React from "react";
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { render, screen, waitFor, within, fireEvent } from "@testing-library/react";
+import { screen, waitFor, within, fireEvent } from "@testing-library/react";
 import goldenGraph from "./fixtures/golden/project-graph.json";
-import { GraphCanvas, edgeRole, styleEdge } from "../src/features/graph_canvas";
+import { edgeRole, styleEdge } from "../src/features/graph_canvas";
 import { projectForZoom, allGroupIds } from "../src/domain/graph";
 import { renderInspectionPanel } from "./helpers/render-inspection-panel";
 import { GraphSessionStore } from "../src/state/graph-session";
-import { createMockGitClient } from "../src/ipc/git-client";
-import { createMockShellClient } from "../src/ipc/shell-client";
 import type { ShellClient } from "../src/ipc/shell-client";
-import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 import type { ProjectGraph } from "../src/domain/graph";
+import {
+  readyGraphStore,
+  renderGraphCanvas,
+} from "./helpers/flow-graph-canvas";
+import {
+  clickGroupAndExpectSelected,
+  expectGroupDescription,
+  renderCanvasWithGroup,
+} from "./helpers/graph-canvas-dom";
 
 const graph = goldenGraph as unknown as ProjectGraph;
 
-function renderCanvas(
+async function renderWithStoreDiff(
   store: GraphSessionStore,
-  shell: ShellClient = createMockShellClient(),
+  diffLines: string[],
+  zoomLevel?: number,
 ) {
-  return render(<GraphCanvas store={store} git={createMockGitClient()} shell={shell} />);
+  if (zoomLevel !== undefined) {
+    store.setZoomLevel(zoomLevel);
+  }
+  store.applyDiffFromPaste(diffLines.join("\n"));
+  const { container } = renderGraphCanvas(store);
+  await waitFor(() =>
+    expect(container.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
+  );
+  return container;
 }
-
-async function readyStore(): Promise<GraphSessionStore> {
-  const store = testGraphSessionStore();
-  await store.loadProject("/sample");
-  return store;
-}
-
 describe("GraphCanvas", () => {
   let store: GraphSessionStore;
   beforeEach(async () => {
-    store = await readyStore();
+    store = await readyGraphStore();
   });
 
   it("renders one React Flow node per group and module", async () => {
-    const { container } = renderCanvas(store);
+    const { container } = renderGraphCanvas(store);
     await waitFor(() => {
       const nodes = container.querySelectorAll(".react-flow__node");
       expect(nodes).toHaveLength(graph.groups.length + graph.modules.length);
@@ -43,7 +50,7 @@ describe("GraphCanvas", () => {
   });
 
   it("mounts the edge svg layer inside React Flow", async () => {
-    const { container } = renderCanvas(store);
+    const { container } = renderGraphCanvas(store);
     await waitFor(() => {
       expect(container.querySelector(".codechart-edge-layer")).toBeTruthy();
       expect(container.querySelectorAll(".codechart-edge-layer path").length).toBeGreaterThan(0);
@@ -53,17 +60,13 @@ describe("GraphCanvas", () => {
   it("gives group nodes source+target handles so collapsed groups can be edge endpoints (L0)", async () => {
     // Regression: at L0 edges re-route onto group boxes; without handles React
     // Flow drops them (error #008) and the overview shows no edges at all.
-    const { container } = renderCanvas(store);
-    await waitFor(() =>
-      expect(container.querySelector(`[data-id="app"]`)).toBeTruthy(),
-    );
-    const group = container.querySelector(`[data-id="app"]`)!;
+    const { group } = await renderCanvasWithGroup(store, "app");
     expect(group.querySelector(".react-flow__handle.source")).toBeTruthy();
     expect(group.querySelector(".react-flow__handle.target")).toBeTruthy();
   });
 
   it("clicking a module selects it in the store", async () => {
-    const { container } = renderCanvas(store);
+    const { container } = renderGraphCanvas(store);
     await waitFor(() =>
       expect(container.querySelector(".react-flow__node")).toBeTruthy(),
     );
@@ -76,7 +79,7 @@ describe("GraphCanvas", () => {
   it("right-clicking a module opens reveal-in-explorer menu", async () => {
     const revealInExplorer = vi.fn();
     const shell: ShellClient = { revealInExplorer };
-    const { container } = renderCanvas(store, shell);
+    const { container } = renderGraphCanvas(store, shell);
     await waitFor(() =>
       expect(container.querySelector(".react-flow__node")).toBeTruthy(),
     );
@@ -91,7 +94,7 @@ describe("GraphCanvas", () => {
 
   it("renders exported symbols as child boxes at L1.5", async () => {
     store.setZoomLevel(1.5);
-    const { container } = renderCanvas(store);
+    const { container } = renderGraphCanvas(store);
     await waitFor(() =>
       expect(
         container.querySelector(`[data-id="src/core/store.ts::TodoStore"]`),
@@ -104,57 +107,31 @@ describe("GraphCanvas", () => {
   });
 
   it("shows the group's short description in its reserved band at L1", async () => {
-    const { container } = renderCanvas(store);
-    await waitFor(() =>
-      expect(container.querySelector(`[data-id="core"]`)).toBeTruthy(),
-    );
-    const group = container.querySelector(`[data-id="core"]`)!;
-    expect(group.textContent).toContain("Domain types & state");
+    await expectGroupDescription(store, "core", "Domain types & state");
   });
 
   it("upgrades the in-band description to the long text at L1.5", async () => {
     store.setZoomLevel(1.5);
-    const { container } = renderCanvas(store);
-    await waitFor(() =>
-      expect(container.querySelector(`[data-id="core"]`)).toBeTruthy(),
-    );
-    const group = container.querySelector(`[data-id="core"]`)!;
-    expect(group.textContent).toContain("Domain model and in-memory state");
+    await expectGroupDescription(store, "core", "Domain model and in-memory state");
   });
 
   it("prefers the long description on a collapsed group card at L0", async () => {
     store.setZoomLevel(0);
-    const { container } = renderCanvas(store);
-    await waitFor(() =>
-      expect(container.querySelector(`[data-id="services"]`)).toBeTruthy(),
-    );
-    const group = container.querySelector(`[data-id="services"]`)!;
-    expect(group.textContent).toContain("Data access layer");
+    await expectGroupDescription(store, "services", "Data access layer");
   });
-
 
   it("clicking a collapsed group at L0 selects it in the store", async () => {
     store.setZoomLevel(0);
-    const { container } = renderCanvas(store);
-    await waitFor(() =>
-      expect(container.querySelector(`[data-id="app"]`)).toBeTruthy(),
-    );
-    fireEvent.click(container.querySelector(`[data-id="app"]`)!);
-    expect(store.getSelectedId()).toBe("app");
+    await clickGroupAndExpectSelected(store, "app");
   });
 
   it("selects an expanded group on click (L1)", async () => {
-    const { container } = renderCanvas(store);
-    await waitFor(() =>
-      expect(container.querySelector(`[data-id="app"]`)).toBeTruthy(),
-    );
-    fireEvent.click(container.querySelector(`[data-id="app"]`)!);
-    expect(store.getSelectedId()).toBe("app");
+    await clickGroupAndExpectSelected(store, "app");
   });
 
   it("uses bold for module filenames at L1.5 and normal at L1", async () => {
     store.setZoomLevel(1.5);
-    const { container: containerL15 } = renderCanvas(store);
+    const { container: containerL15 } = renderGraphCanvas(store);
     await waitFor(() =>
       expect(containerL15.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
     );
@@ -165,7 +142,7 @@ describe("GraphCanvas", () => {
     expect(labelSpanL15.style.fontWeight).toBe("bold");
 
     store.setZoomLevel(1.0);
-    const { container: containerL1 } = renderCanvas(store);
+    const { container: containerL1 } = renderGraphCanvas(store);
     await waitFor(() =>
       expect(containerL1.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
     );
@@ -177,21 +154,15 @@ describe("GraphCanvas", () => {
   });
 
   it("shows green + and red - line counts next to the filename in diff mode at L1", async () => {
-    store.applyDiffFromPaste(
-      [
-        "diff --git a/src/core/store.ts b/src/core/store.ts",
-        "--- a/src/core/store.ts",
-        "+++ b/src/core/store.ts",
-        "@@ -1,2 +1,3 @@",
-        " context",
-        "-removed",
-        "+added",
-      ].join("\n"),
-    );
-    const { container } = renderCanvas(store);
-    await waitFor(() =>
-      expect(container.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
-    );
+    const container = await renderWithStoreDiff(store, [
+      "diff --git a/src/core/store.ts b/src/core/store.ts",
+      "--- a/src/core/store.ts",
+      "+++ b/src/core/store.ts",
+      "@@ -1,2 +1,3 @@",
+      " context",
+      "-removed",
+      "+added",
+    ]);
     const node = container.querySelector(`[data-id="src/core/store.ts"]`)!;
     const add = Array.from(node.querySelectorAll("span")).find((el) => el.textContent === "+1");
     const remove = Array.from(node.querySelectorAll("span")).find((el) => el.textContent === "-1");
@@ -202,8 +173,8 @@ describe("GraphCanvas", () => {
   });
 
   it("shows diff line counts at L1.5 as well", async () => {
-    store.setZoomLevel(1.5);
-    store.applyDiffFromPaste(
+    const container = await renderWithStoreDiff(
+      store,
       [
         "diff --git a/src/core/store.ts b/src/core/store.ts",
         "--- a/src/core/store.ts",
@@ -211,11 +182,8 @@ describe("GraphCanvas", () => {
         "@@ -1 +1 @@",
         "-x",
         "+y",
-      ].join("\n"),
-    );
-    const { container } = renderCanvas(store);
-    await waitFor(() =>
-      expect(container.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
+      ],
+      1.5,
     );
     const node = container.querySelector(`[data-id="src/core/store.ts"]`)!;
     expect(
@@ -324,8 +292,7 @@ describe("styleEdge (focus + context dimming)", () => {
 
 describe("InspectionPanel", () => {
   it("lists exported symbols with their inferred kinds for the selected module", async () => {
-    const store = await readyStore();
-    store.select("src/core/store.ts");
+    const store = await readyGraphStore();    store.select("src/core/store.ts");
     renderInspectionPanel(store);
 
     const section = screen.getByText(/^Exported symbols/).closest("div")!;
@@ -334,7 +301,7 @@ describe("InspectionPanel", () => {
   });
 
   it("shows imports and imported-by for the selected module", async () => {
-    const store = await readyStore();
+    const store = await readyGraphStore();
     const edge = graph.edges[0];
     store.select(edge.source);
     renderInspectionPanel(store);
@@ -344,13 +311,13 @@ describe("InspectionPanel", () => {
   });
 
   it("prompts to select a node when nothing is selected", async () => {
-    const store = await readyStore();
+    const store = await readyGraphStore();
     renderInspectionPanel(store);
     expect(screen.getByText(/Select a module or group/)).toBeInTheDocument();
   });
 
   it("renders @Architecture metadata for an annotated module (Phase 10)", async () => {
-    const store = await readyStore();
+    const store = await readyGraphStore();
     store.select("src/services/http.ts"); // the fixture's annotated module
     renderInspectionPanel(store);
     expect(screen.getByText("Architecture")).toBeInTheDocument();
@@ -361,7 +328,7 @@ describe("InspectionPanel", () => {
   });
 
   it("omits the Architecture section for a module with no annotation", async () => {
-    const store = await readyStore();
+    const store = await readyGraphStore();
     store.select("src/ui/index.ts"); // no annotation (barrel file), and its group has one
     renderInspectionPanel(store);
     // The group (ui) is annotated, so the section shows the group block but the
@@ -370,7 +337,7 @@ describe("InspectionPanel", () => {
   });
 
   it("explains the facade bypass on the violating module (Phase 8)", async () => {
-    const store = await readyStore();
+    const store = await readyGraphStore();
     const violation = graph.edges.find((e) => e.isViolation)!;
     store.select(violation.source); // src/ui/TodoList.tsx
     renderInspectionPanel(store);
@@ -381,7 +348,7 @@ describe("InspectionPanel", () => {
   });
 
   it("shows group metadata and cross-boundary imports when a group is selected", async () => {
-    const store = await readyStore();
+    const store = await readyGraphStore();
     store.select("core");
     renderInspectionPanel(store);
 
@@ -409,7 +376,7 @@ describe("soft edges (Phase 9)", () => {
   });
 
   it("lists the event seam under Events and keeps it out of Imports", async () => {
-    const store = await readyStore();
+    const store = await readyGraphStore();
     store.select(soft.source); // src/core/store.ts (the emitter)
     renderInspectionPanel(store);
 

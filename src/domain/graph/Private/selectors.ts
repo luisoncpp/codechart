@@ -50,22 +50,30 @@ export function moduleIdsInGroupTree(
   );
 }
 
-/** Cross-boundary import edges leaving the group's module tree. */
-export function groupImportsOf(graph: ProjectGraph, groupId: string): Edge[] {
+function crossBoundaryGroupImports(
+  graph: ProjectGraph,
+  groupId: string,
+  direction: "out" | "in",
+): Edge[] {
   const scope = moduleIdsInGroupTree(graph, groupId);
   if (scope.size === 0) return [];
   return graph.edges.filter(
-    (e) => e.kind === "import" && scope.has(e.source) && !scope.has(e.target),
+    (e) =>
+      e.kind === "import" &&
+      (direction === "out"
+        ? scope.has(e.source) && !scope.has(e.target)
+        : scope.has(e.target) && !scope.has(e.source)),
   );
+}
+
+/** Cross-boundary import edges leaving the group's module tree. */
+export function groupImportsOf(graph: ProjectGraph, groupId: string): Edge[] {
+  return crossBoundaryGroupImports(graph, groupId, "out");
 }
 
 /** Cross-boundary import edges entering the group's module tree. */
 export function groupImportedBy(graph: ProjectGraph, groupId: string): Edge[] {
-  const scope = moduleIdsInGroupTree(graph, groupId);
-  if (scope.size === 0) return [];
-  return graph.edges.filter(
-    (e) => e.kind === "import" && scope.has(e.target) && !scope.has(e.source),
-  );
+  return crossBoundaryGroupImports(graph, groupId, "in");
 }
 
 export function diagnosticsForGroup(

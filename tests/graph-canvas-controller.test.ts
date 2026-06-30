@@ -1,60 +1,34 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Node } from "@xyflow/react";
-import type React from "react";
 import { GraphCanvasController } from "../src/features/graph_canvas/Private/graph-canvas-controller";
 import type { GraphSessionStore } from "../src/state/graph-session";
-
-function spyStore() {
-  return {
-    select: vi.fn(),
-    toggleGroup: vi.fn(),
-    toggleGroupConnection: vi.fn(),
-    toggleModuleConnection: vi.fn(),
-    setZoomLevel: vi.fn(),
-    getDiffOverlay: vi.fn(() => null),
-  };
-}
-
-/** A click whose target is inside an optional affordance button. */
-function clickEvent(opts: { onCollapse?: boolean; onConnection?: boolean } = {}): React.MouseEvent {
-  const target = {
-    closest: (sel: string) => {
-      if (opts.onCollapse && sel === "[data-group-toggle]") return {};
-      if (opts.onConnection && sel === "[data-connection-toggle]") return {};
-      return null;
-    },
-  } as unknown as HTMLElement;
-  return { target } as unknown as React.MouseEvent;
-}
-
-const groupNode = { id: "g1", type: "group", data: { collapsed: false } } as unknown as Node;
+import {
+  collapsedGroupNode,
+  expectGroupCollapseToggleWithoutSelect,
+  mockNodeClickEvent,
+  spyGraphCanvasStore,
+} from "./helpers/graph-canvas-controller";
 
 describe("GraphCanvasController.onNodeClick", () => {
   it("toggles the group when the collapse/expand button is clicked", () => {
-    const store = spyStore();
-    new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
-      groupNode,
-      clickEvent({ onCollapse: true }),
-    );
-    expect(store.toggleGroup).toHaveBeenCalledWith("g1");
-    expect(store.select).not.toHaveBeenCalled();
+    expectGroupCollapseToggleWithoutSelect(spyGraphCanvasStore());
   });
 
   it("does not toggle for a body click on an expanded group but selects it", () => {
-    const store = spyStore();
+    const store = spyGraphCanvasStore();
     new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
-      groupNode,
-      clickEvent(),
+      collapsedGroupNode,
+      mockNodeClickEvent(),
     );
     expect(store.toggleGroup).not.toHaveBeenCalled();
     expect(store.select).toHaveBeenCalledWith("g1");
   });
 
   it("selects the parent module and triggers the callback when a symbol node is clicked", () => {
-    const store = spyStore();
+    const store = spyGraphCanvasStore();
     const onSymbolClick = vi.fn();
     const symbolNode = { id: "s1", type: "symbol", parentId: "m1" } as unknown as Node;
-    const evt = clickEvent();
+    const evt = mockNodeClickEvent();
 
     new GraphCanvasController(
       store as unknown as GraphSessionStore,
@@ -66,20 +40,20 @@ describe("GraphCanvasController.onNodeClick", () => {
   });
 
   it("toggles group connections when the plug button is clicked", () => {
-    const store = spyStore();
+    const store = spyGraphCanvasStore();
     new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
-      groupNode,
-      clickEvent({ onConnection: true }),
+      collapsedGroupNode,
+      mockNodeClickEvent({ onConnection: true }),
     );
     expect(store.toggleGroupConnection).toHaveBeenCalledWith("g1");
   });
 
   it("toggles module connections when the plug button is clicked", () => {
-    const store = spyStore();
+    const store = spyGraphCanvasStore();
     const moduleNode = { id: "m1", type: "module" } as unknown as Node;
     new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
       moduleNode,
-      clickEvent({ onConnection: true }),
+      mockNodeClickEvent({ onConnection: true }),
     );
     expect(store.toggleModuleConnection).toHaveBeenCalledWith("m1");
   });
@@ -87,13 +61,13 @@ describe("GraphCanvasController.onNodeClick", () => {
 
 describe("GraphCanvasController.onViewportZoom", () => {
   it("maps scroll zoom to the detail level", () => {
-    const store = spyStore();
+    const store = spyGraphCanvasStore();
     new GraphCanvasController(store as unknown as GraphSessionStore).onViewportZoom(0.3);
     expect(store.setZoomLevel).toHaveBeenCalledWith(0);
   });
 
   it("floors at L1 when diff overlay is active", () => {
-    const store = spyStore();
+    const store = spyGraphCanvasStore();
     store.getDiffOverlay.mockReturnValue({ moduleStates: new Map() });
     new GraphCanvasController(store as unknown as GraphSessionStore).onViewportZoom(0.3);
     expect(store.setZoomLevel).toHaveBeenCalledWith(1);

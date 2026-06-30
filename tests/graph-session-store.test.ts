@@ -20,6 +20,15 @@ function nextLayout(store: GraphSessionStore): Promise<void> {
   return new Promise((resolve) => store.once("layout-changed", () => resolve()));
 }
 
+async function readyStoreAtZoomLevel2(client: AnalysisClient): Promise<GraphSessionStore> {
+  const store = newStore(client);
+  await store.loadProject("/x");
+  const done = nextLayout(store);
+  store.setZoomLevel(2);
+  await done;
+  return store;
+}
+
 describe("GraphSessionStore (no DOM)", () => {
   it("starts idle", () => {
     expect(newStore(clientReturning(graph)).getPhase()).toBe("idle");
@@ -193,11 +202,7 @@ describe("GraphSessionStore semantic zoom", () => {
       analyzeProject: async () => graph,
       readModuleSource: async (_root, path) => `// source of ${path}`,
     };
-    const store = newStore(client);
-    await store.loadProject("/x");
-    const done = nextLayout(store);
-    store.setZoomLevel(2);
-    await done;
+    const store = await readyStoreAtZoomLevel2(client);
     expect(store.getSourceCache().size).toBe(graph.modules.length);
     expect(store.getSourceCache().get("src/services/http.ts")).toContain(
       "source of src/services/http.ts",
@@ -217,11 +222,7 @@ describe("GraphSessionStore semantic zoom", () => {
       analyzeProject: async () => withDoc,
       readModuleSource: async (_root, path) => `# Doc for ${path}`,
     };
-    const store = newStore(client);
-    await store.loadProject("/x");
-    const done = nextLayout(store);
-    store.setZoomLevel(2);
-    await done;
+    const store = await readyStoreAtZoomLevel2(client);
     expect(store.getGroupDocCache().get("core")).toContain("Doc for docs/architecture/contract.md");
   });
 

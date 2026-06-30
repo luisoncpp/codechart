@@ -3,6 +3,7 @@ import trivialGraph from "./fixtures/trivial-graph.json";
 import goldenGraph from "./fixtures/golden/project-graph.json";
 import tauriMiniGraph from "./fixtures/golden/tauri-mini-project-graph.json";
 import { ProjectGraph, architectureViolations } from "../src/domain/graph";
+import { expectTauriMiniIpcAndDiagnostics } from "./helpers/tauri-mini-graph";
 
 describe("ProjectGraph contract", () => {
   it("parses the trivial fixture JSON on the TypeScript side", () => {
@@ -74,14 +75,6 @@ describe("ProjectGraph contract", () => {
     const languages = new Set(graph.modules.map((m) => m.language));
     expect(languages).toEqual(new Set(["rust", "typescript"]));
 
-    const ipc = graph.edges.find((e) => e.trigger === "ipc:greet");
-    expect(ipc?.kind).toBe("soft");
-    expect(ipc?.source).toBe("src/ipc/client.ts");
-    expect(ipc?.target).toBe("src-tauri/src/commands.rs");
-
-    const orphan = graph.diagnostics[0];
-    expect(orphan.kind).toBe("unresolvedIpc");
-    expect(orphan.moduleId).toBe("src/ipc/orphan.ts");
-    expect(orphan.unresolvedTarget).toBe("missing_cmd");
+    expectTauriMiniIpcAndDiagnostics(graph);
   });
 });

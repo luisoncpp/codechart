@@ -3,14 +3,17 @@ import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { ProjectLoaderPanel } from "../../src/features/project_loader";
 import type { ProjectGraph } from "../../src/domain/graph";
-import { testGraphSessionStore } from "../helpers/test-graph-session-store";
 import goldenGraph from "../fixtures/golden/project-graph.json";
+import { testGraphSessionStore } from "../helpers/test-graph-session-store";
+import {
+  clickOpenFolder,
+  openFacadeBypassDialog,
+  mockClipboardWriteText,
+  renderProjectLoaderPanel,
+  waitForGraphSummary,
+} from "../helpers/project-loader-panel";
 
 const graph = goldenGraph as unknown as ProjectGraph;
-
-function idleStore() {
-  return testGraphSessionStore();
-}
 
 function spiedStore() {
   const analyzeProject = vi.fn(async () => graph);
@@ -23,25 +26,14 @@ function spiedStore() {
 
 describe("flow: open-project", () => {
   it("clicking Open folder loads the project summary", async () => {
-    render(
-      <ProjectLoaderPanel
-        store={idleStore()}
-        pickFolder={async () => "/some/project"}
-      />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Open folder…" }));
-    await waitFor(() => {
-      expect(
-        screen.getByText("13 modules · 22 edges · 2 diagnostics"),
-      ).toBeInTheDocument();
-    });
+    renderProjectLoaderPanel(async () => "/some/project");
+    clickOpenFolder();
+    await waitForGraphSummary();
   });
 
   it("cancelling the folder picker keeps the session idle", async () => {
-    render(
-      <ProjectLoaderPanel store={idleStore()} pickFolder={async () => null} />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Open folder…" }));
+    renderProjectLoaderPanel(async () => null);
+    clickOpenFolder();
     await waitFor(() => {
       expect(
         screen.getByText("Open a TypeScript project to map it."),
@@ -58,7 +50,7 @@ describe("flow: open-project", () => {
       />,
     );
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Open folder…" }));
+      clickOpenFolder();
     });
     await waitFor(() => expect(store.getPhase()).toBe("ready"));
     expect(analyzeProject).toHaveBeenCalledOnce();
@@ -70,20 +62,8 @@ describe("flow: open-project", () => {
   });
 
   it("clicking Copy list copies the facade bypass list", async () => {
-    const writeText = vi.fn();
-    Object.assign(navigator, { clipboard: { writeText } });
-    render(
-      <ProjectLoaderPanel
-        store={idleStore()}
-        pickFolder={async () => "/some/project"}
-      />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Open folder…" }));
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "1 facade bypass" })).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByRole("button", { name: "1 facade bypass" }));
-    const dialog = screen.getByRole("dialog");
+    const writeText = mockClipboardWriteText();
+    const dialog = await openFacadeBypassDialog();
     fireEvent.click(within(dialog).getByRole("button", { name: "Copy list" }));
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(

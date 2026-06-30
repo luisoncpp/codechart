@@ -9,22 +9,13 @@ import { ChevronIcon } from "./ChevronIcon";
 import { GroupL2Description } from "./GroupL2Description";
 import { useZoomCounterScale } from "./use-zoom-counter-scale";
 import { groupShellStyle, groupTextColors } from "./heat-node-styles";
+import { darkenHex } from "./color-utils";
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 
 function groupLabelOpacity(data: GroupNodeData): number {
   return data.diffVisualizing ? UNCHANGED_MODULE_DIFF_OPACITY : 1;
-}
-
-/** Darken a #rrggbb color toward black so description text reads against the tint. */
-function darken(hex: string, factor = 0.55): string {
-  const n = parseInt(hex.slice(1), 16);
-  const ch = (shift: number) =>
-    Math.round(((n >> shift) & 0xff) * factor)
-      .toString(16)
-      .padStart(2, "0");
-  return `#${ch(16)}${ch(8)}${ch(0)}`;
 }
 
 /** Roughly does `text` fit a `w`×`h` box at `font` px? Conservative char estimate. */
@@ -63,13 +54,13 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
           {data.architectureDocContent !== undefined ? (
             <GroupL2Description
               data={data}
-              descColor={data.heatmapActive ? text.description : darken(text.description)}
+              descColor={data.heatmapActive ? text.description : darkenHex(text.description)}
               opacity={groupLabelOpacity(data)}
             />
           ) : (
             <GroupDescription
               data={data}
-              descColor={data.heatmapActive ? text.description : darken(text.description)}
+              descColor={data.heatmapActive ? text.description : darkenHex(text.description)}
             />
           )}
         </>
@@ -187,7 +178,7 @@ function CollapsedCard({
 }) {
   const glyph = iconGlyph(data.icon);
   const description = collapsedDescription(data, scale, { width, height });
-  const descColor = data.heatmapActive ? text.description : darken(text.description);
+  const descColor = data.heatmapActive ? text.description : darkenHex(text.description);
   return (
     <div
       style={{

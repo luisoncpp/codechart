@@ -26,13 +26,17 @@ function graphWithMetrics(
   };
 }
 
+function activityHeat(graph: ProjectGraph) {
+  const ids = new Set(graph.modules.map((m) => m.id));
+  return computeHeatProjection(graph, "activity", ids);
+}
+
 describe("heat-scores", () => {
   it("scores inactive modules at zero (coldest hue)", () => {
     const graph = graphWithMetrics({
       "src/core/store.ts": { churn: 10 },
     });
-    const ids = new Set(graph.modules.map((m) => m.id));
-    const heat = computeHeatProjection(graph, "activity", ids);
+    const heat = activityHeat(graph);
     const inactive = heat.modules.get("src/core/todo.ts");
     expect(inactive?.score).toBe(0);
     expect(inactive?.visible).toBe(true);
@@ -44,8 +48,7 @@ describe("heat-scores", () => {
       "src/core/todo.ts": { churn: 5 },
       "src/core/index.ts": { churn: 1 },
     });
-    const ids = new Set(graph.modules.map((m) => m.id));
-    const heat = computeHeatProjection(graph, "activity", ids);
+    const heat = activityHeat(graph);
     const hot = heat.modules.get("src/core/store.ts");
     const cold = heat.modules.get("src/core/index.ts");
     expect(hot?.visible).toBe(true);
@@ -73,8 +76,7 @@ describe("heat-scores", () => {
       "src/core/store.ts": { churn: 10 },
       "src/ui/index.ts": { churn: 1 },
     });
-    const ids = new Set(graph.modules.map((m) => m.id));
-    const heat = computeHeatProjection(graph, "activity", ids);
+    const heat = activityHeat(graph);
     expect(heat.groups.get("core")!.score).toBeGreaterThan(0);
     expect(heat.groups.get("app")!.score).toBeGreaterThan(0);
   });
@@ -85,8 +87,7 @@ describe("heat-scores", () => {
       "src/core/todo.ts": { churn: 2 },
       "src/core/index.ts": { churn: 1 },
     });
-    const ids = new Set(graph.modules.map((m) => m.id));
-    const heat = computeHeatProjection(graph, "activity", ids);
+    const heat = activityHeat(graph);
     const group = heat.groups.get("core");
     expect(group?.visible).toBe(true);
     expect(group!.score).toBeGreaterThan(0);

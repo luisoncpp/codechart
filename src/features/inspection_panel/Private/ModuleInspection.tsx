@@ -12,6 +12,7 @@ import { EdgeList } from "./EdgeList";
 import { SoftEdgeSections } from "./SoftEdgeSections";
 import { MetadataSection } from "./MetadataSection";
 import { PanelChrome, Row } from "./PanelParts";
+import { DiagnosticsList } from "./DiagnosticsList";
 import { SymbolList } from "./SymbolList";
 import { ModuleHeatRows } from "./ModuleHeatRows";
 
@@ -57,34 +58,7 @@ export function ModuleInspection({
         onItemClick={onNavigateToModule}
       />
       <SoftEdgeSections edges={softEdgesOf(graph, module.id)} moduleId={module.id} />
-      <Diagnostics graph={graph} moduleId={module.id} />
+      <DiagnosticsList items={diagnosticsFor(graph, module.id)} />
     </PanelChrome>
   );
-}
-
-function Diagnostics({
-  graph,
-  moduleId,
-}: {
-  graph: Parameters<typeof diagnosticsFor>[0];
-  moduleId: string;
-}) {
-  const items = diagnosticsFor(graph, moduleId);
-  if (items.length === 0) return null;
-  return (
-    <div style={{ marginTop: 12 }}>
-      <h3 style={{ fontSize: 12, margin: "0 0 4px" }}>Diagnostics</h3>
-      <ul style={{ fontSize: 12, paddingLeft: 16, margin: 0 }}>
-        {items.map((d) => (
-          <li key={d.id} style={{ color: diagnosticColor(d.kind) }}>
-            {d.message}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function diagnosticColor(kind: string): string {
-  return kind === "architectureViolation" ? "#dc2626" : "#b45309";
 }

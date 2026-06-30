@@ -7,9 +7,13 @@ import {
   levelFromZoom,
 } from "../src/domain/graph";
 import type { ProjectGraph } from "../src/domain/graph";
+import {
+  expectNoBidirectionalGroupEdge,
+  expectOnlyMainModule,
+  importEdge,
+} from "./helpers/zoom-projection-fixtures";
 
 const graph = goldenGraph as unknown as ProjectGraph;
-
 describe("levelFromZoom", () => {
   it("maps the zoom factor to L0/L1/L1.5/L2 by threshold", () => {
     expect(levelFromZoom(0.3)).toBe(0);
@@ -59,23 +63,14 @@ describe("projectForZoom", () => {
   it("collapsing the top-level groups hides their descendants but keeps the boxes", () => {
     const reduced = projectForZoom(graph, new Set(topLevelGroupIds(graph)));
     // Every module belongs (directly or via nesting) to app or shared → all hidden.
-    expect(reduced.modules.map((m) => m.id)).toEqual(["src/main.ts"]); // only ungrouped survives
     // app + shared remain as boxes; nested core/services/ui disappear.
-    expect(reduced.groups.map((g) => g.id).sort()).toEqual(["app", "shared"]);
+    expectOnlyMainModule(reduced, ["app", "shared"]);
   });
 
   it("collapsing every group keeps all group boxes visible at L0", () => {
     const reduced = projectForZoom(graph, new Set(allGroupIds(graph)));
-    expect(reduced.modules.map((m) => m.id)).toEqual(["src/main.ts"]);
-    expect(reduced.groups.map((g) => g.id).sort()).toEqual([
-      "app",
-      "core",
-      "services",
-      "shared",
-      "ui",
-    ]);
+    expectOnlyMainModule(reduced, ["app", "core", "services", "shared", "ui"]);
   });
-
   it("drops parent↔child group edges when every group is collapsed at L0", () => {
     const inferred: ProjectGraph = {
       version: 1,
@@ -116,26 +111,11 @@ describe("projectForZoom", () => {
           exportedSymbols: [],
         },
       ],
-      edges: [
-        {
-          id: "src/core/store.ts->src/index.ts:import:0",
-          source: "src/core/store.ts",
-          target: "src/index.ts",
-          kind: "import",
-          trigger: "import",
-          isViolation: false,
-        },
-      ],
+      edges: [importEdge("src/core/store.ts", "src/index.ts")],
       diagnostics: [],
     };
     const reduced = projectForZoom(inferred, new Set(allGroupIds(inferred)));
-    expect(
-      reduced.edges.some(
-        (e) =>
-          (e.source === "folder:src/core" && e.target === "folder:src") ||
-          (e.source === "folder:src" && e.target === "folder:src/core"),
-      ),
-    ).toBe(false);
+    expectNoBidirectionalGroupEdge(reduced, "folder:src/core", "folder:src");
   });
 
   it("drops group↔grandparent group edges when every group is collapsed at L0", () => {
@@ -179,27 +159,12 @@ describe("projectForZoom", () => {
           exportedSymbols: [],
         },
       ],
-      edges: [
-        {
-          id: "src/core/db/conn.ts->src/index.ts:import:0",
-          source: "src/core/db/conn.ts",
-          target: "src/index.ts",
-          kind: "import",
-          trigger: "import",
-          isViolation: false,
-        },
-      ],
+      edges: [importEdge("src/core/db/conn.ts", "src/index.ts")],
       diagnostics: [],
     };
     // db→src collapses to folder:src/core/db → folder:src (grandparent).
     const reduced = projectForZoom(inferred, new Set(allGroupIds(inferred)));
-    expect(
-      reduced.edges.some(
-        (e) =>
-          (e.source === "folder:src/core/db" && e.target === "folder:src") ||
-          (e.source === "folder:src" && e.target === "folder:src/core/db"),
-      ),
-    ).toBe(false);
+    expectNoBidirectionalGroupEdge(reduced, "folder:src/core/db", "folder:src");
   });
 
   it("collapsing inferred folder groups hides every grouped module at L0", () => {
