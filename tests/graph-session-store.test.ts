@@ -77,6 +77,26 @@ describe("GraphSessionStore (no DOM)", () => {
     await store.loadProject("/x");
     expect(store.getSelectedId()).toBeNull();
   });
+
+  it("focusOn selects the module and emits focus-requested", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    const focusListener = vi.fn();
+    store.on("focus-requested", focusListener);
+    await store.focusOn("src/core/store.ts");
+    expect(store.getSelectedId()).toBe("src/core/store.ts");
+    expect(store.getFocusRequest()?.id).toBe("src/core/store.ts");
+    expect(focusListener).toHaveBeenCalledOnce();
+  });
+
+  it("focusOn expands collapsed ancestor groups at L0", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.setZoomLevel(/*level=*/0);
+    expect(store.getCollapsedGroupIds().has("core")).toBe(true);
+    await store.focusOn("src/core/store.ts");
+    expect(store.getCollapsedGroupIds().has("core")).toBe(false);
+  });
 });
 
 describe("GraphSessionStore semantic zoom", () => {

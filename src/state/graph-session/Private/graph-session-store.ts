@@ -19,6 +19,7 @@ import {
 import { LayoutEngine, LayoutedGraph, LayoutOptions } from "../../../domain/layout";
 import { EventEmitter } from "./event-emitter";
 import { buildCommitDiffOverlay, buildPasteDiffOverlay } from "./build-diff-overlay";
+import { expandCollapsedAncestors } from "./ensure-node-visible";
 
 export type SessionPhase = "idle" | "loading" | "ready" | "failed" | "empty";
 
@@ -47,6 +48,8 @@ export class GraphSessionStore extends EventEmitter {
   private heatmapMode: HeatmapMode = "activity";
   private isGitRepo: boolean | null = null;
   private heatmapSaved: { enabled: boolean; mode: HeatmapMode } | null = null;
+  private focusRequestId: string | null = null;
+  private focusSeq = 0;
 
   constructor(
     private client: AnalysisClient,
@@ -75,6 +78,10 @@ export class GraphSessionStore extends EventEmitter {
   getHeatmapEnabled = () => this.heatmapEnabled;
   getHeatmapMode = () => this.heatmapMode;
   getIsGitRepo = () => this.isGitRepo;
+  getFocusRequest = () =>
+    this.focusRequestId === null
+      ? null
+      : { id: this.focusRequestId, seq: this.focusSeq };
 
   clearDiffOverlay() {
     if (!this.diffOverlay && !this.diffError) return;
@@ -130,6 +137,27 @@ export class GraphSessionStore extends EventEmitter {
     if (this.selectedId === id) return;
     this.selectedId = id;
     this.emit("selection-changed");
+  }
+
+  /** Select a module and ask the canvas to center on it (inspector import navigation). */
+  async focusOn(moduleId: string) {
+    if (!this.graph || !this.graph.modules.some((m) => m.id === moduleId)) return;
+    const expanded = expandCollapsedAncestors(
+      this.graph,
+      moduleId,
+      this.collapsedGroupIds,
+    );
+    if (expanded) {
+      this.syncReduced();
+      this.emit("zoom-changed");
+      await this.recomputeLayout();
+    }
+    const selChanged = this.selectedId !== moduleId;
+    this.selectedId = moduleId;
+    if (selChanged) this.emit("selection-changed");
+    this.focusRequestId = moduleId;
+    this.focusSeq++;
+    this.emit("focus-requested");
   }
 
   async fetchModuleSource(moduleId: string): Promise<string> {

@@ -16,9 +16,15 @@ interface GroupInspectionProps {
   graph: ProjectGraph;
   group: GroupNode;
   onHide?: () => void;
+  onNavigateToModule: (moduleId: string) => void;
 }
 
-export function GroupInspection({ graph, group, onHide }: GroupInspectionProps) {
+export function GroupInspection({
+  graph,
+  group,
+  onHide,
+  onNavigateToModule,
+}: GroupInspectionProps) {
   const parent = group.parentId ? findGroup(graph, group.parentId) : undefined;
   const modules = modulesInGroup(graph, group.id);
   const children = childGroupsOf(graph, group.id);
@@ -43,8 +49,18 @@ export function GroupInspection({ graph, group, onHide }: GroupInspectionProps) 
       </dl>
       <MetadataSection group={group} />
       {modules.length > 0 && <ModuleList modules={modules} />}
-      <EdgeList title="Imports" edges={imports} field="target" />
-      <EdgeList title="Imported by" edges={importedBy} field="source" />
+      <EdgeList
+        title="Imports"
+        edges={imports}
+        field="target"
+        onItemClick={onNavigateToModule}
+      />
+      <EdgeList
+        title="Imported by"
+        edges={importedBy}
+        field="source"
+        onItemClick={onNavigateToModule}
+      />
       <GroupDiagnostics graph={graph} groupId={group.id} />
     </PanelChrome>
   );

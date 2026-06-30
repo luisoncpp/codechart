@@ -11,6 +11,9 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
         │ selectedId                                       GraphCanvas (React Flow)
         ▼                                                              │ onNodeClick
   InspectionPanel  <──(selection-changed)── GraphCanvasController.onNodeClick → store.select
+        │ focusOn(moduleId) ──(focus-requested)──> FocusNode → setCenter(absolute module center)
+        ▲
+        └── EdgeList click (Imports / Imported by)
 ```
 
 ## Responsibilities
@@ -21,11 +24,11 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 | `FloatingEdge` | `features/graph_canvas/Private/FloatingEdge.tsx` | Custom RF edge: computes both endpoints via `borderAnchor` from live node geometry (`useInternalNode`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
 | `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
 | selectors | `domain/graph/Private/selectors.ts` | `findModule`, `findGroup`, `groupOf`, `modulesInGroup`, `childGroupsOf`, `groupImportsOf`, `groupImportedBy`, `diagnosticsForGroup`, `edgeFocusForSelection`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. |
-| `GraphSessionStore` | `state/graph-session` | Now also owns `LayoutedGraph` (computed via injected `LayoutEngine` on load) and `selectedId`. Emits `phase-changed` + `selection-changed`. |
-| `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. |
+| `GraphSessionStore` | `state/graph-session` | Now also owns `LayoutedGraph` (computed via injected `LayoutEngine` on load) and `selectedId`. Emits `phase-changed` + `selection-changed` + `focus-requested`. `focusOn(moduleId)` selects a module, expands collapsed ancestor groups when needed, and asks the canvas to center on it. |
+| `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. `FocusNode` centers the viewport on inspector import navigation. |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules + groups) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
 | `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; **Reveal in file explorer** via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
-| `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
+| `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
 
 ## Aesthetic rules (the visual gate)
 

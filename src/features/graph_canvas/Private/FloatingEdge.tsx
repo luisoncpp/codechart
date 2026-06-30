@@ -5,11 +5,10 @@ import {
   Position,
   useInternalNode,
   type EdgeProps,
-  type InternalNode,
-  type Node,
 } from "@xyflow/react";
 import type { EdgeData } from "../../../domain/graph";
-import { borderAnchor, bowedPath, centerOf, type Box, type Side } from "./border-anchor";
+import { borderAnchor, bowedPath, centerOf, type Side } from "./border-anchor";
+import { boxFromInternal } from "./module-center";
 
 /** Sideways arc (px) for soft edges so the dash clears overlapping import edges. */
 const SOFT_BOW = 36;
@@ -29,8 +28,8 @@ export function FloatingEdge({ id, source, target, data, markerEnd, style }: Edg
   const targetNode = useInternalNode(groupTargetId ?? target);
   if (!sourceNode || !targetNode) return null;
 
-  const sourceBox = boxOf(sourceNode);
-  const targetBox = boxOf(targetNode);
+  const sourceBox = boxFromInternal(sourceNode);
+  const targetBox = boxFromInternal(targetNode);
   const from = borderAnchor(sourceBox, centerOf(targetBox));
   const to = borderAnchor(targetBox, centerOf(sourceBox));
   const isSoft = (data as EdgeData | undefined)?.kind === "soft";
@@ -45,13 +44,4 @@ export function FloatingEdge({ id, source, target, data, markerEnd, style }: Edg
         targetPosition: POSITION[to.side],
       })[0];
   return <BaseEdge id={id} path={path} markerEnd={markerEnd} style={style} />;
-}
-
-function boxOf(node: InternalNode<Node>): Box {
-  const { x, y } = node.internals.positionAbsolute;
-  // Prefer the layout footprint over DOM measurement so edges stay aligned
-  // when in-box detail (symbols, snippets) would otherwise inflate the node.
-  const width = node.width ?? node.measured.width ?? 0;
-  const height = node.height ?? node.measured.height ?? 0;
-  return { x, y, width, height };
 }

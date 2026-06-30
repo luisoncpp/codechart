@@ -20,9 +20,16 @@ interface ModuleInspectionProps {
   module: ModuleNode;
   hideTests: boolean;
   onHide?: () => void;
+  onNavigateToModule: (moduleId: string) => void;
 }
 
-export function ModuleInspection({ graph, module, hideTests, onHide }: ModuleInspectionProps) {
+export function ModuleInspection({
+  graph,
+  module,
+  hideTests,
+  onHide,
+  onNavigateToModule,
+}: ModuleInspectionProps) {
   const group = groupOf(graph, module.id);
   return (
     <PanelChrome onHide={onHide}>
@@ -37,11 +44,17 @@ export function ModuleInspection({ graph, module, hideTests, onHide }: ModuleIns
       </dl>
       <MetadataSection module={module} group={group} />
       <SymbolList symbols={module.exportedSymbols} language={module.language} />
-      <EdgeList title="Imports" edges={importsOf(graph, module.id)} field="target" />
+      <EdgeList
+        title="Imports"
+        edges={importsOf(graph, module.id)}
+        field="target"
+        onItemClick={onNavigateToModule}
+      />
       <EdgeList
         title="Imported by"
         edges={importedBy(graph, module.id)}
         field="source"
+        onItemClick={onNavigateToModule}
       />
       <SoftEdgeSections edges={softEdgesOf(graph, module.id)} moduleId={module.id} />
       <Diagnostics graph={graph} moduleId={module.id} />

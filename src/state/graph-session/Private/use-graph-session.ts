@@ -10,6 +10,7 @@ export function useGraphSession(store: GraphSessionStore) {
     const events = [
       "phase-changed",
       "selection-changed",
+      "focus-requested",
       "zoom-changed",
       "layout-changed",
       "view-changed",

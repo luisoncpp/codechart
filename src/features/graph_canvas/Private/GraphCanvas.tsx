@@ -23,6 +23,7 @@ import { nodeTypes } from "./node-types";
 import { EdgeLayer } from "./EdgeLayer";
 import { useStyledEdges } from "./use-styled-edges";
 import { FitView } from "./FitView";
+import { FocusNode } from "./FocusNode";
 import { CANVAS_MIN_ZOOM } from "./use-zoom-counter-scale";
 import { GraphCanvasController } from "./graph-canvas-controller";
 import { SymbolSourceWidget } from "./SymbolSourceWidget";
@@ -225,6 +226,7 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
           style={{ background: "#ffffff" }}
         >
           <FitView options={fitOptions} />
+          <FocusNode store={store} />
           <EdgeLayer edges={styledEdges} nodes={nodes} />
           <Background color="#e2e8f0" gap={20} />
           <Controls showInteractive={false} />

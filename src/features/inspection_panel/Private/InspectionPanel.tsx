@@ -30,6 +30,7 @@ export function InspectionPanel({
         selectedId={selectedId}
         hideTests={session.getHideTests()}
         onHide={onHide}
+        onNavigateToModule={(moduleId) => store.focusOn(moduleId)}
       />
     </InspectorLayoutProvider>
   );
@@ -40,11 +41,13 @@ function InspectionPanelBody({
   selectedId,
   hideTests,
   onHide,
+  onNavigateToModule,
 }: {
   graph: ProjectGraph | null;
   selectedId: string | null;
   hideTests: boolean;
   onHide?: () => void;
+  onNavigateToModule: (moduleId: string) => void;
 }) {
   if (!graph || !selectedId) {
     return (
@@ -58,12 +61,27 @@ function InspectionPanelBody({
 
   const module = findModule(graph, selectedId);
   if (module) {
-    return <ModuleInspection graph={graph} module={module} hideTests={hideTests} onHide={onHide} />;
+    return (
+      <ModuleInspection
+        graph={graph}
+        module={module}
+        hideTests={hideTests}
+        onHide={onHide}
+        onNavigateToModule={onNavigateToModule}
+      />
+    );
   }
 
   const group = findGroup(graph, selectedId);
   if (group) {
-    return <GroupInspection graph={graph} group={group} onHide={onHide} />;
+    return (
+      <GroupInspection
+        graph={graph}
+        group={group}
+        onHide={onHide}
+        onNavigateToModule={onNavigateToModule}
+      />
+    );
   }
 
   return (
