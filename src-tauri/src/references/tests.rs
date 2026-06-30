@@ -92,6 +92,21 @@ fn resolves_css_side_effect_import() {
 }
 
 #[test]
+fn resolves_cpp_quoted_include() {
+    let parsed = vec![
+        module("src/main.cpp", &["./engine/engine.h"]),
+        ParsedModule {
+            path: "src/engine/engine.h".to_string(),
+            ..Default::default()
+        },
+    ];
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/main.cpp".into(), "src/engine/engine.h".into())]
+    );
+}
+
+#[test]
 fn resolves_js_extension_to_ts_source() {
     let parsed = vec![
         module("electron/ipc/handlers/project-handlers/order-handlers.ts", &[

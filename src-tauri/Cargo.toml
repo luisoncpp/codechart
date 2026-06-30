@@ -32,6 +32,7 @@ serde_yaml = "0.9"
 glob = "0.3"
 regex = "1"
 tree-sitter-c-sharp = "0.23.5"
+tree-sitter-cpp = "0.23.4"
 
 [dev-dependencies]
 tempfile = "3"

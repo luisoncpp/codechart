@@ -88,6 +88,21 @@ const csharpRules: Rule[] = [
   { type: "whitespace", regex: /^\s+/ },
 ];
 
+const cppRules: Rule[] = [
+  { type: "comment", regex: /^\/\/.*|^\/\*[\s\S]*?\*\// },
+  { type: "string", regex: /^"(?:[^"\\]|\\.)*"|^'(?:[^'\\]|\\.)*'/ },
+  { type: "number", regex: /^\b0x[0-9a-fA-F]+\b|^\b\d+(?:\.\d+)?(?:[uUlLfF]+)?\b/ },
+  { type: "keyword", regex: /^\b(alignas|alignof|and|and_eq|asm|auto|bitand|bitor|bool|break|case|catch|char|char8_t|char16_t|char32_t|class|compl|concept|const|consteval|constexpr|constinit|const_cast|continue|co_await|co_return|co_yield|decltype|default|delete|do|double|dynamic_cast|else|enum|explicit|export|extern|false|float|for|friend|goto|if|inline|int|long|mutable|namespace|new|noexcept|not|not_eq|nullptr|operator|or|or_eq|private|protected|public|register|reinterpret_cast|requires|return|short|signed|sizeof|static|static_assert|static_cast|struct|switch|template|this|thread_local|throw|true|try|typedef|typeid|typename|union|unsigned|using|virtual|void|volatile|wchar_t|while|xor|xor_eq)\b/ },
+  { type: "type", regex: /^\b([A-Z][a-zA-Z0-9_]*|size_t|int8_t|int16_t|int32_t|int64_t|uint8_t|uint16_t|uint32_t|uint64_t|std|string|vector|map|set|optional|variant|unique_ptr|shared_ptr|weak_ptr)\b/ },
+  { type: "decorator", regex: /^#\s*(include|define|ifdef|ifndef|endif|pragma|if|elif|else|undef)\b/ },
+  { type: "function", regex: /^\b([a-zA-Z_~][a-zA-Z0-9_]*)(?=\s*\()/ },
+  { type: "operator", regex: /^(===|==|!==|!=|=>|\+\+|--|\+=|-=|\*=|\/=|&&|\|\||<<|>>|[+\-*/%&|^!~=<>?:])/ },
+  { type: "punctuation", regex: /^[{}()[\].,;]/ },
+  { type: "text", regex: /^[a-zA-Z0-9_]+/ },
+  { type: "text", regex: /^[^\s"'`\w+\-*/%&|^!~=<>?:{}()[\].,;]+/ },
+  { type: "whitespace", regex: /^\s+/ },
+];
+
 const cssRules: Rule[] = [
   { type: "comment", regex: /^\/\*[\s\S]*?\*\// },
   { type: "string", regex: /^"(?:[^"\\]|\\.)*"|^'(?:[^'\\]|\\.)*'/ },
@@ -130,6 +145,13 @@ function getRulesForFile(filepath: string): Rule[] {
       return defaultRules;
     case "css":
       return cssRules;
+    case "cpp":
+    case "cc":
+    case "cxx":
+    case "h":
+    case "hpp":
+    case "hxx":
+      return cppRules;
     case "py":
       return pythonRules;
     case "go":

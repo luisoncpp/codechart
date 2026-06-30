@@ -8,17 +8,17 @@
 Turn **one source file** into local, language-agnostic facts (`ParsedModule`).
 No cross-file resolution happens here — the resolver (Phase 4) consumes these
 facts. This is the `LanguageAdapter` seam from [TDD §6](../plans/TECHNICAL-DESIGN.md);
-TypeScript is the first impl, C++ a future one with no pipeline change.
+TypeScript was the first impl; C++ follows the same pipeline.
 
 ## Public surface
 
 `language_adapter::`
 - `trait LanguageAdapter { fn parse(&self, path, source) -> Result<ParsedModule, ParseError> }`
-- `registry_for(ext) -> Option<Box<dyn LanguageAdapter>>` — pick by extension (`ts`/`tsx`/`mts`/`cts`/`rs`/`cs`/`css`/`prefab`).
+- `registry_for(ext) -> Option<Box<dyn LanguageAdapter>>` — pick by extension (`ts`/`tsx`/`mts`/`cts`/`rs`/`cs`/`css`/`cpp`/`cc`/`cxx`/`h`/`hpp`/`hxx`/`prefab`).
 - `registry_for_path(path)` — convenience over the path's extension.
 - Data: `ParsedModule`, `ParsedImport`, `ImportKind`, `CommentBlock`.
 
-The TS impl (`typescript/`), Rust impl (`rust/`), and C# impl (`csharp/`) are private behind the trait; tree-sitter never
+The TS impl (`typescript/`), Rust impl (`rust/`), C# impl (`csharp/`), and C++ impl (`cpp/`) are private behind the trait; tree-sitter never
 leaks past this boundary.
 
 ## `ParsedModule`
@@ -87,6 +87,16 @@ Stylesheets (`.css`) via `css/`: relative `@import` rules (`@import "./x.css"`,
 `@import url("./x.css") layer(...)`) become side-effect dependency edges.
 External URLs are ignored.
 
+### C++ forms handled
+
+C++ sources (`.cpp`/`.cc`/`.cxx`/`.h`/`.hpp`/`.hxx`) via `cpp/`:
+quoted `#include "…"` → relative side-effect edges (`./path` when not already
+relative); angle-bracket `#include <…>` skipped (system/external). Top-level
+and namespace-scoped `class`/`struct`/`enum`/`union` names and function
+declarations/definitions populate `exported_symbols`. `: Base, IFoo` base lists
+populate `implements`. Resolution uses the standard relative-import pass with
+`.cpp`/`.h`/`.hpp` extension candidates.
+
 ## `semantic_comments::parse_annotations(text) -> Vec<Annotation>`
 
 Scans arbitrary text for `@Architecture(key=value, key="quoted value", ...)`
@@ -106,7 +116,7 @@ Single ordered top-level walk → output preserves source order. No timestamps/r
 ## Checkpoint (CLI)
 
 From the repo root:
-`cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- parse <file.ts|tsx|rs|cs>`
+`cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- parse <file.ts|tsx|rs|cs|cpp|h>`
 prints imports, re-exports, exported symbols, and annotations. (`codechart-cli` is
 a `[[bin]]` of the `codechart` package in `src-tauri/`, so it's `--bin codechart-cli`,
 not `-p codechart-cli`; `--manifest-path` lets paths stay repo-relative.) Verified

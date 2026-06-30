@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="Picks a LanguageAdapter by file extension")
 
 use crate::language_adapter::adapter_types::LanguageAdapter;
-use super::{csharp, css, rust, typescript, unity_prefab};
+use super::{cpp, csharp, css, rust, typescript, unity_prefab};
 
 /// Pick an adapter for a file extension (no leading dot), or `None` if the
 /// extension is unsupported. Extensions are matched case-sensitively.
@@ -14,6 +14,9 @@ pub fn registry_for(ext: &str) -> Option<Box<dyn LanguageAdapter>> {
         "cs" => Some(Box::new(csharp::CSharpAdapter::new())),
         "prefab" => Some(Box::new(unity_prefab::UnityPrefabAdapter::new())),
         "css" => Some(Box::new(css::CssAdapter::new())),
+        "cpp" | "cc" | "cxx" | "h" | "hpp" | "hxx" => {
+            Some(Box::new(cpp::CppAdapter::new()))
+        }
         _ => None,
     }
 }
@@ -55,9 +58,14 @@ mod tests {
     }
 
     #[test]
+    fn picks_cpp_adapter() {
+        assert!(registry_for_path("main.cpp").is_some());
+        assert!(registry_for_path("types.h").is_some());
+        assert!(registry_for_path("util.hpp").is_some());
+    }
+
+    #[test]
     fn unsupported_extensions_return_none() {
-        assert!(registry_for("cpp").is_none());
-        assert!(registry_for_path("a.cpp").is_none());
         assert!(registry_for_path("noext").is_none());
     }
 }

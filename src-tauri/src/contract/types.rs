@@ -45,6 +45,7 @@ pub enum Language {
     #[ts(rename = "unityPrefab")]
     UnityPrefab,
     Css,
+    Cpp,
 }
 
 #[derive(Serialize, Deserialize, TS, Debug, Clone, PartialEq, Default)]

@@ -5,7 +5,7 @@ crate (`tree-sitter-typescript`, `tree-sitter-c-sharp`, …) are versioned
 independently and only line up through the shared `tree-sitter-language` crate.
 Mismatched majors fail to compile (or link) with opaque errors. The working
 pair used here: `tree-sitter = "0.25"` + `tree-sitter-typescript = "0.23"` +
-`tree-sitter-rust = "0.23"` + `tree-sitter-c-sharp = "0.23.5"`.
+`tree-sitter-rust = "0.23"` + `tree-sitter-c-sharp = "0.23.5"` + `tree-sitter-cpp = "0.23.4"`.
 
 **ABI 15:** `tree-sitter-c-sharp` 0.23.5 ships grammar ABI version 15, which
 requires `tree-sitter >= 0.25`. Staying on 0.24 yields `LanguageError {

@@ -37,6 +37,7 @@
     "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-plugin-react-hooks": "^5",
+    "fallow": "^2.102.0",
     "jsdom": "^26",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8",

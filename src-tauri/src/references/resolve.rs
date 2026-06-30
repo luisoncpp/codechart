@@ -95,6 +95,12 @@ fn candidates(base: &str) -> Vec<String> {
         || base.ends_with(".rs")
         || base.ends_with(".cs")
         || base.ends_with(".css")
+        || base.ends_with(".cpp")
+        || base.ends_with(".cc")
+        || base.ends_with(".cxx")
+        || base.ends_with(".h")
+        || base.ends_with(".hpp")
+        || base.ends_with(".hxx")
     {
         return vec![base.to_string()];
     }
@@ -121,6 +127,9 @@ fn extensionless_candidates(base: &str) -> Vec<String> {
         format!("{base}.rs"),
         format!("{base}.cs"),
         format!("{base}.css"),
+        format!("{base}.cpp"),
+        format!("{base}.h"),
+        format!("{base}.hpp"),
         format!("{base}/index.ts"),
         format!("{base}/index.tsx"),
         format!("{base}/mod.rs"),

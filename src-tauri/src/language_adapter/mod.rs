@@ -10,6 +10,7 @@ mod registry;
 mod typescript;
 mod rust;
 mod csharp;
+mod cpp;
 mod unity_prefab;
 mod css;
 
