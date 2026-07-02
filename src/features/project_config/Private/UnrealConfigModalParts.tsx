@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Small controls for the Unreal config modal")
+// @Architecture(descriptionShort="Small controls for the C++ include path modal")
 import type { UnrealConfig } from "../../../ipc/project-config-client";
 
 interface PathListProps {
@@ -20,7 +20,7 @@ export function PathList({ paths, onChange }: PathListProps) {
           <input
             value={path}
             onChange={(e) => update(index, e.target.value)}
-            placeholder="Source/Game/Public"
+            placeholder="path/to/include"
             style={inputStyle}
           />
           <button type="button" onClick={() => remove(index)}>
@@ -29,7 +29,7 @@ export function PathList({ paths, onChange }: PathListProps) {
         </div>
       ))}
       <button type="button" onClick={() => onChange([...paths, ""])}>
-        Add path
+        Add include path
       </button>
     </div>
   );

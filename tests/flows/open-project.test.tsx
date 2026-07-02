@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { ProjectLoaderPanel } from "../../src/features/project_loader";
 import type { ProjectGraph } from "../../src/domain/graph";
-import { defaultProjectConfig, type ProjectConfig } from "../../src/ipc/project-config-client";
+import { defaultProjectConfig } from "../../src/ipc/project-config-client";
 import goldenGraph from "../fixtures/golden/project-graph.json";
 import { testGraphSessionStore } from "../helpers/test-graph-session-store";
 import {
@@ -16,8 +16,17 @@ import {
 
 const graph = goldenGraph as unknown as ProjectGraph;
 
-function spiedStore() {
-  const analyzeProject = vi.fn(async () => graph);
+function cppGraph() {
+  return {
+    ...graph,
+    modules: graph.modules.map((module, index) =>
+      index === 0 ? { ...module, language: "cpp" as const } : module,
+    ),
+  };
+}
+
+function spiedStore(projectGraph: ProjectGraph = graph) {
+  const analyzeProject = vi.fn(async () => projectGraph);
   const store = testGraphSessionStore({
     analyzeProject,
     readModuleSource: async () => "",
@@ -30,6 +39,7 @@ describe("flow: open-project", () => {
     renderProjectLoaderPanel(async () => "/some/project");
     clickOpenFolder();
     await waitForGraphSummary();
+    expect(screen.queryByRole("button", { name: "Configure paths..." })).not.toBeInTheDocument();
   });
 
   it("cancelling the folder picker keeps the session idle", async () => {
@@ -43,7 +53,7 @@ describe("flow: open-project", () => {
   });
 
   it("clicking Reload re-analyzes the last picked path", async () => {
-    const { store, analyzeProject } = spiedStore();
+    const { store, analyzeProject } = spiedStore(cppGraph());
     render(
       <ProjectLoaderPanel
         store={store}
@@ -62,11 +72,11 @@ describe("flow: open-project", () => {
     expect(analyzeProject).toHaveBeenLastCalledWith("/my/project");
   });
 
-  it("saving Unreal paths writes config and reloads the project", async () => {
-    const { store, analyzeProject } = spiedStore();
+  it("saving include paths writes config and reloads the project", async () => {
+    const { store, analyzeProject } = spiedStore(cppGraph());
     const config = defaultProjectConfig();
     const readProjectConfig = vi.fn(async () => config);
-    const writeProjectConfig = vi.fn(async (_path: string, _config: ProjectConfig) => {});
+    const writeProjectConfig = vi.fn(async () => {});
     render(
       <ProjectLoaderPanel
         store={store}
@@ -80,8 +90,15 @@ describe("flow: open-project", () => {
     await waitFor(() => expect(store.getPhase()).toBe("ready"));
     fireEvent.click(screen.getByRole("button", { name: "Configure paths..." }));
     await waitFor(() => expect(readProjectConfig).toHaveBeenCalledWith("/my/project"));
-    fireEvent.click(await screen.findByRole("button", { name: "Add path" }));
-    fireEvent.change(screen.getByPlaceholderText("Source/Game/Public"), {
+    expect(
+      screen.getByRole("heading", { name: "C++ include paths" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toHaveStyle({
+      maxHeight: "calc(100vh - 32px)",
+      overflowY: "auto",
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Add include path" }));
+    fireEvent.change(screen.getByPlaceholderText("path/to/include"), {
       target: { value: "Source/Game/Public" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save and reload" }));

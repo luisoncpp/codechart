@@ -7,7 +7,8 @@
 
 Unreal support layers project-local include-path configuration on top of the
 existing C++ adapter. The config lives at `.codechart/config.json` in the
-analyzed project and is edited from the header's `Configure paths...` modal.
+analyzed project and is edited from the header's generic `Configure paths...`
+modal.
 
 ```json
 {
@@ -39,6 +40,9 @@ read-only.
 `ProjectSource`. If no config exists, in-memory analysis still derives Unreal
 options from the source file list, but non-Unreal projects get no Unreal
 filtering.
+
+Only the C++ resolver reads `unreal.knownPaths`. Other language adapters ignore
+this config. The two toggles below are the Unreal-specific parts:
 
 When `hideGeneratedFiles` is true, analysis ignores `**/*.generated.h`,
 `**/*.gen.cpp`, `Intermediate/**`, `Binaries/**`, `Saved/**`, and

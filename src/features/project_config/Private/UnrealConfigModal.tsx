@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Modal for editing Unreal include path config")
+// @Architecture(descriptionShort="Modal for editing C++ include path config")
 import { useEffect, useState } from "react";
 import {
   defaultProjectConfig,
@@ -59,16 +59,16 @@ export function UnrealConfigModal({
     <div style={backdropStyle} onClick={onClose}>
       <section
         role="dialog"
-        aria-labelledby="unreal-config-title"
+        aria-labelledby="project-config-title"
         style={panelStyle}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="unreal-config-title" style={titleStyle}>
-          Unreal paths
+        <h2 id="project-config-title" style={titleStyle}>
+          C++ include paths
         </h2>
         <p style={copyStyle}>
-          Known paths are searched like Unreal include roots. Engine headers stay
-          external so they do not flood the graph.
+          Known paths are searched when resolving C++ includes. The toggles below
+          are Unreal-specific.
         </p>
         {loading ? (
           <div style={copyStyle}>Loading config...</div>
@@ -122,6 +122,8 @@ const backdropStyle: React.CSSProperties = {
 
 const panelStyle: React.CSSProperties = {
   width: "min(640px, 92vw)",
+  maxHeight: "calc(100vh - 32px)",
+  overflowY: "auto",
   background: "#ffffff",
   borderRadius: 10,
   boxShadow: "0 12px 40px #0f172a33",

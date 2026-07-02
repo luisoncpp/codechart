@@ -17,6 +17,7 @@ in the running app until the canvas renders.
 | 5 | 0 modules → `empty`; else ELK layout → `ready` | `GraphSessionStore.loadProject` | same as #2 |
 | 6 | Render canvas + collapsible inspection panel (left-edge drag to resize) | `App` gates on `phase==="ready"` | `app/Private/App.tsx` |
 | 6b | When ready, show collapsible **facade bypasses** list (textarea + **Copy list**) | `FacadeBypassList` | `project_loader/Private/FacadeBypassList.tsx` |
+| 6c | When the loaded graph contains at least one C++ module, show `Configure paths...`; hide it for non-C++ projects | `ProjectLoaderPanel` | `project_loader/Private/ProjectLoaderPanel.tsx` |
 
 ## Session phases
 `idle` → `loading` → (`ready` | `empty` | `failed`). The panel shows a hint per

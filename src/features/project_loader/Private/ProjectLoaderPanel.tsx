@@ -32,6 +32,7 @@ export function ProjectLoaderPanel({
   const graph = session.getGraph();
   const summary = graph ? projectGraphSummary(graph) : null;
   const bypasses = graph ? architectureViolations(graph) : [];
+  const hasCppModules = graph?.modules.some((module) => module.language === "cpp") ?? false;
 
   const open = async () => {
     const picked = await pickFolder();
@@ -55,7 +56,7 @@ export function ProjectLoaderPanel({
           Reload
         </button>
       )}
-      {path && (
+      {path && hasCppModules && (
         <button
           type="button"
           onClick={() => setConfigOpen(true)}

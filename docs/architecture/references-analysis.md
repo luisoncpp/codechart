@@ -34,7 +34,7 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
   importer (`references::csharp`). A `using` only produces edges to modules that
   export types actually referenced in the file; fully-qualified type names resolve
   without a matching `using`. Miss (e.g. `System`) → external metadata.
-- **C++ Unreal include roots** → `.cpp`/`.h` importers first use the normal
+- **C++ include roots** → `.cpp`/`.h` importers first use the normal
   relative resolver. If that misses, `references::cpp` searches configured
   `.codechart/config.json` `unreal.knownPaths`. When
   `excludeEngineReferences` is true, common Unreal Engine headers/prefixes are
