@@ -56,7 +56,15 @@ fn apply_folder_nesting(defs: &[GroupDef], parent_of: &mut BTreeMap<String, Stri
 
 fn nearest_ancestor(def: &GroupDef, defs: &[GroupDef]) -> Option<String> {
     defs.iter()
-        .filter(|other| other.id != def.id && is_ancestor_dir(&other.dir, &def.dir))
+        .filter(|other| other.id != def.id && can_fold_own(other) && is_ancestor_dir(&other.dir, &def.dir))
         .max_by_key(|other| other.dir.len())
         .map(|other| other.id.clone())
+}
+
+/// A composition group (explicit `groups:` refs) owns exactly the groups it
+/// names, so it must never fold-adopt folder descendants — otherwise a
+/// root-level composition group (`dir = ""`) becomes the implicit parent of the
+/// whole repo. Such a group's real children are set by `apply_explicit_refs`.
+fn can_fold_own(def: &GroupDef) -> bool {
+    def.group_refs.is_empty()
 }

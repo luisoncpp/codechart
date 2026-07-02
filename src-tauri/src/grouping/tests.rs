@@ -112,6 +112,20 @@ fn nested_group_md_sets_parent_via_directory() {
 }
 
 #[test]
+fn composition_group_does_not_fold_adopt_folder_descendants() {
+    // A root-level composition group must not become the implicit parent of an
+    // unrelated group just because its dir ("") is an ancestor of everything.
+    let mut desktop = def("desktop", "");
+    desktop.group_refs = vec!["app".into()];
+    let app = def("app", "src/app");
+    let server = def("server", "server/src");
+    let fs = files(&["src/app/x.ts", "server/src/y.ts"]);
+    let r = resolve_groups(&fs, &[app, desktop, server]);
+    assert_eq!(group(&r, "app").parent_id.as_deref(), Some("desktop"));
+    assert!(group(&r, "server").parent_id.is_none(), "server stays top-level, not under desktop");
+}
+
+#[test]
 fn facade_defaults_to_index_then_explicit_overrides() {
     let default_core = def("core", "src/core");
     let fs = files(&["src/core/index.ts", "src/core/store.ts"]);
