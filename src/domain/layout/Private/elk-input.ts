@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="Constructs the hierarchical ELK layout graph input from a project graph")
 import type { ElkNode } from "elkjs/lib/elk-api";
-import type { ProjectGraph } from "../../graph/ProjectGraph";
+import type { ProjectGraph } from "../../graph";
 import type { LayoutOptions } from "./layout-types";
 import { PRESETS } from "./layout-presets";
 import { moduleBoxSize, descriptionBoxSize } from "./module-box-metrics";

@@ -4,7 +4,10 @@ use crate::analysis::analyze_project as run_analysis;
 use crate::contract::ProjectGraph;
 use crate::git::{self, GitCommit};
 use crate::project_source::{FsProjectSource, ProjectSource};
-use crate::unreal_config::{self, ProjectConfig};
+use crate::{
+    ensure_unreal_defaults, read_project_config as load_project_config,
+    write_project_config as save_project_config, ProjectConfig,
+};
 
 /// Analyze the project rooted at `path` (a user-chosen folder) and return the
 /// `ProjectGraph`. The path is used both as the filesystem root and as the
@@ -12,7 +15,7 @@ use crate::unreal_config::{self, ProjectConfig};
 /// frontend's `failed` session phase can show them.
 #[tauri::command]
 pub fn analyze_project(path: String) -> Result<ProjectGraph, String> {
-    unreal_config::ensure_unreal_defaults(&path)?;
+    ensure_unreal_defaults(&path)?;
     let source = FsProjectSource::new(&path);
     run_analysis(&source, &path).map_err(|e| e.to_string())
 }
@@ -47,12 +50,12 @@ pub fn read_module_source(root: String, path: String) -> Result<String, String> 
 
 #[tauri::command]
 pub fn read_project_config(path: String) -> Result<ProjectConfig, String> {
-    unreal_config::read_project_config(&path)
+    load_project_config(&path)
 }
 
 #[tauri::command]
 pub fn write_project_config(path: String, config: ProjectConfig) -> Result<(), String> {
-    unreal_config::write_project_config(&path, config)
+    save_project_config(&path, config)
 }
 
 #[cfg(test)]

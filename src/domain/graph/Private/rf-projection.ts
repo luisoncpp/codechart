@@ -1,8 +1,6 @@
 // @Architecture(descriptionShort="Converts internal project graph model to React Flow projection")
-import type { LayoutedGraph } from "../../layout/Private/layout-types";
-import type { ProjectGraph } from "../ProjectGraph";
-import type { GroupNode } from "../GroupNode";
-import type { ModuleNode } from "../ModuleNode";
+import type { LayoutedGraph } from "../../layout";
+import type { GroupNode, ModuleNode, ProjectGraph } from "../index";
 import { colorForGroup } from "./colors";
 import { groupParentMap, isModuleExpanded } from "./zoom-projection";
 import {

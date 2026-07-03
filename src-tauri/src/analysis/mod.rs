@@ -28,7 +28,7 @@ use crate::references::{
     flag_drift, resolve_references_with_options, GroupBoundaries,
 };
 use crate::unity_assets::index_meta_files;
-use crate::unreal_config::{unreal_options_from_source, UnrealOptions};
+use crate::{unreal_options_from_source, UnrealOptions};
 
 use nodes::{build_modules, language_for, ParsedFile};
 

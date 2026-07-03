@@ -14,6 +14,11 @@ pub mod tauri_api;
 pub mod unity_assets;
 pub mod unreal_config;
 
+pub use unreal_config::{
+    ensure_unreal_defaults, read_project_config, unreal_options_from_source,
+    write_project_config, ProjectConfig, UnrealOptions,
+};
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()

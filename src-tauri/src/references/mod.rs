@@ -34,7 +34,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contract::{Diagnostic, DiagnosticKind, Edge, EdgeKind, Severity};
 use crate::language_adapter::{ParsedImport, ParsedModule};
-use crate::unreal_config::UnrealOptions;
+use crate::UnrealOptions;
 
 use resolve::{is_asset_import, is_relative, resolve_relative};
 

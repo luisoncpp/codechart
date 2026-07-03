@@ -1,8 +1,9 @@
-import type { LayoutBox } from "../../layout/Private/layout-types";
-import { DESC_BOX } from "../../layout/Private/module-box-metrics";
-import { symbolNameFromId } from "../symbol-id";
-import type { GroupNode } from "../GroupNode";
-import type { ModuleNode } from "../ModuleNode";
+import { DESC_BOX, type LayoutBox } from "../../layout";
+import {
+  symbolNameFromId,
+  type GroupNode,
+  type ModuleNode,
+} from "../index";
 import { inferSymbolKind } from "./symbol-kind";
 import { colorForGroup } from "./colors";
 import type { GroupRFNode, ModuleRFNode, SymbolRFNode } from "./node-data";
