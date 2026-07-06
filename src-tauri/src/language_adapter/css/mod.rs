@@ -75,9 +75,7 @@ fn skip_comment(bytes: &[u8], start: usize) -> Option<usize> {
 
 fn starts_with_at_import(bytes: &[u8], start: usize) -> bool {
     bytes.get(start..start + 7) == Some(b"@import")
-        && bytes
-            .get(start + 7)
-            .is_none_or(|b| b.is_ascii_whitespace())
+        && bytes.get(start + 7).is_none_or(|b| b.is_ascii_whitespace())
 }
 
 fn read_at_import(bytes: &[u8], start: usize) -> Option<(String, usize)> {
@@ -96,7 +94,10 @@ fn read_at_import(bytes: &[u8], start: usize) -> Option<(String, usize)> {
 }
 
 fn read_quoted_or_bare(bytes: &[u8], start: usize) -> Option<(String, usize)> {
-    let quote = bytes.get(start).copied().filter(|&b| b == b'"' || b == b'\'');
+    let quote = bytes
+        .get(start)
+        .copied()
+        .filter(|&b| b == b'"' || b == b'\'');
     if let Some(q) = quote {
         let mut i = start + 1;
         let mut out = String::new();

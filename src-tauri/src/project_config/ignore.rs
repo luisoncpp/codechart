@@ -22,10 +22,7 @@ pub fn ignore_patterns(defs: &[GroupDef]) -> Vec<Pattern> {
     ignore_patterns_with_unreal(defs, &UnrealOptions::default())
 }
 
-pub fn ignore_patterns_with_unreal(
-    defs: &[GroupDef],
-    unreal: &UnrealOptions,
-) -> Vec<Pattern> {
+pub fn ignore_patterns_with_unreal(defs: &[GroupDef], unreal: &UnrealOptions) -> Vec<Pattern> {
     let mut globs: Vec<String> = DEFAULT_IGNORE.iter().map(|s| (*s).to_string()).collect();
     if unreal.hide_generated_files {
         globs.extend(unreal_generated_globs());

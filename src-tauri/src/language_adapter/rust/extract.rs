@@ -2,7 +2,9 @@
 
 use tree_sitter::Node;
 
-use crate::language_adapter::adapter_types::{CommentBlock, ImportKind, ParsedImport, ParsedModule};
+use crate::language_adapter::adapter_types::{
+    CommentBlock, ImportKind, ParsedImport, ParsedModule,
+};
 
 use super::path::{mod_specifier, use_module_paths, use_specifier};
 
@@ -135,9 +137,9 @@ fn push_export_name(node: Node, src: &str, module: &mut ParsedModule) {
 
 fn is_pub(node: Node, src: &str) -> bool {
     let mut cursor = node.walk();
-    let is_pub = node
-        .children(&mut cursor)
-        .any(|c| c.kind() == "visibility_modifier" && text_of(c, src).trim_start().starts_with("pub"));
+    let is_pub = node.children(&mut cursor).any(|c| {
+        c.kind() == "visibility_modifier" && text_of(c, src).trim_start().starts_with("pub")
+    });
     is_pub
 }
 

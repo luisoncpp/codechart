@@ -2,7 +2,10 @@ use crate::contract::ProjectGraph;
 
 use super::{analyze_project, read_module_source};
 
-const FIXTURE_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/ts-basic-project");
+const FIXTURE_DIR: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../tests/fixtures/ts-basic-project"
+);
 
 fn golden() -> ProjectGraph {
     let json = include_str!("../../../tests/fixtures/golden/project-graph.json");

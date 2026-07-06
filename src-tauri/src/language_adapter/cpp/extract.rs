@@ -38,6 +38,9 @@ fn walk_namespace_body(node: Node, src: &str, module: &mut ParsedModule) {
 }
 
 fn push_type_export(node: Node, src: &str, module: &mut ParsedModule) {
+    if node.child_by_field_name("body").is_none() {
+        return;
+    }
     let Some(name) = node.child_by_field_name("name") else {
         return;
     };
@@ -50,6 +53,9 @@ fn push_function_export(node: Node, src: &str, module: &mut ParsedModule) {
     let Some(decl) = node.child_by_field_name("declarator") else {
         return;
     };
+    if has_qualified_name(decl) {
+        return;
+    }
     if let Some(name) = function_name(decl, src) {
         module.exported_symbols.push(name);
     }
@@ -69,16 +75,27 @@ fn function_name(node: Node, src: &str) -> Option<String> {
         "identifier" | "field_identifier" | "destructor_name" => {
             Some(text_of(node, src).to_string())
         }
-        "function_declarator" | "pointer_declarator" | "reference_declarator"
-        | "array_declarator" | "parenthesized_declarator" | "abstract_function_declarator" => {
-            node.child_by_field_name("declarator")
-                .and_then(|d| function_name(d, src))
-        }
+        "function_declarator"
+        | "pointer_declarator"
+        | "reference_declarator"
+        | "array_declarator"
+        | "parenthesized_declarator"
+        | "abstract_function_declarator" => node
+            .child_by_field_name("declarator")
+            .and_then(|d| function_name(d, src)),
         "qualified_identifier" => node
             .child_by_field_name("name")
             .and_then(|n| function_name(n, src)),
         _ => None,
     }
+}
+
+fn has_qualified_name(node: Node) -> bool {
+    if node.kind() == "qualified_identifier" {
+        return true;
+    }
+    node.child_by_field_name("declarator")
+        .is_some_and(has_qualified_name)
 }
 
 fn comment_block(node: Node, src: &str) -> CommentBlock {

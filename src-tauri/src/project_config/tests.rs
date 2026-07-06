@@ -17,7 +17,10 @@ fn parses_full_frontmatter() {
     assert_eq!(def.exclude, vec!["todo.ts".to_string()]);
     assert_eq!(def.description_short.as_deref(), Some("Domain types"));
     assert_eq!(def.description_long.as_deref(), Some("Domain model body."));
-    assert!(def.uses_folder_ownership(), "exclude alone is a filter, not a source");
+    assert!(
+        def.uses_folder_ownership(),
+        "exclude alone is a filter, not a source"
+    );
 }
 
 #[test]
@@ -33,7 +36,10 @@ fn parses_minimal_frontmatter_with_defaults() {
 fn description_short_falls_back_to_first_paragraph() {
     let md = "---\nid: x\n---\n\n# Heading\n\nFirst real paragraph here.\n\nSecond.\n";
     let def = parse_group_def("x.group.md", md).expect("valid");
-    assert_eq!(def.description_short.as_deref(), Some("First real paragraph here."));
+    assert_eq!(
+        def.description_short.as_deref(),
+        Some("First real paragraph here.")
+    );
 }
 
 #[test]
@@ -90,7 +96,10 @@ fn malformed_yaml_is_a_config_error() {
 #[test]
 fn discover_collects_defs_and_config_errors() {
     let mut files = HashMap::new();
-    files.insert("a/a.group.md".to_string(), "---\nid: a\n---\nDoc A.\n".to_string());
+    files.insert(
+        "a/a.group.md".to_string(),
+        "---\nid: a\n---\nDoc A.\n".to_string(),
+    );
     files.insert("b/b.group.md".to_string(), "broken\n".to_string());
     files.insert("a/code.ts".to_string(), "export const x = 1;".to_string());
     let source = MemoryProjectSource::new(files);

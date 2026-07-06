@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="Picks a LanguageAdapter by file extension")
 
-use crate::language_adapter::adapter_types::LanguageAdapter;
 use super::{cpp, csharp, css, rust, typescript, unity_prefab};
+use crate::language_adapter::adapter_types::LanguageAdapter;
 
 /// Pick an adapter for a file extension (no leading dot), or `None` if the
 /// extension is unsupported. Extensions are matched case-sensitively.
@@ -14,9 +14,7 @@ pub fn registry_for(ext: &str) -> Option<Box<dyn LanguageAdapter>> {
         "cs" => Some(Box::new(csharp::CSharpAdapter::new())),
         "prefab" => Some(Box::new(unity_prefab::UnityPrefabAdapter::new())),
         "css" => Some(Box::new(css::CssAdapter::new())),
-        "cpp" | "cc" | "cxx" | "h" | "hpp" | "hxx" => {
-            Some(Box::new(cpp::CppAdapter::new()))
-        }
+        "cpp" | "cc" | "cxx" | "h" | "hpp" | "hxx" => Some(Box::new(cpp::CppAdapter::new())),
         _ => None,
     }
 }

@@ -83,9 +83,7 @@ fn unresolved_ipc_diagnostic(module_id: &str, command: &str) -> Diagnostic {
         id: format!("unresolved-ipc:{module_id}:{command}"),
         severity: Severity::Warning,
         kind: DiagnosticKind::UnresolvedIpc,
-        message: format!(
-            "invoke(\"{command}\") has no matching #[tauri::command] handler"
-        ),
+        message: format!("invoke(\"{command}\") has no matching #[tauri::command] handler"),
         module_id: Some(module_id.to_string()),
         edge_id: None,
         unresolved_target: Some(command.to_string()),

@@ -21,7 +21,12 @@ pub fn infer_groups(files: &[String]) -> ResolvedGroups {
         .iter()
         .map(|dir| infer_one(dir, &dirs, files, &mut facades))
         .collect();
-    ResolvedGroups { groups, module_group, facades, diagnostics: Vec::new() }
+    ResolvedGroups {
+        groups,
+        module_group,
+        facades,
+        diagnostics: Vec::new(),
+    }
 }
 
 fn infer_one(

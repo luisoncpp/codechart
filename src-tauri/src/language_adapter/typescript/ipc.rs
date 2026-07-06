@@ -62,7 +62,11 @@ fn first_string_arg(call: Node, src: &str) -> Option<String> {
     if first.kind() != "string" {
         return None;
     }
-    Some(text_of(first, src).trim_matches(['"', '\'', '`']).to_string())
+    Some(
+        text_of(first, src)
+            .trim_matches(['"', '\'', '`'])
+            .to_string(),
+    )
 }
 
 fn text_of<'a>(node: Node, src: &'a str) -> &'a str {

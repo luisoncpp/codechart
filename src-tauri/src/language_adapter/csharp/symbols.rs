@@ -26,7 +26,8 @@ fn record_type(node: Node, src: &str, names: &mut BTreeSet<String>) {
     if is_declaration_name(node) {
         return;
     }
-    if node.kind() == "type_identifier" || node.kind() == "identifier" && is_under_type_field(node) {
+    if node.kind() == "type_identifier" || node.kind() == "identifier" && is_under_type_field(node)
+    {
         names.insert(text_of(node, src).to_string());
         return;
     }

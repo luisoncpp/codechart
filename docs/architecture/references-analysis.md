@@ -176,6 +176,8 @@ sort by id, dedup by id — for deterministic final output.
 5. Build `ModuleNode`s (`nodes.rs`): id = path, label = basename, language from
    extension (`tsx` → `Tsx`, else `TypeScript`), `group_id`/`is_facade` from the
    resolved groups, `loc` from the parse, annotation = first `@Architecture` block.
+   C++ implementation files also display exports from directly included same-stem
+   headers, so `Foo.cpp` can show the `Foo` class declared in `Foo.h`.
 6. Feed everything through `ProjectGraphBuilder` so the five §2.2 invariants are
    enforced before the graph escapes.
 

@@ -36,9 +36,7 @@ fn push_base_list(node: Node, src: &str, names: &mut Vec<String>) {
 
 fn find_base_list(node: Node) -> Option<Node> {
     let mut cursor = node.walk();
-    let found = node
-        .children(&mut cursor)
-        .find(|c| c.kind() == "base_list");
+    let found = node.children(&mut cursor).find(|c| c.kind() == "base_list");
     found
 }
 

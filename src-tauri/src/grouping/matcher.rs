@@ -59,5 +59,6 @@ pub fn is_ancestor_dir(dir: &str, path: &str) -> bool {
     if dir.is_empty() {
         return !path.is_empty();
     }
-    path.strip_prefix(dir).is_some_and(|rest| rest.starts_with('/'))
+    path.strip_prefix(dir)
+        .is_some_and(|rest| rest.starts_with('/'))
 }

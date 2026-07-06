@@ -6,12 +6,17 @@ use crate::project_source::{FsProjectSource, MemoryProjectSource};
 use super::analyze_project;
 
 fn memory(files: &[(&str, &str)]) -> MemoryProjectSource {
-    let map: HashMap<String, String> =
-        files.iter().map(|(p, c)| ((*p).to_string(), (*c).to_string())).collect();
+    let map: HashMap<String, String> = files
+        .iter()
+        .map(|(p, c)| ((*p).to_string(), (*c).to_string()))
+        .collect();
     MemoryProjectSource::new(map)
 }
 
-const FIXTURE_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/ts-basic-project");
+const FIXTURE_DIR: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../tests/fixtures/ts-basic-project"
+);
 const GOLDEN_ROOT: &str = "tests/fixtures/ts-basic-project";
 
 fn golden() -> ProjectGraph {
@@ -24,7 +29,8 @@ fn golden() -> ProjectGraph {
 #[test]
 fn analyze_matches_the_golden_fixture() {
     let source = FsProjectSource::new(FIXTURE_DIR);
-    let graph = analyze_project(&source, GOLDEN_ROOT).expect("fixture analysis builds a valid graph");
+    let graph =
+        analyze_project(&source, GOLDEN_ROOT).expect("fixture analysis builds a valid graph");
     assert_eq!(graph, golden());
 }
 
@@ -35,7 +41,11 @@ fn flags_the_planted_facade_bypass_with_no_false_positives() {
     let source = FsProjectSource::new(FIXTURE_DIR);
     let graph = analyze_project(&source, GOLDEN_ROOT).expect("builds");
     let violations: Vec<_> = graph.edges.iter().filter(|e| e.is_violation).collect();
-    assert_eq!(violations.len(), 1, "exactly one violation — no false positives");
+    assert_eq!(
+        violations.len(),
+        1,
+        "exactly one violation — no false positives"
+    );
     assert_eq!(violations[0].source, "src/ui/TodoList.tsx");
     assert_eq!(violations[0].target, "src/core/store.ts");
     let diag = graph
@@ -60,12 +70,18 @@ fn classifies_the_planted_soft_edges() {
         .collect();
     assert_eq!(soft.len(), 2, "one event seam + one interface seam");
 
-    let event = soft.iter().find(|e| e.trigger.starts_with("event:")).expect("event seam");
+    let event = soft
+        .iter()
+        .find(|e| e.trigger.starts_with("event:"))
+        .expect("event seam");
     assert_eq!(event.source, "src/core/store.ts");
     assert_eq!(event.target, "src/ui/App.tsx");
     assert_eq!(event.trigger, "event:todos:changed");
 
-    let iface = soft.iter().find(|e| e.trigger.starts_with("interface:")).expect("interface seam");
+    let iface = soft
+        .iter()
+        .find(|e| e.trigger.starts_with("interface:"))
+        .expect("interface seam");
     assert_eq!(iface.source, "src/ui/App.tsx");
     assert_eq!(iface.target, "src/core/store.ts");
     assert_eq!(iface.trigger, "interface:ITodoStore");
@@ -90,14 +106,23 @@ fn unreal_defaults_hide_generated_files_and_resolve_include_roots() {
             "Source/Game/Private/Player.cpp",
             "#include \"Characters/Player.h\"\n#include \"CoreMinimal.h\"\n",
         ),
-        ("Source/Game/Private/Player.generated.h", "class Generated {};"),
+        (
+            "Source/Game/Private/Player.generated.h",
+            "class Generated {};",
+        ),
     ]);
     let graph = analyze_project(&source, "mem").expect("builds");
     assert!(
-        graph.modules.iter().all(|m| !m.id.ends_with(".generated.h")),
+        graph
+            .modules
+            .iter()
+            .all(|m| !m.id.ends_with(".generated.h")),
         "generated Unreal headers should not become graph modules"
     );
-    assert!(graph.diagnostics.is_empty(), "engine header should be external");
+    assert!(
+        graph.diagnostics.is_empty(),
+        "engine header should be external"
+    );
     assert!(graph.edges.iter().any(|e| {
         e.source == "Source/Game/Private/Player.cpp"
             && e.target == "Source/Game/Public/Characters/Player.h"
@@ -114,7 +139,9 @@ impl crate::project_source::ProjectSource for FlakySource {
     fn read_file(&self, path: &str) -> Result<String, crate::project_source::ProjectSourceError> {
         match path {
             "src/a.ts" => Ok("export const a = 1;".into()),
-            other => Err(crate::project_source::ProjectSourceError::NotFound(other.into())),
+            other => Err(crate::project_source::ProjectSourceError::NotFound(
+                other.into(),
+            )),
         }
     }
 }
@@ -122,7 +149,11 @@ impl crate::project_source::ProjectSource for FlakySource {
 #[test]
 fn partial_results_one_unreadable_file_still_builds_the_graph() {
     let graph = analyze_project(&FlakySource, "mem").expect("builds despite a failed file");
-    assert_eq!(graph.modules.len(), 1, "only the readable file becomes a module");
+    assert_eq!(
+        graph.modules.len(),
+        1,
+        "only the readable file becomes a module"
+    );
     assert_eq!(graph.modules[0].id, "src/a.ts");
     let parse_errors: Vec<_> = graph
         .diagnostics
@@ -133,8 +164,10 @@ fn partial_results_one_unreadable_file_still_builds_the_graph() {
     assert_eq!(parse_errors[0].id, "parseError:src/b.ts");
 }
 
-const TAURI_FIXTURE_DIR: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/tauri-mini-project");
+const TAURI_FIXTURE_DIR: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../tests/fixtures/tauri-mini-project"
+);
 const TAURI_FIXTURE_ROOT: &str = "tests/fixtures/tauri-mini-project";
 
 fn tauri_mini_golden() -> ProjectGraph {
@@ -173,11 +206,15 @@ fn tauri_mini_project_ipc_seams_and_orphan_diagnostic() {
     assert_eq!(orphans[0].module_id.as_deref(), Some("src/ipc/orphan.ts"));
 }
 
-const UNITY_FIXTURE_DIR: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/unity-mini-project");
+const UNITY_FIXTURE_DIR: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../tests/fixtures/unity-mini-project"
+);
 const UNITY_FIXTURE_ROOT: &str = "tests/fixtures/unity-mini-project";
-const UNREAL_FIXTURE_DIR: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/unreal-mini-project");
+const UNREAL_FIXTURE_DIR: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../tests/fixtures/unreal-mini-project"
+);
 const UNREAL_FIXTURE_ROOT: &str = "tests/fixtures/unreal-mini-project";
 
 #[test]
@@ -189,7 +226,11 @@ fn unity_mini_project_prefab_script_and_prefab_edges() {
     let weapon = "Assets/Prefabs/Weapon.prefab";
     let shield = "Assets/Prefabs/Shield.prefab";
 
-    let player_mod = graph.modules.iter().find(|m| m.id == player).expect("player prefab");
+    let player_mod = graph
+        .modules
+        .iter()
+        .find(|m| m.id == player)
+        .expect("player prefab");
     assert_eq!(player_mod.language, crate::contract::Language::UnityPrefab);
     assert_eq!(player_mod.exported_symbols, vec!["speed", "weaponPrefab"]);
 
@@ -233,10 +274,30 @@ fn unreal_mini_project_resolves_includes_and_hides_generated_files() {
     assert!(graph.modules.iter().any(|m| m.id == source_file));
     assert!(graph.modules.iter().any(|m| m.id == header));
     assert!(
-        graph.modules.iter().all(|m| !m.id.ends_with(".generated.h")),
+        graph
+            .modules
+            .iter()
+            .all(|m| !m.id.ends_with(".generated.h")),
         "generated Unreal headers should stay hidden"
     );
-    assert!(graph.diagnostics.is_empty(), "engine includes should be external");
-    assert!(graph.edges.iter().any(|e| e.source == source_file && e.target == header));
+    assert!(
+        graph.diagnostics.is_empty(),
+        "engine includes should be external"
+    );
+    assert!(graph
+        .edges
+        .iter()
+        .any(|e| e.source == source_file && e.target == header));
 }
 
+#[test]
+fn unreal_cpp_module_displays_exports_from_its_paired_header() {
+    let source = FsProjectSource::new(UNREAL_FIXTURE_DIR);
+    let graph = analyze_project(&source, UNREAL_FIXTURE_ROOT).expect("builds");
+    let module = graph
+        .modules
+        .iter()
+        .find(|m| m.id == "Source/MiniGame/Private/MiniPlayer.cpp")
+        .expect("implementation module exists");
+    assert_eq!(module.exported_symbols, vec!["MiniPlayer"]);
+}

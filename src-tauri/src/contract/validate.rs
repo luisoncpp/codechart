@@ -115,7 +115,10 @@ fn detect_group_cycle(groups: &[GroupNode]) -> Result<(), BuildError> {
     Ok(())
 }
 
-fn check_module_groups(modules: &[ModuleNode], group_ids: &HashSet<&str>) -> Result<(), BuildError> {
+fn check_module_groups(
+    modules: &[ModuleNode],
+    group_ids: &HashSet<&str>,
+) -> Result<(), BuildError> {
     for module in modules {
         let Some(group_id) = module.group_id.as_deref() else {
             continue;

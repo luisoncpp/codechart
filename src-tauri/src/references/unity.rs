@@ -99,13 +99,7 @@ fn resolve_prefab_refs(
     (edges, diagnostics)
 }
 
-fn unity_edge(
-    source: &str,
-    target: &str,
-    trigger: &str,
-    id_tag: &str,
-    ordinal: u32,
-) -> Edge {
+fn unity_edge(source: &str, target: &str, trigger: &str, id_tag: &str, ordinal: u32) -> Edge {
     Edge {
         id: format!("{source}->{target}:{id_tag}:{ordinal}"),
         source: source.to_string(),

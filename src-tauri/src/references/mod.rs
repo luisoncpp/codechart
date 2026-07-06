@@ -11,15 +11,15 @@
 // `classify_interface_seams` (Phase 10) pairs interface importers with
 // cross-group implementors into `soft` seam edges (TDD §2.4).
 
+mod cpp;
+mod csharp;
 mod drift;
 mod interface_seams;
 mod resolve;
 mod soft;
 mod tauri_ipc;
-mod unity;
 mod test_module;
-mod csharp;
-mod cpp;
+mod unity;
 
 #[cfg(test)]
 mod tests;
@@ -38,8 +38,10 @@ use crate::UnrealOptions;
 
 use resolve::{is_asset_import, is_relative, resolve_relative};
 
-use csharp::{index_exports, resolve_import, resolve_qualified_references, uses_namespace_resolution};
 use cpp::{is_cpp_path, resolve_cpp_import, CppResolution};
+use csharp::{
+    index_exports, resolve_import, resolve_qualified_references, uses_namespace_resolution,
+};
 
 /// Edges + diagnostics derived from import resolution, consumed by `analysis`.
 pub struct ResolvedReferences {
@@ -66,7 +68,11 @@ pub fn resolve_references_with_options(
     let mut modules: Vec<&ParsedModule> = parsed.iter().collect();
     modules.sort_by(|a, b| a.path.cmp(&b.path));
     for module in modules {
-        let ctx = ResolveContext { known: &known, exports: &exports, options };
+        let ctx = ResolveContext {
+            known: &known,
+            exports: &exports,
+            options,
+        };
         resolve_module(module, &ctx, &mut targets, &mut diagnostics);
     }
     ResolvedReferences {
@@ -104,7 +110,7 @@ fn resolve_module(
             &module.path,
             &import.specifier,
             ctx.known,
-            /*item_fallback=*/module.path.ends_with(".rs"),
+            /*item_fallback=*/ module.path.ends_with(".rs"),
         ) {
             Some(target) => targets.push((module.path.clone(), target)),
             None => diagnostics.push(unresolved(&module.path, import)),
@@ -139,7 +145,10 @@ fn resolve_csharp_module(
     for import in module.imports.iter().chain(module.reexports.iter()) {
         resolved.extend(resolve_import(import, &module.referenced_symbols, exports));
     }
-    resolved.extend(resolve_qualified_references(&module.referenced_symbols, exports));
+    resolved.extend(resolve_qualified_references(
+        &module.referenced_symbols,
+        exports,
+    ));
     for target in resolved {
         if target != module.path {
             targets.push((module.path.clone(), target));

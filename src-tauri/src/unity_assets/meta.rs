@@ -24,10 +24,7 @@ pub fn parse_meta_guid(content: &str) -> Option<String> {
 }
 
 /// Build a guid → repo-relative asset path map from every `*.meta` in `files`.
-pub fn index_meta_files(
-    source: &dyn ProjectSource,
-    files: &[String],
-) -> BTreeMap<String, String> {
+pub fn index_meta_files(source: &dyn ProjectSource, files: &[String]) -> BTreeMap<String, String> {
     let mut index = BTreeMap::new();
     let mut meta_paths: Vec<&String> = files.iter().filter(|p| p.ends_with(".meta")).collect();
     meta_paths.sort();

@@ -24,8 +24,8 @@ use crate::project_config::{
 };
 use crate::project_source::ProjectSource;
 use crate::references::{
-    classify_interface_seams, classify_soft, classify_tauri_ipc, classify_unity_assets,
-    flag_drift, resolve_references_with_options, GroupBoundaries,
+    classify_interface_seams, classify_soft, classify_tauri_ipc, classify_unity_assets, flag_drift,
+    resolve_references_with_options, GroupBoundaries,
 };
 use crate::unity_assets::index_meta_files;
 use crate::{unreal_options_from_source, UnrealOptions};
@@ -43,10 +43,7 @@ struct GraphParts {
 /// Analyze a project: parse its source files, resolve groups + import edges, and
 /// assemble the validated `ProjectGraph`. `root` is recorded verbatim onto the
 /// graph (callers own the project path → id relationship).
-pub fn analyze_project(
-    source: &dyn ProjectSource,
-    root: &str,
-) -> Result<ProjectGraph, BuildError> {
+pub fn analyze_project(source: &dyn ProjectSource, root: &str) -> Result<ProjectGraph, BuildError> {
     let unreal = unreal_options_from_source(source);
     let (defs, config_diags) = discover_group_defs(source);
     let patterns = ignore_patterns_with_unreal(&defs, &unreal);
@@ -59,13 +56,18 @@ pub fn analyze_project(
     let parsed_modules: Vec<ParsedModule> = parsed.iter().map(|f| f.module.clone()).collect();
     let (edges, ref_diags) = resolve_edges(&parsed_modules, &groups, &meta_index, &unreal);
 
-    let mut modules = build_modules(&parsed, &groups);
+    let mut modules = build_modules(&parsed, &groups, &edges);
     if crate::git::is_git_repo(root) {
         crate::git::enrich_module_metrics(root, &mut modules);
     }
     let parts = GraphParts {
         modules,
-        diagnostics: merge(vec![config_diags, groups.diagnostics, ref_diags, parse_diags]),
+        diagnostics: merge(vec![
+            config_diags,
+            groups.diagnostics,
+            ref_diags,
+            parse_diags,
+        ]),
         groups: groups.groups,
         edges,
     };
@@ -86,7 +88,8 @@ fn resolve_edges(
     let violations = flag_drift(&mut refs.edges, &bounds);
     let import_pairs = collect_import_pairs(&refs.edges);
     refs.edges.extend(classify_soft(parsed));
-    refs.edges.extend(classify_interface_seams(parsed, &bounds, &import_pairs));
+    refs.edges
+        .extend(classify_interface_seams(parsed, &bounds, &import_pairs));
     let (ipc_edges, ipc_diags) = classify_tauri_ipc(parsed);
     refs.edges.extend(ipc_edges);
     let (unity_edges, unity_diags) = classify_unity_assets(parsed, meta_index);

@@ -22,7 +22,10 @@ impl LanguageAdapter for CppAdapter {
         parser
             .set_language(&tree_sitter_cpp::LANGUAGE.into())
             .map_err(|e| ParseError::Language(e.to_string()))?;
-        let tree = parser.parse(source, None).ok_or(ParseError::NoTree)?;
+        let parse_source = mask_unreal_api_macros(source);
+        let tree = parser
+            .parse(&parse_source, None)
+            .ok_or(ParseError::NoTree)?;
 
         let mut module = ParsedModule {
             path: path.to_string(),
@@ -34,6 +37,20 @@ impl LanguageAdapter for CppAdapter {
         module.implements = implements::collect_implements(root, source);
         Ok(module)
     }
+}
+
+fn mask_unreal_api_macros(source: &str) -> String {
+    let pattern = regex::Regex::new(r"\b(class|struct)(\s+)([A-Z][A-Z0-9_]*_API)(\s+)")
+        .expect("static Unreal API macro regex");
+    pattern
+        .replace_all(source, |captures: &regex::Captures| {
+            let padding = " ".repeat(captures[3].len());
+            format!(
+                "{}{}{}{}",
+                &captures[1], &captures[2], padding, &captures[4]
+            )
+        })
+        .into_owned()
 }
 
 fn loc(source: &str) -> u32 {

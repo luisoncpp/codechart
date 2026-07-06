@@ -1,8 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::RustAdapter;
 use crate::contract::EdgeKind;
 use crate::language_adapter::adapter_types::{ImportKind, LanguageAdapter, ParsedModule};
-use super::RustAdapter;
 use crate::references::{classify_interface_seams, GroupBoundaries};
 
 fn parse(path: &str, source: &str) -> ParsedModule {
@@ -12,7 +12,11 @@ fn parse(path: &str, source: &str) -> ParsedModule {
 }
 
 fn specifiers(module: &ParsedModule) -> Vec<&str> {
-    module.imports.iter().map(|i| i.specifier.as_str()).collect()
+    module
+        .imports
+        .iter()
+        .map(|i| i.specifier.as_str())
+        .collect()
 }
 
 fn relative_specifiers(module: &ParsedModule) -> Vec<&str> {
@@ -25,8 +29,10 @@ fn relative_specifiers(module: &ParsedModule) -> Vec<&str> {
 }
 
 fn seam_bounds(members: &[(&str, &str)]) -> GroupBoundaries {
-    let module_group: BTreeMap<String, String> =
-        members.iter().map(|(m, g)| ((*m).into(), (*g).into())).collect();
+    let module_group: BTreeMap<String, String> = members
+        .iter()
+        .map(|(m, g)| ((*m).into(), (*g).into()))
+        .collect();
     GroupBoundaries {
         module_group,
         parent_of: BTreeMap::new(),
@@ -52,7 +58,10 @@ fn use_crate_path() {
 #[test]
 fn use_crate_path_from_nested_adapter_module() {
     let source = "use crate::language_adapter::adapter_types::{CommentBlock, ImportKind, ParsedImport, ParsedModule};\n";
-    let m = parse("src-tauri/src/language_adapter/typescript/extract.rs", source);
+    let m = parse(
+        "src-tauri/src/language_adapter/typescript/extract.rs",
+        source,
+    );
     let specs = specifiers(&m);
     assert_eq!(specs.len(), 4);
     assert!(specs.iter().all(|s| *s == "../adapter_types"));
@@ -92,7 +101,13 @@ pub use types::{ Alpha, Beta, Gamma };
     let m = parse("src-tauri/src/contract/mod.rs", source);
     assert_eq!(
         m.exported_symbols,
-        vec!["ProjectGraphBuilder", "BuildError", "Alpha", "Beta", "Gamma"]
+        vec![
+            "ProjectGraphBuilder",
+            "BuildError",
+            "Alpha",
+            "Beta",
+            "Gamma"
+        ]
     );
     assert_eq!(m.reexports.len(), 5);
     assert_eq!(m.reexports[2].names, vec!["Alpha"]);
@@ -201,4 +216,3 @@ fn plain_function_has_no_ipc_commands() {
     let m = parse("src/lib.rs", "pub fn run() {}\n");
     assert!(m.ipc_commands.is_empty());
 }
-

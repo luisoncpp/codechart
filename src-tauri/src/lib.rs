@@ -1,9 +1,9 @@
 // @Architecture(descriptionShort="Crate root: Tauri bootstrap and module exports")
 
 pub mod analysis;
-pub mod git;
 pub mod contract;
 pub mod diagnostics;
+pub mod git;
 pub mod grouping;
 pub mod language_adapter;
 pub mod project_config;
@@ -15,8 +15,8 @@ pub mod unity_assets;
 pub mod unreal_config;
 
 pub use unreal_config::{
-    ensure_unreal_defaults, read_project_config, unreal_options_from_source,
-    write_project_config, ProjectConfig, UnrealOptions,
+    ensure_unreal_defaults, read_project_config, unreal_options_from_source, write_project_config,
+    ProjectConfig, UnrealOptions,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

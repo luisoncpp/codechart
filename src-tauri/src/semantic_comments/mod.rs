@@ -96,7 +96,9 @@ fn split_top_level_commas(body: &str) -> Vec<String> {
 fn unquote(value: &str) -> String {
     let trimmed = value.trim();
     let bytes = trimmed.as_bytes();
-    if bytes.len() >= 2 && (bytes[0] == b'"' || bytes[0] == b'\'') && bytes[bytes.len() - 1] == bytes[0]
+    if bytes.len() >= 2
+        && (bytes[0] == b'"' || bytes[0] == b'\'')
+        && bytes[bytes.len() - 1] == bytes[0]
     {
         return trimmed[1..trimmed.len() - 1].to_string();
     }

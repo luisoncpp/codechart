@@ -22,8 +22,12 @@ pub fn resolve_cpp_import(
     known: &BTreeSet<&str>,
     options: &UnrealOptions,
 ) -> CppResolution {
-    if let Some(target) = resolve_relative(importer, &import.specifier, known, /*item_fallback=*/false)
-    {
+    if let Some(target) = resolve_relative(
+        importer,
+        &import.specifier,
+        known,
+        /*item_fallback=*/ false,
+    ) {
         return CppResolution::Resolved(target);
     }
     let include = include_text(&import.specifier);
@@ -42,11 +46,7 @@ pub enum CppResolution {
     Unresolved,
 }
 
-fn resolve_from_roots(
-    include: &str,
-    known: &BTreeSet<&str>,
-    roots: &[String],
-) -> Option<String> {
+fn resolve_from_roots(include: &str, known: &BTreeSet<&str>, roots: &[String]) -> Option<String> {
     roots
         .iter()
         .map(|root| format!("{}/{}", root.trim_matches('/'), include))

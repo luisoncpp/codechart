@@ -4,8 +4,10 @@ use super::*;
 use crate::project_source::MemoryProjectSource;
 
 fn memory(files: &[(&str, &str)]) -> MemoryProjectSource {
-    let map: HashMap<String, String> =
-        files.iter().map(|(p, c)| ((*p).to_string(), (*c).to_string())).collect();
+    let map: HashMap<String, String> = files
+        .iter()
+        .map(|(p, c)| ((*p).to_string(), (*c).to_string()))
+        .collect();
     MemoryProjectSource::new(map)
 }
 
@@ -87,6 +89,10 @@ fn ensure_defaults_fills_empty_existing_config() {
     .expect("write empty config");
     ensure_unreal_defaults(&root).expect("ensure defaults");
     let config = read_project_config(&root).expect("read config");
-    assert!(config.unreal.known_paths.iter().any(|p| p == "Source/Game/Public"));
+    assert!(config
+        .unreal
+        .known_paths
+        .iter()
+        .any(|p| p == "Source/Game/Public"));
     assert!(!config.unreal.hide_generated_files, "preserve user toggle");
 }

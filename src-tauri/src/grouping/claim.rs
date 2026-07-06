@@ -48,10 +48,16 @@ fn resolve_claims(claims: BTreeMap<String, Vec<String>>) -> Assignment {
         }
         diagnostics.push(config_error(
             &format!("overlap:{module}"),
-            &format!("module {module} is claimed by multiple groups: {}", owners.join(", ")),
+            &format!(
+                "module {module} is claimed by multiple groups: {}",
+                owners.join(", ")
+            ),
         ));
     }
-    Assignment { module_group, diagnostics }
+    Assignment {
+        module_group,
+        diagnostics,
+    }
 }
 
 /// Membership-source claims (`match` + `files`), filtered by `exclude`.
@@ -64,7 +70,9 @@ fn source_claims(def: &GroupDef, files: &[String]) -> BTreeSet<String> {
         }
     }
     for entry in &def.match_globs {
-        let Some(matcher) = build_matcher(&def.dir, entry) else { continue };
+        let Some(matcher) = build_matcher(&def.dir, entry) else {
+            continue;
+        };
         for file in files.iter().filter(|f| matcher.matches(f)) {
             set.insert(file.clone());
         }
@@ -127,7 +135,10 @@ fn resolve_explicit(
         }
         diagnostics.push(config_error(
             &format!("facade:{}:{id}", def.id),
-            &format!("group {} lists facade {id} which is not one of its modules", def.id),
+            &format!(
+                "group {} lists facade {id} which is not one of its modules",
+                def.id
+            ),
         ));
     }
 }

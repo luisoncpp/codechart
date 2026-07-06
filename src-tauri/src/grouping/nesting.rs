@@ -20,7 +20,10 @@ pub fn resolve_nesting(defs: &[GroupDef]) -> Nesting {
     let mut diagnostics = Vec::new();
     apply_explicit_refs(defs, &ids, &mut parent_of, &mut diagnostics);
     apply_folder_nesting(defs, &mut parent_of);
-    Nesting { parent_of, diagnostics }
+    Nesting {
+        parent_of,
+        diagnostics,
+    }
 }
 
 fn apply_explicit_refs(
@@ -56,7 +59,9 @@ fn apply_folder_nesting(defs: &[GroupDef], parent_of: &mut BTreeMap<String, Stri
 
 fn nearest_ancestor(def: &GroupDef, defs: &[GroupDef]) -> Option<String> {
     defs.iter()
-        .filter(|other| other.id != def.id && can_fold_own(other) && is_ancestor_dir(&other.dir, &def.dir))
+        .filter(|other| {
+            other.id != def.id && can_fold_own(other) && is_ancestor_dir(&other.dir, &def.dir)
+        })
         .max_by_key(|other| other.dir.len())
         .map(|other| other.id.clone())
 }

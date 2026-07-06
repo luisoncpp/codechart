@@ -89,9 +89,7 @@ pub fn is_group_file(path: &str) -> bool {
 /// Walk `source`, parse every `*.group.md`, and collect parse failures as
 /// `configError` diagnostics. Duplicate ids and ignored paths are dropped with
 /// a diagnostic. Defs are returned sorted by id for determinism.
-pub fn discover_group_defs(
-    source: &dyn ProjectSource,
-) -> (Vec<GroupDef>, Vec<Diagnostic>) {
+pub fn discover_group_defs(source: &dyn ProjectSource) -> (Vec<GroupDef>, Vec<Diagnostic>) {
     let mut candidates = Vec::new();
     let mut diagnostics = Vec::new();
     let mut paths = source.list_files().unwrap_or_default();
@@ -102,7 +100,13 @@ pub fn discover_group_defs(
             Err(e) => diagnostics.push(config_error(path, &e.to_string())),
         }
     }
-    let patterns = ignore_patterns(&candidates.iter().map(|(_, d)| d).cloned().collect::<Vec<_>>());
+    let patterns = ignore_patterns(
+        &candidates
+            .iter()
+            .map(|(_, d)| d)
+            .cloned()
+            .collect::<Vec<_>>(),
+    );
     let mut defs = Vec::new();
     let mut seen_ids = BTreeSet::new();
     for (path, def) in candidates {
@@ -112,7 +116,10 @@ pub fn discover_group_defs(
         if !seen_ids.insert(def.id.clone()) {
             diagnostics.push(config_error(
                 &path,
-                &format!("duplicate group id `{}` (already declared elsewhere)", def.id),
+                &format!(
+                    "duplicate group id `{}` (already declared elsewhere)",
+                    def.id
+                ),
             ));
             continue;
         }
