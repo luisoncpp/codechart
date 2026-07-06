@@ -87,6 +87,35 @@ describe("GraphSessionStore (no DOM)", () => {
     expect(store.getSelectedId()).toBeNull();
   });
 
+  it("navigates selection history without adding new entries", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.select("src/core/index.ts");
+    store.select("src/core/store.ts");
+    store.select("core");
+    await store.goBack();
+    expect(store.getSelectedId()).toBe("src/core/store.ts");
+    await store.goBack();
+    expect(store.getSelectedId()).toBe("src/core/index.ts");
+    expect(store.canGoBack()).toBe(false);
+    await store.goForward();
+    await store.goForward();
+    expect(store.getSelectedId()).toBe("core");
+    expect(store.canGoForward()).toBe(false);
+  });
+
+  it("a new selection truncates forward history", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.select("src/core/index.ts");
+    store.select("src/core/store.ts");
+    await store.goBack();
+    store.select("src/main.ts");
+    expect(store.canGoForward()).toBe(false);
+    await store.goBack();
+    expect(store.getSelectedId()).toBe("src/core/index.ts");
+  });
+
   it("focusOn selects the module and emits focus-requested", async () => {
     const store = newStore(clientReturning(graph));
     await store.loadProject("/x");

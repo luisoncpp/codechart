@@ -20,6 +20,7 @@ import { LayoutEngine, LayoutedGraph, LayoutOptions } from "../../../domain/layo
 import { EventEmitter } from "./event-emitter";
 import { buildCommitDiffOverlay, buildPasteDiffOverlay } from "./build-diff-overlay";
 import { expandCollapsedAncestors } from "./ensure-node-visible";
+import { SelectionHistory } from "./selection-history";
 
 export type SessionPhase = "idle" | "loading" | "ready" | "failed" | "empty";
 
@@ -52,6 +53,7 @@ export class GraphSessionStore extends EventEmitter {
   private heatmapSaved: { enabled: boolean; mode: HeatmapMode } | null = null;
   private focusRequestId: string | null = null;
   private focusSeq = 0;
+  private selectionHistory = new SelectionHistory();
 
   constructor(
     private client: AnalysisClient,
@@ -67,6 +69,8 @@ export class GraphSessionStore extends EventEmitter {
   getLayout = () => this.layout;
   getError = () => this.error;
   getSelectedId = () => this.selectedId;
+  canGoBack = () => this.selectionHistory.canGoBack;
+  canGoForward = () => this.selectionHistory.canGoForward;
   getZoomLevel = () => this.zoomLevel;
   getCollapsedGroupIds = () => this.collapsedGroupIds;
   getDisconnectedGroupIds = () => this.disconnectedGroupIds;
@@ -140,8 +144,12 @@ export class GraphSessionStore extends EventEmitter {
   select(id: string | null) {
     if (this.selectedId === id) return;
     this.selectedId = id;
+    if (id) this.selectionHistory.push(id);
     this.emit("selection-changed");
   }
+
+  goBack = () => this.navigateHistory(/*forward=*/false);
+  goForward = () => this.navigateHistory(/*forward=*/true);
 
   /** Select a module and ask the canvas to center on it (inspector import navigation). */
   async focusOn(moduleId: string) {
@@ -158,6 +166,7 @@ export class GraphSessionStore extends EventEmitter {
     }
     const selChanged = this.selectedId !== moduleId;
     this.selectedId = moduleId;
+    this.selectionHistory.push(moduleId);
     if (selChanged) this.emit("selection-changed");
     this.focusRequestId = moduleId;
     this.focusSeq++;
@@ -264,6 +273,7 @@ export class GraphSessionStore extends EventEmitter {
     this.phase = "loading";
     this.error = null;
     this.selectedId = null;
+    this.selectionHistory.clear();
     this.resetZoom();
     this.diffOverlay = null;
     this.diffError = null;
@@ -309,6 +319,40 @@ export class GraphSessionStore extends EventEmitter {
     this.expandedGroupSizes = new Map();
     this.reduced = null;
     this.layout = null;
+  }
+
+  private async navigateHistory(forward: boolean) {
+    const id = forward
+      ? this.selectionHistory.forward()
+      : this.selectionHistory.back();
+    if (!id) return;
+    await this.focusSelection(id);
+  }
+
+  private async focusSelection(id: string) {
+    if (!this.graph) return;
+    const isModule = this.graph.modules.some((module) => module.id === id);
+    const isGroup = this.graph.groups.some((group) => group.id === id);
+    if (!isModule && !isGroup) return;
+    if (isModule) await this.expandForFocus(id);
+    this.selectedId = id;
+    this.emit("selection-changed");
+    this.focusRequestId = id;
+    this.focusSeq++;
+    this.emit("focus-requested");
+  }
+
+  private async expandForFocus(moduleId: string) {
+    if (!this.graph) return;
+    const expanded = expandCollapsedAncestors(
+      this.graph,
+      moduleId,
+      this.collapsedGroupIds,
+    );
+    if (!expanded) return;
+    this.syncReduced();
+    this.emit("zoom-changed");
+    await this.recomputeLayout();
   }
 
   /** Keep the reduced graph in sync before async layout catches up. */

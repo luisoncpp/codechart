@@ -28,6 +28,7 @@ import { GraphCanvasController } from "./graph-canvas-controller";
 import { usePreviewFrames } from "./preview_frames";
 import { LevelBadge } from "./LevelBadge";
 import { ViewControls } from "./ViewControls";
+import { SelectionNavigation } from "./SelectionNavigation";
 
 interface GraphCanvasProps {
   store: GraphSessionStore;
@@ -156,6 +157,7 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
           <Controls showInteractive={false} />
         </ReactFlow>
         <LevelBadge level={level} />
+        <SelectionNavigation store={store} />
         {diffOverlay && (
           <DiffOverlayBar onStop={() => store.clearDiffOverlay()} />
         )}

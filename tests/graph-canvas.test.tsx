@@ -76,6 +76,23 @@ describe("GraphCanvas", () => {
     expect(store.getSelectedId()).toBe(facade.id);
   });
 
+  it("navigates selection history with buttons and Alt+Arrow shortcuts", async () => {
+    store.select("src/core/index.ts");
+    store.select("src/core/store.ts");
+    renderGraphCanvas(store);
+    const back = await screen.findByRole("button", { name: "Back" });
+    const forward = screen.getByRole("button", { name: "Forward" });
+    fireEvent.click(back);
+    await waitFor(() =>
+      expect(store.getSelectedId()).toBe("src/core/index.ts"),
+    );
+    await waitFor(() => expect(forward).toBeEnabled());
+    fireEvent.keyDown(window, { key: "ArrowRight", altKey: true });
+    await waitFor(() =>
+      expect(store.getSelectedId()).toBe("src/core/store.ts"),
+    );
+  });
+
   it("right-clicking a module opens reveal-in-explorer menu", async () => {
     const revealInExplorer = vi.fn();
     const shell: ShellClient = { revealInExplorer };
