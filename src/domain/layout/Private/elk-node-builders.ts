@@ -1,8 +1,6 @@
 // @Architecture(descriptionShort="Internal ELK node and edge construction helpers for buildElkGraph")
 import type { ElkNode, ElkExtendedEdge } from "elkjs/lib/elk-api";
-import type { ProjectGraph } from "../../graph/ProjectGraph";
-import type { GroupNode } from "../../graph/GroupNode";
-import { symbolBoxId } from "../../graph/symbol-id";
+import { symbolBoxId, type GroupNode, type ProjectGraph } from "../../graph";
 import type { LayoutOptions } from "./layout-types";
 import { PRESETS } from "./layout-presets";
 import { symbolBoxWidth } from "./symbol-box-metrics";

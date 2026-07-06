@@ -1,5 +1,4 @@
-import type { LayoutBox } from "../../layout/Private/layout-types";
-import { DESC_BOX } from "../../layout/Private/module-box-metrics";
+import { DESC_BOX, type LayoutBox } from "../../layout";
 import { symbolNameFromId } from "../symbol-id";
 import type { GroupNode } from "../GroupNode";
 import type { ModuleNode } from "../ModuleNode";

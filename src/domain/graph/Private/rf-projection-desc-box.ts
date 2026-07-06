@@ -1,5 +1,4 @@
-import type { LayoutBox } from "../../layout/Private/layout-types";
-import { PRESETS } from "../../layout/Private/layout-presets";
+import { PRESETS, type LayoutBox } from "../../layout";
 import type { ProjectionCtx } from "./rf-projection-types";
 
 const DESC_GAP = 8;

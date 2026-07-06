@@ -3,7 +3,7 @@
 use std::collections::BTreeSet;
 
 use crate::language_adapter::ParsedImport;
-use crate::unreal_config::UnrealOptions;
+use crate::UnrealOptions;
 
 use super::resolve::{resolve_path, resolve_relative};
 

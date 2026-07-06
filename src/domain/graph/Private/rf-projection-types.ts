@@ -1,4 +1,4 @@
-import type { LayoutBox } from "../../layout/Private/layout-types";
+import type { LayoutBox } from "../../layout";
 import type { ModuleNode } from "../ModuleNode";
 import type { HeatProjection } from "./heat-types";
 

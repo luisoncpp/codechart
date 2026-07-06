@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Converts internal project graph model to React Flow projection")
-import type { LayoutedGraph } from "../../layout/Private/layout-types";
+import type { LayoutedGraph } from "../../layout";
 import type { ProjectGraph } from "../ProjectGraph";
 import type { GroupNode } from "../GroupNode";
 import type { ModuleNode } from "../ModuleNode";

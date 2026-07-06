@@ -19,7 +19,9 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
 - **Relative** specifier (`./x`, `../x`) → resolved against known ids using the
   §7 rules (`resolve.rs`): extensionless `.ts`/`.tsx`/`.cs`, explicit extensions,
   `.js`/`.jsx`/`.mjs` (TS ESM convention → source `.ts`/`.tsx`), then
-  `index.ts`/`index.tsx`/`mod.rs`. Hit → solid `import` edge. Miss → for `.rs`
+  `index.ts`/`index.tsx`/`mod.rs`/`lib.rs`/`main.rs`. The crate-root candidates
+  let Rust `crate::...` imports resolve through root re-exports. Hit → solid
+  `import` edge. Miss → for `.rs`
   importers only, walk up parent path segments (Rust item imports such as
   `../analysis/analyze_project` where `analyze_project` is a fn in `analysis/mod.rs`,
   not a submodule file).   Still no hit → `unresolvedImport` diagnostic (severity

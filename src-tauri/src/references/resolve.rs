@@ -137,5 +137,7 @@ fn extensionless_candidates(base: &str) -> Vec<String> {
         format!("{base}/index.ts"),
         format!("{base}/index.tsx"),
         format!("{base}/mod.rs"),
+        format!("{base}/lib.rs"),
+        format!("{base}/main.rs"),
     ]
 }

@@ -3,7 +3,7 @@
 use glob::Pattern;
 
 use super::GroupDef;
-use crate::unreal_config::UnrealOptions;
+use crate::UnrealOptions;
 
 const DEFAULT_IGNORE: &[&str] = &[
     ".git/**",

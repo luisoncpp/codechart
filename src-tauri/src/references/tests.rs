@@ -265,6 +265,36 @@ fn rust_nested_module_item_import_resolves_to_mod_rs() {
 }
 
 #[test]
+fn rust_crate_root_reexports_resolve_to_lib_rs() {
+    use crate::language_adapter::registry_for_path;
+
+    let importer = registry_for_path("src-tauri/src/analysis/mod.rs")
+        .unwrap()
+        .parse(
+            "src-tauri/src/analysis/mod.rs",
+            "use crate::{unreal_options_from_source, UnrealOptions};\n",
+        )
+        .expect("parse succeeds");
+    let parsed = vec![importer, module("src-tauri/src/lib.rs", &[])];
+    let refs = resolve_references(&parsed);
+
+    assert_eq!(
+        edge_targets(&parsed),
+        [
+            (
+                "src-tauri/src/analysis/mod.rs".into(),
+                "src-tauri/src/lib.rs".into(),
+            ),
+            (
+                "src-tauri/src/analysis/mod.rs".into(),
+                "src-tauri/src/lib.rs".into(),
+            ),
+        ]
+    );
+    assert!(refs.diagnostics.is_empty());
+}
+
+#[test]
 fn rust_external_and_local_imports_skip_false_unresolved() {
     use crate::language_adapter::registry_for_path;
 

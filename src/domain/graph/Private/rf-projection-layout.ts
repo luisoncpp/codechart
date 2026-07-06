@@ -1,4 +1,4 @@
-import type { LayoutBox } from "../../layout/Private/layout-types";
+import type { LayoutBox } from "../../layout";
 import type { GroupRFNode } from "./node-data";
 import type { BoxIndex } from "./rf-projection-types";
 
