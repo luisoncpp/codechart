@@ -1,6 +1,10 @@
 // @Architecture(descriptionShort="Modal for entering a diff via paste or git commits")
 import { useEffect, useState } from "react";
-import type { GitClient, GitCommit } from "../../../ipc/git-client";
+import {
+  LOCAL_CHANGES_REF,
+  type GitClient,
+  type GitCommit,
+} from "../../../ipc/git-client";
 import type { GraphSessionStore } from "../../../state/graph-session";
 import { CommitPanel } from "./CommitPanel";
 import { ModePicker, PastePanel, type DiffMode } from "./DiffModalParts";
@@ -51,10 +55,14 @@ export function DiffModal({ store, git, open, onClose }: DiffModalProps) {
         store.applyDiffFromPaste(pasteText);
       } else {
         if (!baseRef || !headRef) {
-          setError("Pick a base and head commit.");
+          setError("Pick a before and after revision.");
           return;
         }
-        await store.applyDiffFromCommits(baseRef, headRef);
+        if (headRef === LOCAL_CHANGES_REF) {
+          await store.applyDiffFromWorkingTree(baseRef);
+        } else {
+          await store.applyDiffFromCommits(baseRef, headRef);
+        }
         if (store.getDiffError()) {
           setError(store.getDiffError());
           return;

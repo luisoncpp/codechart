@@ -6,4 +6,4 @@ icon: plug
 descriptionShort: IPC to git-backed analysis
 ---
 
-The GitClient seam: analyzeProjectAtRef, diffRefs, and commit listing over Tauri IPC (or a mock for tests). The facade (index.ts) declares the interface; tauri and mock implementations are private.
+The GitClient seam: analyzeProjectAtRef, commit listing, ref-to-ref diffs, and working-tree diffs over Tauri IPC (or a mock for tests). Working-tree diffs accept analyzed module paths as the allowlist for ignored-aware untracked additions. The facade (index.ts) declares the interface; tauri and mock implementations are private.

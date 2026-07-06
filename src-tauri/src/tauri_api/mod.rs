@@ -33,6 +33,15 @@ pub fn git_diff_refs(path: String, base_ref: String, head_ref: String) -> Result
 }
 
 #[tauri::command]
+pub fn git_diff_working_tree(
+    path: String,
+    base_ref: String,
+    eligible_paths: Vec<String>,
+) -> Result<String, String> {
+    git::working_tree_diff(&path, &base_ref, &eligible_paths)
+}
+
+#[tauri::command]
 pub fn git_is_repo(path: String) -> bool {
     git::is_git_repo(&path)
 }

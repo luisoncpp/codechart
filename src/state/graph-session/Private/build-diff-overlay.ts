@@ -38,3 +38,30 @@ export function buildPasteDiffOverlay(
   const partial = overlayFromPastedDiff(text, graph);
   return attachLineDiff({ ...partial, beforeLayout: null }, text);
 }
+
+interface WorkingTreeDiffInput {
+  git: GitClient;
+  layoutEngine: LayoutEngine;
+  root: string;
+  baseRef: string;
+  current: ProjectGraph;
+}
+
+export async function buildWorkingTreeDiffOverlay(
+  input: WorkingTreeDiffInput,
+): Promise<GraphDiffOverlay> {
+  const { git, layoutEngine, root, baseRef, current } = input;
+  const [before, unifiedDiff] = await Promise.all([
+    git.analyzeProjectAtRef(root, baseRef),
+    git.diffWorkingTree(
+      root,
+      baseRef,
+      current.modules.map((module) => module.path),
+    ),
+  ]);
+  const pathOverlay = overlayFromPastedDiff(unifiedDiff, current);
+  const graphOverlay = compareGraphs({ before, after: current });
+  const partial = mergeCommitOverlay(pathOverlay, graphOverlay, before);
+  const beforeLayout = await layoutEngine.layout(before);
+  return attachLineDiff({ ...partial, beforeLayout }, unifiedDiff);
+}

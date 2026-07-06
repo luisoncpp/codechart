@@ -17,5 +17,12 @@ export function createTauriGitClient(): GitClient {
     async diffRefs(path: string, baseRef: string, headRef: string): Promise<string> {
       return invoke<string>("git_diff_refs", { path, baseRef, headRef });
     },
+    async diffWorkingTree(
+      path: string,
+      baseRef: string,
+      eligiblePaths: string[],
+    ): Promise<string> {
+      return invoke<string>("git_diff_working_tree", { path, baseRef, eligiblePaths });
+    },
   };
 }

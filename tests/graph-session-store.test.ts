@@ -3,6 +3,8 @@ import goldenGraph from "./fixtures/golden/project-graph.json";
 import { GraphSessionStore } from "../src/state/graph-session";
 import type { AnalysisClient } from "../src/ipc/analysis-client";
 import type { ProjectGraph } from "../src/domain/graph";
+import type { GitClient } from "../src/ipc/git-client";
+import { ElkLayoutEngine } from "../src/domain/layout";
 import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 
 const graph = goldenGraph as unknown as ProjectGraph;
@@ -427,5 +429,42 @@ describe("GraphSessionStore heatmap", () => {
     store.clearDiffOverlay();
     expect(store.getHeatmapEnabled()).toBe(true);
     expect(store.getHeatmapMode()).toBe("risk");
+  });
+});
+
+describe("GraphSessionStore local changes diff", () => {
+  it("uses the loaded graph as after and allowlists its module paths", async () => {
+    const diffWorkingTree = vi.fn(async () =>
+      [
+        "diff --git a/src/core/store.ts b/src/core/store.ts",
+        "--- a/src/core/store.ts",
+        "+++ b/src/core/store.ts",
+        "@@ -1 +1 @@",
+        "-old",
+        "+new",
+      ].join("\n"),
+    );
+    const git: GitClient = {
+      isGitRepo: async () => true,
+      listCommits: async () => [],
+      analyzeProjectAtRef: async () => graph,
+      diffRefs: async () => "",
+      diffWorkingTree,
+    };
+    const store = new GraphSessionStore(
+      clientReturning(graph),
+      git,
+      new ElkLayoutEngine(),
+    );
+    await store.loadProject("/repo");
+
+    await store.applyDiffFromWorkingTree("HEAD");
+
+    expect(diffWorkingTree).toHaveBeenCalledWith(
+      "/repo",
+      "HEAD",
+      graph.modules.map((module) => module.path),
+    );
+    expect(store.getDiffOverlay()?.affectedModuleIds.has("src/core/store.ts")).toBe(true);
   });
 });

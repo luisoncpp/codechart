@@ -33,6 +33,7 @@ pub fn run() {
             tauri_api::git_is_repo,
             tauri_api::git_list_commits,
             tauri_api::git_diff_refs,
+            tauri_api::git_diff_working_tree,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

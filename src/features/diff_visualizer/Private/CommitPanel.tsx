@@ -1,5 +1,8 @@
 // @Architecture(descriptionShort="Before/after commit pickers for git diff mode")
-import type { GitCommit } from "../../../ipc/git-client";
+import {
+  LOCAL_CHANGES_REF,
+  type GitCommit,
+} from "../../../ipc/git-client";
 import { CommitSearchSelect } from "./CommitSearchSelect";
 import { parentCommitHash } from "./commit-parent";
 
@@ -21,9 +24,18 @@ export function CommitPanel({
   const handleHeadChange = (hash: string) => {
     onHeadChange(hash);
     if (!hash || baseRef) return;
+    if (hash === LOCAL_CHANGES_REF) {
+      if (commits[0]) onBaseChange(commits[0].hash);
+      return;
+    }
     const parent = parentCommitHash(commits, hash);
     if (parent) onBaseChange(parent);
   };
+
+  const afterCommits: GitCommit[] = [
+    { hash: LOCAL_CHANGES_REF, message: "Local changes", date: "" },
+    ...commits,
+  ];
 
   return (
     <div style={rowStyle}>
@@ -38,7 +50,7 @@ export function CommitPanel({
       <CommitSearchSelect
         label="After"
         value={headRef}
-        commits={commits}
+        commits={afterCommits}
         onChange={handleHeadChange}
         placeholder="Pick newer commit…"
       />

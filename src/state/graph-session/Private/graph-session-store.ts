@@ -18,7 +18,11 @@ import {
 } from "../../../domain/graph";
 import { LayoutEngine, LayoutedGraph, LayoutOptions } from "../../../domain/layout";
 import { EventEmitter } from "./event-emitter";
-import { buildCommitDiffOverlay, buildPasteDiffOverlay } from "./build-diff-overlay";
+import {
+  buildCommitDiffOverlay,
+  buildPasteDiffOverlay,
+  buildWorkingTreeDiffOverlay,
+} from "./build-diff-overlay";
 import { expandCollapsedAncestors } from "./ensure-node-visible";
 import { SelectionHistory } from "./selection-history";
 
@@ -123,6 +127,26 @@ export class GraphSessionStore extends EventEmitter {
         baseRef,
         headRef,
       );
+      this.pauseHeatForDiff();
+      this.ensureDiffZoomFloor();
+      this.emit("diff-changed");
+    } catch (e) {
+      this.diffError = e instanceof Error ? e.message : String(e);
+      this.emit("diff-changed");
+    }
+  }
+
+  async applyDiffFromWorkingTree(baseRef: string) {
+    if (!this.root || !this.graph) return;
+    this.diffError = null;
+    try {
+      this.diffOverlay = await buildWorkingTreeDiffOverlay({
+        git: this.git,
+        layoutEngine: this.layoutEngine,
+        root: this.root,
+        baseRef,
+        current: this.graph,
+      });
       this.pauseHeatForDiff();
       this.ensureDiffZoomFloor();
       this.emit("diff-changed");

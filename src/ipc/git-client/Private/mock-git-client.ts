@@ -17,5 +17,8 @@ export function createMockGitClient(): GitClient {
     async diffRefs(): Promise<string> {
       return "";
     },
+    async diffWorkingTree(): Promise<string> {
+      return "";
+    },
   };
 }
