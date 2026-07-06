@@ -54,7 +54,7 @@ export function FocusNode({ store }: FocusNodeProps) {
     return () => {
       cancelled = true;
     };
-  }, [focus?.seq, layout, panReady, setCenter, getZoom, storeApi]);
+  }, [focus?.id, focus?.seq, layout, panReady, setCenter, getZoom, storeApi]);
 
   return null;
 }

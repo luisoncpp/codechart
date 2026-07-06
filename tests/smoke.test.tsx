@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
-import { ProjectLoaderPanel } from "../src/features/project_loader";
 import {
   clickOpenFolder,
   mockClipboardWriteText,

@@ -1,6 +1,5 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
 import {
   DEFAULT_INSPECTOR_WIDTH,
   MAX_INSPECTOR_WIDTH,

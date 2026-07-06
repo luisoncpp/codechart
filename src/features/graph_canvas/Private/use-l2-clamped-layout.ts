@@ -49,7 +49,7 @@ const DEFAULT_CLAMP_STYLES: CSSProperties = {
 /** Border width in screen px (`borderWidthNodePx * zoom`). Module shells use fixed node px. */
 export const moduleL2BorderInset = (zoom: number) => 2 * zoom;
 /** Group doc panel: accent border is `3/zoom` node px → 3 screen px (see node-border-clips lesson). */
-export const groupDocBorderInset = (_zoom: number) => 3;
+export const groupDocBorderInset = () => 3;
 
 /** Clamp scrollable L2 content to the portion of `containerRef` visible in the canvas. */
 export function useL2ClampedLayout(

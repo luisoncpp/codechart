@@ -5,6 +5,11 @@ import reactHooks from "eslint-plugin-react-hooks";
 export default tseslint.config(
   {
     ignores: [
+      ".agents/**",
+      ".claude/**",
+      ".codex/**",
+      ".cursor/**",
+      ".impeccable/**",
       "dist",
       "node_modules",
       "src-tauri/target",
