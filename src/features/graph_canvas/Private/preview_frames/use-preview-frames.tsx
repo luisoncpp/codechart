@@ -34,7 +34,7 @@ function liveFrameRects(container: HTMLElement): Map<number, FrameRect> {
 
 export function usePreviewFrames(deps: PreviewFramesDeps) {
   const { store, graph, diffOverlay, containerRef } = deps;
-  const [frames, setFrames] = useState<PreviewFrame[]>([]);
+  const [frames, setFrames] = useState<readonly PreviewFrame[]>([]);
   const nextId = useRef(1);
 
   const open = useCallback(

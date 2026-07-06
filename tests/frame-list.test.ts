@@ -51,6 +51,10 @@ describe("bringToFront", () => {
     const next = bringToFront(base, 2);
     expect(next.map((f) => f.zIndex)).toEqual([1, 2]);
   });
+
+  it("returns the same reference when already on top, so setState bails out", () => {
+    expect(bringToFront(base, 2)).toBe(base);
+  });
 });
 
 describe("moveFrame", () => {

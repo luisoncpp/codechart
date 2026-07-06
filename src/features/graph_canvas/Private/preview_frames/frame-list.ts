@@ -27,7 +27,7 @@ function topZIndex(frames: readonly PreviewFrame[]): number {
 export function openFrame(
   frames: readonly PreviewFrame[],
   frame: Omit<PreviewFrame, "zIndex">,
-): PreviewFrame[] {
+): readonly PreviewFrame[] {
   const existing = frames.find(
     (f) => f.moduleId === frame.moduleId && f.symbolName === frame.symbolName,
   );
@@ -35,14 +35,18 @@ export function openFrame(
   return [...frames, { ...frame, zIndex: topZIndex(frames) + 1 }];
 }
 
-/** Raise a frame above every other one. No-op if it is already on top. */
+/**
+ * Raise a frame above every other one. Returns the input array unchanged
+ * when the frame is already on top, so a state setter bails out instead of
+ * re-rendering the whole canvas on every frame pointerdown.
+ */
 export function bringToFront(
   frames: readonly PreviewFrame[],
   id: number,
-): PreviewFrame[] {
+): readonly PreviewFrame[] {
   const top = topZIndex(frames);
   const frame = frames.find((f) => f.id === id);
-  if (!frame || frame.zIndex === top) return [...frames];
+  if (!frame || frame.zIndex === top) return frames;
   return frames.map((f) => (f.id === id ? { ...f, zIndex: top + 1 } : f));
 }
 
@@ -51,6 +55,6 @@ export function moveFrame(
   frames: readonly PreviewFrame[],
   id: number,
   pos: { top: number; left: number },
-): PreviewFrame[] {
+): readonly PreviewFrame[] {
   return frames.map((f) => (f.id === id ? { ...f, ...pos } : f));
 }

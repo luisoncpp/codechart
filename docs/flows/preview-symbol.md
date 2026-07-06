@@ -11,7 +11,7 @@
       3. Places the new frame via `placeAdjacentFrame`: **right** of the clicked frame, else **below**, else **above** (a spot is invalid if it overlaps any live frame rect or overflows the canvas container); if all fail, opens at the **right anyway (overlapping)**. Live rects come from the DOM (`[data-frame-id]`), so user resizes/drags are honored.
       4. If a frame for the same module + symbol is already open, it is brought to front instead of duplicated (`openFrame` dedupe).
    4. Each `SymbolSourceWidget` scrolls its own body to center the definition line (`findSymbolLine` + manual `scrollTop` — **not** `scrollIntoView`, which would scroll the window).
-   5. **Drag:** pointerdown on the header bar starts `startFrameDrag` (window-level pointermove → `moveFrame`); the click that trails a real drag is swallowed in capture phase so it can't close the frames.
+   5. **Drag:** pointerdown on the header bar starts `startFrameDrag`; window-level pointermove writes `top`/`left` straight to the frame element (no React state per move — that re-rendered the whole canvas and lagged), and the final position is committed via `moveFrame` once on release; the click that trails a real drag is swallowed in capture phase so it can't close the frames.
    6. **Z-order:** pointerdown anywhere in a frame brings it to front (`bringToFront`).
    7. **Close rules:** a document-level click landing outside every `.symbol-widget` closes **all** frames; clicks inside any frame (including scrollbars) close nothing; each frame's ✕ closes just that frame; canvas pan/zoom (`onMoveStart`) closes all.
 4. **Reads** — store `graph` (modules, import edges, `exportedSymbols`), source cache, live frame DOM rects.

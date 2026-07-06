@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Displays a draggable, resizable panel with the source code of a symbol")
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { FileLineDiff } from "../../../../domain/diff";
 import { DiffCodeLines } from "../DiffCodeLines";
 import { findSymbolLine } from "./symbol-source-utils";
@@ -47,7 +47,10 @@ export function SymbolSourceWidget({
   handlers,
 }: SymbolSourceWidgetProps) {
   const lineRef = useRef<HTMLDivElement>(null);
-  const targetLine = findSymbolLine(frame.sourceText, frame.symbolName) + 1;
+  const targetLine = useMemo(
+    /*scanSourceForDefinition*/ () => findSymbolLine(frame.sourceText, frame.symbolName) + 1,
+    [frame.sourceText, frame.symbolName],
+  );
 
   useEffect(() => {
     const timer = setTimeout(/*centerDefinitionLine*/ () => {
@@ -58,7 +61,7 @@ export function SymbolSourceWidget({
 
   const onHeaderPointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest(".symbol-widget__close")) return;
-    startFrameDrag(e, { top: frame.top, left: frame.left }, /*moveFrame*/ (pos) =>
+    startFrameDrag(e, { top: frame.top, left: frame.left }, /*commitDropPosition*/ (pos) =>
       handlers.onMove(frame.id, pos),
     );
   };
