@@ -15,6 +15,8 @@ interface DiffCodeLinesProps {
   lineClassPrefix?: string;
   activeLine?: number;
   activeLineRef?: React.RefObject<HTMLDivElement | null>;
+  /** Identifiers to render as clickable (`hl-clickable`) navigation targets. */
+  clickableNames?: ReadonlySet<string>;
 }
 
 /** Code lines with optional unified-diff +/- green/red row styling. */
@@ -26,6 +28,7 @@ export function DiffCodeLines({
   lineClassPrefix = "diff-code",
   activeLine,
   activeLineRef,
+  clickableNames,
 }: DiffCodeLinesProps) {
   const rows = useMemo(
     () => buildModuleDiffDisplay(source, fileDiff),
@@ -47,6 +50,7 @@ export function DiffCodeLines({
           prefix={lineClassPrefix}
           active={row.kind !== "remove" && row.lineNumber === activeLine}
           lineRef={row.kind !== "remove" && row.lineNumber === activeLine ? activeLineRef : undefined}
+          clickableNames={clickableNames}
         />
       ))}
     </>
@@ -67,9 +71,19 @@ interface DiffCodeLineProps {
   prefix: string;
   active?: boolean;
   lineRef?: React.RefObject<HTMLDivElement | null>;
+  clickableNames?: ReadonlySet<string>;
 }
 
-function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef }: DiffCodeLineProps) {
+/** Token types whose text can never be a navigable identifier. */
+const NON_CLICKABLE_TYPES = new Set(["string", "comment", "keyword", "number"]);
+
+function tokenClass(token: Token, clickableNames?: ReadonlySet<string>): string {
+  const clickable =
+    clickableNames?.has(token.text) && !NON_CLICKABLE_TYPES.has(token.type);
+  return `hl-${token.type}${clickable ? " hl-clickable" : ""}`;
+}
+
+function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef, clickableNames }: DiffCodeLineProps) {
   const fontSize = 12.5 / zoom;
   const gutter = row.kind === "add" ? "+" : row.kind === "remove" ? "-" : " ";
   const lineNumber = row.kind === "remove" ? "" : String(row.lineNumber);
@@ -114,7 +128,7 @@ function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef }: DiffCodeLi
       </span>
       <span className={`${prefix}__text`} style={{ flex: 1 }}>
         {tokens.length === 0 ? " " : tokens.map((token, i) => (
-          <span key={i} className={`hl-${token.type}`}>
+          <span key={i} className={tokenClass(token, clickableNames)}>
             {token.text}
           </span>
         ))}

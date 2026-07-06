@@ -1,12 +1,11 @@
 // @Architecture(descriptionShort="Main React Flow canvas rendering modules, groups, and edges")
-import { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { useMemo, useState, useRef } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
   Background,
   Controls,
   type FitViewOptions,
-  type Node as FlowNode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./graph-canvas.css";
@@ -26,7 +25,7 @@ import { FitView } from "./FitView";
 import { FocusNode } from "./FocusNode";
 import { CANVAS_MIN_ZOOM } from "./use-zoom-counter-scale";
 import { GraphCanvasController } from "./graph-canvas-controller";
-import { SymbolSourceWidget } from "./SymbolSourceWidget";
+import { usePreviewFrames } from "./preview_frames";
 import { LevelBadge } from "./LevelBadge";
 import { ViewControls } from "./ViewControls";
 
@@ -39,28 +38,6 @@ interface GraphCanvasProps {
 function fitOptionsForLevel(level: ZoomLevel): FitViewOptions {
   if (level === 0) return { padding: 0.18, maxZoom: 0.45 };
   return { padding: 0.12 };
-}
-
-function computeWidgetPosition(
-  symbolRect: DOMRect,
-  containerRect: DOMRect,
-): { top: number; left: number } {
-  const widgetWidth = 400;
-  const widgetHeight = 300;
-  const spacing = 8;
-
-  let left = symbolRect.right - containerRect.left + spacing;
-  if (left + widgetWidth > containerRect.width && symbolRect.left - containerRect.left > widgetWidth) {
-    left = symbolRect.left - containerRect.left - widgetWidth - spacing;
-  }
-
-  let top = symbolRect.top - containerRect.top;
-  if (top + widgetHeight > containerRect.height) {
-    top = containerRect.height - widgetHeight - spacing;
-  }
-  if (top < spacing) top = spacing;
-
-  return { top, left };
 }
 
 export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
@@ -84,68 +61,12 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
   const [contextMenu, setContextMenu] = useState<ModuleContextMenuState | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [activeSymbol, setActiveSymbol] = useState<{
-    symbolName: string;
-    modulePath: string;
-    sourceText: string;
-    top: number;
-    left: number;
-    parentId: string;
-  } | null>(null);
-
-  const handleSymbolClick = useCallback(
-    async (node: FlowNode, event: React.MouseEvent) => {
-      const symbolEl =
-        (event.target as HTMLElement).closest(".symbol-box") ||
-        (event.target as HTMLElement).closest(".react-flow__node-symbol");
-      const container = containerRef.current;
-      if (!symbolEl || !container || !graph) return;
-      const moduleId = node.parentId!;
-      const module = graph.modules.find((m) => m.id === moduleId);
-      if (!module) return;
-      const sourceText = await store.fetchModuleSource(moduleId);
-      const { top, left } = computeWidgetPosition(
-        symbolEl.getBoundingClientRect(),
-        container.getBoundingClientRect(),
-      );
-      setActiveSymbol({
-        symbolName: (node.data?.label as string) || "",
-        modulePath: module.path,
-        sourceText,
-        top,
-        left,
-        parentId: moduleId,
-      });
-    },
-    [graph, store],
-  );
+  const previews = usePreviewFrames({ store, graph, diffOverlay, containerRef });
 
   const controller = useMemo(
-    /*build controller*/ () => new GraphCanvasController(store, handleSymbolClick),
-    [store, handleSymbolClick],
+    /*build controller*/ () => new GraphCanvasController(store, previews.openFromSymbolNode),
+    [store, previews.openFromSymbolNode],
   );
-
-  useEffect(() => {
-    if (selectedId === null || (activeSymbol && activeSymbol.parentId !== selectedId)) {
-      setActiveSymbol(null);
-    }
-  }, [selectedId, activeSymbol]);
-
-  useEffect(() => {
-    if (!activeSymbol) return;
-    const handler = (e: MouseEvent) => {
-      const widget = document.querySelector(".symbol-widget");
-      if (widget?.contains(e.target as globalThis.Node)) return;
-      setActiveSymbol(null);
-    };
-    const timer = setTimeout(() => {
-      document.addEventListener("click", handler);
-    }, 0);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener("click", handler);
-    };
-  }, [activeSymbol]);
 
   const cacheVersion = session.getSourceCacheVersion();
   const groupDocCacheVersion = session.getGroupDocCacheVersion();
@@ -217,7 +138,7 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
             controller.onPaneClick();
             setContextMenu(null);
           }}
-          onMoveStart={() => setActiveSymbol(null)}
+          onMoveStart={() => previews.closeAll()}
           onMoveEnd={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}
           fitView
           fitViewOptions={fitOptions}
@@ -262,17 +183,7 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
           shell={shell}
           onClose={() => setContextMenu(null)}
         />
-        {activeSymbol && (
-          <SymbolSourceWidget
-            symbolName={activeSymbol.symbolName}
-            modulePath={activeSymbol.modulePath}
-            sourceText={activeSymbol.sourceText}
-            fileDiff={diffOverlay?.lineDiffByPath.get(activeSymbol.modulePath)}
-            top={activeSymbol.top}
-            left={activeSymbol.left}
-            onClose={() => setActiveSymbol(null)}
-          />
-        )}
+        {previews.framesView}
       </div>
     </ReactFlowProvider>
   );

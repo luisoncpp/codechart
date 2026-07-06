@@ -228,7 +228,18 @@ hidden by zoom collapse.
   Defaults come from `GroupNode.disconnectedByDefault` / `disconnectedModuleIds` (parsed from `*.group.md`
   `disconnected` / `disconnectedModules`); session state seeds on load and user toggles layer on top.
   Modules inherit a parent group's disconnect (ancestor chain). Inspection still lists imports on the raw graph.
-- **Symbol Source Preview Widget (L1.5):** Clicking an exported symbol node in the L1.5 zoom view selects its parent module and opens a resizable, scrollable popup widget (`SymbolSourceWidget`) next to the symbol. The widget displays the module's source code, automatically locating and scrolling to focus on the line containing the symbol's definition (matching class/function/const/etc. patterns). It automatically dismisses when the canvas viewport is moved, when selecting another node or clicking the pane, or on any click outside the widget.
+- **Symbol source preview frames (L1.5, multi-frame):** owned by the nested deep module
+  `features/graph_canvas/Private/preview_frames/` (public interface: `usePreviewFrames`, `findSymbolLine`;
+  `GraphCanvas` renders `framesView` and wires `openFromSymbolNode`/`closeAll`). Clicking an exported
+  symbol node selects its parent module and opens a resizable, scrollable, **draggable** (header bar)
+  frame next to the symbol, centered on the symbol's definition line (centering scrolls only the frame
+  body — never `scrollIntoView`, which would scroll the window). Inside a frame, identifiers exported by
+  modules the frame's module **imports** render clickable (`hl-clickable`, resolved by
+  `importedSymbolTargets` over import edges + `exportedSymbols`); clicking one opens the defining
+  module's frame **right** of the clicked frame, else **below**, else **above**, else right-with-overlap
+  (`placeAdjacentFrame`, pure; live DOM rects honor user resize/drag). Same module+symbol dedupes to a
+  bring-to-front. Any click outside every frame closes them all; clicks inside any frame (scrollbars
+  included) close nothing; canvas pan/zoom closes all.
 
 Store surface (TDD §5.1): `getZoomLevel`, `getReducedGraph`, `getCollapsedGroupIds`,
 `getDisconnectedGroupIds`, `getDisconnectedModuleIds`, `getSourceCache`,

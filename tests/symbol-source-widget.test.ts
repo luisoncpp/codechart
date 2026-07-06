@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findSymbolLine } from "../src/features/graph_canvas/Private/SymbolSourceWidget";
+import { findSymbolLine } from "../src/features/graph_canvas/Private/preview_frames";
 
 const SOURCE_MOCK = `
 import { something } from "./other";
