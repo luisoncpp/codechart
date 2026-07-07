@@ -236,10 +236,15 @@ hidden by zoom collapse.
   `GraphCanvas` renders `framesView` and wires `openFromSymbolNode`/`closeAll`). Clicking an exported
   symbol node selects its parent module and opens a resizable, scrollable, **draggable** (header bar)
   frame next to the symbol, centered on the symbol's definition line (centering scrolls only the frame
-  body — never `scrollIntoView`, which would scroll the window). Inside a frame, identifiers exported by
-  modules the frame's module **imports** render clickable (`hl-clickable`, resolved by
-  `importedSymbolTargets` over import edges + `exportedSymbols`); clicking one opens the defining
-  module's frame **right** of the clicked frame, else **below**, else **above**, else right-with-overlap
+  body — never `scrollIntoView`, which would scroll the window). Inside a frame, clickable identifiers
+  (`hl-clickable`) come from `combinedSymbolTargets` (pure) — the union of own-module function/method
+  definitions (`scanFunctionDefinitions`, a heuristic lexical scan: keyword-declared functions plus
+  `name(args) {`-shaped method lines), imported exported symbols (`importedSymbolTargets` over import
+  edges + `exportedSymbols`), and functions/methods scanned from imported modules' sources (methods of
+  imported classes) — priority in that order on name collisions. The hook prefetches an opened frame's
+  import-target sources (`sourcePrefetchIds`, store-cached) so those method names resolve. Clicking one
+  opens the defining module's frame (possibly the same module, for local functions/methods) **right**
+  of the clicked frame, else **below**, else **above**, else right-with-overlap
   (`placeAdjacentFrame`, pure; live DOM rects honor user resize/drag). Same module+symbol dedupes to a
   bring-to-front. Any click outside every frame closes them all; clicks inside any frame (scrollbars
   included) close nothing; canvas pan/zoom closes all.

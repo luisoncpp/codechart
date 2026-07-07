@@ -48,3 +48,21 @@ describe("findSymbolLine", () => {
     expect(findSymbolLine(SOURCE_MOCK, "UNKNOWN")).toBe(0);
   });
 });
+
+const METHOD_SOURCE = `
+export function run() {
+  compute(1);
+}
+
+export class Calc {
+  compute(x: number): number {
+    return x;
+  }
+}
+`;
+
+describe("findSymbolLine (methods)", () => {
+  it("finds the method definition, not an earlier call site", () => {
+    expect(findSymbolLine(METHOD_SOURCE, "compute")).toBe(6);
+  });
+});

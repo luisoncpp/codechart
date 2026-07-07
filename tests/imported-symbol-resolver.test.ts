@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Edge, ModuleNode, ProjectGraph } from "../src/domain/graph";
-import { importedSymbolTargets } from "../src/features/graph_canvas/Private/preview_frames/imported-symbol-resolver";
+import {
+  combinedSymbolTargets,
+  importedSymbolTargets,
+  sourcePrefetchIds,
+} from "../src/features/graph_canvas/Private/preview_frames/imported-symbol-resolver";
 
 function makeModule(id: string, exportedSymbols: string[]): ModuleNode {
   return {
@@ -68,5 +72,44 @@ describe("importedSymbolTargets", () => {
       [{ ...makeImport("a.ts", "b.ts"), kind: "soft" }],
     );
     expect(importedSymbolTargets(soft, "a.ts").size).toBe(0);
+  });
+});
+
+describe("combinedSymbolTargets", () => {
+  const graph = makeGraph(
+    [makeModule("a.ts", []), makeModule("b.ts", ["Store", "helper"])],
+    [makeImport("a.ts", "b.ts")],
+  );
+  const A_SOURCE = "function helper() {\n}\nfunction localOnly() {\n}";
+  const B_SOURCE = "export class Store {\n  fetchThing(id: string): string {\n    return id;\n  }\n}";
+
+  it("falls back to imported exports when no sources are cached", () => {
+    const targets = combinedSymbolTargets(graph, "a.ts", new Map());
+    expect(targets.get("Store")?.moduleId).toBe("b.ts");
+    expect(targets.has("fetchThing")).toBe(false);
+  });
+
+  it("prefers an own-module definition over an imported export", () => {
+    const sources = new Map([["a.ts", A_SOURCE]]);
+    const targets = combinedSymbolTargets(graph, "a.ts", sources);
+    expect(targets.get("helper")?.moduleId).toBe("a.ts");
+    expect(targets.get("localOnly")?.moduleId).toBe("a.ts");
+  });
+
+  it("resolves methods scanned from an imported module's source", () => {
+    const sources = new Map([["b.ts", B_SOURCE]]);
+    const targets = combinedSymbolTargets(graph, "a.ts", sources);
+    expect(targets.get("fetchThing")).toEqual({ moduleId: "b.ts", path: "b.ts" });
+    expect(targets.get("Store")?.moduleId).toBe("b.ts");
+  });
+});
+
+describe("sourcePrefetchIds", () => {
+  it("lists the module itself plus its import targets", () => {
+    const graph = makeGraph(
+      [makeModule("a.ts", []), makeModule("b.ts", []), makeModule("c.ts", [])],
+      [makeImport("a.ts", "b.ts"), makeImport("c.ts", "a.ts")],
+    );
+    expect(sourcePrefetchIds(graph, "a.ts")).toEqual(["a.ts", "b.ts"]);
   });
 });

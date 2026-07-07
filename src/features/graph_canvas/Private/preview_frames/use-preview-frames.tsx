@@ -7,7 +7,7 @@ import type { GraphSessionStore } from "../../../../state/graph-session";
 import { SymbolSourceWidget, type FrameHandlers } from "./SymbolSourceWidget";
 import { openFrame, bringToFront, moveFrame, type PreviewFrame } from "./frame-list";
 import { computeWidgetPosition, placeAdjacentFrame, type FrameRect, type Position } from "./frame-placement";
-import { importedSymbolTargets } from "./imported-symbol-resolver";
+import { combinedSymbolTargets, sourcePrefetchIds } from "./imported-symbol-resolver";
 
 interface PreviewFramesDeps {
   store: GraphSessionStore;
@@ -35,7 +35,22 @@ function liveFrameRects(container: HTMLElement): Map<number, FrameRect> {
 export function usePreviewFrames(deps: PreviewFramesDeps) {
   const { store, graph, diffOverlay, containerRef } = deps;
   const [frames, setFrames] = useState<readonly PreviewFrame[]>([]);
+  const [moduleSources, setModuleSources] = useState<ReadonlyMap<string, string>>(new Map());
   const nextId = useRef(1);
+
+  /** Warm sources for a module + its imports so function/method names resolve. */
+  const prefetchSources = useCallback(
+    async (moduleId: string) => {
+      if (!graph) return;
+      const entries = await Promise.all(
+        sourcePrefetchIds(graph, moduleId).map(
+          async (id) => [id, await store.fetchModuleSource(id)] as const,
+        ),
+      );
+      setModuleSources((prev) => withNewSources(prev, entries));
+    },
+    [graph, store],
+  );
 
   const open = useCallback(
     (base: readonly PreviewFrame[], frame: Omit<PreviewFrame, "id" | "zIndex">) => {
@@ -61,25 +76,27 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
         container.getBoundingClientRect(),
       );
       const symbolName = (node.data?.label as string) || "";
+      void prefetchSources(moduleId);
       open(/*base=*/ [], { moduleId, symbolName, modulePath: module.path, sourceText, ...pos });
     },
-    [graph, store, containerRef, open],
+    [graph, store, containerRef, open, prefetchSources],
   );
 
-  /** Imported symbol clicked inside a frame: open its module next to that frame. */
-  const openFromImport = useCallback(
+  /** Clickable symbol (import, function, or method) clicked inside a frame. */
+  const openFromSymbolClick = useCallback(
     async (sourceFrameId: number, symbolName: string) => {
       const container = containerRef.current;
       const sourceFrame = frames.find((f) => f.id === sourceFrameId);
       if (!container || !graph || !sourceFrame) return;
-      const target = importedSymbolTargets(graph, sourceFrame.moduleId).get(symbolName);
+      const target = combinedSymbolTargets(graph, sourceFrame.moduleId, moduleSources).get(symbolName);
       if (!target) return;
       const sourceText = await store.fetchModuleSource(target.moduleId);
+      void prefetchSources(target.moduleId);
       const pos = placeNextTo(sourceFrameId, container);
       if (!pos) return;
       open(frames, { moduleId: target.moduleId, symbolName, modulePath: target.path, sourceText, ...pos });
     },
-    [graph, store, containerRef, frames, open],
+    [graph, store, containerRef, frames, open, moduleSources, prefetchSources],
   );
 
   const closeAll = useCallback(() => setFrames([]), []);
@@ -91,9 +108,23 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
       onClose: (id) => setFrames((prev) => prev.filter((f) => f.id !== id)),
       onMove: (id, pos) => setFrames((prev) => moveFrame(prev, id, pos)),
       onActivate: (id) => setFrames((prev) => bringToFront(prev, id)),
-      onNavigate: openFromImport,
+      onNavigate: openFromSymbolClick,
     }),
-    [openFromImport],
+    [openFromSymbolClick],
+  );
+
+  const clickableByModule = useMemo(
+    /*resolveClickableNamesPerFrameModule*/ () => {
+      const byModule = new Map<string, ReadonlySet<string>>();
+      if (!graph) return byModule;
+      for (const frame of frames) {
+        if (byModule.has(frame.moduleId)) continue;
+        const targets = combinedSymbolTargets(graph, frame.moduleId, moduleSources);
+        byModule.set(frame.moduleId, new Set(targets.keys()));
+      }
+      return byModule;
+    },
+    [graph, frames, moduleSources],
   );
 
   const framesView = (
@@ -102,7 +133,7 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
         <SymbolSourceWidget
           key={frame.id}
           frame={frame}
-          clickableSymbols={clickableSymbolsFor(graph, frame.moduleId)}
+          clickableSymbols={clickableByModule.get(frame.moduleId) ?? EMPTY_NAMES}
           fileDiff={diffOverlay?.lineDiffByPath.get(frame.modulePath)}
           handlers={handlers}
         />
@@ -121,12 +152,18 @@ function placeNextTo(anchorFrameId: number, container: HTMLElement): Position | 
   return placeAdjacentFrame(anchor, [...rects.values()], containerSize);
 }
 
-function clickableSymbolsFor(
-  graph: ProjectGraph | null,
-  moduleId: string,
-): ReadonlySet<string> {
-  if (!graph) return new Set();
-  return new Set(importedSymbolTargets(graph, moduleId).keys());
+const EMPTY_NAMES: ReadonlySet<string> = new Set();
+
+/** Merge fetched sources; returns the previous map untouched when nothing is new. */
+function withNewSources(
+  prev: ReadonlyMap<string, string>,
+  entries: readonly (readonly [string, string])[],
+): ReadonlyMap<string, string> {
+  const fresh = entries.filter(([id, text]) => text && prev.get(id) !== text);
+  if (fresh.length === 0) return prev;
+  const next = new Map(prev);
+  for (const [id, text] of fresh) next.set(id, text);
+  return next;
 }
 
 /** Any click landing outside every open frame closes them all. */
