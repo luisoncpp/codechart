@@ -51,6 +51,8 @@ directories.
 
 When resolving C++ includes, `references::cpp` first tries the normal relative
 resolver. If that misses, it strips a leading `./` and searches `knownPaths`.
-If no project file matches and `excludeEngineReferences` is true, common Unreal
-Engine headers/prefixes are treated as external metadata instead of unresolved
-imports.
+If no project file matches and `hideGeneratedFiles` is true, Unreal generated
+includes such as `*.generated.h` and `*.gen.cpp` are treated as external
+metadata. If no project file matches and `excludeEngineReferences` is true,
+common Unreal Engine headers/prefixes are also external metadata instead of
+unresolved imports.

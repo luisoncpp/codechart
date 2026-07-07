@@ -150,6 +150,21 @@ fn skips_unreal_engine_headers() {
 }
 
 #[test]
+fn skips_unreal_generated_headers_when_hidden() {
+    let parsed = vec![module(
+        "Warlords/Public/World/DestructibleFoliageNetMan.h",
+        &["./DestructibleFoliageNetMan.generated.h"],
+    )];
+    let options = crate::unreal_config::UnrealOptions {
+        hide_generated_files: true,
+        ..Default::default()
+    };
+    let refs = resolve_references_with_options(&parsed, &options);
+    assert!(refs.edges.is_empty());
+    assert!(refs.diagnostics.is_empty());
+}
+
+#[test]
 fn unresolved_project_cpp_include_still_warns() {
     let parsed = vec![module(
         "Source/Game/Private/Player.cpp",

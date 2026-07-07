@@ -34,6 +34,9 @@ pub fn resolve_cpp_import(
     if let Some(target) = resolve_from_roots(include, known, &options.known_paths) {
         return CppResolution::Resolved(target);
     }
+    if options.hide_generated_files && is_generated_include(include) {
+        return CppResolution::External;
+    }
     if options.exclude_engine_references && is_engine_include(include) {
         return CppResolution::External;
     }
@@ -62,6 +65,10 @@ fn is_engine_include(include: &str) -> bool {
         return true;
     }
     ENGINE_PREFIXES.iter().any(|p| include.starts_with(p))
+}
+
+fn is_generated_include(include: &str) -> bool {
+    include.ends_with(".generated.h") || include.ends_with(".gen.cpp")
 }
 
 const ENGINE_ROOT_HEADERS: &[&str] = &[
