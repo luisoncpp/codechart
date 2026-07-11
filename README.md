@@ -25,7 +25,7 @@ Unsupported extensions are skipped during analysis. Package / external imports (
 - **Open any folder** via the native directory picker; the Rust backend analyzes it and streams a `ProjectGraph` over Tauri IPC.
 - **ELK layout** + **React Flow** canvas: nested colored group containers, module cards, floating import arrows, deterministic positioning.
 - **Inspection panel** for the selected module or group: path, group, facade status, language, LOC, imports, imported-by, diagnostics, and annotation metadata. Drag the left edge to resize (200–720px); hide/show preserves width for the session.
-- **Reveal in file explorer** from the module/symbol context menu.
+- **Copy relative path** or **Reveal in file explorer** from the module/symbol context menu.
 
 ### Groups & configuration
 

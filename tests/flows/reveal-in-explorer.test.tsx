@@ -10,6 +10,22 @@ import {
 } from "../helpers/flow-graph-canvas";
 
 describe("flow: reveal-in-explorer", () => {
+  it("copies a module path relative to the project root", async () => {
+    const writeText = vi.fn();
+    Object.assign(navigator, { clipboard: { writeText } });
+    const store = await readyGraphStore();
+    const { container } = renderGraphCanvas(store, createMockShellClient());
+    const module = flowGoldenGraph.modules.find((m) => m.path === "src/core/store.ts")!;
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="${module.id}"]`)).toBeTruthy(),
+    );
+    fireEvent.contextMenu(container.querySelector(`[data-id="${module.id}"]`)!);
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: /Copy relative path/i }),
+    );
+    expect(writeText).toHaveBeenCalledWith("src/core/store.ts");
+  });
+
   it("right-clicking a module opens reveal in file explorer", async () => {
     const revealInExplorer = vi.fn();
     const shell: ShellClient = { revealInExplorer };
