@@ -140,6 +140,7 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
             setContextMenu(null);
           }}
           onMoveStart={() => previews.closeAll()}
+          onMove={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}
           onMoveEnd={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}
           fitView
           fitViewOptions={fitOptions}

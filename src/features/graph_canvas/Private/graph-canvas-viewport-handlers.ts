@@ -11,6 +11,7 @@ export class GraphCanvasViewportHandlers {
   /** Scroll-zoom drives the discrete detail level (guarded against no-ops). */
   onViewportZoom(zoom: number) {
     const disableL0 = this.store.getDiffOverlay() !== null;
-    this.store.setZoomLevel(levelFromZoom(zoom, { disableL0 }));
+    const currentLevel = this.store.getZoomLevel();
+    this.store.setZoomLevel(levelFromZoom(zoom, { disableL0, currentLevel }));
   }
 }

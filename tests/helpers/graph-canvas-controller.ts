@@ -11,6 +11,7 @@ export function spyGraphCanvasStore() {
     toggleGroupConnection: vi.fn(),
     toggleModuleConnection: vi.fn(),
     setZoomLevel: vi.fn(),
+    getZoomLevel: vi.fn(() => 1 as const),
     getDiffOverlay: vi.fn(() => null),
   };
 }

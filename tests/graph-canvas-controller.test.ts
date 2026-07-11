@@ -72,4 +72,11 @@ describe("GraphCanvasController.onViewportZoom", () => {
     new GraphCanvasController(store as unknown as GraphSessionStore).onViewportZoom(0.3);
     expect(store.setZoomLevel).toHaveBeenCalledWith(1);
   });
+
+  it("uses the current level to stabilize live viewport updates", () => {
+    const store = spyGraphCanvasStore();
+    store.getZoomLevel.mockReturnValue(2);
+    new GraphCanvasController(store as unknown as GraphSessionStore).onViewportZoom(3.45);
+    expect(store.setZoomLevel).toHaveBeenCalledWith(2);
+  });
 });

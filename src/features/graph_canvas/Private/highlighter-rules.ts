@@ -38,7 +38,7 @@ export const RUST_OPERATOR_RULE: Rule = {
 
 export const CPP_OPERATOR_RULE: Rule = {
   type: "operator",
-  regex: /^(===|==|!==|!=|=>|\+\+|--|\+=|-=|\*=|\/=|&&|\|\||<<|>>|[+\-*/%&|^!~=<>?:])/,
+  regex: /^(===|==|!==|!=|=>|->|::|\+\+|--|\+=|-=|\*=|\/=|&&|\|\||<<|>>|[+\-*/%&|^!~=<>?:])/,
 };
 
 const PUNCTUATION_RULE: Rule = { type: "punctuation", regex: /^[{}()[\].,;]/ };

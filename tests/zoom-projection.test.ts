@@ -33,6 +33,12 @@ describe("levelFromZoom", () => {
     expect(levelFromZoom(0.45, disableL0)).toBe(1);
     expect(levelFromZoom(0.9, disableL0)).toBe(1.5);
   });
+
+  it("uses hysteresis when leaving L2 so a noisy boundary does not thrash", () => {
+    const fromL2 = { currentLevel: 2 as const };
+    expect(levelFromZoom(3.45, fromL2)).toBe(2);
+    expect(levelFromZoom(3.3, fromL2)).toBe(1.5);
+  });
 });
 
 describe("topLevelGroupIds", () => {

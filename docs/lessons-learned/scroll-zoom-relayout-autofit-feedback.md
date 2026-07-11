@@ -17,6 +17,10 @@ camera's job (scroll), so nothing programmatic should move the camera once the u
 re-lays-out under the **current** camera — positions shift but the zoom (and thus the level) stays put.
 
 **Also worth keeping:**
+- Synchronize the level from live `onMove` viewport values, not only `onMoveEnd`. Under a heavily
+  loaded host, a delayed final callback can otherwise leave the semantic level visibly stale.
+- Use a small hysteresis band when leaving a detail level whose projection changes substantially;
+  boundary noise should not repeatedly swap the rendered node content.
 - Re-layout on collapse is async (elkjs). Guard it with a **sequence counter** so a stale layout from
   rapid scrolling can't overwrite a newer one.
 - This only surfaced in the **browser preview**, not in jsdom (React Flow doesn't run zoom/measurement

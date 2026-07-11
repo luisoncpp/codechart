@@ -30,6 +30,8 @@ const FUNCTION_KEYWORD_PATTERNS = [
  * then the candidate name, then its parameter list opener.
  */
 const METHOD_SHAPE = /^([A-Za-z_$][\w$<>:*&,\s]*[\s:])?([A-Za-z_$][\w$]*)\s*\((.*)$/;
+const CLOSED_SIGNATURE_TRAILER =
+  /\)\s*(?:const\s*)?(?:noexcept(?:\s*\([^)]*\))?\s*)?(?:override\s*)?(?:final\s*)?$/;
 
 /**
  * Words that open control flow or expressions — never a definition name or
@@ -65,6 +67,9 @@ function methodDefinitionName(line: string): string | null {
   if (/['"`]/.test(args)) return null;
   if (line.endsWith("{")) return name;
   const openSignature = line.endsWith("(") || line.endsWith(",");
+  if (prefix && /\s/.test(prefix) && CLOSED_SIGNATURE_TRAILER.test(line)) {
+    return name;
+  }
   return openSignature && prefix ? name : null;
 }
 

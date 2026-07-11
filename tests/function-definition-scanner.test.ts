@@ -98,6 +98,11 @@ const CPP_SOURCE = [
   "static int localHelper(int a, int b) {", // 10
   "  return a + b;", // 11
   "}", // 12
+  "", // 13
+  "FWorldConditionResult FSmartObjectWorldConditionInteractQuery::IsTrue(const FWorldConditionContext& Context) const", // 14
+  "{", // 15
+  "  return Result;", // 16
+  "}", // 17
 ].join("\n");
 
 describe("scanFunctionDefinitions (C++)", () => {
@@ -106,6 +111,7 @@ describe("scanFunctionDefinitions (C++)", () => {
   it("finds qualified out-of-class definitions", () => {
     expect(defs.get("addNode")).toBe(2);
     expect(defs.get("countNodes")).toBe(6);
+    expect(defs.get("IsTrue")).toBe(14);
   });
 
   it("finds free functions with return types", () => {

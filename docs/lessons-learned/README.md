@@ -43,3 +43,4 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 | [rust-crate-roots-are-directory-module-candidates.md](./rust-crate-roots-are-directory-module-candidates.md) | Rust directory imports may target a nested `mod.rs` or a crate-root `lib.rs`/`main.rs` | 2026-07-05 |
 | [cpp-qualified-definitions-are-not-module-exports.md](./cpp-qualified-definitions-are-not-module-exports.md) | Qualified out-of-class C++ definitions belong to the class API, not the `.cpp` module export list | 2026-07-06 |
 | [hidden-generated-files-still-need-import-policy.md](./hidden-generated-files-still-need-import-policy.md) | Hidden generated files can still be included by source and need matching resolver policy | 2026-07-07 |
+| [cpp-preview-clickability-comes-from-scanner.md](./cpp-preview-clickability-comes-from-scanner.md) | C++ preview-frame clickability depends on definition scanning before token styling/member access | 2026-07-07 |

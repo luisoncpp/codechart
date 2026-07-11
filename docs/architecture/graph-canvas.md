@@ -132,7 +132,8 @@ hidden by zoom collapse.
   so nothing flashes while async re-layout catches up. The store calls `syncReduced()` synchronously
   on every collapse change before emitting `zoom-changed`. `allGroupIds` = the L0 default collapse set
   (every group); `topLevelGroupIds` remains for parentless roots. `levelFromZoom(factor)` maps the
-  scroll zoom factor to 0/1/2 (`<0.55 / <1.7 / ≥1.7`).
+  scroll zoom factor to 0/1/1.5/2 (`<0.45 / <0.9 / <3.5 / >=3.5`). L2 exits only below
+  `3.35`, providing a small hysteresis band at the source-view boundary.
 - **Levels:** L0 collapses every group (all boxes stay visible, modules hidden); L1 expands
   everything; L2 renders each module as a scrollable document consisting of the module description at the top (preferring the long description if available) and the full syntax-highlighted source code below it. All text elements are counter-scaled to remain small/compact in screen space, and the scrollable area is clamped dynamically to fit completely inside the visible viewport. The store seeds the default collapse set per level, and `toggleGroup`/`collapse`/`expand`
   layer per-group overrides on top.
@@ -161,7 +162,8 @@ hidden by zoom collapse.
   module's source via `AnalysisClient.readModuleSource(root, path)` (Tauri command
   `read_module_source`, reusing `FsProjectSource::read_file`) and caches it. The `ProjectGraph` never
   carries file bodies. The mock client serves fixture source via Vite `?raw` imports.
-- **Scroll drives the level, fit does not fight it:** `GraphCanvas.onMoveEnd` → `levelFromZoom` →
+- **Scroll drives the level, fit does not fight it:** `GraphCanvas.onMove` (with `onMoveEnd` fallback)
+  → `levelFromZoom` →
   `store.setZoomLevel` (guarded against no-ops). `FitView` fits **once per mount** (= once per project
   load, since `App` renders the canvas only when `ready`) and **never refits on a level change** — a
   programmatic refit would change the zoom and feed back into another level switch (L0 → fit → L2
