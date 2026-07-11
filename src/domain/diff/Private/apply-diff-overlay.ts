@@ -2,17 +2,22 @@
 import type { Edge, ProjectedGraph, RFEdgeT, RFNode } from "../../graph";
 import type { LayoutBox } from "../../layout";
 import type { GraphDiffOverlay } from "./types";
+import { applySymbolDiffNodes } from "./apply-symbol-diff";
 
 /** Stamp diff overlay state onto projected nodes and edges. */
 export function applyDiffOverlay(
   projected: ProjectedGraph,
   overlay: GraphDiffOverlay,
 ): ProjectedGraph {
-  const nodes = projected.nodes.map(stampNode(overlay));
-  const ghostNodes = ghostModuleNodes(overlay);
+  const stampedNodes = projected.nodes.map(stampNode(overlay));
+  const showSymbols = stampedNodes.some(
+    (node) => node.type === "module" && node.data.showSymbols,
+  );
+  const ghostNodes = ghostModuleNodes(overlay, showSymbols);
+  const nodes = applySymbolDiffNodes([...stampedNodes, ...ghostNodes], overlay);
   const edges = projected.edges.map(stampEdge(overlay));
   const removed = phantomRemovedEdges(overlay.removedEdges, projected.edges);
-  return { nodes: [...nodes, ...ghostNodes], edges: [...edges, ...removed] };
+  return { nodes, edges: [...edges, ...removed] };
 }
 
 function stampNode(overlay: GraphDiffOverlay) {
@@ -57,7 +62,7 @@ function stampEdge(overlay: GraphDiffOverlay) {
   };
 }
 
-function ghostModuleNodes(overlay: GraphDiffOverlay): RFNode[] {
+function ghostModuleNodes(overlay: GraphDiffOverlay, showSymbols: boolean): RFNode[] {
   if (!overlay.beforeLayout || overlay.ghostModules.length === 0) return [];
   const boxes = [
     ...overlay.beforeLayout.groups,
@@ -80,6 +85,7 @@ function ghostModuleNodes(overlay: GraphDiffOverlay): RFNode[] {
           isFacade: mod.isFacade,
           language: mod.language,
           path: mod.path,
+          showSymbols,
           color: "#64748b",
           diffState: "deleted" as const,
           ...(overlay.lineDiffByPath.get(mod.path)

@@ -27,6 +27,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             tauri_api::analyze_project,
             tauri_api::analyze_project_at_ref,
+            tauri_api::read_module_sources_at_ref,
             tauri_api::read_module_source,
             tauri_api::read_project_config,
             tauri_api::write_project_config,

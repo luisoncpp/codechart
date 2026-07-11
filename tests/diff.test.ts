@@ -170,6 +170,7 @@ describe("applyDiffOverlay", () => {
     const stamped = applyDiffOverlay(projected, overlay);
     expect(stamped.nodes[0]?.data.diffVisualizing).toBe(true);
   });
+
 });
 
 describe("countLineDiffStats", () => {

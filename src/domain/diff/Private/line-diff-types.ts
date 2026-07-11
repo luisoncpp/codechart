@@ -3,6 +3,8 @@
 export interface FileLineDiff {
   /** New-file line numbers (1-indexed) that were added. */
   addedLineNumbers: ReadonlySet<number>;
+  /** Old-file line numbers (1-indexed) that were removed. */
+  removedLineNumbers?: ReadonlySet<number>;
   /** Red rows to insert immediately before a new-file line number. */
   removeBeforeLine: ReadonlyMap<number, readonly string[]>;
 }

@@ -19,6 +19,7 @@ describe("lineDiffsFromUnified", () => {
     const map = lineDiffsFromUnified(text);
     const file = map.get("src/a.ts");
     expect(file?.addedLineNumbers.has(2)).toBe(true);
+    expect(file?.removedLineNumbers?.has(2)).toBe(true);
     expect(file?.removeBeforeLine.get(2)).toEqual(["old"]);
   });
 });

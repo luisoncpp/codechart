@@ -88,7 +88,12 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   `applyDiffOverlay` stamps `ModuleNodeData.diffState` (`affected` → **green** 3px border,
   `deleted` → **red** 3px border, `unchanged` → dimmed, ghost modules positioned from the before
   snapshot layout) and `EdgeData.diffState` (`added` → **green** full-opacity arrow, `removed` → **red**
-  line with **X** head). **L0 bird's-eye is disabled** while diff is active — scroll zoom floors at L1
+  line with **X** head). At **L1.5**, `classifySymbolChanges` compares export membership and intersects
+  changed old/new line numbers with symbol declaration/implementation ranges. Symbol boxes render
+  added as **green/solid**, removed as **red/dashed** ghosts from the before layout, and modified as
+  **yellow/dotted**; the border styles preserve meaning without color alone. Exact symbol states are
+  available for commit/local comparisons, which can read both snapshots; pasted diffs remain module-level.
+  **L0 bird's-eye is disabled** while diff is active — scroll zoom floors at L1
   so module-level highlights remain visible; clearing the overlay restores normal L0 behavior.
   **L2 source panels and the symbol preview widget** show unified-diff rows:
   green `+` lines for additions, red `-` lines for deletions (`DiffCodeLines`). Diff styling wins over

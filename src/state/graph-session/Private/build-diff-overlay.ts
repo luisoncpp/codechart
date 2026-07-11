@@ -2,6 +2,7 @@ import {
   compareGraphs,
   overlayFromPastedDiff,
   attachLineDiff,
+  attachSymbolDiff,
   mergeCommitOverlay,
   type GraphDiffOverlay,
 } from "../../../domain/diff";
@@ -28,7 +29,19 @@ export async function buildCommitDiffOverlay(
   const graphOverlay = compareGraphs({ before, after });
   const partial = mergeCommitOverlay(pathOverlay, graphOverlay, before);
   const beforeLayout = await layoutEngine.layout(before);
-  return attachLineDiff({ ...partial, beforeLayout }, unifiedDiff);
+  const overlay = attachLineDiff({ ...partial, beforeLayout }, unifiedDiff);
+  const paths = [...overlay.lineDiffByPath.keys()];
+  const [beforeSources, afterSources] = await Promise.all([
+    git.readModuleSourcesAtRef(root, baseRef, knownPaths(before, paths)),
+    git.readModuleSourcesAtRef(root, headRef, knownPaths(after, paths)),
+  ]);
+  return attachSymbolDiff(overlay, {
+    before,
+    after,
+    beforeSources: new Map(Object.entries(beforeSources)),
+    afterSources: new Map(Object.entries(afterSources)),
+    lineDiffByPath: overlay.lineDiffByPath,
+  });
 }
 
 export function buildPasteDiffOverlay(
@@ -40,6 +53,7 @@ export function buildPasteDiffOverlay(
 }
 
 interface WorkingTreeDiffInput {
+  client: AnalysisClient;
   git: GitClient;
   layoutEngine: LayoutEngine;
   root: string;
@@ -63,5 +77,38 @@ export async function buildWorkingTreeDiffOverlay(
   const graphOverlay = compareGraphs({ before, after: current });
   const partial = mergeCommitOverlay(pathOverlay, graphOverlay, before);
   const beforeLayout = await layoutEngine.layout(before);
-  return attachLineDiff({ ...partial, beforeLayout }, unifiedDiff);
+  const overlay = attachLineDiff({ ...partial, beforeLayout }, unifiedDiff);
+  const paths = [...overlay.lineDiffByPath.keys()];
+  const [beforeSources, afterSources] = await Promise.all([
+    git.readModuleSourcesAtRef(root, baseRef, knownPaths(before, paths)),
+    readWorkingSources({ graph: current, client: input.client, root, paths }),
+  ]);
+  return attachSymbolDiff(overlay, {
+    before,
+    after: current,
+    beforeSources: new Map(Object.entries(beforeSources)),
+    afterSources,
+    lineDiffByPath: overlay.lineDiffByPath,
+  });
+}
+
+interface WorkingSourceInput {
+  graph: ProjectGraph;
+  client: AnalysisClient;
+  root: string;
+  paths: string[];
+}
+
+async function readWorkingSources(input: WorkingSourceInput) {
+  const { graph, client, root, paths } = input;
+  const reads = knownPaths(graph, paths).map(async (path) => {
+    const source = await client.readModuleSource(root, path);
+    return [path, source] as const;
+  });
+  return new Map(await Promise.all(reads));
+}
+
+function knownPaths(graph: ProjectGraph, paths: readonly string[]) {
+  const modulePaths = new Set(graph.modules.map((module) => module.path));
+  return paths.filter((path) => modulePaths.has(path));
 }

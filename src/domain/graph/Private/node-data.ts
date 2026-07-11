@@ -75,6 +75,8 @@ export interface SymbolNodeData extends Record<string, unknown> {
   label: string;
   kind: SymbolKind;
   color?: string;
+  /** Diff overlay state for L1.5 symbol backgrounds and border cues. */
+  diffState?: "added" | "removed" | "modified";
   heatScore?: number;
   heatVisible?: boolean;
   heatMode?: "activity" | "risk";

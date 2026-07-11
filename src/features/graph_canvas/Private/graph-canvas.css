@@ -170,6 +170,37 @@
 .symbol-box--heat.symbol-box--constant { --symbol-bg: #fffaf5; }
 .symbol-box--heat.symbol-box--default { --symbol-bg: #f8fafc; }
 
+/* Diff state wins over kind and heat tints. Border style reinforces the hue. */
+.symbol-box--diff-added {
+  background: #dcfce7;
+  border: 2px solid #16a34a;
+}
+
+.symbol-box--diff-added .symbol-box__badge {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.symbol-box--diff-removed {
+  background: #fee2e2;
+  border: 2px dashed #dc2626;
+}
+
+.symbol-box--diff-removed .symbol-box__badge {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.symbol-box--diff-modified {
+  background: #fef3c7;
+  border: 2px dotted #d97706;
+}
+
+.symbol-box--diff-modified .symbol-box__badge {
+  background: #fde68a;
+  color: #92400e;
+}
+
 /* Types get a hairline dashed inner edge — the "erased at compile time" cue. */
 .symbol-box--type,
 .symbol-box--interface {
@@ -376,4 +407,3 @@
 .symbol-widget__gutter--context {
   color: #cbd5e1;
 }
-

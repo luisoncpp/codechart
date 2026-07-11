@@ -18,16 +18,18 @@ User clicks **Visualize diff…** on the canvas (top-right, when no diff is acti
 4. Commit-to-commit runs `git diff` + two `analyzeProjectAtRef` snapshots. Local changes analyzes **before** at its ref and uses the loaded current graph as **after**. Git paths drive **module** highlights; graph comparison drives **edge** add/remove; `LayoutEngine.layout(before)` supplies ghost positions for deleted modules.
 5. Store sets `diffOverlay` and emits `diff-changed`.
 6. `GraphCanvas` re-projects the reduced graph, then `applyDiffOverlay` stamps `data.diffState` on nodes/edges, sets `diffVisualizing` on group nodes, and injects ghost modules + phantom removed edges.
-7. `edge-style` / `EdgeLayer` render added edges **green** (full opacity) and removed edges **red** with an **X** head instead of an arrow.
-8. Unchanged modules render at **~40% opacity**; affected/deleted keep full opacity + colored borders. Group titles and descriptions dim to the same level.
-9. **L0 is disabled** while diff is active — scroll zoom floors at **L1** so module diff highlights stay visible; normal L0 returns when diff is cleared.
-10. **L2 code blocks** and the **symbol source widget** show `+` green / `-` red diff rows when line diff data exists for that file.
-11. **Stop visualizing diff** (`DiffOverlayBar`) → `store.clearDiffOverlay()`.
+7. In **L1.5**, commit and local-change comparisons read changed modules from both snapshots and intersect changed lines with exported-symbol declaration/implementation ranges. Added symbols render **green/solid**, removed symbols are restored from the before layout as **red/dashed** ghost boxes, and retained symbols whose declaration or implementation changed render **yellow/dotted**.
+8. `edge-style` / `EdgeLayer` render added edges **green** (full opacity) and removed edges **red** with an **X** head instead of an arrow.
+9. Unchanged modules render at **~40% opacity**; affected/deleted keep full opacity + colored borders. Group titles and descriptions dim to the same level.
+10. **L0 is disabled** while diff is active — scroll zoom floors at **L1** so module diff highlights stay visible; normal L0 returns when diff is cleared.
+11. **L2 code blocks** and the **symbol source widget** show `+` green / `-` red diff rows when line diff data exists for that file.
+12. **Stop visualizing diff** (`DiffOverlayBar`) → `store.clearDiffOverlay()`.
 
 ## Reads
 
 - Current session `ProjectGraph` + `LayoutedGraph` (display base)
 - Git tree at two refs (`git ls-tree` + `git cat-file --batch`, via `MemoryProjectSource`)
+- Changed module bodies at the before/after refs for source-range-aware symbol states
 - Working tree tracked diff + Git's ignored-aware untracked list
 - Pasted unified diff text (path headers only)
 
@@ -37,7 +39,7 @@ User clicks **Visualize diff…** on the canvas (top-right, when no diff is acti
 
 ## Side effects
 
-- Git commit mode runs two full analyses + one layout (can be slow on large repos)
+- Git commit mode runs two full analyses + one layout and reads changed module bodies from both snapshots (can be slow on large repos)
 
 ## Files to inspect
 
@@ -55,3 +57,4 @@ User clicks **Visualize diff…** on the canvas (top-right, when no diff is acti
 - **Git commits disabled** — folder is not a git repo (`git_is_repo` false).
 - **Analyze at ref fails** — invalid ref or git not on PATH.
 - **Pasted diff, deleted file** — ghost module only appears in git commit mode (needs before-layout); paste mode highlights paths that still exist in the loaded graph.
+- **Pasted diff, symbol states** — exact added/removed/modified symbol classification requires before/after snapshots, so paste mode remains module- and line-level only.

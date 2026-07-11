@@ -6,6 +6,9 @@ import type { FileLineDiff } from "./line-diff-types";
 export interface GraphDiffOverlay {
   affectedModuleIds: ReadonlySet<string>;
   deletedModuleIds: ReadonlySet<string>;
+  addedSymbolIds: ReadonlySet<string>;
+  removedSymbolIds: ReadonlySet<string>;
+  modifiedSymbolIds: ReadonlySet<string>;
   addedEdgeIds: ReadonlySet<string>;
   removedEdges: Edge[];
   /** Deleted modules from the before graph, rendered as ghost boxes. */

@@ -448,6 +448,7 @@ describe("GraphSessionStore local changes diff", () => {
       isGitRepo: async () => true,
       listCommits: async () => [],
       analyzeProjectAtRef: async () => graph,
+      readModuleSourcesAtRef: async () => ({}),
       diffRefs: async () => "",
       diffWorkingTree,
     };

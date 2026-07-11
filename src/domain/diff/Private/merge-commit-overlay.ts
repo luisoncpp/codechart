@@ -17,6 +17,9 @@ export function mergeCommitOverlay(
   return {
     affectedModuleIds,
     deletedModuleIds,
+    addedSymbolIds: graphOverlay.addedSymbolIds,
+    removedSymbolIds: graphOverlay.removedSymbolIds,
+    modifiedSymbolIds: graphOverlay.modifiedSymbolIds,
     addedEdgeIds: graphOverlay.addedEdgeIds,
     removedEdges: graphOverlay.removedEdges,
     ghostModules,

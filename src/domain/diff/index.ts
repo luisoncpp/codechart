@@ -11,3 +11,6 @@ export { overlayFromPastedDiff } from "./Private/overlay-from-paths";
 export { applyDiffOverlay } from "./Private/apply-diff-overlay";
 export { attachLineDiff } from "./Private/attach-line-diff";
 export { mergeCommitOverlay } from "./Private/merge-commit-overlay";
+export { classifySymbolChanges } from "./Private/symbol-diff";
+export type { SymbolChangeSets, SymbolDiffInput } from "./Private/symbol-diff";
+export { attachSymbolDiff } from "./Private/attach-symbol-diff";

@@ -141,6 +141,7 @@ export class GraphSessionStore extends EventEmitter {
     this.diffError = null;
     try {
       this.diffOverlay = await buildWorkingTreeDiffOverlay({
+        client: this.client,
         git: this.git,
         layoutEngine: this.layoutEngine,
         root: this.root,

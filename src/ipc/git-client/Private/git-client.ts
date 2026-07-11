@@ -11,6 +11,11 @@ export interface GitClient {
   isGitRepo(path: string): Promise<boolean>;
   listCommits(path: string, limit: number): Promise<GitCommit[]>;
   analyzeProjectAtRef(path: string, gitRef: string): Promise<import("../../../domain/graph").ProjectGraph>;
+  readModuleSourcesAtRef(
+    path: string,
+    gitRef: string,
+    modulePaths: string[],
+  ): Promise<Record<string, string>>;
   diffRefs(path: string, baseRef: string, headRef: string): Promise<string>;
   diffWorkingTree(path: string, baseRef: string, eligiblePaths: string[]): Promise<string>;
 }

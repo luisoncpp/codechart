@@ -4,6 +4,7 @@ import type { FileLineDiff } from "./line-diff-types";
 
 interface FileBuilder {
   added: Set<number>;
+  removed: Set<number>;
   removeBefore: Map<number, string[]>;
   oldLine: number;
   newLine: number;
@@ -49,6 +50,7 @@ export function lineDiffsFromUnified(text: string): Map<string, FileLineDiff> {
       builder.newLine++;
     } else if (prefix === "-") {
       pushRemove(builder, content);
+      builder.removed.add(builder.oldLine);
       builder.oldLine++;
     } else if (prefix === "+") {
       builder.added.add(builder.newLine);
@@ -62,6 +64,7 @@ export function lineDiffsFromUnified(text: string): Map<string, FileLineDiff> {
 function newFileBuilder(): FileBuilder {
   return {
     added: new Set(),
+    removed: new Set(),
     removeBefore: new Map(),
     oldLine: 1,
     newLine: 1,
@@ -85,6 +88,7 @@ function flushFile(
   if (builder.added.size === 0 && builder.removeBefore.size === 0) return;
   out.set(path, {
     addedLineNumbers: builder.added,
+    removedLineNumbers: builder.removed,
     removeBeforeLine: builder.removeBefore,
   });
 }

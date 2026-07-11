@@ -77,7 +77,7 @@ Overlay a change set on the live map:
 - **Paste mode** — unified diff text → green/red module borders.
 - **Git commits mode** — pick base + head refs → module highlights from git paths, added/removed edges from graph comparison, ghost positions for deleted modules.
 
-Unchanged modules dim to ~40% opacity; added edges render green, removed edges red with an **×** head. L2 panels and the symbol preview show `+`/`-` diff rows when line data is available.
+Unchanged modules dim to ~40% opacity; added edges render green, removed edges red with an **×** head. At L1.5, snapshot comparisons show added symbols in green, deleted symbols in red, and declaration/implementation changes in yellow. L2 panels and the symbol preview show `+`/`-` diff rows when line data is available.
 
 ### Canvas controls
 

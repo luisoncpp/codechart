@@ -20,16 +20,19 @@ export function SymbolNodeView({ data, selected }: NodeProps<SymbolRFNode>) {
   const heatTint = symbolHeatTintVar(data);
   const heatMix = symbolHeatMixPercent(data);
   const heatClass = data.heatmapActive ? " symbol-box--heat" : "";
+  const diffClass = data.diffState ? ` symbol-box--diff-${data.diffState}` : "";
+  const diffLabel = data.diffState ? `, ${data.diffState} in diff` : "";
 
   return (
     <div
-      className={`symbol-box symbol-box--${kind}${selected ? " symbol-box--selected" : ""}${heatClass}`}
+      className={`symbol-box symbol-box--${kind}${selected ? " symbol-box--selected" : ""}${heatClass}${diffClass}`}
       style={{
         "--symbol-group-color": borderColor,
         ...(heatTint ? { "--heat-tint": heatTint, "--heat-mix": `${heatMix}%` } : {}),
       } as React.CSSProperties}
-      title={`${kindLabel}: ${data.label}`}
+      title={`${kindLabel}: ${data.label}${diffLabel}`}
       data-kind={kind}
+      data-diff-state={data.diffState}
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <span className="symbol-box__badge" aria-hidden>
