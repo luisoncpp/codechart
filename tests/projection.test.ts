@@ -386,6 +386,28 @@ describe("L0 collapsed-card description layout (regression)", () => {
     expect(desc?.font).toBe(28 * 2);
   });
 
+  it("shows the short text in the top-left gap between a low-left and high-right subgroup", () => {
+    // The screenshot scene (Tauri Backend / Language Adapter): one subgroup low
+    // on the left, another high on the right. The independent minima describe
+    // no free space (minChildY from the right child, minChildX from the left
+    // one), but the top-left rectangle between them fits the short blurb.
+    const data = {
+      label: "Tauri backend",
+      color: "#ef4444",
+      descriptionShort: "Rust analysis backend",
+      minChildX: 16,
+      minChildY: 40,
+      childObstacles: [
+        { x: 16, y: 260, width: 300, height: 120 },
+        { x: 360, y: 40, width: 320, height: 340 },
+      ],
+    };
+    const desc = collapsedDescription(data, 1, { width: 700, height: 400 });
+    expect(desc?.text).toBe("Rust analysis backend");
+    // Rendered width must stop left of the high-right subgroup.
+    expect(desc!.width).toBeLessThanOrEqual(360 - 16 - 12);
+  });
+
   it("flows into the free left column when a subgroup starts at the header", () => {
     const data = {
       label: "G",

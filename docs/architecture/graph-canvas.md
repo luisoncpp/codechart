@@ -181,11 +181,15 @@ hidden by zoom collapse.
   `descriptionLong` into group node data, plus `showLong` (= `showSymbols`, i.e. L1.5+). The view shows
   progressively more prose as you zoom in:
   - **L0 (collapsed card):** `collapsedDescription` **prefers `descriptionLong`** when it fits, else
-    falls back to `descriptionShort`. It measures against the largest **child-free region** of the card:
-    the full-width band above the topmost visible child, or the full-height column left of the leftmost
-    one (`minChildY`/`minChildX`, projection-computed from **visible** children only — a collapsed
-    group's module boxes still exist in the L0 layout but are hidden, so they must never clamp the
-    text; nested subgroup boxes do). The chosen region's width and font are returned and rendered
+    falls back to `descriptionShort`. It measures against the largest **child-free rectangle** of the
+    card, anchored below the title at the left edge: `descriptionRegion`
+    (`collapsed-description-region.ts`, pure) sweeps candidate bottoms (each `childObstacles` top +
+    the card bottom) and caps each candidate's width at the leftmost obstacle its rows intersect —
+    so a low-left plus a high-right subgroup still leave a usable top-left gap, which independent
+    `minChildY`/`minChildX` minima would falsely report as no space (obstacles are
+    projection-computed from **visible** children only — a collapsed group's module boxes still
+    exist in the L0 layout but are hidden, so they must never clamp the text; nested subgroup boxes
+    do). The chosen region's width and font are returned and rendered
     verbatim (`collapsed-description.ts`, pure): the font starts at a counter-scaled `14 × scale` and
     **grows** (`fitCardFont`, up to a 28px screen cap) while the chosen text still fits the region — a
     spacious card reads large, a tight one never truncates to grow. All geometry stays in world units

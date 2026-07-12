@@ -2,6 +2,7 @@
 import type { GroupNodeData } from "../../../domain/graph";
 import { PRESETS } from "../../../domain/layout";
 import { iconFontSize, iconGlyph } from "./icon-map";
+import { descriptionRegion, type DescRegion } from "./collapsed-description-region";
 export const L0_DESC_FONT = 14;
 const L0_DESC_MAX_FONT = 28;
 export const L0_LABEL_FONT = 15;
@@ -9,7 +10,6 @@ const L0_LABEL_MIN_FONT = 8;
 const LABEL_CHAR_RATIO = 0.72;
 const LABEL_LINE_RATIO = 1.1;
 const CARD_PADDING = 16;
-type DescRegion = { width: number; height: number };
 /** The fitted card title: world-unit font, wrapped line count, header row
  *  height, and the scale for the header chrome (toggle, gaps, icon) — chrome
  *  shrinks with the font, or a fixed `24 × scale` toggle would eat a small
@@ -139,29 +139,6 @@ function fitCardFont(text: string, region: DescRegion, scale: number): number {
     if (fitsBox(text, region, px * scale)) return px * scale;
   }
   return L0_DESC_FONT * scale;
-}
-
-/** The larger of two rects free of visible children: the full-width band above
- *  the topmost one, or the full-height column left of the leftmost one (a card
- *  with a nested subgroup near the header still has that column to write in). */
-function descriptionRegion(
-  data: GroupNodeData,
-  card: { cardW: number; cardH: number; descTop: number },
-): DescRegion {
-  const band = {
-    width: card.cardW - 2 * CARD_PADDING,
-    height: (data.minChildY ?? card.cardH) - card.descTop - 12,
-  };
-  if (data.minChildX === undefined) return band;
-  const column = {
-    width: data.minChildX - CARD_PADDING - 12,
-    height: card.cardH - card.descTop - CARD_PADDING,
-  };
-  return regionArea(column) > regionArea(band) ? column : band;
-}
-
-function regionArea(region: DescRegion): number {
-  return Math.max(0, region.width) * Math.max(0, region.height);
 }
 
 /** The long prose when it fits the region, else the short blurb. */
