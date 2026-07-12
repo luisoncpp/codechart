@@ -149,9 +149,28 @@ function pickDescriptionText(data: GroupNodeData, region: DescRegion, font: numb
   return data.descriptionShort;
 }
 
-/** Roughly does `text` fit `region` at `font` px? Conservative char estimate. */
+/** Does `text` fit using the same space/hyphen wrapping opportunities as CSS? */
 function fitsBox(text: string, region: DescRegion, font: number): boolean {
   const charsPerLine = Math.max(1, Math.floor(region.width / (font * 0.52)));
-  const lines = Math.floor(region.height / (font * 1.35));
-  return text.length <= charsPerLine * lines;
+  const availableLines = Math.floor(region.height / (font * 1.35));
+  return wrappedLineCount(text, charsPerLine) <= availableLines;
+}
+
+function wrappedLineCount(text: string, charsPerLine: number): number {
+  const segments = text.trim().replace(/-/g, "- ").split(/\s+/).filter(Boolean);
+  let lines = 1;
+  let used = 0;
+  let afterHyphen = false;
+  for (const segment of segments) {
+    const gap = used > 0 && !afterHyphen ? 1 : 0;
+    if (used + gap + segment.length <= charsPerLine) {
+      used += gap + segment.length;
+    } else {
+      if (used > 0) lines++;
+      lines += Math.max(0, Math.ceil(segment.length / charsPerLine) - 1);
+      used = segment.length % charsPerLine || charsPerLine;
+    }
+    afterHyphen = segment.endsWith("-");
+  }
+  return lines;
 }

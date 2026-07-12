@@ -191,8 +191,9 @@ hidden by zoom collapse.
     exist in the L0 layout but are hidden, so they must never clamp the text; nested subgroup boxes
     do). The chosen region's width and font are returned and rendered
     verbatim (`collapsed-description.ts`, pure): the font starts at a counter-scaled `14 × scale` and
-    **grows** (`fitCardFont`, up to a 28px screen cap) while the chosen text still fits the region — a
-    spacious card reads large, a tight one never truncates to grow. All geometry stays in world units
+    **grows** (`fitCardFont`, up to a 28px screen cap) while the chosen text still fits the region.
+    Fit counting follows the browser's wrap opportunities at spaces and hyphens, so a spacious card
+    reads large while a tight one never truncates merely because aggregate character area fit. All geometry stays in world units
     consistent with the scaled font — never an unscaled px cap, which would shrink to a sliver on
     screen at L0. The text uses the **darkened group color** (`darken(data.color)`), and its line
     clamp is derived from the region height at the chosen font.

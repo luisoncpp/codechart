@@ -95,6 +95,23 @@ describe("L0 collapsed-card title fits its card (regression)", () => {
     expect(desc).toBeNull();
   });
 
+  it("does not grow a description past its word-wrapped capacity", () => {
+    const desc = collapsedDescription(
+      {
+        label: "Git client",
+        color: "#d97706",
+        descriptionShort: "IPC to git-backed analysis",
+      },
+      /*scale=*/1,
+      { width: 197, height: 149 },
+    );
+
+    // Character-area math chooses 24px and two lines, but the browser wraps
+    // this copy onto three lines at spaces/hyphens and clamps "analysis" away.
+    expect(desc?.font).toBe(21);
+    expect(desc?.lines).toBe(3);
+  });
+
   it("renders the collapsed card title at the fitted font, not the base 15px", async () => {
     const label = "PaneLocalRevisionListCoordination";
     const store = testGraphSessionStore({
