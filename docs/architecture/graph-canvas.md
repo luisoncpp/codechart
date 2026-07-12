@@ -37,8 +37,11 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   optional icon glyph + label. Color from `GroupNode.color`, else a deterministic palette hash
   (`colors.ts`). `graph-canvas.css` strips React Flow's default node chrome (border/padding/bg) so the
   custom view's border is the **only** border — no double outline, no inset gap.
-- **Header room:** the layout reserves vertical space for the header via `groupHeaderHeight` added to
-  the group's ELK top padding (see `layout.md`), so module boxes never overlap the group label.
+- **Header room:** the layout reserves vertical space for ordinary children and a measured top-left
+  title obstacle for nested subgroup containers (see `layout.md`), so neither modules nor subgroup
+  boxes overlap the counter-scaled group label. The expanded header's counter-scale is **clamped**
+  to the scale that obstacle was reserved at (`expandedHeaderScale`, `domain/layout`) — a group
+  expanded below the L0 boundary must not outgrow its reserve.
 - **Module node:** card tinted to its **owning group's color** (matches the sample) — `color` text +
   `color + "1a"` fill + `color` border (2px facade w/ `★`, else 1px); selected → blue outline; compact
   11px **monospace** label (matches the sample's bracketed filenames; text darkened ~55% toward black
@@ -177,10 +180,18 @@ hidden by zoom collapse.
 - **Group descriptions (multi-level):** `rf-projection` threads both `descriptionShort` and
   `descriptionLong` into group node data, plus `showLong` (= `showSymbols`, i.e. L1.5+). The view shows
   progressively more prose as you zoom in:
-  - **L0 (collapsed card):** `collapsedDescription` **prefers `descriptionLong`** when it fits the card
-    at a legible font (`fitsBox`, 14px base), else falls back to `descriptionShort`. The text uses the
-    **darkened group color** (`darken(data.color)`), not the old grey, and its line clamp is derived
-    from the card height.
+  - **L0 (collapsed card):** `collapsedDescription` **prefers `descriptionLong`** when it fits, else
+    falls back to `descriptionShort`. It measures against the largest **child-free region** of the card:
+    the full-width band above the topmost visible child, or the full-height column left of the leftmost
+    one (`minChildY`/`minChildX`, projection-computed from **visible** children only — a collapsed
+    group's module boxes still exist in the L0 layout but are hidden, so they must never clamp the
+    text; nested subgroup boxes do). The chosen region's width and font are returned and rendered
+    verbatim (`collapsed-description.ts`, pure): the font starts at a counter-scaled `14 × scale` and
+    **grows** (`fitCardFont`, up to a 28px screen cap) while the chosen text still fits the region — a
+    spacious card reads large, a tight one never truncates to grow. All geometry stays in world units
+    consistent with the scaled font — never an unscaled px cap, which would shrink to a sliver on
+    screen at L0. The text uses the **darkened group color** (`darken(data.color)`), and its line
+    clamp is derived from the region height at the chosen font.
   - **L1 (expanded):** `GroupDescription` draws `descriptionShort` **directly in the group** (no box) at
     `data.descriptionBox` (parent-relative). ELK vertically *centers* a short column, so the reserved slot
     floats mid-group with a gap under the header; **projection raises `y`** (`freeTopFor`) to the highest
@@ -213,10 +224,20 @@ hidden by zoom collapse.
 - **Metadata rendering:** A
   collapsed group renders a **readable card** (`GroupNodeView` → `CollapsedCard`): a large uppercase
   label + icon over a wrapped description (see Group descriptions above). Both font sizes **counter-scale with the live camera
-  zoom** (`useStore(s => s.transform[2])`, clamped 1–2.4×) so the text stays legible as you zoom out
+  zoom** (`useStore(s => s.transform[2])`, clamped 1–`MAX_COUNTER_SCALE` = 1/minZoom) so the text stays legible as you zoom out
   to L0 instead of dwindling — a *read* of the camera, which the scroll-zoom oscillation lesson permits
-  (it only forbids programmatic camera *writes*). Expanded groups keep the quiet header strip, but its
-  label **also counter-scales** so the group name stays legible when zoomed out. **Module labels do
+  (it only forbids programmatic camera *writes*). The card **title fits its card**
+  (`collapsedLabelLayout`, `collapsed-description.ts`, pure): starting at the counter-scaled 15px
+  base it shrinks to keep the title on one horizontal line; at the 8px screen floor it ellipsizes
+  instead of wrapping vertically. The
+  header chrome (toggle, gaps, icon) scales **by `font/base`, not the raw camera scale** — otherwise
+  a fixed `24 × scale` toggle eats a small card before the text gets any width. When a visible nested
+  subgroup is present, projection supplies every visible child rectangle (`childObstacles`). At each
+  readable size the fitter considers only obstacles intersecting that title row, preserving L-shaped
+  gaps that independent `minChildX`/`minChildY` values lose. The description's top offset uses the
+  fitted label height. Expanded groups keep the quiet header strip, but its
+  label **also counter-scales** so the group name stays legible when zoomed out — clamped at
+  `expandedHeaderScale` (= 1/L0 boundary), the scale the layout's title obstacle reserves for. **Module labels do
   *not* counter-scale** against the camera (still world units, so they can't overflow the box). But the
   L1 centered label is **fit to its box** rather than fixed at 11px: `fitLabelFontSize(label, w, h)`
   (`module-box-metrics.ts`, pure) picks the largest font (capped `LABEL_FIT.maxFont` 22px, floored at the

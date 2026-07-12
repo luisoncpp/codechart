@@ -25,6 +25,7 @@ export {
   allGroupIds,
   topLevelGroupIds,
   levelFromZoom,
+  L0_ZOOM_BOUNDARY,
 } from "./Private/zoom-level";
 export { isTestModule, filterTestModules } from "./Private/test-modules";
 export {

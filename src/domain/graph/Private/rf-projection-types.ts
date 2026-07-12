@@ -29,4 +29,6 @@ export interface ProjectionCtx {
   moduleDisconnected: (moduleId: string) => boolean;
   descriptionByGroup: Map<string | null, LayoutBox>;
   childBoxesByGroup: Map<string | null, LayoutBox[]>;
+  /** Ids of module boxes in the layout — hidden at L0, unlike subgroup boxes. */
+  moduleBoxIds: Set<string>;
 }

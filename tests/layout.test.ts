@@ -13,6 +13,10 @@ import {
   DESC_BOX,
 } from "../src/domain/layout/Private/module-box-metrics";
 import { fitModuleHeaderFontSize } from "../src/domain/layout/Private/fit-module-header-font";
+import {
+  groupHeaderBoxSize,
+  groupHeaderFootprint,
+} from "../src/domain/layout/Private/group-header-metrics";
 
 const graph = goldenGraph as ProjectGraph;
 
@@ -150,6 +154,50 @@ describe("ElkLayoutEngine (golden model)", () => {
         (s, i, arr) => i === 0 || s.y >= arr[i - 1].y + arr[i - 1].height - 1,
       );
       expect(stacked, `${parent.id} subgroups all in one column`).toBe(false);
+    }
+  });
+
+  it("keeps nested subgroups out of the parent group label area", async () => {
+    const nestedGraph = {
+      version: 1,
+      root: "/nested",
+      groups: [
+        {
+          id: "parent",
+          label: "Language adapter",
+          parentId: null,
+          facadeModuleIds: [],
+          annotation: { descriptionShort: "Turns source files into parsed modules." },
+        },
+        { id: "child-a", label: "C++ adapter", parentId: "parent", facadeModuleIds: [] },
+        { id: "child-b", label: "C# adapter", parentId: "parent", facadeModuleIds: [] },
+      ],
+      modules: [],
+      edges: [],
+      diagnostics: [],
+    } as unknown as ProjectGraph;
+    const result = await new ElkLayoutEngine().layout(nestedGraph);
+    const parent = result.groups.find((box) => box.id === "parent")!;
+    const children = result.groups.filter((box) => box.parentId === parent.id);
+    // At the L0/L1 boundary (zoom .45), the counter-scaled toggle + title occupy
+    // roughly this top-left rectangle in layout coordinates.
+    const labelArea = { ...parent, ...groupHeaderBoxSize(nestedGraph.groups[0]) };
+
+    for (const child of children) {
+      expect(overlaps(child, labelArea), `${child.id} overlaps the parent label`).toBe(false);
+    }
+
+    // Regression: the header keeps counter-scaling while a group stays expanded
+    // below the L0 boundary (down to the canvas min zoom, camera scale ~6.7),
+    // so the *rendered* footprint at any camera scale must also stay clear.
+    for (const cameraScale of [1, 2.5, 1 / 0.15]) {
+      const rendered = { ...parent, ...groupHeaderFootprint(nestedGraph.groups[0], cameraScale) };
+      for (const child of children) {
+        expect(
+          overlaps(child, rendered),
+          `${child.id} overlaps the title rendered at camera scale ${cameraScale}`,
+        ).toBe(false);
+      }
     }
   });
 

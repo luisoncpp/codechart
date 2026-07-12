@@ -9,7 +9,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./graph-canvas.css";
-import { projectGraph } from "../../../domain/graph";
+import { L0_ZOOM_BOUNDARY, projectGraph } from "../../../domain/graph";
 import { applyDiffOverlay } from "../../../domain/diff";
 import type { RFNode, RenderOptions, ZoomLevel } from "../../../domain/graph";
 import { edgeFocusForSelection, computeHeatProjection, isTestModule } from "../../../domain/graph";
@@ -37,7 +37,7 @@ interface GraphCanvasProps {
 }
 
 function fitOptionsForLevel(level: ZoomLevel): FitViewOptions {
-  if (level === 0) return { padding: 0.18, maxZoom: 0.45 };
+  if (level === 0) return { padding: 0.18, maxZoom: L0_ZOOM_BOUNDARY };
   return { padding: 0.12 };
 }
 

@@ -14,5 +14,6 @@ export {
   wrappedDescriptionHeight,
 } from "./Private/module-box-metrics";
 export { fitModuleHeaderFontSize } from "./Private/fit-module-header-font";
+export { expandedHeaderScale } from "./Private/group-header-metrics";
 export { wrapIdentifierLines } from "./Private/wrap-identifier";
 export { PRESETS } from "./Private/layout-presets";

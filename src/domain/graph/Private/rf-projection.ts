@@ -60,6 +60,7 @@ function buildLayoutIndexes(layout: LayoutedGraph) {
     index,
     descriptionByGroup: new Map(layout.descriptions.map((b) => [b.parentId, b])),
     childBoxesByGroup: byParentId([...layout.modules, ...layout.groups]),
+    moduleBoxIds: new Set(layout.modules.map((b) => b.id)),
   };
 }
 
@@ -68,7 +69,7 @@ function buildProjectionCtx(
   options: RenderOptions | undefined,
   layoutIndexes: ReturnType<typeof buildLayoutIndexes>,
 ): ProjectionCtx {
-  const { index, descriptionByGroup, childBoxesByGroup } = layoutIndexes;
+  const { index, descriptionByGroup, childBoxesByGroup, moduleBoxIds } = layoutIndexes;
   const collapsed = options?.collapsedGroupIds;
   const parentOf = groupParentMap(graph);
   const disconnectedGroups = options?.disconnectedGroupIds;
@@ -95,6 +96,7 @@ function buildProjectionCtx(
     moduleDisconnected,
     descriptionByGroup,
     childBoxesByGroup,
+    moduleBoxIds,
   };
 }
 

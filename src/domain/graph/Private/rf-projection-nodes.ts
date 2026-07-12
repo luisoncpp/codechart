@@ -1,4 +1,4 @@
-import { DESC_BOX, type LayoutBox } from "../../layout";
+import { type LayoutBox } from "../../layout";
 import { symbolNameFromId } from "../symbol-id";
 import type { GroupNode } from "../GroupNode";
 import type { ModuleNode } from "../ModuleNode";
@@ -15,8 +15,7 @@ export function groupNode(
   box: LayoutBox,
   ctx: ProjectionCtx,
 ): GroupRFNode {
-  const childBoxes = ctx.childBoxesByGroup.get(group.id) ?? [];
-  const minChildY = minChildYForGroup(box, childBoxes);
+  const childBoxes = visibleChildBoxes(group.id, ctx);
 
   return {
     id: group.id,
@@ -37,19 +36,43 @@ export function groupNode(
       disconnected: ctx.groupDisconnected(group.id),
       showLong: ctx.options?.showSymbols ?? false,
       descriptionBox: descriptionBoxGeometry(group.id, box, ctx),
-      minChildY,
+      minChildY: minChildOffset(childBoxes, box, "y"),
+      minChildX: minChildOffset(childBoxes, box, "x"),
+      childObstacles: relativeChildObstacles(childBoxes, box),
       ...heatFields(ctx.options?.heat?.groups.get(group.id), ctx.options?.heat?.mode),
       ...heatmapSessionFields(ctx),
     },
   };
 }
 
-/** Lowest relative Y among child boxes that overlap the description column. */
-function minChildYForGroup(box: LayoutBox, childBoxes: LayoutBox[]) {
-  const descriptionWidth = 16 + DESC_BOX.maxWidth + 16;
-  const overlappingChildren = childBoxes.filter((c) => c.x - box.x < descriptionWidth);
-  const relativeYs = overlappingChildren.map((c) => c.y - box.y);
-  return relativeYs.length > 0 ? Math.min(...relativeYs) : undefined;
+function relativeChildObstacles(children: LayoutBox[], parent: LayoutBox) {
+  return children.map((child) => ({
+    x: child.x - parent.x,
+    y: child.y - parent.y,
+    width: child.width,
+    height: child.height,
+  }));
+}
+
+/** Child boxes the canvas will actually draw inside this group. A collapsed
+ *  group's module boxes still exist in the layout (L0 layouts the full graph;
+ *  collapse is projection-only) but are hidden — they must not clamp the
+ *  collapsed card's description. Nested subgroup boxes stay visible. */
+function visibleChildBoxes(groupId: string, ctx: ProjectionCtx): LayoutBox[] {
+  const children = ctx.childBoxesByGroup.get(groupId) ?? [];
+  const collapsed = ctx.options?.collapsedGroupIds?.has(groupId) ?? false;
+  if (!collapsed) return children;
+  return children.filter((c) => !ctx.moduleBoxIds.has(c.id));
+}
+
+/** Smallest parent-relative offset among child boxes along one axis. */
+function minChildOffset(
+  children: LayoutBox[],
+  box: LayoutBox,
+  axis: "x" | "y",
+): number | undefined {
+  if (children.length === 0) return undefined;
+  return Math.min(...children.map((c) => c[axis] - box[axis]));
 }
 
 export function moduleNode(

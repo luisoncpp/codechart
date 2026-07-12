@@ -4,6 +4,7 @@ import type { ProjectGraph } from "../../graph";
 import type { LayoutOptions } from "./layout-types";
 import { PRESETS } from "./layout-presets";
 import { moduleBoxSize, descriptionBoxSize } from "./module-box-metrics";
+import { groupHeaderBoxId, groupHeaderBoxSize } from "./group-header-metrics";
 import {
   ROOT_OPTIONS,
   buildEdges,
@@ -59,9 +60,13 @@ export function buildElkGraph(graph: ProjectGraph, options?: LayoutOptions): Elk
       const nested = build(id);
       const nestedChildIds = childGroups.get(id) ?? [];
       const layered = shouldUseLayeredGroup(graph, id, nestedChildIds);
+      const group = groupById.get(id)!;
+      const header = nestedChildIds.length > 0
+        ? [{ id: groupHeaderBoxId(id), ...groupHeaderBoxSize(group) }]
+        : [];
       return groupElkNode(
-        groupById.get(id)!,
-        withDescription(id, nested, layered),
+        group,
+        [...header, ...withDescription(id, nested, layered)],
         layered,
         nestedChildIds.length > 0,
         options?.collapsedGroupSizes,

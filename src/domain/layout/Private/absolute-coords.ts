@@ -6,11 +6,13 @@ interface NodeIdSets {
   groupIds: Set<string>;
   moduleIds: Set<string>;
   descriptionIds: Set<string>;
+  ignoredIds: Set<string>;
 }
 
 type LayoutBuckets = Pick<LayoutedGraph, "groups" | "modules" | "symbols" | "descriptions">;
 
-function bucketKey(id: string, idSets: NodeIdSets): keyof LayoutBuckets {
+function bucketKey(id: string, idSets: NodeIdSets): keyof LayoutBuckets | null {
+  if (idSets.ignoredIds.has(id)) return null;
   if (idSets.groupIds.has(id)) return "groups";
   if (idSets.moduleIds.has(id)) return "modules";
   if (idSets.descriptionIds.has(id)) return "descriptions";
@@ -28,14 +30,17 @@ function walkElkTree(
   for (const child of node.children ?? []) {
     const x = ox + (child.x ?? 0);
     const y = oy + (child.y ?? 0);
-    out[bucketKey(child.id, idSets)].push({
-      id: child.id,
-      parentId,
-      x,
-      y,
-      width: child.width ?? 0,
-      height: child.height ?? 0,
-    });
+    const bucket = bucketKey(child.id, idSets);
+    if (bucket) {
+      out[bucket].push({
+        id: child.id,
+        parentId,
+        x,
+        y,
+        width: child.width ?? 0,
+        height: child.height ?? 0,
+      });
+    }
     walkElkTree(child, child.id, x, y, idSets, out);
   }
 }
