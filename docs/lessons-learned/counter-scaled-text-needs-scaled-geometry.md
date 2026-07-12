@@ -68,3 +68,9 @@ Aggregate capacity (`characters per line × lines`) overestimates how much prose
 leave unused space at line ends. A larger font can pass that area check and still be clamped after
 the browser wraps at spaces or hyphens. A text fitter should greedily count the same break
 opportunities as CSS before accepting a larger font; total character count alone is not a fit test.
+
+## Corollary: do not clamp text that already fits
+
+`-webkit-line-clamp` can paint an ellipsis on the final visible line even when that line contains the
+complete text, especially near fractional line-height boundaries. Preserve the fitter's result through
+to rendering and add the clamp only when the selected prose actually exceeds its measured region.

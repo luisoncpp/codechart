@@ -196,7 +196,9 @@ hidden by zoom collapse.
     reads large while a tight one never truncates merely because aggregate character area fit. All geometry stays in world units
     consistent with the scaled font — never an unscaled px cap, which would shrink to a sliver on
     screen at L0. The text uses the **darkened group color** (`darken(data.color)`), and its line
-    clamp is derived from the region height at the chosen font.
+    clamp is derived from the region height at the chosen font and applied only
+    when the selected text does not fit; complete wrapped descriptions render
+    without a clamp so Chromium does not add a false trailing ellipsis.
   - **L1 (expanded):** `GroupDescription` draws `descriptionShort` **directly in the group** (no box) at
     `data.descriptionBox` (parent-relative). ELK vertically *centers* a short column, so the reserved slot
     floats mid-group with a gap under the header; **projection raises `y`** (`freeTopFor`) to the highest

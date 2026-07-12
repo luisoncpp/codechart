@@ -298,7 +298,7 @@ const cardLabelValueStyle = {
  *  (an unscaled cap turns into a sliver once the font counter-scales). */
 function cardDescriptionStyle(
   color: string,
-  region: { lines: number; width: number; font: number },
+  region: { lines: number; width: number; font: number; truncate: boolean },
 ) {
   return {
     margin: 0,
@@ -307,9 +307,13 @@ function cardDescriptionStyle(
     lineHeight: 1.35,
     color,
     overflow: "hidden",
-    display: "-webkit-box",
-    WebkitLineClamp: region.lines,
-    WebkitBoxOrient: "vertical" as const,
+    ...(region.truncate
+      ? {
+          display: "-webkit-box",
+          WebkitLineClamp: region.lines,
+          WebkitBoxOrient: "vertical" as const,
+        }
+      : {}),
     width: region.width,
     maxWidth: "100%",
   };

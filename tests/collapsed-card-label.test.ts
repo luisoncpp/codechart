@@ -112,6 +112,21 @@ describe("L0 collapsed-card title fits its card (regression)", () => {
     expect(desc?.lines).toBe(3);
   });
 
+  it("does not clamp a complete wrapped description", () => {
+    const desc = collapsedDescription(
+      {
+        label: "App",
+        color: "#64748b",
+        descriptionShort: "Root React component",
+      },
+      /*scale=*/1,
+      { width: 160, height: 120 },
+    );
+
+    expect(desc?.text).toBe("Root React component");
+    expect(desc?.truncate).toBe(false);
+  });
+
   it("renders the collapsed card title at the fitted font, not the base 15px", async () => {
     const label = "PaneLocalRevisionListCoordination";
     const store = testGraphSessionStore({

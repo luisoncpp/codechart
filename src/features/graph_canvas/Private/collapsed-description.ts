@@ -129,7 +129,7 @@ export function collapsedDescription(
   if (!text) return null;
   const font = fitCardFont(text, region, scale);
   const lines = Math.floor(region.height / (font * 1.35));
-  return { text, lines, width: region.width, font };
+  return { text, lines, width: region.width, font, truncate: !fitsBox(text, region, font) };
 }
 
 /** Largest counter-scaled font (base…cap) at which `text` still fits `region`:
