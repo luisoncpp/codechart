@@ -69,6 +69,11 @@ leave unused space at line ends. A larger font can pass that area check and stil
 the browser wraps at spaces or hyphens. A text fitter should greedily count the same break
 opportunities as CSS before accepting a larger font; total character count alone is not a fit test.
 
+Do not model an unbreakable identifier as several hard-wrapped lines unless the rendered CSS also
+uses `overflow-wrap: anywhere`. In a narrow child-free column, reject fonts where the longest token
+exceeds the measured width and shrink below the normal prose floor when necessary; otherwise the
+browser clips the token exactly where the neighboring subgroup begins.
+
 ## Corollary: do not clamp text that already fits
 
 `-webkit-line-clamp` can paint an ellipsis on the final visible line even when that line contains the

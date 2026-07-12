@@ -363,12 +363,13 @@ describe("L0 collapsed-card description layout (regression)", () => {
   });
 
   it("keeps the base font when the text barely fits", () => {
+    const long = "a ".repeat(200).trim();
     const data = {
       label: "G",
       color: "#ff0000",
-      // 400 chars: fits the 300×300 card's region at 14px (capacity 432) but
+      // ~400 chars: fits the 300×300 card's region at 14px (capacity 432) but
       // not at 15px (capacity 374) → the font must not grow.
-      descriptionLong: "a".repeat(400),
+      descriptionLong: long,
       descriptionShort: "short",
     };
     const desc = collapsedDescription(data, 1, { width: 300, height: 300 });

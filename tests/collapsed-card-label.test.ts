@@ -112,6 +112,22 @@ describe("L0 collapsed-card title fits its card (regression)", () => {
     expect(desc?.lines).toBe(3);
   });
 
+  it("shrinks an unbreakable description token to the child-free column", () => {
+    const desc = collapsedDescription(
+      {
+        label: "Language Adapter",
+        color: "#0d9488",
+        descriptionShort: "One file → ParsedModule seam",
+        childObstacles: [{ x: 521, y: 42, width: 927, height: 318 }],
+      },
+      /*scale=*/6.67,
+      { width: 2844, height: 1138 },
+    );
+
+    expect(desc).not.toBeNull();
+    expect("ParsedModule".length * desc!.font * 0.52).toBeLessThanOrEqual(desc!.width);
+  });
+
   it("does not clamp a complete wrapped description", () => {
     const desc = collapsedDescription(
       {

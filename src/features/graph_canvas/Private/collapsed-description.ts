@@ -5,6 +5,7 @@ import { iconFontSize, iconGlyph } from "./icon-map";
 import { descriptionRegion, type DescRegion } from "./collapsed-description-region";
 export const L0_DESC_FONT = 14;
 const L0_DESC_MAX_FONT = 28;
+const L0_DESC_MIN_FONT = 8;
 export const L0_LABEL_FONT = 15;
 const L0_LABEL_MIN_FONT = 8;
 const LABEL_CHAR_RATIO = 0.72;
@@ -132,13 +133,13 @@ export function collapsedDescription(
   return { text, lines, width: region.width, font, truncate: !fitsBox(text, region, font) };
 }
 
-/** Largest counter-scaled font (base…cap) at which `text` still fits `region`:
- *  the prose grows only when there is room to spare, never into truncation. */
+/** Largest counter-scaled font (floor…cap) at which `text` fits `region`:
+ *  prose grows with spare room and shrinks when an unbreakable token needs it. */
 function fitCardFont(text: string, region: DescRegion, scale: number): number {
-  for (let px = L0_DESC_MAX_FONT; px > L0_DESC_FONT; px--) {
+  for (let px = L0_DESC_MAX_FONT; px >= L0_DESC_MIN_FONT; px--) {
     if (fitsBox(text, region, px * scale)) return px * scale;
   }
-  return L0_DESC_FONT * scale;
+  return L0_DESC_MIN_FONT * scale;
 }
 
 /** The long prose when it fits the region, else the short blurb. */
@@ -153,11 +154,12 @@ function pickDescriptionText(data: GroupNodeData, region: DescRegion, font: numb
 function fitsBox(text: string, region: DescRegion, font: number): boolean {
   const charsPerLine = Math.max(1, Math.floor(region.width / (font * 0.52)));
   const availableLines = Math.floor(region.height / (font * 1.35));
+  if (wrapSegments(text).some((segment) => segment.length > charsPerLine)) return false;
   return wrappedLineCount(text, charsPerLine) <= availableLines;
 }
 
 function wrappedLineCount(text: string, charsPerLine: number): number {
-  const segments = text.trim().replace(/-/g, "- ").split(/\s+/).filter(Boolean);
+  const segments = wrapSegments(text);
   let lines = 1;
   let used = 0;
   let afterHyphen = false;
@@ -173,4 +175,8 @@ function wrappedLineCount(text: string, charsPerLine: number): number {
     afterHyphen = segment.endsWith("-");
   }
   return lines;
+}
+
+function wrapSegments(text: string): string[] {
+  return text.trim().replace(/-/g, "- ").split(/\s+/).filter(Boolean);
 }

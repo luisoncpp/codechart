@@ -190,10 +190,11 @@ hidden by zoom collapse.
     projection-computed from **visible** children only — a collapsed group's module boxes still
     exist in the L0 layout but are hidden, so they must never clamp the text; nested subgroup boxes
     do). The chosen region's width and font are returned and rendered
-    verbatim (`collapsed-description.ts`, pure): the font starts at a counter-scaled `14 × scale` and
-    **grows** (`fitCardFont`, up to a 28px screen cap) while the chosen text still fits the region.
-    Fit counting follows the browser's wrap opportunities at spaces and hyphens, so a spacious card
-    reads large while a tight one never truncates merely because aggregate character area fit. All geometry stays in world units
+    verbatim (`collapsed-description.ts`, pure): the font prefers a counter-scaled `14 × scale`, grows
+    up to a 28px screen cap when the chosen text fits, and can shrink to 8px in a narrow child-free
+    column. Fit counting follows the browser's wrap opportunities at spaces and hyphens; unbreakable
+    tokens such as `ParsedModule` must fit the measured width instead of being treated as hard-wrapped.
+    A spacious card reads large while a tight one stays clear of its subgroup. All geometry stays in world units
     consistent with the scaled font — never an unscaled px cap, which would shrink to a sliver on
     screen at L0. The text uses the **darkened group color** (`darken(data.color)`), and its line
     clamp is derived from the region height at the chosen font and applied only
