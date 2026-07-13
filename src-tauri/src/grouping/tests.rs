@@ -2,7 +2,12 @@ use super::*;
 use crate::project_config::parse_group_def;
 
 fn def(id: &str, dir: &str) -> GroupDef {
-    GroupDef { id: id.into(), label: id.into(), dir: dir.into(), ..Default::default() }
+    GroupDef {
+        id: id.into(),
+        label: id.into(),
+        dir: dir.into(),
+        ..Default::default()
+    }
 }
 
 fn files(list: &[&str]) -> Vec<String> {
@@ -10,7 +15,11 @@ fn files(list: &[&str]) -> Vec<String> {
 }
 
 fn group<'a>(result: &'a ResolvedGroups, id: &str) -> &'a GroupNode {
-    result.groups.iter().find(|g| g.id == id).expect("group present")
+    result
+        .groups
+        .iter()
+        .find(|g| g.id == id)
+        .expect("group present")
 }
 
 #[test]
@@ -18,8 +27,14 @@ fn folder_ownership_is_the_default_source() {
     let defs = vec![def("core", "src/core")];
     let fs = files(&["src/core/a.ts", "src/core/b.ts"]);
     let r = resolve_groups(&fs, &defs);
-    assert_eq!(r.module_group.get("src/core/a.ts").map(String::as_str), Some("core"));
-    assert_eq!(r.module_group.get("src/core/b.ts").map(String::as_str), Some("core"));
+    assert_eq!(
+        r.module_group.get("src/core/a.ts").map(String::as_str),
+        Some("core")
+    );
+    assert_eq!(
+        r.module_group.get("src/core/b.ts").map(String::as_str),
+        Some("core")
+    );
 }
 
 #[test]
@@ -28,8 +43,16 @@ fn glob_match_source_claims_across_folders() {
     shared.match_globs = vec!["src/**/types.ts".into()];
     let fs = files(&["src/services/types.ts", "src/core/todo.ts"]);
     let r = resolve_groups(&fs, &[shared]);
-    assert_eq!(r.module_group.get("src/services/types.ts").map(String::as_str), Some("shared"));
-    assert!(!r.module_group.contains_key("src/core/todo.ts"), "glob doesn't match todo.ts");
+    assert_eq!(
+        r.module_group
+            .get("src/services/types.ts")
+            .map(String::as_str),
+        Some("shared")
+    );
+    assert!(
+        !r.module_group.contains_key("src/core/todo.ts"),
+        "glob doesn't match todo.ts"
+    );
 }
 
 #[test]
@@ -38,7 +61,12 @@ fn regex_match_source_uses_slash_delimiters() {
     g.match_globs = vec!["/\\.view\\.tsx$/".into()];
     let fs = files(&["src/ui/Home.view.tsx", "src/ui/Home.tsx"]);
     let r = resolve_groups(&fs, &[g]);
-    assert_eq!(r.module_group.get("src/ui/Home.view.tsx").map(String::as_str), Some("views"));
+    assert_eq!(
+        r.module_group
+            .get("src/ui/Home.view.tsx")
+            .map(String::as_str),
+        Some("views")
+    );
     assert!(!r.module_group.contains_key("src/ui/Home.tsx"));
 }
 
@@ -48,7 +76,10 @@ fn explicit_files_source_claims_by_path() {
     g.files = vec!["src/core/todo.ts".into()];
     let fs = files(&["src/core/todo.ts", "src/core/store.ts"]);
     let r = resolve_groups(&fs, &[g]);
-    assert_eq!(r.module_group.get("src/core/todo.ts").map(String::as_str), Some("shared"));
+    assert_eq!(
+        r.module_group.get("src/core/todo.ts").map(String::as_str),
+        Some("shared")
+    );
     assert!(!r.module_group.contains_key("src/core/store.ts"));
 }
 
@@ -60,7 +91,10 @@ fn group_reference_sets_parent_without_direct_claim() {
     let fs = files(&["src/core/x.ts"]);
     let r = resolve_groups(&fs, &[app, core]);
     assert_eq!(group(&r, "core").parent_id.as_deref(), Some("app"));
-    assert_eq!(r.module_group.get("src/core/x.ts").map(String::as_str), Some("core"));
+    assert_eq!(
+        r.module_group.get("src/core/x.ts").map(String::as_str),
+        Some("core")
+    );
     assert!(group(&r, "app").parent_id.is_none());
 }
 
@@ -71,7 +105,10 @@ fn exclude_filters_folder_ownership() {
     let fs = files(&["src/core/todo.ts", "src/core/store.ts"]);
     let r = resolve_groups(&fs, &[core]);
     assert!(!r.module_group.contains_key("src/core/todo.ts"));
-    assert_eq!(r.module_group.get("src/core/store.ts").map(String::as_str), Some("core"));
+    assert_eq!(
+        r.module_group.get("src/core/store.ts").map(String::as_str),
+        Some("core")
+    );
 }
 
 #[test]
@@ -82,8 +119,14 @@ fn cross_folder_pull_made_disjoint_by_owner_exclude() {
     shared.files = vec!["src/core/todo.ts".into()];
     let fs = files(&["src/core/todo.ts", "src/core/store.ts"]);
     let r = resolve_groups(&fs, &[shared, core]);
-    assert_eq!(r.module_group.get("src/core/todo.ts").map(String::as_str), Some("shared"));
-    assert_eq!(r.module_group.get("src/core/store.ts").map(String::as_str), Some("core"));
+    assert_eq!(
+        r.module_group.get("src/core/todo.ts").map(String::as_str),
+        Some("shared")
+    );
+    assert_eq!(
+        r.module_group.get("src/core/store.ts").map(String::as_str),
+        Some("core")
+    );
     assert!(r.diagnostics.is_empty(), "no overlap when owner cedes");
 }
 
@@ -94,7 +137,10 @@ fn overlap_between_two_groups_is_a_config_error() {
     shared.files = vec!["src/core/todo.ts".into()];
     let fs = files(&["src/core/todo.ts"]);
     let r = resolve_groups(&fs, &[shared, core]);
-    assert!(!r.module_group.contains_key("src/core/todo.ts"), "ambiguous claim left unassigned");
+    assert!(
+        !r.module_group.contains_key("src/core/todo.ts"),
+        "ambiguous claim left unassigned"
+    );
     assert_eq!(r.diagnostics.len(), 1);
     assert_eq!(r.diagnostics[0].id, "configError:overlap:src/core/todo.ts");
 }
@@ -107,8 +153,31 @@ fn nested_group_md_sets_parent_via_directory() {
     let r = resolve_groups(&fs, &[inner, outer]);
     assert_eq!(group(&r, "inner").parent_id.as_deref(), Some("outer"));
     assert!(group(&r, "outer").parent_id.is_none());
-    assert_eq!(r.module_group.get("src/core/x.ts").map(String::as_str), Some("inner"));
-    assert_eq!(r.module_group.get("src/main.ts").map(String::as_str), Some("outer"));
+    assert_eq!(
+        r.module_group.get("src/core/x.ts").map(String::as_str),
+        Some("inner")
+    );
+    assert_eq!(
+        r.module_group.get("src/main.ts").map(String::as_str),
+        Some("outer")
+    );
+}
+
+#[test]
+fn composition_group_does_not_fold_adopt_folder_descendants() {
+    // A root-level composition group must not become the implicit parent of an
+    // unrelated group just because its dir ("") is an ancestor of everything.
+    let mut desktop = def("desktop", "");
+    desktop.group_refs = vec!["app".into()];
+    let app = def("app", "src/app");
+    let server = def("server", "server/src");
+    let fs = files(&["src/app/x.ts", "server/src/y.ts"]);
+    let r = resolve_groups(&fs, &[app, desktop, server]);
+    assert_eq!(group(&r, "app").parent_id.as_deref(), Some("desktop"));
+    assert!(
+        group(&r, "server").parent_id.is_none(),
+        "server stays top-level, not under desktop"
+    );
 }
 
 #[test]
@@ -116,13 +185,19 @@ fn facade_defaults_to_index_then_explicit_overrides() {
     let default_core = def("core", "src/core");
     let fs = files(&["src/core/index.ts", "src/core/store.ts"]);
     let r = resolve_groups(&fs, &[default_core]);
-    assert_eq!(group(&r, "core").facade_module_ids, vec!["src/core/index.ts".to_string()]);
+    assert_eq!(
+        group(&r, "core").facade_module_ids,
+        vec!["src/core/index.ts".to_string()]
+    );
     assert!(r.facades.contains("src/core/index.ts"));
 
     let mut explicit = def("core", "src/core");
     explicit.facades = Some(vec!["store.ts".into()]);
     let r2 = resolve_groups(&fs, &[explicit]);
-    assert_eq!(group(&r2, "core").facade_module_ids, vec!["src/core/store.ts".to_string()]);
+    assert_eq!(
+        group(&r2, "core").facade_module_ids,
+        vec!["src/core/store.ts".to_string()]
+    );
 }
 
 #[test]
@@ -133,7 +208,10 @@ fn unknown_explicit_facade_is_a_config_error() {
     let r = resolve_groups(&fs, &[core]);
     assert!(group(&r, "core").facade_module_ids.is_empty());
     assert_eq!(r.diagnostics.len(), 1);
-    assert_eq!(r.diagnostics[0].id, "configError:facade:core:src/core/missing.ts");
+    assert_eq!(
+        r.diagnostics[0].id,
+        "configError:facade:core:src/core/missing.ts"
+    );
 }
 
 #[test]
@@ -148,9 +226,18 @@ fn unmatched_file_falls_back_to_no_group() {
 fn folder_inference_when_no_group_files() {
     let fs = files(&["src/core/index.ts", "src/core/store.ts", "src/main.ts"]);
     let r = resolve_groups(&fs, &[]);
-    assert_eq!(r.module_group.get("src/core/store.ts").map(String::as_str), Some("folder:src/core"));
-    assert_eq!(r.module_group.get("src/main.ts").map(String::as_str), Some("folder:src"));
-    assert_eq!(group(&r, "folder:src/core").parent_id.as_deref(), Some("folder:src"));
+    assert_eq!(
+        r.module_group.get("src/core/store.ts").map(String::as_str),
+        Some("folder:src/core")
+    );
+    assert_eq!(
+        r.module_group.get("src/main.ts").map(String::as_str),
+        Some("folder:src")
+    );
+    assert_eq!(
+        group(&r, "folder:src/core").parent_id.as_deref(),
+        Some("folder:src")
+    );
     assert!(r.facades.contains("src/core/index.ts"));
 }
 
@@ -164,7 +251,10 @@ fn disconnected_defaults_map_to_group_node_fields() {
     let r = resolve_groups(&fs, &[shared]);
     let g = group(&r, "shared");
     assert!(g.disconnected_by_default);
-    assert_eq!(g.disconnected_module_ids, vec!["src/core/todo.ts".to_string()]);
+    assert_eq!(
+        g.disconnected_module_ids,
+        vec!["src/core/todo.ts".to_string()]
+    );
 }
 
 /// End-to-end against the real fixture: parse the five `*.group.md` files and the
@@ -175,28 +265,59 @@ fn fixture_grouping_matches_golden() {
     let fs = fixture_files();
     let r = resolve_groups(&fs, &defs);
 
-    assert!(r.diagnostics.is_empty(), "golden grouping has no configErrors");
-    assert_eq!(r.module_group.get("src/core/todo.ts").map(String::as_str), Some("shared"));
-    assert_eq!(r.module_group.get("src/services/types.ts").map(String::as_str), Some("shared"));
-    assert_eq!(r.module_group.get("src/core/store.ts").map(String::as_str), Some("core"));
-    assert!(!r.module_group.contains_key("src/main.ts"), "main.ts stays ungrouped");
+    assert!(
+        r.diagnostics.is_empty(),
+        "golden grouping has no configErrors"
+    );
+    assert_eq!(
+        r.module_group.get("src/core/todo.ts").map(String::as_str),
+        Some("shared")
+    );
+    assert_eq!(
+        r.module_group
+            .get("src/services/types.ts")
+            .map(String::as_str),
+        Some("shared")
+    );
+    assert_eq!(
+        r.module_group.get("src/core/store.ts").map(String::as_str),
+        Some("core")
+    );
+    assert!(
+        !r.module_group.contains_key("src/main.ts"),
+        "main.ts stays ungrouped"
+    );
 
     assert_eq!(group(&r, "core").parent_id.as_deref(), Some("app"));
     assert_eq!(group(&r, "ui").parent_id.as_deref(), Some("app"));
     assert!(group(&r, "app").parent_id.is_none());
     assert!(group(&r, "shared").parent_id.is_none());
 
-    assert_eq!(group(&r, "services").facade_module_ids, vec!["src/services/index.ts".to_string()]);
+    assert_eq!(
+        group(&r, "services").facade_module_ids,
+        vec!["src/services/index.ts".to_string()]
+    );
     assert!(group(&r, "app").facade_module_ids.is_empty());
     assert!(group(&r, "shared").facade_module_ids.is_empty());
     assert_eq!(group(&r, "core").color.as_deref(), Some("#7c3aed"));
-    assert!(group(&r, "core").annotation.as_ref().unwrap().description_long.is_some());
+    assert!(group(&r, "core")
+        .annotation
+        .as_ref()
+        .unwrap()
+        .description_long
+        .is_some());
 }
 
 fn fixture_defs() -> Vec<GroupDef> {
     let raw = [
-        ("app.group.md", include_str!("../../../tests/fixtures/ts-basic-project/app.group.md")),
-        ("shared.group.md", include_str!("../../../tests/fixtures/ts-basic-project/shared.group.md")),
+        (
+            "app.group.md",
+            include_str!("../../../tests/fixtures/ts-basic-project/app.group.md"),
+        ),
+        (
+            "shared.group.md",
+            include_str!("../../../tests/fixtures/ts-basic-project/shared.group.md"),
+        ),
         (
             "src/core/core.group.md",
             include_str!("../../../tests/fixtures/ts-basic-project/src/core/core.group.md"),

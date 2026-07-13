@@ -24,102 +24,49 @@ import {
   moduleCardBorder,
   moduleLabelColor,
 } from "./heat-node-styles";
+import { darkenHex } from "./color-utils";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 
 const SNIPPET_LINES = 12;
 
-
-
-/** Darken a #rrggbb color toward black so label text reads clearly. */
-
-function darken(hex: string, factor = 0.55): string {
-
-  const n = parseInt(hex.slice(1), 16);
-
-  const ch = (shift: number) =>
-
-    Math.round(((n >> shift) & 0xff) * factor)
-
-      .toString(16)
-
-      .padStart(2, "0");
-
-  return `#${ch(16)}${ch(8)}${ch(0)}`;
-
-}
-
-
-
 const DESCRIPTION_STYLE: React.CSSProperties = {
-
   fontSize: 8,
-
   lineHeight: "10px",
-
   padding: "2px 6px 4px",
-
   opacity: 0.8,
-
   fontStyle: "italic",
-
   whiteSpace: "normal",
-
   wordBreak: "break-word",
-
   borderBottom: "1px dashed rgba(0,0,0,0.1)",
-
   position: "relative",
-
   zIndex: 1,
-
 };
 
-
-
 function moduleHeaderFontSize(
-
   data: ModuleRFNode["data"],
-
   detail: boolean,
-
   width: number,
-
   height: number,
-
 ): number {
-
   const suffixLen = data.diffLineDiff
-
     ? diffStatsSuffixLength(countLineDiffStats(data.diffLineDiff))
-
     : 0;
-
   return fitModuleHeaderFontSize(
-
     data.label,
-
     suffixLen,
-
     width,
-
     height,
-
     detail,
-
   );
-
 }
 
-
-
 /** Module container: label-only at L1; symbol children appear inside at L1.5+. */
-
 export function ModuleNodeView({ data, selected, width, height }: NodeProps<ModuleRFNode>) {
 
   const color = data.color ?? "#64748b";
 
-  const textColor = darken(color);
+  const textColor = darkenHex(color);
 
   const zoomScale = useZoomCounterScale();
 

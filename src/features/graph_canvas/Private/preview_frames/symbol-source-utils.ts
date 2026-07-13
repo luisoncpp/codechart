@@ -1,3 +1,5 @@
+import { scanFunctionDefinitions } from "./function-definition-scanner";
+
 /** Locate the 0-indexed line number where a symbol is defined. */
 export function findSymbolLine(source: string, symbolName: string): number {
   const lines = source.split("\n");
@@ -11,6 +13,9 @@ export function findSymbolLine(source: string, symbolName: string): number {
   );
   let idx = lines.findIndex((l) => defRegex.test(l));
   if (idx !== -1) return idx;
+
+  const scanned = scanFunctionDefinitions(source).get(symbolName);
+  if (scanned !== undefined) return scanned;
 
   const assignRegex = new RegExp(`\\b${escaped}\\s*[:=]`);
   idx = lines.findIndex((l) => assignRegex.test(l));

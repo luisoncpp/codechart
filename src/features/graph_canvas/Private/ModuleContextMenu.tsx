@@ -33,6 +33,11 @@ export function ModuleContextMenu({
 
   if (!menu || !projectRoot) return null;
 
+  const copyRelativePath = () => {
+    void navigator.clipboard.writeText(menu.modulePath);
+    onClose();
+  };
+
   const reveal = () => {
     void shell.revealInExplorer(joinRootPath(projectRoot, menu.modulePath));
     onClose();
@@ -67,18 +72,16 @@ export function ModuleContextMenu({
         <button
           type="button"
           role="menuitem"
+          onClick={copyRelativePath}
+          style={menuItemStyle}
+        >
+          Copy relative path
+        </button>
+        <button
+          type="button"
+          role="menuitem"
           onClick={reveal}
-          style={{
-            display: "block",
-            width: "100%",
-            padding: "6px 12px",
-            border: "none",
-            background: "transparent",
-            textAlign: "left",
-            fontSize: 12,
-            color: "#0f172a",
-            cursor: "pointer",
-          }}
+          style={menuItemStyle}
         >
           Reveal in file explorer
         </button>
@@ -86,3 +89,15 @@ export function ModuleContextMenu({
     </>
   );
 }
+
+const menuItemStyle = {
+  display: "block",
+  width: "100%",
+  padding: "6px 12px",
+  border: "none",
+  background: "transparent",
+  textAlign: "left",
+  fontSize: 12,
+  color: "#0f172a",
+  cursor: "pointer",
+} as const;

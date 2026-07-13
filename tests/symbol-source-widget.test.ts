@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findSymbolLine } from "../src/features/graph_canvas/Private/SymbolSourceWidget";
+import { findSymbolLine } from "../src/features/graph_canvas/Private/preview_frames";
 
 const SOURCE_MOCK = `
 import { something } from "./other";
@@ -46,5 +46,23 @@ describe("findSymbolLine", () => {
 
   it("falls back to 0 if not found", () => {
     expect(findSymbolLine(SOURCE_MOCK, "UNKNOWN")).toBe(0);
+  });
+});
+
+const METHOD_SOURCE = `
+export function run() {
+  compute(1);
+}
+
+export class Calc {
+  compute(x: number): number {
+    return x;
+  }
+}
+`;
+
+describe("findSymbolLine (methods)", () => {
+  it("finds the method definition, not an earlier call site", () => {
+    expect(findSymbolLine(METHOD_SOURCE, "compute")).toBe(6);
   });
 });

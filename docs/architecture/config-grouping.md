@@ -54,7 +54,11 @@ facades, diagnostics }`). Pure; deterministic (sorted iteration, `BTree*`).
 the nearest ancestor folder with a `*.group.md`. A `groups` ref sets the child's
 parent and rolls its members up *for display only* — it never makes the module a
 direct member of the parent (so `app`, composed only of `groups`, claims no leaf
-module).
+module). **A composition group (any group with `groups` refs) never fold-adopts
+folder descendants** (`can_fold_own`): it parents exactly the groups it names.
+Without this, a root-level composition group (`dir = ""`, an ancestor of every
+folder) would become the implicit parent of every group that lacks an explicit
+parent. `exclude` is a *membership* filter only — it does not affect nesting.
 
 **Facades:** explicit `facades` (must name group members, else
 `configError:facade:…`), else default to `index.ts`/`index.tsx` in `dir` when

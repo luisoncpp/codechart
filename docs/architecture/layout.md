@@ -23,8 +23,15 @@ parent-relative offsets by subtracting the parent box when it needs `parentNode`
    - Groups become compound nodes nested by `parentId`; modules become leaf nodes under their
      `groupId` (ungrouped nodes sit at the root). Children are **sorted by id** for determinism.
    - Leaf size + spacing/padding come from `PRESETS` (deterministic; no randomness). The group's
-     **top** padding is `groupPadding + groupHeaderHeight` so the rendered header (graph-canvas) has
-     reserved room and modules never overlap the group label.
+     **top** padding is `groupPadding + groupHeaderHeight` so modules stay below the normal header.
+     A group containing subgroups also gets an invisible, measured header leaf
+     (`groupHeaderFootprint`, bold-uppercase char widths), so rectpacking places each subgroup
+     beside or below the title instead of overlapping it. The leaf affects layout only and is
+     omitted from `LayoutedGraph`. It is sized at the **largest scale the header renders**
+     (`EXPANDED_HEADER_MAX_SCALE` = 1/L0 boundary): the view clamps the expanded header's camera
+     counter-scale to that same value (`expandedHeaderScale`, exported), because a group expanded
+     below the L0 zoom boundary would otherwise keep growing its title past the reserve — the same
+     layout serves L0 and L1, so the reserve cannot follow the zoom.
    - **In-body description box:** an **annotated** group gets a real leaf child (`descriptionBoxId`)
      injected into its layered flow, sized by `descriptionBoxSize(short, long)` (content-fit, like
      `moduleBoxSize`), pinned top-left (`layerConstraint: FIRST` + `considerModelOrder`;

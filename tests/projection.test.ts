@@ -11,7 +11,7 @@ import {
   computeHeatProjection,
 } from "../src/domain/graph";
 import type { ProjectGraph } from "../src/domain/graph";
-import { collapsedDescription } from "../src/features/graph_canvas/Private/GroupNodeView";
+import { collapsedDescription } from "../src/features/graph_canvas/Private/collapsed-description";
 
 const graph = goldenGraph as unknown as ProjectGraph;
 let layout: LayoutedGraph;
@@ -309,6 +309,168 @@ describe("collapsedDescription fallback and clamping logic", () => {
     expect(desc).toBeNull();
   });
 });
+
+describe("L0 collapsed-card description layout (regression)", () => {
+  const LONG =
+    "Compares before/after ProjectGraph snapshots, parses unified diffs into " +
+    "per-module overlays, and stamps diff states onto nodes and edges for render.";
+
+  it("ignores hidden module boxes when computing minChildY for a collapsed group", () => {
+    const { graph: g, layout: l } = sceneWithSubgroup(/*withSubgroup=*/ false);
+    const { nodes } = projectGraph(g, l, { collapsedGroupIds: new Set(["g"]) });
+    const grp = nodes.find((n) => n.id === "g")!;
+    // The module box still exists in the (full-graph) layout but is not visible
+    // at L0 — it must not clamp the card description.
+    expect(grp.data.minChildY).toBeUndefined();
+  });
+
+  it("clamps to a visible nested subgroup and exposes its left edge as minChildX", () => {
+    const { graph: g, layout: l } = sceneWithSubgroup(/*withSubgroup=*/ true);
+    const { nodes } = projectGraph(g, l, {
+      collapsedGroupIds: new Set(["g", "sub"]),
+    });
+    const grp = nodes.find((n) => n.id === "g")!;
+    expect(grp.data.minChildY).toBe(60);
+    expect(grp.data.minChildX).toBe(200);
+    expect(grp.data.childObstacles).toEqual([
+      { x: 200, y: 60, width: 300, height: 200 },
+    ]);
+  });
+
+  it("hands the render its measured width so fit math and style agree", () => {
+    const data = {
+      label: "G",
+      color: "#ff0000",
+      descriptionShort: "short text",
+      descriptionLong: LONG,
+    };
+    // Wide card, counter-scaled font (L0). The long text fits at the full card
+    // width — the view must render at that width, not an unscaled 340px cap.
+    const desc = collapsedDescription(data, 3, { width: 900, height: 500 });
+    expect(desc?.text).toBe(LONG);
+    expect(desc?.width).toBe(900 - 32);
+  });
+
+  it("grows the font when the region has plenty of spare space", () => {
+    const data = {
+      label: "G",
+      color: "#ff0000",
+      descriptionShort: "short text",
+    };
+    const desc = collapsedDescription(data, 1, { width: 800, height: 800 });
+    // Ten characters in a huge empty card → font grows to the cap.
+    expect(desc?.font).toBe(28);
+  });
+
+  it("keeps the base font when the text barely fits", () => {
+    const long = "a ".repeat(200).trim();
+    const data = {
+      label: "G",
+      color: "#ff0000",
+      // ~400 chars: fits the 300×300 card's region at 14px (capacity 432) but
+      // not at 15px (capacity 374) → the font must not grow.
+      descriptionLong: long,
+      descriptionShort: "short",
+    };
+    const desc = collapsedDescription(data, 1, { width: 300, height: 300 });
+    expect(desc?.text).toBe(data.descriptionLong);
+    expect(desc?.font).toBe(14);
+  });
+
+  it("counter-scales the grown font like the base one", () => {
+    const data = {
+      label: "G",
+      color: "#ff0000",
+      descriptionShort: "short text",
+    };
+    const desc = collapsedDescription(data, 2, { width: 1600, height: 1600 });
+    expect(desc?.font).toBe(28 * 2);
+  });
+
+  it("shows the short text in the top-left gap between a low-left and high-right subgroup", () => {
+    // The screenshot scene (Tauri Backend / Language Adapter): one subgroup low
+    // on the left, another high on the right. The independent minima describe
+    // no free space (minChildY from the right child, minChildX from the left
+    // one), but the top-left rectangle between them fits the short blurb.
+    const data = {
+      label: "Tauri backend",
+      color: "#ef4444",
+      descriptionShort: "Rust analysis backend",
+      minChildX: 16,
+      minChildY: 40,
+      childObstacles: [
+        { x: 16, y: 260, width: 300, height: 120 },
+        { x: 360, y: 40, width: 320, height: 340 },
+      ],
+    };
+    const desc = collapsedDescription(data, 1, { width: 700, height: 400 });
+    expect(desc?.text).toBe("Rust analysis backend");
+    // Rendered width must stop left of the high-right subgroup.
+    expect(desc!.width).toBeLessThanOrEqual(360 - 16 - 12);
+  });
+
+  it("flows into the free left column when a subgroup starts at the header", () => {
+    const data = {
+      label: "G",
+      color: "#ff0000",
+      descriptionShort: "short text",
+      descriptionLong: LONG,
+      minChildY: 60,
+      minChildX: 160,
+    };
+    const desc = collapsedDescription(data, 1, { width: 480, height: 400 });
+    // The band above the subgroup is ~0 lines tall, but the column left of it
+    // holds the whole long text.
+    expect(desc?.text).toBe(LONG);
+    expect(desc!.width).toBeLessThanOrEqual(160);
+    expect(desc!.lines).toBeGreaterThan(3);
+  });
+});
+
+/** A group with a hidden-at-L0 module near its top, optionally plus a visible
+ *  nested subgroup at (200, 60) — the minChildY/minChildX visibility scene. */
+function sceneWithSubgroup(withSubgroup: boolean): {
+  graph: ProjectGraph;
+  layout: LayoutedGraph;
+} {
+  const g = {
+    root: "/x",
+    groups: [
+      { id: "g", label: "G", parentId: null, facadeModuleIds: [] },
+      ...(withSubgroup
+        ? [{ id: "sub", label: "Sub", parentId: "g", facadeModuleIds: [] }]
+        : []),
+    ],
+    modules: [
+      {
+        id: "m",
+        path: "m.ts",
+        label: "m.ts",
+        language: "ts",
+        groupId: "g",
+        isFacade: false,
+        metrics: { loc: 1 },
+        exportedSymbols: [],
+      },
+    ],
+    edges: [],
+    diagnostics: [],
+  } as unknown as ProjectGraph;
+  const layout = {
+    groups: [
+      { id: "g", parentId: null, x: 0, y: 100, width: 600, height: 400 },
+      ...(withSubgroup
+        ? [{ id: "sub", parentId: "g", x: 200, y: 160, width: 300, height: 200 }]
+        : []),
+    ],
+    modules: [{ id: "m", parentId: "g", x: 10, y: 150, width: 100, height: 100 }],
+    symbols: [],
+    descriptions: [],
+    width: 600,
+    height: 400,
+  } as LayoutedGraph;
+  return { graph: g, layout };
+}
 
 /** A one-group/one-module scene with the description box reserved low (as ELK's
  *  centering does). `moduleAboveDesc` decides whether the module shares the desc's

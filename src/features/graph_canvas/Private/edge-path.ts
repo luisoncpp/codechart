@@ -60,6 +60,18 @@ export function arrowHeadPoints(): string {
   return "-5,-4 0,0 -5,4 -5,-4";
 }
 
+export function floatingPathBetween(from: Anchor, to: Anchor, isSoft: boolean): string {
+  if (isSoft) return bowedPath(from, to, /*bow=*/ SOFT_BOW);
+  return getBezierPath({
+    sourceX: from.x,
+    sourceY: from.y,
+    sourcePosition: POSITION[from.side],
+    targetX: to.x,
+    targetY: to.y,
+    targetPosition: POSITION[to.side],
+  })[0];
+}
+
 export function segmentForEdge(
   edge: RFEdgeT,
   boxes: Map<string, Box>,
@@ -71,17 +83,7 @@ export function segmentForEdge(
 
   const from = borderAnchor(sourceBox, centerOf(targetBox));
   const to = borderAnchor(targetBox, centerOf(sourceBox));
-  const path =
-    edge.data?.kind === "soft"
-      ? bowedPath(from, to, /*bow=*/ SOFT_BOW)
-      : getBezierPath({
-          sourceX: from.x,
-          sourceY: from.y,
-          sourcePosition: POSITION[from.side],
-          targetX: to.x,
-          targetY: to.y,
-          targetPosition: POSITION[to.side],
-        })[0];
+  const path = floatingPathBetween(from, to, edge.data?.kind === "soft");
   const arrowAngle = Math.atan2(to.y - from.y, to.x - from.x);
   const pad = ARROW_LEN;
   return {

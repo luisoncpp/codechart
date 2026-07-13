@@ -1,24 +1,21 @@
-# Flow: preview a symbol's definition next to it
+# Flow: preview a symbol's definition next to it (multi-frame)
 
-1. **Trigger** — user clicks an exported symbol node in L1.5 semantic zoom view.
-2. **Entry point** — `ReactFlow onNodeClick` in `features/graph_canvas/Private/GraphCanvas.tsx`.
+1. **Trigger** — user clicks an exported symbol node in L1.5 semantic zoom view, or clicks a clickable identifier (imported symbol, or a function/method definition) inside an already-open preview frame.
+2. **Entry point** — `ReactFlow onNodeClick` in `features/graph_canvas/Private/GraphCanvas.tsx` (symbol node), or the frame body click handler in `preview_frames/SymbolSourceWidget.tsx` (identifier).
 3. **Sequence**
-   1. `GraphCanvasController.onNodeClick(node, event)` intercept is triggered.
-   2. Controller selects the parent module in the store: `store.select(parentId)` (rendering selected outline on the module).
-   3. Controller invokes the custom `onSymbolClick` callback, passing the clicked symbol node and mouse event.
-   4. `GraphCanvas.handleSymbolClick` runs:
-      1. Finds the clicked symbol's DOM element using `.closest()`.
-      2. Lazily fetches the module source code: `store.fetchModuleSource(moduleId)`.
-      3. Computes the position for the widget: `computeWidgetPosition(symbolRect, containerRect)` placing it next to the symbol node (adjusts to the left if it overflows the right side).
-      4. Sets the `activeSymbol` local state.
-   5. `SymbolSourceWidget` renders absolute-positioned on the canvas:
-      1. Parses the source text to locate the line where the symbol is defined using `findSymbolLine` (checks for interface, class, function, const, etc.).
-      2. Highlights the definition line.
-      3. Automatically scrolls the highlighted definition line into center focus.
-   6. Click outside listeners check if any click is outside `.symbol-widget` and clear `activeSymbol`.
-   7. Moving or zooming the canvas (`onMoveStart`) clears `activeSymbol`.
-4. **Reads** — store `graph`, parent `moduleId`, module `path`, source cache.
-5. **Writes** — store `selectedId`, local `activeSymbol` state.
-6. **Side effects** — lazy load file contents if not already in cache (calls IPC `readModuleSource`).
-7. **Files** — `GraphCanvas.tsx`, `SymbolSourceWidget.tsx`, `graph-canvas-controller.ts`, `graph-session-store.ts`.
-8. **Common failure modes** — zooming out below L1.5 hides symbol nodes, which automatically closes/hides the widget; moving the viewport closes the widget.
+   1. All preview-frame state lives in the nested deep module `features/graph_canvas/Private/preview_frames/` (`usePreviewFrames` hook; `GraphCanvas` only renders `framesView` and forwards `openFromSymbolNode` / `closeAll`).
+   2. **Symbol node click:** `GraphCanvasController.onNodeClick` selects the parent module and invokes `openFromSymbolNode`, which closes any open frames (a canvas click is outside all frames), fetches the module source (`store.fetchModuleSource`), positions the frame next to the symbol (`computeWidgetPosition`), and appends one `PreviewFrame`.
+   3. **Identifier click inside a frame:** `DiffCodeLines` tags identifiers that match `combinedSymbolTargets(graph, moduleId, sources)` with `hl-clickable`. The clickable set is the union of (priority order on name collisions): **own-module function/method definitions** (`scanFunctionDefinitions`, heuristic line-shape scan — a locally defined name can't also be imported), **imported exported symbols** (`importedSymbolTargets` over import edges + `exportedSymbols`, first exporter wins), and **functions/methods scanned from imported modules' sources** (methods of imported classes; only resolvable once that source is in the hook's source map). Clicking one runs `openFromSymbolClick`:
+      1. Resolves the name via `combinedSymbolTargets` (may target the frame's own module — e.g. a local function or method).
+      2. Fetches the target module's source, and prefetches the target's import-graph sources (`sourcePrefetchIds` → `store.fetchModuleSource`, cached) so the new frame's method names resolve too.
+      3. Places the new frame via `placeAdjacentFrame`: **right** of the clicked frame, else **below**, else **above** (a spot is invalid if it overlaps any live frame rect or overflows the canvas container); if all fail, opens at the **right anyway (overlapping)**. Live rects come from the DOM (`[data-frame-id]`), so user resizes/drags are honored.
+      4. If a frame for the same module + symbol is already open, it is brought to front instead of duplicated (`openFrame` dedupe).
+   4. Each `SymbolSourceWidget` scrolls its own body to center the definition line (`findSymbolLine` — which consults `scanFunctionDefinitions` for method definitions the keyword regex misses — + manual `scrollTop`, **not** `scrollIntoView`, which would scroll the window).
+   5. **Drag:** pointerdown on the header bar starts `startFrameDrag`; window-level pointermove writes `top`/`left` straight to the frame element (no React state per move — that re-rendered the whole canvas and lagged), and the final position is committed via `moveFrame` once on release; the click that trails a real drag is swallowed in capture phase so it can't close the frames.
+   6. **Z-order:** pointerdown anywhere in a frame brings it to front (`bringToFront`).
+   7. **Close rules:** a document-level click landing outside every `.symbol-widget` closes **all** frames; clicks inside any frame (including scrollbars) close nothing; each frame's ✕ closes just that frame; canvas pan/zoom (`onMoveStart`) closes all.
+4. **Reads** — store `graph` (modules, import edges, `exportedSymbols`), source cache, live frame DOM rects.
+5. **Writes** — store `selectedId` (symbol-node path only), `frames` + `moduleSources` state inside `usePreviewFrames`.
+6. **Side effects** — lazy load file contents per opened module **and its import targets** (IPC `read_module_source`, cached by the store).
+7. **Files** — `preview_frames/{index.ts, use-preview-frames.tsx, SymbolSourceWidget.tsx, frame-list.ts, frame-placement.ts, imported-symbol-resolver.ts, function-definition-scanner.ts, frame-drag.ts, symbol-source-utils.ts}`, `GraphCanvas.tsx`, `DiffCodeLines.tsx`.
+8. **Common failure modes** — zooming below L1.5 hides symbol nodes and any viewport move closes all frames; an identifier is clickable only if it resolves through import edges + `exportedSymbols` or the definition scan of an already-fetched source (soft edges don't count; imported-class methods aren't clickable until that module's source prefetch lands); the definition scan is a lexical heuristic (keyword-declared functions plus `name(args) {`-shaped lines), so an unusual formatting style can hide a definition or a rare call shape can produce a spurious clickable name — clicks on bare tokens resolve by name, first definer wins; placement falls back to overlapping-right in cramped viewports by design.

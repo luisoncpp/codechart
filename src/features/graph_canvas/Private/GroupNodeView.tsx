@@ -2,36 +2,21 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { GroupRFNode, GroupNodeData } from "../../../domain/graph";
 import { UNCHANGED_MODULE_DIFF_OPACITY } from "../../../domain/diff";
-import { DESC_BOX, PRESETS, fitDescriptionFontSize } from "../../../domain/layout";
+import { DESC_BOX, expandedHeaderScale, fitDescriptionFontSize } from "../../../domain/layout";
 import { iconFontSize, iconGlyph } from "./icon-map";
 import { ConnectionToggle } from "./ConnectionToggle";
 import { ChevronIcon } from "./ChevronIcon";
 import { GroupL2Description } from "./GroupL2Description";
 import { useZoomCounterScale } from "./use-zoom-counter-scale";
 import { groupShellStyle, groupTextColors } from "./heat-node-styles";
+import { darkenHex } from "./color-utils";
+import { collapsedDescription, collapsedLabelLayout } from "./collapsed-description";
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 
 function groupLabelOpacity(data: GroupNodeData): number {
   return data.diffVisualizing ? UNCHANGED_MODULE_DIFF_OPACITY : 1;
-}
-
-/** Darken a #rrggbb color toward black so description text reads against the tint. */
-function darken(hex: string, factor = 0.55): string {
-  const n = parseInt(hex.slice(1), 16);
-  const ch = (shift: number) =>
-    Math.round(((n >> shift) & 0xff) * factor)
-      .toString(16)
-      .padStart(2, "0");
-  return `#${ch(16)}${ch(8)}${ch(0)}`;
-}
-
-/** Roughly does `text` fit a `w`×`h` box at `font` px? Conservative char estimate. */
-function fitsBox(text: string, w: number, h: number, font: number): boolean {
-  const charsPerLine = Math.max(1, Math.floor(w / (font * 0.52)));
-  const lines = Math.floor(h / (font * 1.35));
-  return text.length <= charsPerLine * lines;
 }
 
 /** Colored container with a header icon + label — the sample's group boxes.
@@ -52,24 +37,26 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
       }}
     >
       {/* Invisible handles so a collapsed group can be an edge endpoint (L0
-          group→group edges). FloatingEdge ignores their position. */}
+          group→group edges). EdgeLayer ignores their position. */}
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <ConnectionToggle disconnected={!!data.disconnected} scale={scale} />
       {data.collapsed ? (
         <CollapsedCard data={data} text={text} scale={scale} width={width} height={height} />
       ) : (
         <>
-          <ExpandedHeader data={data} text={text} scale={scale} />
+          {/* Clamped: the layout reserved the title obstacle at this max scale;
+              growing past it would slide the title under sibling subgroups. */}
+          <ExpandedHeader data={data} text={text} scale={expandedHeaderScale(scale)} />
           {data.architectureDocContent !== undefined ? (
             <GroupL2Description
               data={data}
-              descColor={data.heatmapActive ? text.description : darken(text.description)}
+              descColor={data.heatmapActive ? text.description : darkenHex(text.description)}
               opacity={groupLabelOpacity(data)}
             />
           ) : (
             <GroupDescription
               data={data}
-              descColor={data.heatmapActive ? text.description : darken(text.description)}
+              descColor={data.heatmapActive ? text.description : darkenHex(text.description)}
             />
           )}
         </>
@@ -170,8 +157,6 @@ function ToggleButton({
 /** Collapsed: the box keeps its size, so its content (not the box) is what
  *  communicates — a big label + a readable, wrapped description. Both font sizes
  *  counter-scale with the camera so they stay legible when zoomed out. */
-const L0_DESC_FONT = 14;
-
 function CollapsedCard({
   data,
   text,
@@ -186,8 +171,9 @@ function CollapsedCard({
   height?: number;
 }) {
   const glyph = iconGlyph(data.icon);
+  const label = collapsedLabelLayout(data, scale, { width, height });
   const description = collapsedDescription(data, scale, { width, height });
-  const descColor = data.heatmapActive ? text.description : darken(text.description);
+  const descColor = data.heatmapActive ? text.description : darkenHex(text.description);
   return (
     <div
       style={{
@@ -199,21 +185,24 @@ function CollapsedCard({
         gap: 8 * scale,
       }}
     >
-      <div style={cardLabelStyle(text.label, scale)}>
-        <ToggleButton color={text.control} scale={scale} collapsed />
-        <div style={{ ...cardLabelTextStyle(scale), opacity: groupLabelOpacity(data) }}>
+      <div style={cardLabelStyle(text.label, label.chromeScale, label.width)}>
+        <ToggleButton color={text.control} scale={label.chromeScale} collapsed />
+        <div style={{ ...cardLabelTextStyle(label), opacity: groupLabelOpacity(data) }}>
           {glyph && (
-            <span aria-hidden style={{ fontSize: iconFontSize(18, scale), lineHeight: 1, flexShrink: 0 }}>
+            <span
+              aria-hidden
+              style={{ fontSize: iconFontSize(18, label.chromeScale), lineHeight: 1, flexShrink: 0 }}
+            >
               {glyph}
             </span>
           )}
-          <span>{data.label}</span>
+          <span title={data.label} style={cardLabelValueStyle}>{data.label}</span>
         </div>
       </div>
       {description && (
         <p
           style={{
-            ...cardDescriptionStyle(descColor, scale, description.lines),
+            ...cardDescriptionStyle(descColor, description),
             opacity: groupLabelOpacity(data),
           }}
         >
@@ -222,40 +211,6 @@ function CollapsedCard({
       )}
     </div>
   );
-}
-
-export function collapsedDescription(
-  data: GroupNodeData,
-  scale: number,
-  dims: { width?: number; height?: number } = {},
-) {
-  const availW = (dims.width ?? PRESETS.collapsedGroupWidth) - 32;
-
-  // Calculate available height based on scale and subgroup position (minChildY)
-  const headerH = 15 * scale * 1.1;
-  const gap = 8 * scale;
-  const descTop = 16 + headerH + gap;
-
-  const limitY = data.minChildY !== undefined ? data.minChildY : (dims.height ?? PRESETS.collapsedGroupHeight);
-  const availH = limitY - descTop - 12; // 12px gap before the subgroup or card bottom
-
-  const font = L0_DESC_FONT * scale;
-  const lines = Math.max(1, Math.floor(availH / (font * 1.35)));
-
-  if (availH <= 0 || lines < 1) {
-    return null;
-  }
-
-  // 1. Try long description if it exists
-  if (data.descriptionLong) {
-    if (fitsBox(data.descriptionLong, availW, availH, font)) {
-      return { text: data.descriptionLong, lines };
-    }
-  }
-
-  // 2. Fallback to short description
-  if (!data.descriptionShort) return null;
-  return { text: data.descriptionShort, lines };
 }
 
 function headerStyle(color: string, scale: number) {
@@ -299,21 +254,30 @@ function toggleButtonStyle(color: string, scale: number) {
   };
 }
 
-function cardLabelStyle(color: string, scale: number) {
+function cardLabelStyle(color: string, scale: number, width: number) {
   return {
     display: "flex",
     alignItems: "center",
     gap: 6 * scale,
+    width,
+    maxWidth: "100%",
     color,
   };
 }
 
-function cardLabelTextStyle(scale: number) {
+/** Renders the title at the font `collapsedLabelLayout` fitted to the card —
+ *  a fixed counter-scaled 15px overflows any card smaller than the title.
+ *  `overflowWrap` backs the floor-font force-wrap; `minWidth: 0` lets the
+ *  flex item actually wrap instead of pushing past the card edge. */
+function cardLabelTextStyle(label: { font: number; chromeScale: number }) {
   return {
     display: "flex",
     alignItems: "center",
-    gap: 6 * scale,
-    fontSize: 15 * scale,
+    gap: 6 * label.chromeScale,
+    minWidth: 0,
+    overflow: "hidden",
+    whiteSpace: "nowrap" as const,
+    fontSize: label.font,
     fontFamily: SANS,
     fontWeight: 700,
     letterSpacing: 0.5,
@@ -322,18 +286,36 @@ function cardLabelTextStyle(scale: number) {
   };
 }
 
-function cardDescriptionStyle(color: string, scale: number, lines: number) {
+const cardLabelValueStyle = {
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+} as const;
+
+/** Renders at the exact region `collapsedDescription` measured — width and font
+ *  must stay in the same world units the fit math used, or the wrap disagrees
+ *  (an unscaled cap turns into a sliver once the font counter-scales). */
+function cardDescriptionStyle(
+  color: string,
+  region: { lines: number; width: number; font: number; truncate: boolean },
+) {
   return {
     margin: 0,
-    fontSize: L0_DESC_FONT * scale,
+    fontSize: region.font,
     fontFamily: SANS,
     lineHeight: 1.35,
     color,
     overflow: "hidden",
-    display: "-webkit-box",
-    WebkitLineClamp: lines,
-    WebkitBoxOrient: "vertical" as const,
-    maxWidth: DESC_BOX.maxWidth,
+    ...(region.truncate
+      ? {
+          display: "-webkit-box",
+          WebkitLineClamp: region.lines,
+          WebkitBoxOrient: "vertical" as const,
+        }
+      : {}),
+    width: region.width,
+    maxWidth: "100%",
   };
 }
 

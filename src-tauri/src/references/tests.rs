@@ -14,7 +14,11 @@ fn module(path: &str, specifiers: &[&str]) -> ParsedModule {
             is_reexport: false,
         })
         .collect();
-    ParsedModule { path: path.to_string(), imports, ..Default::default() }
+    ParsedModule {
+        path: path.to_string(),
+        imports,
+        ..Default::default()
+    }
 }
 
 fn csharp_module(path: &str, namespace: &str, usings: &[&str]) -> ParsedModule {
@@ -67,13 +71,19 @@ fn edge_targets(parsed: &[ParsedModule]) -> Vec<(String, String)> {
 #[test]
 fn resolves_extensionless_relative_import() {
     let parsed = vec![module("src/a.ts", &["./b"]), module("src/b.ts", &[])];
-    assert_eq!(edge_targets(&parsed), [("src/a.ts".into(), "src/b.ts".into())]);
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/a.ts".into(), "src/b.ts".into())]
+    );
 }
 
 #[test]
 fn resolves_explicit_extension() {
     let parsed = vec![module("src/a.ts", &["./b.ts"]), module("src/b.ts", &[])];
-    assert_eq!(edge_targets(&parsed), [("src/a.ts".into(), "src/b.ts".into())]);
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/a.ts".into(), "src/b.ts".into())]
+    );
 }
 
 #[test]
@@ -107,14 +117,77 @@ fn resolves_cpp_quoted_include() {
 }
 
 #[test]
+fn resolves_unreal_include_from_known_path() {
+    let parsed = vec![
+        module("Source/Game/Private/Player.cpp", &["./Characters/Player.h"]),
+        ParsedModule {
+            path: "Source/Game/Public/Characters/Player.h".to_string(),
+            ..Default::default()
+        },
+    ];
+    let options = crate::unreal_config::UnrealOptions {
+        known_paths: vec!["Source/Game/Public".into()],
+        ..Default::default()
+    };
+    let edges = resolve_references_with_options(&parsed, &options).edges;
+    assert_eq!(edges[0].source, "Source/Game/Private/Player.cpp");
+    assert_eq!(edges[0].target, "Source/Game/Public/Characters/Player.h");
+}
+
+#[test]
+fn skips_unreal_engine_headers() {
+    let parsed = vec![module(
+        "Source/Game/Private/Player.cpp",
+        &["./CoreMinimal.h", "./GameFramework/Actor.h"],
+    )];
+    let options = crate::unreal_config::UnrealOptions {
+        exclude_engine_references: true,
+        ..Default::default()
+    };
+    let refs = resolve_references_with_options(&parsed, &options);
+    assert!(refs.edges.is_empty());
+    assert!(refs.diagnostics.is_empty());
+}
+
+#[test]
+fn skips_unreal_generated_headers_when_hidden() {
+    let parsed = vec![module(
+        "Warlords/Public/World/DestructibleFoliageNetMan.h",
+        &["./DestructibleFoliageNetMan.generated.h"],
+    )];
+    let options = crate::unreal_config::UnrealOptions {
+        hide_generated_files: true,
+        ..Default::default()
+    };
+    let refs = resolve_references_with_options(&parsed, &options);
+    assert!(refs.edges.is_empty());
+    assert!(refs.diagnostics.is_empty());
+}
+
+#[test]
+fn unresolved_project_cpp_include_still_warns() {
+    let parsed = vec![module(
+        "Source/Game/Private/Player.cpp",
+        &["./MissingLocal.h"],
+    )];
+    let refs = resolve_references_with_options(&parsed, &Default::default());
+    assert!(refs.edges.is_empty());
+    assert_eq!(refs.diagnostics.len(), 1);
+    assert_eq!(refs.diagnostics[0].kind, DiagnosticKind::UnresolvedImport);
+}
+
+#[test]
 fn resolves_js_extension_to_ts_source() {
     let parsed = vec![
-        module("electron/ipc/handlers/project-handlers/order-handlers.ts", &[
-            "../../../../src/shared/ipc.js",
-            "../../../ipc-errors.js",
-            "../../../ipc-runtime.js",
-            "./shared.js",
-        ]),
+        module(
+            "electron/ipc/handlers/project-handlers/order-handlers.ts",
+            &[
+                "../../../../src/shared/ipc.js",
+                "../../../ipc-errors.js",
+                "../../../ipc-runtime.js",
+                "./shared.js",
+            ],
+        ),
         module("src/shared/ipc.ts", &[]),
         module("electron/ipc-errors.ts", &[]),
         module("electron/ipc-runtime.ts", &[]),
@@ -146,13 +219,22 @@ fn resolves_js_extension_to_ts_source() {
 #[test]
 fn resolves_tsx_extensionless() {
     let parsed = vec![module("src/a.ts", &["./b"]), module("src/b.tsx", &[])];
-    assert_eq!(edge_targets(&parsed), [("src/a.ts".into(), "src/b.tsx".into())]);
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/a.ts".into(), "src/b.tsx".into())]
+    );
 }
 
 #[test]
 fn resolves_index_file_of_a_folder() {
-    let parsed = vec![module("src/main.ts", &["./ui"]), module("src/ui/index.ts", &[])];
-    assert_eq!(edge_targets(&parsed), [("src/main.ts".into(), "src/ui/index.ts".into())]);
+    let parsed = vec![
+        module("src/main.ts", &["./ui"]),
+        module("src/ui/index.ts", &[]),
+    ];
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/main.ts".into(), "src/ui/index.ts".into())]
+    );
 }
 
 #[test]
@@ -223,6 +305,36 @@ fn rust_nested_module_item_import_resolves_to_mod_rs() {
 }
 
 #[test]
+fn rust_crate_root_reexports_resolve_to_lib_rs() {
+    use crate::language_adapter::registry_for_path;
+
+    let importer = registry_for_path("src-tauri/src/analysis/mod.rs")
+        .unwrap()
+        .parse(
+            "src-tauri/src/analysis/mod.rs",
+            "use crate::{unreal_options_from_source, UnrealOptions};\n",
+        )
+        .expect("parse succeeds");
+    let parsed = vec![importer, module("src-tauri/src/lib.rs", &[])];
+    let refs = resolve_references(&parsed);
+
+    assert_eq!(
+        edge_targets(&parsed),
+        [
+            (
+                "src-tauri/src/analysis/mod.rs".into(),
+                "src-tauri/src/lib.rs".into(),
+            ),
+            (
+                "src-tauri/src/analysis/mod.rs".into(),
+                "src-tauri/src/lib.rs".into(),
+            ),
+        ]
+    );
+    assert!(refs.diagnostics.is_empty());
+}
+
+#[test]
 fn rust_external_and_local_imports_skip_false_unresolved() {
     use crate::language_adapter::registry_for_path;
 
@@ -264,7 +376,10 @@ fn package_import_is_external_metadata() {
     let parsed = vec![module("src/a.ts", &["react"])];
     let refs = resolve_references(&parsed);
     assert!(refs.edges.is_empty(), "no edge for a package import");
-    assert!(refs.diagnostics.is_empty(), "no diagnostic for a package import");
+    assert!(
+        refs.diagnostics.is_empty(),
+        "no diagnostic for a package import"
+    );
 }
 
 #[test]
@@ -275,7 +390,10 @@ fn json_asset_import_is_external_metadata() {
     )];
     let refs = resolve_references(&parsed);
     assert!(refs.edges.is_empty(), "no edge for a JSON asset import");
-    assert!(refs.diagnostics.is_empty(), "no diagnostic for a JSON asset import");
+    assert!(
+        refs.diagnostics.is_empty(),
+        "no diagnostic for a JSON asset import"
+    );
 }
 
 #[test]
@@ -314,7 +432,10 @@ fn external_csharp_using_is_metadata() {
     let parsed = vec![csharp_module("src/App.cs", "MyApp.UI", &["System"])];
     let refs = resolve_references(&parsed);
     assert!(refs.edges.is_empty(), "no edge for an external namespace");
-    assert!(refs.diagnostics.is_empty(), "no diagnostic for an external namespace");
+    assert!(
+        refs.diagnostics.is_empty(),
+        "no diagnostic for an external namespace"
+    );
 }
 
 #[test]
@@ -339,8 +460,15 @@ fn edge_id_carries_kind_and_ordinal() {
 #[test]
 fn duplicate_edge_gets_incrementing_ordinal() {
     let parsed = vec![module("src/a.ts", &["./b", "./b"]), module("src/b.ts", &[])];
-    let ids: Vec<String> = resolve_references(&parsed).edges.into_iter().map(|e| e.id).collect();
-    assert_eq!(ids, ["src/a.ts->src/b.ts:import:0", "src/a.ts->src/b.ts:import:1"]);
+    let ids: Vec<String> = resolve_references(&parsed)
+        .edges
+        .into_iter()
+        .map(|e| e.id)
+        .collect();
+    assert_eq!(
+        ids,
+        ["src/a.ts->src/b.ts:import:0", "src/a.ts->src/b.ts:import:1"]
+    );
 }
 
 // ---- drift detection (Phase 8) -------------------------------------------
@@ -359,21 +487,35 @@ fn boundaries(
     facades: &[&str],
     nesting: &[(&str, &str)],
 ) -> GroupBoundaries {
-    let module_group: BTreeMap<String, String> =
-        members.iter().map(|(m, g)| ((*m).into(), (*g).into())).collect();
+    let module_group: BTreeMap<String, String> = members
+        .iter()
+        .map(|(m, g)| ((*m).into(), (*g).into()))
+        .collect();
     let facades: BTreeSet<String> = facades.iter().map(|f| (*f).into()).collect();
     let faceted_groups: BTreeSet<String> = facades
         .iter()
         .filter_map(|f| module_group.get(f).cloned())
         .collect();
-    let parent_of = nesting.iter().map(|(c, p)| ((*c).into(), (*p).into())).collect();
-    GroupBoundaries { module_group, parent_of, faceted_groups, facades }
+    let parent_of = nesting
+        .iter()
+        .map(|(c, p)| ((*c).into(), (*p).into()))
+        .collect();
+    GroupBoundaries {
+        module_group,
+        parent_of,
+        faceted_groups,
+        facades,
+    }
 }
 
 #[test]
 fn import_through_the_facade_is_not_a_violation() {
     let bounds = boundaries(
-        &[("ui/a.ts", "ui"), ("core/index.ts", "core"), ("core/store.ts", "core")],
+        &[
+            ("ui/a.ts", "ui"),
+            ("core/index.ts", "core"),
+            ("core/store.ts", "core"),
+        ],
         &["core/index.ts"],
         &[],
     );
@@ -403,7 +545,11 @@ fn test_module_bypassing_a_facade_is_not_a_violation() {
 #[test]
 fn import_into_a_private_module_from_outside_is_a_violation() {
     let bounds = boundaries(
-        &[("ui/a.ts", "ui"), ("core/index.ts", "core"), ("core/store.ts", "core")],
+        &[
+            ("ui/a.ts", "ui"),
+            ("core/index.ts", "core"),
+            ("core/store.ts", "core"),
+        ],
         &["core/index.ts"],
         &[],
     );
@@ -447,13 +593,20 @@ fn import_from_a_nested_subgroup_into_its_ancestor_private_is_allowed() {
     // sub is a child of core; a module in sub reaching core's private member is
     // still inside core's subtree, so it is not a bypass.
     let bounds = boundaries(
-        &[("core/sub/x.ts", "sub"), ("core/store.ts", "core"), ("core/index.ts", "core")],
+        &[
+            ("core/sub/x.ts", "sub"),
+            ("core/store.ts", "core"),
+            ("core/index.ts", "core"),
+        ],
         &["core/index.ts"],
         &[("sub", "core")],
     );
     let mut edges = vec![edge("core/sub/x.ts", "core/store.ts")];
     let diags = flag_drift(&mut edges, &bounds);
-    assert!(!edges[0].is_violation, "descendant import stays inside the boundary");
+    assert!(
+        !edges[0].is_violation,
+        "descendant import stays inside the boundary"
+    );
     assert!(diags.is_empty());
 }
 
@@ -463,9 +616,16 @@ fn import_from_a_nested_subgroup_into_its_ancestor_private_is_allowed() {
 fn with_signals(path: &str, signals: &[(SignalRole, &str)]) -> ParsedModule {
     let signals = signals
         .iter()
-        .map(|(role, token)| CommSignal { role: *role, token: (*token).to_string() })
+        .map(|(role, token)| CommSignal {
+            role: *role,
+            token: (*token).to_string(),
+        })
         .collect();
-    ParsedModule { path: path.to_string(), signals, ..Default::default() }
+    ParsedModule {
+        path: path.to_string(),
+        signals,
+        ..Default::default()
+    }
 }
 
 #[test]
@@ -490,7 +650,10 @@ fn unmatched_token_produces_no_edge() {
         with_signals("a.ts", &[(SignalRole::Emit, "changed")]),
         with_signals("b.ts", &[(SignalRole::Listen, "other")]),
     ];
-    assert!(classify_soft(&parsed).is_empty(), "tokens must match across modules");
+    assert!(
+        classify_soft(&parsed).is_empty(),
+        "tokens must match across modules"
+    );
 }
 
 #[test]
@@ -499,23 +662,36 @@ fn same_module_emit_and_listen_is_not_a_self_edge() {
         "a.ts",
         &[(SignalRole::Emit, "tick"), (SignalRole::Listen, "tick")],
     )];
-    assert!(classify_soft(&parsed).is_empty(), "no soft edge from a module to itself");
+    assert!(
+        classify_soft(&parsed).is_empty(),
+        "no soft edge from a module to itself"
+    );
 }
 
 #[test]
 fn duplicate_emit_in_one_module_yields_a_single_edge() {
     let parsed = vec![
-        with_signals("a.ts", &[(SignalRole::Emit, "changed"), (SignalRole::Emit, "changed")]),
+        with_signals(
+            "a.ts",
+            &[(SignalRole::Emit, "changed"), (SignalRole::Emit, "changed")],
+        ),
         with_signals("b.ts", &[(SignalRole::Listen, "changed")]),
     ];
-    assert_eq!(classify_soft(&parsed).len(), 1, "emitter set is deduped per token");
+    assert_eq!(
+        classify_soft(&parsed).len(),
+        1,
+        "emitter set is deduped per token"
+    );
 }
 
 #[test]
 fn two_tokens_between_the_same_pair_get_incrementing_ordinals() {
     let parsed = vec![
         with_signals("a.ts", &[(SignalRole::Emit, "x"), (SignalRole::Emit, "y")]),
-        with_signals("b.ts", &[(SignalRole::Listen, "x"), (SignalRole::Listen, "y")]),
+        with_signals(
+            "b.ts",
+            &[(SignalRole::Listen, "x"), (SignalRole::Listen, "y")],
+        ),
     ];
     let ids: Vec<String> = classify_soft(&parsed).into_iter().map(|e| e.id).collect();
     assert_eq!(ids, ["a.ts->b.ts:soft:0", "a.ts->b.ts:soft:1"]);
@@ -532,13 +708,21 @@ fn with_imports(path: &str, specifier: &str, names: &[&str]) -> ParsedModule {
         is_type_only: true,
         is_reexport: false,
     }];
-    ParsedModule { path: path.to_string(), imports, ..Default::default() }
+    ParsedModule {
+        path: path.to_string(),
+        imports,
+        ..Default::default()
+    }
 }
 
 /// A `ParsedModule` that implements the given interface names.
 fn with_implements(path: &str, ifaces: &[&str]) -> ParsedModule {
     let implements = ifaces.iter().map(|n| (*n).to_string()).collect();
-    ParsedModule { path: path.to_string(), implements, ..Default::default() }
+    ParsedModule {
+        path: path.to_string(),
+        implements,
+        ..Default::default()
+    }
 }
 
 #[test]
@@ -547,11 +731,7 @@ fn cross_group_interface_pair_produces_seam_edge() {
         with_imports("ui/app.ts", "./contracts", &["IStorage"]),
         with_implements("core/store.ts", &["IStorage"]),
     ];
-    let bounds = boundaries(
-        &[("ui/app.ts", "ui"), ("core/store.ts", "core")],
-        &[],
-        &[],
-    );
+    let bounds = boundaries(&[("ui/app.ts", "ui"), ("core/store.ts", "core")], &[], &[]);
     let edges = classify_interface_seams(&parsed, &bounds, &BTreeSet::new());
     assert_eq!(edges.len(), 1);
     assert_eq!(edges[0].source, "ui/app.ts");
@@ -574,7 +754,10 @@ fn same_group_interface_pair_is_suppressed() {
         &[],
     );
     let edges = classify_interface_seams(&parsed, &bounds, &BTreeSet::new());
-    assert!(edges.is_empty(), "same-group seam must not produce a dashed edge");
+    assert!(
+        edges.is_empty(),
+        "same-group seam must not produce a dashed edge"
+    );
 }
 
 #[test]
@@ -583,11 +766,7 @@ fn seam_suppressed_when_direct_import_already_exists() {
         with_imports("ui/app.ts", "./contracts", &["IStorage"]),
         with_implements("core/store.ts", &["IStorage"]),
     ];
-    let bounds = boundaries(
-        &[("ui/app.ts", "ui"), ("core/store.ts", "core")],
-        &[],
-        &[],
-    );
+    let bounds = boundaries(&[("ui/app.ts", "ui"), ("core/store.ts", "core")], &[], &[]);
     let already: BTreeSet<(String, String)> =
         [("ui/app.ts".to_string(), "core/store.ts".to_string())].into();
     let edges = classify_interface_seams(&parsed, &bounds, &already);
@@ -600,11 +779,7 @@ fn unmatched_interface_name_produces_no_seam() {
         with_imports("ui/app.ts", "./contracts", &["IFoo"]),
         with_implements("core/store.ts", &["IBar"]),
     ];
-    let bounds = boundaries(
-        &[("ui/app.ts", "ui"), ("core/store.ts", "core")],
-        &[],
-        &[],
-    );
+    let bounds = boundaries(&[("ui/app.ts", "ui"), ("core/store.ts", "core")], &[], &[]);
     let edges = classify_interface_seams(&parsed, &bounds, &BTreeSet::new());
     assert!(edges.is_empty(), "different interface names must not match");
 }
@@ -615,20 +790,18 @@ fn two_interfaces_between_same_pair_get_incrementing_ordinals() {
         with_imports("ui/app.ts", "./contracts", &["IFoo", "IBar"]),
         with_implements("core/store.ts", &["IFoo", "IBar"]),
     ];
-    let bounds = boundaries(
-        &[("ui/app.ts", "ui"), ("core/store.ts", "core")],
-        &[],
-        &[],
+    let bounds = boundaries(&[("ui/app.ts", "ui"), ("core/store.ts", "core")], &[], &[]);
+    let ids: Vec<String> = classify_interface_seams(&parsed, &bounds, &BTreeSet::new())
+        .into_iter()
+        .map(|e| e.id)
+        .collect();
+    assert_eq!(
+        ids,
+        [
+            "ui/app.ts->core/store.ts:seam:0",
+            "ui/app.ts->core/store.ts:seam:1",
+        ]
     );
-    let ids: Vec<String> =
-        classify_interface_seams(&parsed, &bounds, &BTreeSet::new())
-            .into_iter()
-            .map(|e| e.id)
-            .collect();
-    assert_eq!(ids, [
-        "ui/app.ts->core/store.ts:seam:0",
-        "ui/app.ts->core/store.ts:seam:1",
-    ]);
 }
 
 // ---- Tauri IPC seams -----------------------------------------------------
@@ -661,7 +834,10 @@ fn invoke_and_command_pair_produces_ipc_edge() {
     assert_eq!(edges[0].source, "src/ipc/client.ts");
     assert_eq!(edges[0].target, "src-tauri/src/commands.rs");
     assert_eq!(edges[0].trigger, "ipc:greet");
-    assert_eq!(edges[0].id, "src/ipc/client.ts->src-tauri/src/commands.rs:ipc:0");
+    assert_eq!(
+        edges[0].id,
+        "src/ipc/client.ts->src-tauri/src/commands.rs:ipc:0"
+    );
 }
 
 #[test]
@@ -670,8 +846,14 @@ fn orphan_invoke_produces_unresolved_ipc_diagnostic() {
     let (edges, diagnostics) = classify_tauri_ipc(&parsed);
     assert!(edges.is_empty());
     assert_eq!(diagnostics.len(), 1);
-    assert_eq!(diagnostics[0].kind, crate::contract::DiagnosticKind::UnresolvedIpc);
-    assert_eq!(diagnostics[0].module_id.as_deref(), Some("src/ipc/orphan.ts"));
+    assert_eq!(
+        diagnostics[0].kind,
+        crate::contract::DiagnosticKind::UnresolvedIpc
+    );
+    assert_eq!(
+        diagnostics[0].module_id.as_deref(),
+        Some("src/ipc/orphan.ts")
+    );
 }
 
 #[test]
@@ -682,9 +864,11 @@ fn two_commands_between_same_pair_get_incrementing_ordinals() {
     ];
     let (edges, _) = classify_tauri_ipc(&parsed);
     let ids: Vec<String> = edges.into_iter().map(|e| e.id).collect();
-    assert_eq!(ids, [
-        "src/ipc/client.ts->src-tauri/src/commands.rs:ipc:0",
-        "src/ipc/client.ts->src-tauri/src/commands.rs:ipc:1",
-    ]);
+    assert_eq!(
+        ids,
+        [
+            "src/ipc/client.ts->src-tauri/src/commands.rs:ipc:0",
+            "src/ipc/client.ts->src-tauri/src/commands.rs:ipc:1",
+        ]
+    );
 }
-

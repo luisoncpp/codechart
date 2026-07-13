@@ -129,4 +129,10 @@ describe("tokenizeCode", () => {
     expect(lines[1].length).toBe(0); // empty line
     expect(lines[2].some((t) => t.text === "two")).toBe(true);
   });
+
+  it("tokenizes C++ member access as one operator", () => {
+    const tokens = tokenizeCode("Pawn->GetController();", "Example.cpp")[0]!;
+
+    expect(tokens.map((token) => token.text)).toContain("->");
+  });
 });

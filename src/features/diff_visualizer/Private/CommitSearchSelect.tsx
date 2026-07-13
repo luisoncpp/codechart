@@ -1,6 +1,9 @@
 // @Architecture(descriptionShort="Searchable commit picker for the diff modal")
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { GitCommit } from "../../../ipc/git-client";
+import {
+  LOCAL_CHANGES_REF,
+  type GitCommit,
+} from "../../../ipc/git-client";
 
 interface CommitSearchSelectProps {
   label: string;
@@ -105,6 +108,7 @@ function matchesCommit(commit: GitCommit, query: string): boolean {
 }
 
 function formatCommit(commit: GitCommit): string {
+  if (commit.hash === LOCAL_CHANGES_REF) return commit.message;
   return `${commit.hash.slice(0, 7)} — ${commit.message}`;
 }
 

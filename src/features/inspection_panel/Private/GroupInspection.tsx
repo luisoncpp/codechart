@@ -11,6 +11,7 @@ import {
 import { EdgeList } from "./EdgeList";
 import { MetadataSection } from "./MetadataSection";
 import { PanelChrome, Row } from "./PanelParts";
+import { DiagnosticsList } from "./DiagnosticsList";
 
 interface GroupInspectionProps {
   graph: ProjectGraph;
@@ -61,7 +62,7 @@ export function GroupInspection({
         field="source"
         onItemClick={onNavigateToModule}
       />
-      <GroupDiagnostics graph={graph} groupId={group.id} />
+      <DiagnosticsList items={diagnosticsForGroup(graph, group.id)} />
     </PanelChrome>
   );
 }
@@ -82,33 +83,6 @@ function ModuleList({ modules }: { modules: { id: string; label: string }[] }) {
       </ul>
     </div>
   );
-}
-
-function GroupDiagnostics({
-  graph,
-  groupId,
-}: {
-  graph: ProjectGraph;
-  groupId: string;
-}) {
-  const items = diagnosticsForGroup(graph, groupId);
-  if (items.length === 0) return null;
-  return (
-    <div style={{ marginTop: 12 }}>
-      <h3 style={{ fontSize: 12, margin: "0 0 4px" }}>Diagnostics</h3>
-      <ul style={{ fontSize: 12, paddingLeft: 16, margin: 0 }}>
-        {items.map((d) => (
-          <li key={d.id} style={{ color: diagnosticColor(d.kind) }}>
-            {d.message}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function diagnosticColor(kind: string): string {
-  return kind === "architectureViolation" ? "#dc2626" : "#b45309";
 }
 
 /** One row per external endpoint so group lists stay readable. */

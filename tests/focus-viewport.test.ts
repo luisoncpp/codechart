@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  moduleCenterFromLayout,
+  nodeCenterFromLayout,
   viewportCanPan,
 } from "../src/features/graph_canvas/Private/focus-viewport";
 import type { LayoutedGraph } from "../src/domain/layout";
 
 const layout: LayoutedGraph = {
-  groups: [],
+  groups: [
+    { id: "core", parentId: null, x: 100, y: 50, width: 400, height: 300 },
+  ],
   modules: [
     { id: "src/a.ts", parentId: "core", x: 200, y: 100, width: 120, height: 48 },
   ],
@@ -16,13 +18,17 @@ const layout: LayoutedGraph = {
   height: 600,
 };
 
-describe("moduleCenterFromLayout", () => {
+describe("nodeCenterFromLayout", () => {
   it("returns the absolute center of a layout module box", () => {
-    expect(moduleCenterFromLayout(layout, "src/a.ts")).toEqual({ x: 260, y: 124 });
+    expect(nodeCenterFromLayout(layout, "src/a.ts")).toEqual({ x: 260, y: 124 });
   });
 
-  it("returns null for an unknown module", () => {
-    expect(moduleCenterFromLayout(layout, "missing")).toBeNull();
+  it("returns the absolute center of a layout group box", () => {
+    expect(nodeCenterFromLayout(layout, "core")).toEqual({ x: 300, y: 200 });
+  });
+
+  it("returns null for an unknown node", () => {
+    expect(nodeCenterFromLayout(layout, "missing")).toBeNull();
   });
 });
 

@@ -19,7 +19,9 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
 - **Relative** specifier (`./x`, `../x`) → resolved against known ids using the
   §7 rules (`resolve.rs`): extensionless `.ts`/`.tsx`/`.cs`, explicit extensions,
   `.js`/`.jsx`/`.mjs` (TS ESM convention → source `.ts`/`.tsx`), then
-  `index.ts`/`index.tsx`/`mod.rs`. Hit → solid `import` edge. Miss → for `.rs`
+  `index.ts`/`index.tsx`/`mod.rs`/`lib.rs`/`main.rs`. The crate-root candidates
+  let Rust `crate::...` imports resolve through root re-exports. Hit → solid
+  `import` edge. Miss → for `.rs`
   importers only, walk up parent path segments (Rust item imports such as
   `../analysis/analyze_project` where `analyze_project` is a fn in `analysis/mod.rs`,
   not a submodule file).   Still no hit → `unresolvedImport` diagnostic (severity
@@ -34,6 +36,11 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
   importer (`references::csharp`). A `using` only produces edges to modules that
   export types actually referenced in the file; fully-qualified type names resolve
   without a matching `using`. Miss (e.g. `System`) → external metadata.
+- **C++ include roots** → `.cpp`/`.h` importers first use the normal
+  relative resolver. If that misses, `references::cpp` searches configured
+  `.codechart/config.json` `unreal.knownPaths`. When
+  `excludeEngineReferences` is true, common Unreal Engine headers/prefixes are
+  external metadata rather than `unresolvedImport` warnings.
 
 **Edge id** = `${source}->${target}:import:${ordinal}`. Edges are sorted by
 `(source, target)`; `ordinal` disambiguates repeated same-pair imports (0-based).
@@ -169,6 +176,8 @@ sort by id, dedup by id — for deterministic final output.
 5. Build `ModuleNode`s (`nodes.rs`): id = path, label = basename, language from
    extension (`tsx` → `Tsx`, else `TypeScript`), `group_id`/`is_facade` from the
    resolved groups, `loc` from the parse, annotation = first `@Architecture` block.
+   C++ implementation files also display exports from directly included same-stem
+   headers, so `Foo.cpp` can show the `Foo` class declared in `Foo.h`.
 6. Feed everything through `ProjectGraphBuilder` so the five §2.2 invariants are
    enforced before the graph escapes.
 

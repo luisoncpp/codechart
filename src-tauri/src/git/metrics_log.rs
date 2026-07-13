@@ -70,11 +70,7 @@ fn parse_numstat_line(line: &str) -> Option<(String, u32, u32)> {
     if add == "-" || del == "-" {
         return None;
     }
-    Some((
-        path,
-        add.parse().unwrap_or(0),
-        del.parse().unwrap_or(0),
-    ))
+    Some((path, add.parse().unwrap_or(0), del.parse().unwrap_or(0)))
 }
 
 pub fn metrics_skip_path(path: &str) -> bool {

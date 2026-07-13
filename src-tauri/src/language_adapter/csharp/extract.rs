@@ -2,7 +2,9 @@
 
 use tree_sitter::Node;
 
-use crate::language_adapter::adapter_types::{CommentBlock, ImportKind, ParsedImport, ParsedModule};
+use crate::language_adapter::adapter_types::{
+    CommentBlock, ImportKind, ParsedImport, ParsedModule,
+};
 
 pub fn walk_compilation_unit(root: Node, src: &str, module: &mut ParsedModule) {
     let mut cursor = root.walk();
@@ -24,8 +26,12 @@ fn walk_top_level(node: Node, src: &str, module: &mut ParsedModule) {
             }
             walk_namespace_body(node, src, module);
         }
-        "class_declaration" | "interface_declaration" | "struct_declaration"
-        | "enum_declaration" | "record_declaration" | "delegate_declaration" => {
+        "class_declaration"
+        | "interface_declaration"
+        | "struct_declaration"
+        | "enum_declaration"
+        | "record_declaration"
+        | "delegate_declaration" => {
             push_public_export(node, src, module);
         }
         _ => {}
@@ -39,8 +45,12 @@ fn walk_namespace_body(node: Node, src: &str, module: &mut ParsedModule) {
     let mut cursor = body.walk();
     for child in body.children(&mut cursor) {
         match child.kind() {
-            "class_declaration" | "interface_declaration" | "struct_declaration"
-            | "enum_declaration" | "record_declaration" | "delegate_declaration" => {
+            "class_declaration"
+            | "interface_declaration"
+            | "struct_declaration"
+            | "enum_declaration"
+            | "record_declaration"
+            | "delegate_declaration" => {
                 push_public_export(child, src, module);
             }
             _ => {}
@@ -120,9 +130,8 @@ fn namespace_name(node: Node, src: &str) -> String {
 }
 
 fn is_public(node: Node, src: &str) -> bool {
-    node.children(&mut node.walk()).any(|c| {
-        c.kind() == "modifier" && text_of(c, src).trim() == "public"
-    })
+    node.children(&mut node.walk())
+        .any(|c| c.kind() == "modifier" && text_of(c, src).trim() == "public")
 }
 
 fn final_segment(path: &str) -> String {

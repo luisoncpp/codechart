@@ -70,7 +70,11 @@ fn collect_list_paths(
 fn path_from_clause(path: Option<Node>, src: &str) -> Option<Vec<String>> {
     path.and_then(|p| {
         let segs = path_segments(p, src);
-        if segs.is_empty() { None } else { Some(segs) }
+        if segs.is_empty() {
+            None
+        } else {
+            Some(segs)
+        }
     })
 }
 

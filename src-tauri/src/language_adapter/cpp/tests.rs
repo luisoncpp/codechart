@@ -1,5 +1,5 @@
-use crate::language_adapter::adapter_types::{ImportKind, LanguageAdapter, ParsedModule};
 use super::CppAdapter;
+use crate::language_adapter::adapter_types::{ImportKind, LanguageAdapter, ParsedModule};
 
 fn parse(path: &str, source: &str) -> ParsedModule {
     CppAdapter::new()
@@ -8,7 +8,11 @@ fn parse(path: &str, source: &str) -> ParsedModule {
 }
 
 fn specifiers(module: &ParsedModule) -> Vec<&str> {
-    module.imports.iter().map(|i| i.specifier.as_str()).collect()
+    module
+        .imports
+        .iter()
+        .map(|i| i.specifier.as_str())
+        .collect()
 }
 
 #[test]
@@ -59,6 +63,44 @@ namespace game {
 "#;
     let m = parse("src/game.cpp", source);
     assert_eq!(m.exported_symbols, vec!["Player", "tick"]);
+}
+
+#[test]
+fn class_method_definitions_are_not_module_exports() {
+    let source = r#"
+ARexGameState::ARexGameState() {}
+void ARexGameState::BeginPlay() {}
+bool ARexGameState::HasEdictTags(const FGameplayTagContainer& Tags) const {
+    return true;
+}
+"#;
+    let m = parse("GameMode/RexGameState.cpp", source);
+    assert!(m.exported_symbols.is_empty());
+}
+
+#[test]
+fn unreal_export_macro_keeps_class_as_the_only_type_export() {
+    let source = r#"
+UCLASS()
+class WARLORDS_API ARexGameState : public AGameStateBase {
+    GENERATED_BODY()
+public:
+    void BeginPlay();
+    int32 Population;
+};
+"#;
+    let m = parse("GameMode/RexGameState.h", source);
+    assert_eq!(m.exported_symbols, vec!["ARexGameState"]);
+}
+
+#[test]
+fn forward_declarations_are_not_module_exports() {
+    let source = r#"
+class ARexAIController;
+class ARexGameState {};
+"#;
+    let m = parse("GameMode/RexGameState.h", source);
+    assert_eq!(m.exported_symbols, vec!["ARexGameState"]);
 }
 
 #[test]

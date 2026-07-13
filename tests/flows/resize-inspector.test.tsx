@@ -1,43 +1,13 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { act, fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { DEFAULT_INSPECTOR_WIDTH } from "../../src/features/inspection_panel";
-import { testGraphSessionStore } from "../helpers/test-graph-session-store";
 import { renderInspectionPanel } from "../helpers/render-inspection-panel";
 import {
   inspectorAside,
   renderAppInspector,
 } from "../helpers/render-app-inspector";
-
-class TestPointerEvent extends Event {
-  clientX: number;
-  pointerId: number;
-
-  constructor(type: string, clientX: number, pointerId = 1) {
-    super(type, { bubbles: true });
-    this.clientX = clientX;
-    this.pointerId = pointerId;
-  }
-}
-
-function dragHandle(fromX: number, toX: number) {
-  const handle = screen.getByRole("separator", { name: "Resize inspector" });
-  act(() => {
-    handle.dispatchEvent(new TestPointerEvent("pointerdown", fromX));
-  });
-  act(() => {
-    handle.dispatchEvent(new TestPointerEvent("pointermove", toX));
-  });
-  act(() => {
-    handle.dispatchEvent(new TestPointerEvent("pointerup", toX));
-  });
-}
-
-async function readyStore() {
-  const store = testGraphSessionStore();
-  await store.loadProject("/sample");
-  return store;
-}
+import { dragHandle, clickHideInspectorExpectingHide, readyInspectorStore } from "../helpers/inspector-resize";
 
 describe("flow: resize-inspector", () => {
   beforeEach(() => {
@@ -46,22 +16,18 @@ describe("flow: resize-inspector", () => {
   });
 
   it("dragging the resize handle changes the panel width", async () => {
-    const store = await readyStore();
+    const store = await readyInspectorStore();
     renderInspectionPanel(store);
     dragHandle(/*fromX=*/500, /*toX=*/400);
     expect(inspectorAside()).toHaveStyle({ width: "380px" });
   });
 
   it("clicking Hide inspector hides the panel", async () => {
-    const store = await readyStore();
-    const onHide = vi.fn();
-    renderInspectionPanel(store, { onHide });
-    fireEvent.click(screen.getByRole("button", { name: "Hide inspector" }));
-    expect(onHide).toHaveBeenCalledOnce();
+    await clickHideInspectorExpectingHide();
   });
 
   it("clicking Show inspector restores the panel at the saved width", async () => {
-    const store = await readyStore();
+    const store = await readyInspectorStore();
     renderAppInspector(store, { initialWidth: 360 });
     expect(inspectorAside()).toHaveStyle({ width: "360px" });
     fireEvent.click(screen.getByRole("button", { name: "Hide inspector" }));

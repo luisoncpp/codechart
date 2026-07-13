@@ -21,13 +21,14 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 | Piece | File | Role |
 |-------|------|------|
 | `projectGraph(graph, layout)` | `domain/graph/Private/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
-| `FloatingEdge` | `features/graph_canvas/Private/FloatingEdge.tsx` | Custom RF edge: computes both endpoints via `borderAnchor` from live node geometry (`useInternalNode`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
+| `EdgeLayer` + `segmentForEdge` | `features/graph_canvas/Private/EdgeLayer.tsx`, `edge-path.ts` | Custom SVG edge layer (portal into RF's `.react-flow__edges`); React Flow receives `edges={[]}`. `segmentForEdge` computes both endpoints via `borderAnchor` from live node boxes (`boxesFromFlowNodes`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
 | `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
 | selectors | `domain/graph/Private/selectors.ts` | `findModule`, `findGroup`, `groupOf`, `modulesInGroup`, `childGroupsOf`, `groupImportsOf`, `groupImportedBy`, `diagnosticsForGroup`, `edgeFocusForSelection`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. |
-| `GraphSessionStore` | `state/graph-session` | Now also owns `LayoutedGraph` (computed via injected `LayoutEngine` on load) and `selectedId`. Emits `phase-changed` + `selection-changed` + `focus-requested`. `focusOn(moduleId)` selects a module, expands collapsed ancestor groups when needed, and asks the canvas to center on it. |
+| `GraphSessionStore` | `state/graph-session` | Owns `LayoutedGraph`, `selectedId`, and browser-style selection history. New selections truncate the forward branch; back/forward only move its pointer. Emits `phase-changed` + `selection-changed` + `focus-requested`. `focusOn(moduleId)` selects a module, expands collapsed ancestor groups when needed, and asks the canvas to center on it. |
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. `FocusNode` centers the viewport on inspector import navigation. |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules + groups) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
-| `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; **Reveal in file explorer** via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
+| `SelectionNavigation` | `features/graph_canvas` | Top-left back/forward controls plus `Alt+Left` / `Alt+Right`; disabled states come from the session history pointer. |
+| `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; copies the graph-relative module path via the browser clipboard or reveals the file via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
 | `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
 
 ## Aesthetic rules (the visual gate)
@@ -36,8 +37,11 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   optional icon glyph + label. Color from `GroupNode.color`, else a deterministic palette hash
   (`colors.ts`). `graph-canvas.css` strips React Flow's default node chrome (border/padding/bg) so the
   custom view's border is the **only** border — no double outline, no inset gap.
-- **Header room:** the layout reserves vertical space for the header via `groupHeaderHeight` added to
-  the group's ELK top padding (see `layout.md`), so module boxes never overlap the group label.
+- **Header room:** the layout reserves vertical space for ordinary children and a measured top-left
+  title obstacle for nested subgroup containers (see `layout.md`), so neither modules nor subgroup
+  boxes overlap the counter-scaled group label. The expanded header's counter-scale is **clamped**
+  to the scale that obstacle was reserved at (`expandedHeaderScale`, `domain/layout`) — a group
+  expanded below the L0 boundary must not outgrow its reserve.
 - **Module node:** card tinted to its **owning group's color** (matches the sample) — `color` text +
   `color + "1a"` fill + `color` border (2px facade w/ `★`, else 1px); selected → blue outline; compact
   11px **monospace** label (matches the sample's bracketed filenames; text darkened ~55% toward black
@@ -56,7 +60,7 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   Edges are **display-only** (no `onEdgeClick`/hover handlers), so `graph-canvas.css` sets
   `pointer-events: none` on `.react-flow__edge` — React Flow's invisible edge interaction path would
   otherwise swallow a `pointerdown` and break pan-by-drag that starts on an edge.
-- **Edge routing (floating, no ELK routing):** ELK never routes edges — `FloatingEdge` draws them.
+- **Edge routing (floating, no ELK routing):** ELK never routes edges — `EdgeLayer` draws them via `segmentForEdge`.
   Each endpoint floats to the border **facing the other node** (`borderAnchor`) instead of a fixed
   handle, so a node's out-edges fan across its border rather than sharing one right-side point
   (**Idea 1**). For an import that enters a facade **from outside its group**, the arrow anchors on
@@ -78,14 +82,21 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   vanishing. Both live in `edge-style.ts` (`GraphCanvas` passes `edgeFocusForSelection` per render);
   pure `edgeRole`/`edgeOpacity`/`borderAnchor` are the testable seams (edges don't render under jsdom).
 - **Diff overlay (narrative diff visualizer):** optional session overlay from `GraphSessionStore.getDiffOverlay()`.
-  Enter via **Visualize diff…** (`DiffModal`: paste unified diff or pick two git commits when the
-  project root is a repo). `domain/diff` compares before/after graphs (git mode) or parses diff paths
+  Enter via **Visualize diff…** (`DiffModal`: paste unified diff or pick two git revisions when the
+  project root is a repo). The **after** list includes **Local changes**: tracked staged/unstaged
+  changes come from `git diff <before>`, while untracked files are full-add patches only when they
+  survive Git ignore rules and have a module in the loaded graph. `domain/diff` compares before/after graphs (git mode) or parses diff paths
   (paste mode); **unchanged modules render at ~40% opacity** so affected/deleted modules pop;
   **group titles and descriptions dim to the same level** so module diff highlights read first.
   `applyDiffOverlay` stamps `ModuleNodeData.diffState` (`affected` → **green** 3px border,
   `deleted` → **red** 3px border, `unchanged` → dimmed, ghost modules positioned from the before
   snapshot layout) and `EdgeData.diffState` (`added` → **green** full-opacity arrow, `removed` → **red**
-  line with **X** head). **L0 bird's-eye is disabled** while diff is active — scroll zoom floors at L1
+  line with **X** head). At **L1.5**, `classifySymbolChanges` compares export membership and intersects
+  changed old/new line numbers with symbol declaration/implementation ranges. Symbol boxes render
+  added as **green/solid**, removed as **red/dashed** ghosts from the before layout, and modified as
+  **yellow/dotted**; the border styles preserve meaning without color alone. Exact symbol states are
+  available for commit/local comparisons, which can read both snapshots; pasted diffs remain module-level.
+  **L0 bird's-eye is disabled** while diff is active — scroll zoom floors at L1
   so module-level highlights remain visible; clearing the overlay restores normal L0 behavior.
   **L2 source panels and the symbol preview widget** show unified-diff rows:
   green `+` lines for additions, red `-` lines for deletions (`DiffCodeLines`). Diff styling wins over
@@ -129,7 +140,8 @@ hidden by zoom collapse.
   so nothing flashes while async re-layout catches up. The store calls `syncReduced()` synchronously
   on every collapse change before emitting `zoom-changed`. `allGroupIds` = the L0 default collapse set
   (every group); `topLevelGroupIds` remains for parentless roots. `levelFromZoom(factor)` maps the
-  scroll zoom factor to 0/1/2 (`<0.55 / <1.7 / ≥1.7`).
+  scroll zoom factor to 0/1/1.5/2 (`<0.45 / <0.9 / <3.5 / >=3.5`). L2 exits only below
+  `3.35`, providing a small hysteresis band at the source-view boundary.
 - **Levels:** L0 collapses every group (all boxes stay visible, modules hidden); L1 expands
   everything; L2 renders each module as a scrollable document consisting of the module description at the top (preferring the long description if available) and the full syntax-highlighted source code below it. All text elements are counter-scaled to remain small/compact in screen space, and the scrollable area is clamped dynamically to fit completely inside the visible viewport. The store seeds the default collapse set per level, and `toggleGroup`/`collapse`/`expand`
   layer per-group overrides on top.
@@ -158,7 +170,8 @@ hidden by zoom collapse.
   module's source via `AnalysisClient.readModuleSource(root, path)` (Tauri command
   `read_module_source`, reusing `FsProjectSource::read_file`) and caches it. The `ProjectGraph` never
   carries file bodies. The mock client serves fixture source via Vite `?raw` imports.
-- **Scroll drives the level, fit does not fight it:** `GraphCanvas.onMoveEnd` → `levelFromZoom` →
+- **Scroll drives the level, fit does not fight it:** `GraphCanvas.onMove` (with `onMoveEnd` fallback)
+  → `levelFromZoom` →
   `store.setZoomLevel` (guarded against no-ops). `FitView` fits **once per mount** (= once per project
   load, since `App` renders the canvas only when `ready`) and **never refits on a level change** — a
   programmatic refit would change the zoom and feed back into another level switch (L0 → fit → L2
@@ -167,10 +180,26 @@ hidden by zoom collapse.
 - **Group descriptions (multi-level):** `rf-projection` threads both `descriptionShort` and
   `descriptionLong` into group node data, plus `showLong` (= `showSymbols`, i.e. L1.5+). The view shows
   progressively more prose as you zoom in:
-  - **L0 (collapsed card):** `collapsedDescription` **prefers `descriptionLong`** when it fits the card
-    at a legible font (`fitsBox`, 14px base), else falls back to `descriptionShort`. The text uses the
-    **darkened group color** (`darken(data.color)`), not the old grey, and its line clamp is derived
-    from the card height.
+  - **L0 (collapsed card):** `collapsedDescription` **prefers `descriptionLong`** when it fits, else
+    falls back to `descriptionShort`. It measures against the largest **child-free rectangle** of the
+    card, anchored below the title at the left edge: `descriptionRegion`
+    (`collapsed-description-region.ts`, pure) sweeps candidate bottoms (each `childObstacles` top +
+    the card bottom) and caps each candidate's width at the leftmost obstacle its rows intersect —
+    so a low-left plus a high-right subgroup still leave a usable top-left gap, which independent
+    `minChildY`/`minChildX` minima would falsely report as no space (obstacles are
+    projection-computed from **visible** children only — a collapsed group's module boxes still
+    exist in the L0 layout but are hidden, so they must never clamp the text; nested subgroup boxes
+    do). The chosen region's width and font are returned and rendered
+    verbatim (`collapsed-description.ts`, pure): the font prefers a counter-scaled `14 × scale`, grows
+    up to a 28px screen cap when the chosen text fits, and can shrink to 8px in a narrow child-free
+    column. Fit counting follows the browser's wrap opportunities at spaces and hyphens; unbreakable
+    tokens such as `ParsedModule` must fit the measured width instead of being treated as hard-wrapped.
+    A spacious card reads large while a tight one stays clear of its subgroup. All geometry stays in world units
+    consistent with the scaled font — never an unscaled px cap, which would shrink to a sliver on
+    screen at L0. The text uses the **darkened group color** (`darken(data.color)`), and its line
+    clamp is derived from the region height at the chosen font and applied only
+    when the selected text does not fit; complete wrapped descriptions render
+    without a clamp so Chromium does not add a false trailing ellipsis.
   - **L1 (expanded):** `GroupDescription` draws `descriptionShort` **directly in the group** (no box) at
     `data.descriptionBox` (parent-relative). ELK vertically *centers* a short column, so the reserved slot
     floats mid-group with a gap under the header; **projection raises `y`** (`freeTopFor`) to the highest
@@ -203,10 +232,20 @@ hidden by zoom collapse.
 - **Metadata rendering:** A
   collapsed group renders a **readable card** (`GroupNodeView` → `CollapsedCard`): a large uppercase
   label + icon over a wrapped description (see Group descriptions above). Both font sizes **counter-scale with the live camera
-  zoom** (`useStore(s => s.transform[2])`, clamped 1–2.4×) so the text stays legible as you zoom out
+  zoom** (`useStore(s => s.transform[2])`, clamped 1–`MAX_COUNTER_SCALE` = 1/minZoom) so the text stays legible as you zoom out
   to L0 instead of dwindling — a *read* of the camera, which the scroll-zoom oscillation lesson permits
-  (it only forbids programmatic camera *writes*). Expanded groups keep the quiet header strip, but its
-  label **also counter-scales** so the group name stays legible when zoomed out. **Module labels do
+  (it only forbids programmatic camera *writes*). The card **title fits its card**
+  (`collapsedLabelLayout`, `collapsed-description.ts`, pure): starting at the counter-scaled 15px
+  base it shrinks to keep the title on one horizontal line; at the 8px screen floor it ellipsizes
+  instead of wrapping vertically. The
+  header chrome (toggle, gaps, icon) scales **by `font/base`, not the raw camera scale** — otherwise
+  a fixed `24 × scale` toggle eats a small card before the text gets any width. When a visible nested
+  subgroup is present, projection supplies every visible child rectangle (`childObstacles`). At each
+  readable size the fitter considers only obstacles intersecting that title row, preserving L-shaped
+  gaps that independent `minChildX`/`minChildY` values lose. The description's top offset uses the
+  fitted label height. Expanded groups keep the quiet header strip, but its
+  label **also counter-scales** so the group name stays legible when zoomed out — clamped at
+  `expandedHeaderScale` (= 1/L0 boundary), the scale the layout's title obstacle reserves for. **Module labels do
   *not* counter-scale** against the camera (still world units, so they can't overflow the box). But the
   L1 centered label is **fit to its box** rather than fixed at 11px: `fitLabelFontSize(label, w, h)`
   (`module-box-metrics.ts`, pure) picks the largest font (capped `LABEL_FIT.maxFont` 22px, floored at the
@@ -228,7 +267,23 @@ hidden by zoom collapse.
   Defaults come from `GroupNode.disconnectedByDefault` / `disconnectedModuleIds` (parsed from `*.group.md`
   `disconnected` / `disconnectedModules`); session state seeds on load and user toggles layer on top.
   Modules inherit a parent group's disconnect (ancestor chain). Inspection still lists imports on the raw graph.
-- **Symbol Source Preview Widget (L1.5):** Clicking an exported symbol node in the L1.5 zoom view selects its parent module and opens a resizable, scrollable popup widget (`SymbolSourceWidget`) next to the symbol. The widget displays the module's source code, automatically locating and scrolling to focus on the line containing the symbol's definition (matching class/function/const/etc. patterns). It automatically dismisses when the canvas viewport is moved, when selecting another node or clicking the pane, or on any click outside the widget.
+- **Symbol source preview frames (L1.5, multi-frame):** owned by the nested deep module
+  `features/graph_canvas/Private/preview_frames/` (public interface: `usePreviewFrames`, `findSymbolLine`;
+  `GraphCanvas` renders `framesView` and wires `openFromSymbolNode`/`closeAll`). Clicking an exported
+  symbol node selects its parent module and opens a resizable, scrollable, **draggable** (header bar)
+  frame next to the symbol, centered on the symbol's definition line (centering scrolls only the frame
+  body — never `scrollIntoView`, which would scroll the window). Inside a frame, clickable identifiers
+  (`hl-clickable`) come from `combinedSymbolTargets` (pure) — the union of own-module function/method
+  definitions (`scanFunctionDefinitions`, a heuristic lexical scan: keyword-declared functions plus
+  `name(args) {`-shaped method lines), imported exported symbols (`importedSymbolTargets` over import
+  edges + `exportedSymbols`), and functions/methods scanned from imported modules' sources (methods of
+  imported classes) — priority in that order on name collisions. The hook prefetches an opened frame's
+  import-target sources (`sourcePrefetchIds`, store-cached) so those method names resolve. Clicking one
+  opens the defining module's frame (possibly the same module, for local functions/methods) **right**
+  of the clicked frame, else **below**, else **above**, else right-with-overlap
+  (`placeAdjacentFrame`, pure; live DOM rects honor user resize/drag). Same module+symbol dedupes to a
+  bring-to-front. Any click outside every frame closes them all; clicks inside any frame (scrollbars
+  included) close nothing; canvas pan/zoom closes all.
 
 Store surface (TDD §5.1): `getZoomLevel`, `getReducedGraph`, `getCollapsedGroupIds`,
 `getDisconnectedGroupIds`, `getDisconnectedModuleIds`, `getSourceCache`,

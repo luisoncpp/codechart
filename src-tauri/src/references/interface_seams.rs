@@ -20,7 +20,10 @@ pub fn classify_interface_seams(
 ) -> Vec<Edge> {
     let implementors = index_implementors(parsed);
     let importers = index_importers(parsed);
-    let ctx = SeamCtx { boundaries, import_pairs };
+    let ctx = SeamCtx {
+        boundaries,
+        import_pairs,
+    };
     let mut triples = collect_triples(&implementors, &importers, &ctx);
     triples.sort();
     build_seam_edges(triples)
@@ -31,7 +34,9 @@ fn index_implementors(parsed: &[ParsedModule]) -> BTreeMap<String, BTreeSet<Stri
     let mut map: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for module in parsed {
         for name in &module.implements {
-            map.entry(name.clone()).or_default().insert(module.path.clone());
+            map.entry(name.clone())
+                .or_default()
+                .insert(module.path.clone());
         }
     }
     map
@@ -43,7 +48,9 @@ fn index_importers(parsed: &[ParsedModule]) -> BTreeMap<String, BTreeSet<String>
     for module in parsed {
         for import in &module.imports {
             for name in &import.names {
-                map.entry(name.clone()).or_default().insert(module.path.clone());
+                map.entry(name.clone())
+                    .or_default()
+                    .insert(module.path.clone());
             }
         }
     }
@@ -79,7 +86,8 @@ fn is_valid_seam(importer: &str, implementor: &str, ctx: &SeamCtx) -> bool {
     if same_group(importer, implementor, ctx.boundaries) {
         return false; // same group → solid import already models it
     }
-    !ctx.import_pairs.contains(&(importer.to_string(), implementor.to_string()))
+    !ctx.import_pairs
+        .contains(&(importer.to_string(), implementor.to_string()))
 }
 
 fn same_group(a: &str, b: &str, bounds: &GroupBoundaries) -> bool {

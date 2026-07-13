@@ -2,7 +2,9 @@
 
 use tree_sitter::Node;
 
-use crate::language_adapter::adapter_types::{CommentBlock, ImportKind, ParsedImport, ParsedModule};
+use crate::language_adapter::adapter_types::{
+    CommentBlock, ImportKind, ParsedImport, ParsedModule,
+};
 
 pub fn walk_top_level(root: Node, src: &str, module: &mut ParsedModule) {
     let mut cursor = root.walk();
@@ -46,7 +48,11 @@ fn push_export(node: Node, src: &str, module: &mut ParsedModule) {
     };
     // `export ... from "m"` — a re-export (also a dependency edge).
     module.exported_symbols.extend(names.iter().cloned());
-    let kind = if names.is_empty() { ImportKind::Namespace } else { ImportKind::Named };
+    let kind = if names.is_empty() {
+        ImportKind::Namespace
+    } else {
+        ImportKind::Named
+    };
     module.reexports.push(ParsedImport {
         specifier,
         kind,
@@ -59,7 +65,11 @@ fn push_export(node: Node, src: &str, module: &mut ParsedModule) {
 /// The unquoted module specifier from an import/export `source` field.
 fn source_specifier(node: Node, src: &str) -> Option<String> {
     let string_node = node.child_by_field_name("source")?;
-    Some(text_of(string_node, src).trim_matches(['"', '\'', '`']).to_string())
+    Some(
+        text_of(string_node, src)
+            .trim_matches(['"', '\'', '`'])
+            .to_string(),
+    )
 }
 
 /// Determine import kind + the symbol names introduced by the import clause.
@@ -150,7 +160,10 @@ fn collect_declaration_names(decl: Node, src: &str, module: &mut ParsedModule) {
     match decl.kind() {
         "lexical_declaration" | "variable_declaration" => {
             let mut cursor = decl.walk();
-            for d in decl.children(&mut cursor).filter(|c| c.kind() == "variable_declarator") {
+            for d in decl
+                .children(&mut cursor)
+                .filter(|c| c.kind() == "variable_declarator")
+            {
                 if let Some(name) = d.child_by_field_name("name") {
                     module.exported_symbols.push(text_of(name, src).to_string());
                 }
@@ -165,7 +178,9 @@ fn collect_declaration_names(decl: Node, src: &str, module: &mut ParsedModule) {
 }
 
 fn has_default_keyword(node: Node, src: &str) -> bool {
-    text_of(node, src).trim_start().starts_with("export default")
+    text_of(node, src)
+        .trim_start()
+        .starts_with("export default")
 }
 
 /// True for `import type`/`export type` (whole-statement type-only forms).

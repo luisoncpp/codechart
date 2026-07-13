@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
-use crate::language_adapter::adapter_types::{ImportKind, LanguageAdapter, ParsedModule, SignalRole};
 use super::TypeScriptAdapter;
+use crate::language_adapter::adapter_types::{
+    ImportKind, LanguageAdapter, ParsedModule, SignalRole,
+};
 use crate::project_source::{MemoryProjectSource, ProjectSource};
 
 fn parse(path: &str, source: &str) -> ParsedModule {
@@ -12,7 +14,11 @@ fn parse(path: &str, source: &str) -> ParsedModule {
 }
 
 fn specifiers(module: &ParsedModule) -> Vec<&str> {
-    module.imports.iter().map(|i| i.specifier.as_str()).collect()
+    module
+        .imports
+        .iter()
+        .map(|i| i.specifier.as_str())
+        .collect()
 }
 
 #[test]
@@ -163,7 +169,10 @@ fn multiple_signals_kept_in_source_order() {
 #[test]
 fn parses_file_from_memory_source() {
     let mut files = HashMap::new();
-    files.insert("src/a.ts".to_string(), r#"import { b } from "./b";"#.to_string());
+    files.insert(
+        "src/a.ts".to_string(),
+        r#"import { b } from "./b";"#.to_string(),
+    );
     let source = MemoryProjectSource::new(files);
 
     let path = "src/a.ts";
@@ -220,4 +229,3 @@ invoke("b");
     let m = parse("src/ipc/client.ts", src);
     assert_eq!(m.ipc_invokes, vec!["a", "b"]);
 }
-

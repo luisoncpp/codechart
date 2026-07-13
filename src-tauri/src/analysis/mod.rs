@@ -19,13 +19,16 @@ use crate::contract::{
 use crate::diagnostics::{merge, parse_error};
 use crate::grouping::{resolve_groups, ResolvedGroups};
 use crate::language_adapter::{registry_for_path, ParsedModule};
-use crate::project_config::{discover_group_defs, ignore_patterns, is_group_file, retain_unignored};
+use crate::project_config::{
+    discover_group_defs, ignore_patterns_with_unreal, is_group_file, retain_unignored,
+};
 use crate::project_source::ProjectSource;
 use crate::references::{
-    classify_interface_seams, classify_soft, classify_tauri_ipc, classify_unity_assets,
-    flag_drift, resolve_references, GroupBoundaries,
+    classify_interface_seams, classify_soft, classify_tauri_ipc, classify_unity_assets, flag_drift,
+    resolve_references_with_options, GroupBoundaries,
 };
 use crate::unity_assets::index_meta_files;
+use crate::{unreal_options_from_source, UnrealOptions};
 
 use nodes::{build_modules, language_for, ParsedFile};
 
@@ -40,12 +43,10 @@ struct GraphParts {
 /// Analyze a project: parse its source files, resolve groups + import edges, and
 /// assemble the validated `ProjectGraph`. `root` is recorded verbatim onto the
 /// graph (callers own the project path → id relationship).
-pub fn analyze_project(
-    source: &dyn ProjectSource,
-    root: &str,
-) -> Result<ProjectGraph, BuildError> {
+pub fn analyze_project(source: &dyn ProjectSource, root: &str) -> Result<ProjectGraph, BuildError> {
+    let unreal = unreal_options_from_source(source);
     let (defs, config_diags) = discover_group_defs(source);
-    let patterns = ignore_patterns(&defs);
+    let patterns = ignore_patterns_with_unreal(&defs, &unreal);
     let files = retain_unignored(source.list_files().unwrap_or_default(), &patterns);
     let meta_index = index_meta_files(source, &files);
     let (parsed, parse_diags) = parse_sources(source, &files);
@@ -53,15 +54,20 @@ pub fn analyze_project(
     let module_paths: Vec<String> = parsed.iter().map(|f| f.module.path.clone()).collect();
     let groups = resolve_groups(&module_paths, &defs);
     let parsed_modules: Vec<ParsedModule> = parsed.iter().map(|f| f.module.clone()).collect();
-    let (edges, ref_diags) = resolve_edges(&parsed_modules, &groups, &meta_index);
+    let (edges, ref_diags) = resolve_edges(&parsed_modules, &groups, &meta_index, &unreal);
 
-    let mut modules = build_modules(&parsed, &groups);
+    let mut modules = build_modules(&parsed, &groups, &edges);
     if crate::git::is_git_repo(root) {
         crate::git::enrich_module_metrics(root, &mut modules);
     }
     let parts = GraphParts {
         modules,
-        diagnostics: merge(vec![config_diags, groups.diagnostics, ref_diags, parse_diags]),
+        diagnostics: merge(vec![
+            config_diags,
+            groups.diagnostics,
+            ref_diags,
+            parse_diags,
+        ]),
         groups: groups.groups,
         edges,
     };
@@ -75,13 +81,15 @@ fn resolve_edges(
     parsed: &[ParsedModule],
     groups: &ResolvedGroups,
     meta_index: &std::collections::BTreeMap<String, String>,
+    unreal: &UnrealOptions,
 ) -> (Vec<Edge>, Vec<Diagnostic>) {
-    let mut refs = resolve_references(parsed);
+    let mut refs = resolve_references_with_options(parsed, unreal);
     let bounds = group_boundaries(groups);
     let violations = flag_drift(&mut refs.edges, &bounds);
     let import_pairs = collect_import_pairs(&refs.edges);
     refs.edges.extend(classify_soft(parsed));
-    refs.edges.extend(classify_interface_seams(parsed, &bounds, &import_pairs));
+    refs.edges
+        .extend(classify_interface_seams(parsed, &bounds, &import_pairs));
     let (ipc_edges, ipc_diags) = classify_tauri_ipc(parsed);
     refs.edges.extend(ipc_edges);
     let (unity_edges, unity_diags) = classify_unity_assets(parsed, meta_index);

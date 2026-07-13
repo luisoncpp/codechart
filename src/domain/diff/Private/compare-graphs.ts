@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Compares before/after ProjectGraphs into overlay data")
 import type { Edge, ModuleNode } from "../../graph";
 import type { GraphDiffInput, GraphDiffCore } from "./types";
+import { classifySymbolChanges } from "./symbol-diff";
 
 /** Compare two analyzed graphs and derive canvas overlay data. */
 export function compareGraphs(input: GraphDiffInput): Omit<GraphDiffCore, "beforeLayout"> {
@@ -31,7 +32,21 @@ export function compareGraphs(input: GraphDiffInput): Omit<GraphDiffCore, "befor
   }
 
   const ghostModules = before.modules.filter((m) => deletedModuleIds.has(m.id));
-  return { affectedModuleIds, deletedModuleIds, addedEdgeIds, removedEdges, ghostModules };
+  const symbols = classifySymbolChanges({
+    before,
+    after,
+    beforeSources: new Map(),
+    afterSources: new Map(),
+    lineDiffByPath: new Map(),
+  });
+  return {
+    affectedModuleIds,
+    deletedModuleIds,
+    ...symbols,
+    addedEdgeIds,
+    removedEdges,
+    ghostModules,
+  };
 }
 
 function indexModules(modules: ModuleNode[]): Map<string, ModuleNode> {

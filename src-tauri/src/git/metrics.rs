@@ -113,7 +113,11 @@ mod tests {
         write(dir.to_str().unwrap(), "src/a.ts", "export const a = 1;\n");
         run_git(dir.to_str().unwrap(), &["add", "."]);
         run_git(dir.to_str().unwrap(), &["commit", "-m", "init"]);
-        write(dir.to_str().unwrap(), "src/a.ts", "export const a = 2;\nexport const b = 3;\n");
+        write(
+            dir.to_str().unwrap(),
+            "src/a.ts",
+            "export const a = 2;\nexport const b = 3;\n",
+        );
         run_git(dir.to_str().unwrap(), &["add", "src/a.ts"]);
         run_git(dir.to_str().unwrap(), &["commit", "-m", "fix: bump a"]);
         let mut modules = vec![ModuleNode {

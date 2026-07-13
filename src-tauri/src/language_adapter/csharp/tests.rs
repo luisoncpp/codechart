@@ -1,5 +1,5 @@
-use crate::language_adapter::adapter_types::{ImportKind, LanguageAdapter, ParsedModule};
 use super::CSharpAdapter;
+use crate::language_adapter::adapter_types::{ImportKind, LanguageAdapter, ParsedModule};
 
 fn parse(path: &str, source: &str) -> ParsedModule {
     CSharpAdapter::new()
@@ -8,7 +8,11 @@ fn parse(path: &str, source: &str) -> ParsedModule {
 }
 
 fn specifiers(module: &ParsedModule) -> Vec<&str> {
-    module.imports.iter().map(|i| i.specifier.as_str()).collect()
+    module
+        .imports
+        .iter()
+        .map(|i| i.specifier.as_str())
+        .collect()
 }
 
 #[test]

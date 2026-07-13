@@ -65,9 +65,7 @@ impl ProjectGraphBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::contract::types::{
-        DiagnosticKind, EdgeKind, Language, ModuleMetrics, Severity,
-    };
+    use crate::contract::types::{DiagnosticKind, EdgeKind, Language, ModuleMetrics, Severity};
 
     #[test]
     fn builds_empty_graph() {
@@ -102,7 +100,10 @@ mod tests {
                 language: Language::TypeScript,
                 group_id: Some("core".into()),
                 is_facade: true,
-                metrics: ModuleMetrics { loc: 10, ..Default::default() },
+                metrics: ModuleMetrics {
+                    loc: 10,
+                    ..Default::default()
+                },
                 exported_symbols: vec![],
                 annotation: None,
             })
@@ -113,7 +114,10 @@ mod tests {
                 language: Language::TypeScript,
                 group_id: Some("core".into()),
                 is_facade: false,
-                metrics: ModuleMetrics { loc: 4, ..Default::default() },
+                metrics: ModuleMetrics {
+                    loc: 4,
+                    ..Default::default()
+                },
                 exported_symbols: vec![],
                 annotation: None,
             })

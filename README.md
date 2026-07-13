@@ -25,7 +25,7 @@ Unsupported extensions are skipped during analysis. Package / external imports (
 - **Open any folder** via the native directory picker; the Rust backend analyzes it and streams a `ProjectGraph` over Tauri IPC.
 - **ELK layout** + **React Flow** canvas: nested colored group containers, module cards, floating import arrows, deterministic positioning.
 - **Inspection panel** for the selected module or group: path, group, facade status, language, LOC, imports, imported-by, diagnostics, and annotation metadata. Drag the left edge to resize (200–720px); hide/show preserves width for the session.
-- **Reveal in file explorer** from the module/symbol context menu.
+- **Copy relative path** or **Reveal in file explorer** from the module/symbol context menu.
 
 ### Groups & configuration
 
@@ -77,7 +77,7 @@ Overlay a change set on the live map:
 - **Paste mode** — unified diff text → green/red module borders.
 - **Git commits mode** — pick base + head refs → module highlights from git paths, added/removed edges from graph comparison, ghost positions for deleted modules.
 
-Unchanged modules dim to ~40% opacity; added edges render green, removed edges red with an **×** head. L2 panels and the symbol preview show `+`/`-` diff rows when line data is available.
+Unchanged modules dim to ~40% opacity; added edges render green, removed edges red with an **×** head. At L1.5, snapshot comparisons show added symbols in green, deleted symbols in red, and declaration/implementation changes in yellow. L2 panels and the symbol preview show `+`/`-` diff rows when line data is available.
 
 ### Canvas controls
 

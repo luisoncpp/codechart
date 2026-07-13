@@ -3,6 +3,8 @@ import goldenGraph from "./fixtures/golden/project-graph.json";
 import { GraphSessionStore } from "../src/state/graph-session";
 import type { AnalysisClient } from "../src/ipc/analysis-client";
 import type { ProjectGraph } from "../src/domain/graph";
+import type { GitClient } from "../src/ipc/git-client";
+import { ElkLayoutEngine } from "../src/domain/layout";
 import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 
 const graph = goldenGraph as unknown as ProjectGraph;
@@ -18,6 +20,15 @@ function newStore(client: AnalysisClient): GraphSessionStore {
 /** Resolve once the store finishes its next async re-layout. */
 function nextLayout(store: GraphSessionStore): Promise<void> {
   return new Promise((resolve) => store.once("layout-changed", () => resolve()));
+}
+
+async function readyStoreAtZoomLevel2(client: AnalysisClient): Promise<GraphSessionStore> {
+  const store = newStore(client);
+  await store.loadProject("/x");
+  const done = nextLayout(store);
+  store.setZoomLevel(2);
+  await done;
+  return store;
 }
 
 describe("GraphSessionStore (no DOM)", () => {
@@ -76,6 +87,35 @@ describe("GraphSessionStore (no DOM)", () => {
     store.select("a");
     await store.loadProject("/x");
     expect(store.getSelectedId()).toBeNull();
+  });
+
+  it("navigates selection history without adding new entries", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.select("src/core/index.ts");
+    store.select("src/core/store.ts");
+    store.select("core");
+    await store.goBack();
+    expect(store.getSelectedId()).toBe("src/core/store.ts");
+    await store.goBack();
+    expect(store.getSelectedId()).toBe("src/core/index.ts");
+    expect(store.canGoBack()).toBe(false);
+    await store.goForward();
+    await store.goForward();
+    expect(store.getSelectedId()).toBe("core");
+    expect(store.canGoForward()).toBe(false);
+  });
+
+  it("a new selection truncates forward history", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.select("src/core/index.ts");
+    store.select("src/core/store.ts");
+    await store.goBack();
+    store.select("src/main.ts");
+    expect(store.canGoForward()).toBe(false);
+    await store.goBack();
+    expect(store.getSelectedId()).toBe("src/core/index.ts");
   });
 
   it("focusOn selects the module and emits focus-requested", async () => {
@@ -193,11 +233,7 @@ describe("GraphSessionStore semantic zoom", () => {
       analyzeProject: async () => graph,
       readModuleSource: async (_root, path) => `// source of ${path}`,
     };
-    const store = newStore(client);
-    await store.loadProject("/x");
-    const done = nextLayout(store);
-    store.setZoomLevel(2);
-    await done;
+    const store = await readyStoreAtZoomLevel2(client);
     expect(store.getSourceCache().size).toBe(graph.modules.length);
     expect(store.getSourceCache().get("src/services/http.ts")).toContain(
       "source of src/services/http.ts",
@@ -217,11 +253,7 @@ describe("GraphSessionStore semantic zoom", () => {
       analyzeProject: async () => withDoc,
       readModuleSource: async (_root, path) => `# Doc for ${path}`,
     };
-    const store = newStore(client);
-    await store.loadProject("/x");
-    const done = nextLayout(store);
-    store.setZoomLevel(2);
-    await done;
+    const store = await readyStoreAtZoomLevel2(client);
     expect(store.getGroupDocCache().get("core")).toContain("Doc for docs/architecture/contract.md");
   });
 
@@ -397,5 +429,43 @@ describe("GraphSessionStore heatmap", () => {
     store.clearDiffOverlay();
     expect(store.getHeatmapEnabled()).toBe(true);
     expect(store.getHeatmapMode()).toBe("risk");
+  });
+});
+
+describe("GraphSessionStore local changes diff", () => {
+  it("uses the loaded graph as after and allowlists its module paths", async () => {
+    const diffWorkingTree = vi.fn(async () =>
+      [
+        "diff --git a/src/core/store.ts b/src/core/store.ts",
+        "--- a/src/core/store.ts",
+        "+++ b/src/core/store.ts",
+        "@@ -1 +1 @@",
+        "-old",
+        "+new",
+      ].join("\n"),
+    );
+    const git: GitClient = {
+      isGitRepo: async () => true,
+      listCommits: async () => [],
+      analyzeProjectAtRef: async () => graph,
+      readModuleSourcesAtRef: async () => ({}),
+      diffRefs: async () => "",
+      diffWorkingTree,
+    };
+    const store = new GraphSessionStore(
+      clientReturning(graph),
+      git,
+      new ElkLayoutEngine(),
+    );
+    await store.loadProject("/repo");
+
+    await store.applyDiffFromWorkingTree("HEAD");
+
+    expect(diffWorkingTree).toHaveBeenCalledWith(
+      "/repo",
+      "HEAD",
+      graph.modules.map((module) => module.path),
+    );
+    expect(store.getDiffOverlay()?.affectedModuleIds.has("src/core/store.ts")).toBe(true);
   });
 });

@@ -26,6 +26,9 @@ export function overlayFromPastedDiff(
   return {
     affectedModuleIds,
     deletedModuleIds,
+    addedSymbolIds: new Set(),
+    removedSymbolIds: new Set(),
+    modifiedSymbolIds: new Set(),
     addedEdgeIds: new Set(),
     removedEdges: [],
     ghostModules,

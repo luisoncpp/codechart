@@ -1,7 +1,6 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, expect, it, vi } from "vitest";
 import type { Node } from "@xyflow/react";
-import type React from "react";
 import { fireEvent, waitFor } from "@testing-library/react";
 import { GraphCanvasController } from "../../src/features/graph_canvas/Private/graph-canvas-controller";
 import type { GraphSessionStore } from "../../src/state/graph-session";
@@ -10,17 +9,11 @@ import {
   readyGraphStore,
   renderGraphCanvas,
 } from "../helpers/flow-graph-canvas";
-
-function clickEvent(opts: { onCollapse?: boolean; onConnection?: boolean } = {}): React.MouseEvent {
-  const target = {
-    closest: (sel: string) => {
-      if (opts.onCollapse && sel === "[data-group-toggle]") return {};
-      if (opts.onConnection && sel === "[data-connection-toggle]") return {};
-      return null;
-    },
-  } as unknown as HTMLElement;
-  return { target } as unknown as React.MouseEvent;
-}
+import {
+  expectGroupCollapseToggleWithoutSelect,
+  mockNodeClickEvent,
+  spyGraphCanvasStore,
+} from "../helpers/graph-canvas-controller";
 
 function spyStore() {
   return {
@@ -76,14 +69,7 @@ describe("flow: select-module", () => {
   });
 
   it("clicking the collapse toggle toggles the group without selecting it", () => {
-    const store = spyStore();
-    const groupNode = { id: "g1", type: "group", data: { collapsed: false } } as unknown as Node;
-    new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
-      groupNode,
-      clickEvent({ onCollapse: /*onCollapseToggle=*/true }),
-    );
-    expect(store.toggleGroup).toHaveBeenCalledWith("g1");
-    expect(store.select).not.toHaveBeenCalled();
+    expectGroupCollapseToggleWithoutSelect(spyGraphCanvasStore());
   });
 
   it("clicking the connection toggle toggles connections without selecting", () => {
@@ -91,7 +77,7 @@ describe("flow: select-module", () => {
     const groupNode = { id: "shared", type: "group" } as unknown as Node;
     new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
       groupNode,
-      clickEvent({ onConnection: /*onConnectionToggle=*/true }),
+      mockNodeClickEvent({ onConnection: /*onConnectionToggle=*/true }),
     );
     expect(store.toggleGroupConnection).toHaveBeenCalledWith("shared");
     expect(store.select).not.toHaveBeenCalled();

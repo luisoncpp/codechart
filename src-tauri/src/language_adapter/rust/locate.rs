@@ -2,14 +2,13 @@
 
 pub fn mod_specifier(importer: &str, child: &str) -> Option<String> {
     let base = self_module_base(importer)?;
-    Some(relative_specifier(parent_dir(importer), &format!("{base}/{child}")))
+    Some(relative_specifier(
+        parent_dir(importer),
+        &format!("{base}/{child}"),
+    ))
 }
 
-pub fn use_specifier(
-    importer: &str,
-    segments: &[String],
-    local_mods: &[String],
-) -> Option<String> {
+pub fn use_specifier(importer: &str, segments: &[String], local_mods: &[String]) -> Option<String> {
     if segments.is_empty() || is_built_in_external(&segments[0]) {
         return None;
     }
@@ -56,7 +55,10 @@ fn self_module_base(importer: &str) -> Option<String> {
 }
 
 fn is_crate_scoped(segments: &[String]) -> bool {
-    matches!(segments.first().map(String::as_str), Some("crate" | "self" | "super"))
+    matches!(
+        segments.first().map(String::as_str),
+        Some("crate" | "self" | "super")
+    )
 }
 
 fn is_built_in_external(root: &str) -> bool {

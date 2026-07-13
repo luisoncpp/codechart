@@ -45,7 +45,8 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [open-project.md](./open-project.md) | Open folder → IPC → live diagram: the UI front of the analysis pipeline (session phases) |
 | [select-module.md](./select-module.md) | Click a module or group on the canvas → selection → inspection panel (pure UI state) |
 | [navigate-from-inspector.md](./navigate-from-inspector.md) | Click an import in the inspector → select that module and center the canvas on it |
+| [navigate-selection-history.md](./navigate-selection-history.md) | Back/forward buttons or shortcuts → move through inspector selection history |
 | [resize-inspector.md](./resize-inspector.md) | Drag the inspection panel's left edge to resize; hide/show preserves width for the session |
-| [reveal-in-explorer.md](./reveal-in-explorer.md) | Right-click a module/symbol → context menu → reveal file in the OS explorer |
+| [reveal-in-explorer.md](./reveal-in-explorer.md) | Right-click a module/symbol → copy its relative path or reveal it in the OS explorer |
 | [preview-symbol.md](./preview-symbol.md) | Click a symbol in L1.5 zoom → selection + resizable preview code widget next to it |
 | [visualize-diff.md](./visualize-diff.md) | Visualize diff modal → overlay green/red modules and green/red edges on the canvas |

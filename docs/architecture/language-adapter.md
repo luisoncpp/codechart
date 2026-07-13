@@ -92,10 +92,16 @@ External URLs are ignored.
 C++ sources (`.cpp`/`.cc`/`.cxx`/`.h`/`.hpp`/`.hxx`) via `cpp/`:
 quoted `#include "…"` → relative side-effect edges (`./path` when not already
 relative); angle-bracket `#include <…>` skipped (system/external). Top-level
-and namespace-scoped `class`/`struct`/`enum`/`union` names and function
-declarations/definitions populate `exported_symbols`. `: Base, IFoo` base lists
-populate `implements`. Resolution uses the standard relative-import pass with
-`.cpp`/`.h`/`.hpp` extension candidates.
+and namespace-scoped `class`/`struct`/`enum`/`union` definitions and function
+declarations/definitions populate `exported_symbols`; forward declarations do
+not. Qualified out-of-class
+definitions such as `GameState::BeginPlay` are excluded because the class header
+owns that API; listing them on the `.cpp` module duplicates methods as exports.
+Unreal export macros between a type keyword and name (for example,
+`class GAME_API GameState`) are masked before parsing so the real class remains
+the export. `: Base, IFoo` base lists populate `implements`. Resolution uses the
+standard relative-import pass with `.cpp`/`.h`/`.hpp` extension candidates, then
+Unreal configured include roots when present (see [unreal-config.md](./unreal-config.md)).
 
 ## `semantic_comments::parse_annotations(text) -> Vec<Annotation>`
 

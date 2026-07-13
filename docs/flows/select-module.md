@@ -5,7 +5,7 @@
 3. **Sequence**
    1. `GraphCanvasController.onNodeClick(node)` — modules and groups select; collapse/connection
       affordances toggle instead; symbols select their parent module.
-   2. `GraphSessionStore.select(id)` — no-op if unchanged; else sets `selectedId`, emits `selection-changed`.
+   2. `GraphSessionStore.select(id)` — no-op if unchanged; else truncates any forward selection history, appends the id, sets `selectedId`, and emits `selection-changed`.
    3. `useGraphSession` (subscribed to `selection-changed`) re-renders subscribers.
    4. `GraphCanvas` re-maps nodes with `selected: n.id === selectedId` → blue outline on the node,
       and re-styles edges via `styleEdge(edge, edgeFocusForSelection(graph, selectedId))` → imports
@@ -15,7 +15,7 @@
    5. `InspectionPanel` reads `selectedId` + `graph`, routes to `ModuleInspection` or
       `GroupInspection`, and runs the appropriate selectors.
 4. **Reads** — store `graph`, `selectedId`.
-5. **Writes** — store `selectedId`.
+5. **Writes** — store `selectedId` and selection history.
 6. **Side effects** — none (no IPC, no layout recompute; selection is pure UI state).
 7. **Files** — `GraphCanvas.tsx`, `graph-canvas-controller.ts`, `graph-session-store.ts`,
    `use-graph-session.ts`, `InspectionPanel.tsx`, `ModuleInspection.tsx`, `GroupInspection.tsx`,

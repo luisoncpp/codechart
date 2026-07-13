@@ -53,11 +53,7 @@ fn bypassed_group<'a>(edge: &Edge, bounds: &'a GroupBoundaries) -> Option<&'a st
 
 /// True when `source_group` is `target` or any descendant of it (so a module
 /// nested deeper than the facade's group is still "inside" the boundary).
-fn within_subtree(
-    source_group: Option<&String>,
-    target: &str,
-    bounds: &GroupBoundaries,
-) -> bool {
+fn within_subtree(source_group: Option<&String>, target: &str, bounds: &GroupBoundaries) -> bool {
     let mut current = source_group.map(String::as_str);
     while let Some(group) = current {
         if group == target {

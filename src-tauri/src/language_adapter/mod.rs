@@ -6,16 +6,16 @@
 // Concrete implementations stay private behind this boundary.
 
 mod adapter_types;
-mod registry;
-mod typescript;
-mod rust;
-mod csharp;
 mod cpp;
-mod unity_prefab;
+mod csharp;
 mod css;
+mod registry;
+mod rust;
+mod typescript;
+mod unity_prefab;
 
 pub use adapter_types::{
-    CommentBlock, CommSignal, ImportKind, LanguageAdapter, ParseError, ParsedImport,
-    ParsedModule, SignalRole,
+    CommSignal, CommentBlock, ImportKind, LanguageAdapter, ParseError, ParsedImport, ParsedModule,
+    SignalRole,
 };
 pub use registry::{registry_for, registry_for_path};

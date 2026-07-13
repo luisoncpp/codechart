@@ -50,6 +50,10 @@ pub fn resolve_relative(
 }
 
 fn resolve_base(base: &str, known: &BTreeSet<&str>) -> Option<String> {
+    resolve_path(base, known)
+}
+
+pub fn resolve_path(base: &str, known: &BTreeSet<&str>) -> Option<String> {
     candidates(base)
         .into_iter()
         .find(|candidate| known.contains(candidate.as_str()))
@@ -133,5 +137,7 @@ fn extensionless_candidates(base: &str) -> Vec<String> {
         format!("{base}/index.ts"),
         format!("{base}/index.tsx"),
         format!("{base}/mod.rs"),
+        format!("{base}/lib.rs"),
+        format!("{base}/main.rs"),
     ]
 }

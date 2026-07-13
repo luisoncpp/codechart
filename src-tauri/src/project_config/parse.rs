@@ -35,9 +35,7 @@ fn split_frontmatter(content: &str) -> Result<(&str, &str), ConfigError> {
         .strip_prefix("---")
         .and_then(|r| r.strip_prefix('\n').or_else(|| r.strip_prefix("\r\n")))
         .ok_or(ConfigError::MissingFrontmatter)?;
-    let end = rest
-        .find("\n---")
-        .ok_or(ConfigError::MissingFrontmatter)?;
+    let end = rest.find("\n---").ok_or(ConfigError::MissingFrontmatter)?;
     let yaml = &rest[..end];
     let after = &rest[end + 4..];
     let body = after.trim_start_matches(['\r', '\n']);

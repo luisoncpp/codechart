@@ -14,8 +14,26 @@ export function createTauriGitClient(): GitClient {
     async analyzeProjectAtRef(path: string, gitRef: string): Promise<ProjectGraph> {
       return invoke<ProjectGraph>("analyze_project_at_ref", { path, gitRef });
     },
+    async readModuleSourcesAtRef(
+      path: string,
+      gitRef: string,
+      modulePaths: string[],
+    ): Promise<Record<string, string>> {
+      return invoke<Record<string, string>>("read_module_sources_at_ref", {
+        path,
+        gitRef,
+        modulePaths,
+      });
+    },
     async diffRefs(path: string, baseRef: string, headRef: string): Promise<string> {
       return invoke<string>("git_diff_refs", { path, baseRef, headRef });
+    },
+    async diffWorkingTree(
+      path: string,
+      baseRef: string,
+      eligiblePaths: string[],
+    ): Promise<string> {
+      return invoke<string>("git_diff_working_tree", { path, baseRef, eligiblePaths });
     },
   };
 }

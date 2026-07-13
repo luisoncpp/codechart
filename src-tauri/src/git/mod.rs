@@ -1,8 +1,10 @@
 // @Architecture(descriptionShort="Git helpers for listing commits and reading tree snapshots")
 mod metrics;
 mod metrics_log;
+mod working_tree;
 
 pub use metrics::{enrich_module_metrics, metrics_window_days};
+pub use working_tree::working_tree_diff;
 
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read, Write};
@@ -73,7 +75,10 @@ fn ls_tree_blobs(path: &str, git_ref: &str) -> Result<Vec<(String, String)>, Str
     Ok(entries)
 }
 
-fn batch_read_blobs(path: &str, entries: &[(String, String)]) -> Result<Vec<(String, String)>, String> {
+fn batch_read_blobs(
+    path: &str,
+    entries: &[(String, String)],
+) -> Result<Vec<(String, String)>, String> {
     let mut child = Command::new("git");
     child
         .args(["-C"])
@@ -87,13 +92,19 @@ fn batch_read_blobs(path: &str, entries: &[(String, String)]) -> Result<Vec<(Str
         .map_err(|e| format!("failed to run git cat-file --batch: {e}"))?;
 
     {
-        let stdin = child.stdin.as_mut().ok_or("git cat-file stdin unavailable")?;
+        let stdin = child
+            .stdin
+            .as_mut()
+            .ok_or("git cat-file stdin unavailable")?;
         for (_, sha) in entries {
             writeln!(stdin, "{sha}").map_err(|e| e.to_string())?;
         }
     }
 
-    let stdout = child.stdout.take().ok_or("git cat-file stdout unavailable")?;
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or("git cat-file stdout unavailable")?;
     let mut reader = BufReader::new(stdout);
     let mut out = Vec::with_capacity(entries.len());
     for (rel_path, sha) in entries {
@@ -122,7 +133,9 @@ fn read_blob(reader: &mut BufReader<impl Read>, expected_sha: &str) -> Result<St
         .parse::<usize>()
         .map_err(|e| format!("invalid cat-file size: {e}"))?;
     if sha != expected_sha {
-        return Err(format!("cat-file sha mismatch: expected {expected_sha}, got {sha}"));
+        return Err(format!(
+            "cat-file sha mismatch: expected {expected_sha}, got {sha}"
+        ));
     }
     if object_type != "blob" {
         return Err(format!("expected blob object, got {object_type}"));
@@ -184,10 +197,7 @@ mod tests {
 
     #[test]
     fn memory_source_from_map_reads() {
-        let source = MemoryProjectSource::new(HashMap::from([(
-            "a.ts".into(),
-            "export {}".into(),
-        )]));
+        let source = MemoryProjectSource::new(HashMap::from([("a.ts".into(), "export {}".into())]));
         assert_eq!(source.read_file("a.ts").unwrap(), "export {}");
         assert!(matches!(
             source.read_file("missing.ts"),
