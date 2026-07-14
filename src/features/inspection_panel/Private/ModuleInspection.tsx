@@ -22,6 +22,7 @@ interface ModuleInspectionProps {
   hideTests: boolean;
   onHide?: () => void;
   onNavigateToModule: (moduleId: string) => void;
+  onReviewNotes?: () => void;
 }
 
 export function ModuleInspection({
@@ -30,10 +31,11 @@ export function ModuleInspection({
   hideTests,
   onHide,
   onNavigateToModule,
+  onReviewNotes,
 }: ModuleInspectionProps) {
   const group = groupOf(graph, module.id);
   return (
-    <PanelChrome onHide={onHide}>
+    <PanelChrome onHide={onHide} onTabChange={(tab) => { if (tab === "review-notes") onReviewNotes?.(); }}>
       <h2 style={{ fontSize: 14, margin: "0 0 4px" }}>{module.label}</h2>
       <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>{module.path}</p>
       <dl style={{ fontSize: 12, margin: "12px 0" }}>

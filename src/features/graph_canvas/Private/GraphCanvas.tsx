@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Main React Flow canvas rendering modules, groups, and edges")
-import { useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -29,11 +29,15 @@ import { usePreviewFrames } from "./preview_frames";
 import { LevelBadge } from "./LevelBadge";
 import { ViewControls } from "./ViewControls";
 import { SelectionNavigation } from "./SelectionNavigation";
+import type { ReviewNotesStore } from "../../../state/review-notes";
+import { moduleIdsInGroupTree, type ProjectedGraph } from "../../../domain/graph";
 
 interface GraphCanvasProps {
   store: GraphSessionStore;
   git: GitClient;
   shell: ShellClient;
+  reviewNotes?: ReviewNotesStore;
+  onShowReviewNotes?: () => void;
 }
 
 function fitOptionsForLevel(level: ZoomLevel): FitViewOptions {
@@ -41,7 +45,7 @@ function fitOptionsForLevel(level: ZoomLevel): FitViewOptions {
   return { padding: 0.12 };
 }
 
-export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
+export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes }: GraphCanvasProps) {
   const session = useGraphSession(store);
   const graph = session.getReducedGraph();
   const heatGraph = session.getGraph();
@@ -63,10 +67,20 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const previews = usePreviewFrames({ store, graph, diffOverlay, containerRef });
+  const { openReviewNotePreview } = previews;
+  const navigation = reviewNotes?.getNavigationRequest();
+  useEffect(() => {
+    if (navigation) void openReviewNotePreview(navigation);
+  }, [navigation, openReviewNotePreview]);
 
   const controller = useMemo(
-    /*build controller*/ () => new GraphCanvasController(store, previews.openFromSymbolNode),
-    [store, previews.openFromSymbolNode],
+    /*build controller*/ () => new GraphCanvasController(store, previews.openFromSymbolNode, (node) => {
+      if (!reviewNotes) return;
+      if (node.type === "module") reviewNotes.filterModule(node.id);
+      if (node.type === "group") reviewNotes.filterGroup(node.id);
+      onShowReviewNotes?.();
+    }),
+    [store, previews.openFromSymbolNode, reviewNotes, onShowReviewNotes],
   );
 
   const cacheVersion = session.getSourceCacheVersion();
@@ -104,9 +118,9 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
 
   const displayProjected = useMemo(() => {
     if (!projected) return null;
-    if (!diffOverlay) return projected;
-    return applyDiffOverlay(projected, diffOverlay);
-  }, [projected, diffOverlay]);
+    const diffed = diffOverlay ? applyDiffOverlay(projected, diffOverlay) : projected;
+    return reviewNotes ? withReviewCounts(diffed, heatGraph, reviewNotes) : diffed;
+  }, [projected, diffOverlay, reviewNotes, heatGraph]);
 
   const styledEdges = useStyledEdges(displayProjected, edgeFocus);
 
@@ -191,4 +205,22 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
       </div>
     </ReactFlowProvider>
   );
+}
+
+function withReviewCounts(projected: ProjectedGraph, graph: ReturnType<GraphSessionStore["getGraph"]>, notes: ReviewNotesStore): ProjectedGraph {
+  if (!graph) return projected;
+  return {
+    ...projected,
+    nodes: projected.nodes.map((node) => {
+      if (node.type === "module") {
+        const count = notes.countForModule(node.id);
+        return count ? { ...node, data: { ...node.data, reviewNoteCount: count } } : node;
+      }
+      if (node.type === "group") {
+        const count = [...moduleIdsInGroupTree(graph, node.id)].reduce((total, id) => total + notes.countForModule(id), 0);
+        return count ? { ...node, data: { ...node.data, reviewNoteCount: count } } : node;
+      }
+      return node;
+    }),
+  };
 }

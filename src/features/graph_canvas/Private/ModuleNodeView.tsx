@@ -106,6 +106,7 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
 
       <ConnectionToggle disconnected={!!data.disconnected} scale={zoomScale} />
+      {!!data.reviewNoteCount && <button type="button" data-review-note-badge style={reviewBadgeStyle(zoomScale)}>{data.reviewNoteCount}</button>}
 
       {detail && <div style={l15HeatBarStyle(data)} />}
 
@@ -143,6 +144,10 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
 
   );
 
+}
+
+function reviewBadgeStyle(scale: number): React.CSSProperties {
+  return { position: "absolute", top: 3 * scale, right: 3 * scale, zIndex: 3, minWidth: 16 * scale, border: "1px solid #7c3aed", borderRadius: 999, background: "#f3e8ff", color: "#5b21b6", fontSize: 9 * scale, cursor: "pointer" };
 }
 
 

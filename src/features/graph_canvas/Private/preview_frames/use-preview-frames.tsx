@@ -28,6 +28,12 @@ interface DocumentPreviewRequest {
   y: number;
 }
 
+interface ReviewPreviewRequest {
+  path: string;
+  startLine: number;
+  endLine: number;
+}
+
 export function usePreviewFrames(deps: PreviewFramesDeps) {
   const { store, graph, diffOverlay, containerRef } = deps;
   const [frames, setFrames] = useState<readonly PreviewFrame[]>([]);
@@ -109,6 +115,20 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     [containerRef, graph, open, prefetchSources, store],
   );
 
+  const openReviewNotePreview = useCallback(async (request: ReviewPreviewRequest) => {
+    const container = containerRef.current;
+    const module = graph?.modules.find((item) => item.path === request.path);
+    if (!container || !module) return;
+    const sourceText = await store.fetchModuleSource(module.id);
+    const pos = computePointWidgetPosition({ x: container.getBoundingClientRect().left + 24, y: container.getBoundingClientRect().top + 24 }, container.getBoundingClientRect());
+    const activeRange = { startLine: request.startLine, endLine: request.endLine };
+    setFrames((previous) => {
+      const existing = previous.find((frame) => frame.moduleId === module.id && frame.symbolName === null);
+      if (existing) return openFrame(previous.map((frame) => frame.id === existing.id ? { ...frame, activeRange } : frame), { ...existing, activeRange, id: existing.id });
+      return openFrame(previous, { moduleId: module.id, moduleLabel: module.label, symbolName: null, modulePath: module.path, description: module.annotation?.descriptionLong || module.annotation?.descriptionShort, color: "#64748b", sourceText, activeRange, ...pos, id: nextId.current++ });
+    });
+  }, [containerRef, graph, store]);
+
   /** Clickable symbol (import, function, or method) clicked inside a frame. */
   const openFromSymbolClick = useCallback(
     async (sourceFrameId: number, symbolName: string) => {
@@ -178,7 +198,7 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     </>
   );
 
-  return { openFromSymbolNode, openDocumentPreview, closeAll, framesView };
+  return { openFromSymbolNode, openDocumentPreview, openReviewNotePreview, closeAll, framesView };
 }
 
 const EMPTY_NAMES: ReadonlySet<string> = new Set();

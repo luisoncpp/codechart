@@ -15,3 +15,5 @@
 7. **Side effects** — none.
 8. **Files** — `App.tsx`, `InspectionPanel.tsx`, `InspectorLayoutContext.tsx`, `PanelResizeHandle.tsx`, `PanelParts.tsx`.
 9. **Common failure modes** — width does not persist across app restarts (session-only state; no `localStorage`).
+
+The same chrome switches between Inspector and Review Notes while preserving the panel's width and hide/show state.

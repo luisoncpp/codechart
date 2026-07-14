@@ -14,11 +14,12 @@ export interface PreviewFrame {
   top: number;
   left: number;
   zIndex: number;
+  activeRange?: { startLine: number; endLine: number };
 }
 
 /** Default frame size — must match the `.symbol-widget` CSS box. */
-export const FRAME_WIDTH = 420;
-export const FRAME_HEIGHT = 320;
+export const FRAME_WIDTH = 680;
+export const FRAME_HEIGHT = 360;
 
 function topZIndex(frames: readonly PreviewFrame[]): number {
   return frames.reduce((max, f) => Math.max(max, f.zIndex), 0);

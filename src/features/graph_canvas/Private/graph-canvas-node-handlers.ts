@@ -16,9 +16,14 @@ export class GraphCanvasNodeHandlers {
   constructor(
     private store: GraphSessionStore,
     private onSymbolClick?: (node: Node, event: React.MouseEvent) => void,
+    private onReviewNoteClick?: (node: Node) => void,
   ) {}
 
   onNodeClick(node: Node, event: React.MouseEvent) {
+    if (clickedIn(event, "[data-review-note-badge]")) {
+      this.onReviewNoteClick?.(node);
+      return;
+    }
     if (clickedIn(event, "[data-connection-toggle]")) {
       this.toggleConnection(node);
       return;

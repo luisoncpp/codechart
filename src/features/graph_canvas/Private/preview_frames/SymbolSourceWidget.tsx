@@ -53,14 +53,16 @@ export function SymbolSourceWidget({
       frame.symbolName ? findSymbolLine(frame.sourceText, frame.symbolName) + 1 : undefined,
     [frame.sourceText, frame.symbolName],
   );
+  const reviewLine = frame.activeRange?.startLine;
 
   useEffect(() => {
-    if (targetLine === undefined) return;
+    const line = reviewLine ?? targetLine;
+    if (line === undefined) return;
     const timer = setTimeout(/*centerDefinitionLine*/ () => {
       centerLineInBody(lineRef.current);
     }, /*delayInMs=*/50);
     return () => clearTimeout(timer);
-  }, [targetLine, frame.sourceText]);
+  }, [targetLine, reviewLine, frame.sourceText]);
 
   const onHeaderPointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest(".symbol-widget__close")) return;

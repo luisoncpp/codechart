@@ -313,3 +313,5 @@ The canvas renders from `getReducedGraph()` + `getLayout()`, not the raw graph.
 Rust, Phase 7 swaps in Tauri) + `ElkLayoutEngine` into the store, then renders the loader bar above
 `GraphCanvas` + a collapsible, drag-resizable `InspectionPanel` when `phase === "ready"`.
 `App` holds `inspectorOpen` and `inspectorWidth`; the panel facade accepts `width` / `onWidthChange`.
+
+Review Notes are a frontend display overlay: after graph projection, module/group badges receive active-note counts without changing `ProjectGraph`. Badge clicks are intercepted before normal selection, collapse, or connection actions and open the Review Notes tab.

@@ -5,12 +5,17 @@ import { ModuleInspection } from "./ModuleInspection";
 import { GroupInspection } from "./GroupInspection";
 import { InspectorLayoutProvider } from "./InspectorLayoutContext";
 import { PanelChrome } from "./PanelParts";
+import type { ReviewNotesStore } from "../../../state/review-notes";
+import { ReviewNotesSidebar } from "../../review_notes";
 
 interface InspectionPanelProps {
   store: GraphSessionStore;
   onHide?: () => void;
   width: number;
   onWidthChange: (width: number) => void;
+  reviewNotes?: ReviewNotesStore;
+  activeTab?: "inspector" | "review-notes";
+  onTabChange?: (tab: "inspector" | "review-notes") => void;
 }
 
 export function InspectionPanel({
@@ -18,6 +23,9 @@ export function InspectionPanel({
   onHide,
   width,
   onWidthChange,
+  reviewNotes,
+  activeTab = "inspector",
+  onTabChange,
 }: InspectionPanelProps) {
   const session = useGraphSession(store);
   const graph = session.getGraph();
@@ -31,6 +39,9 @@ export function InspectionPanel({
         hideTests={session.getHideTests()}
         onHide={onHide}
         onNavigateToModule={(moduleId) => store.focusOn(moduleId)}
+        reviewNotes={reviewNotes}
+        activeTab={activeTab}
+        onTabChange={onTabChange}
       />
     </InspectorLayoutProvider>
   );
@@ -42,16 +53,25 @@ function InspectionPanelBody({
   hideTests,
   onHide,
   onNavigateToModule,
+  reviewNotes,
+  activeTab,
+  onTabChange,
 }: {
   graph: ProjectGraph | null;
   selectedId: string | null;
   hideTests: boolean;
   onHide?: () => void;
   onNavigateToModule: (moduleId: string) => void;
+  reviewNotes?: ReviewNotesStore;
+  activeTab: "inspector" | "review-notes";
+  onTabChange?: (tab: "inspector" | "review-notes") => void;
 }) {
+  if (activeTab === "review-notes" && reviewNotes) {
+    return <PanelChrome onHide={onHide} activeTab={activeTab} onTabChange={onTabChange}><ReviewNotesSidebar store={reviewNotes} /></PanelChrome>;
+  }
   if (!graph || !selectedId) {
     return (
-      <PanelChrome onHide={onHide}>
+      <PanelChrome onHide={onHide} activeTab={activeTab} onTabChange={onTabChange}>
         <p style={{ color: "#64748b", margin: 0 }}>
           Select a module or group to inspect it.
         </p>
@@ -68,6 +88,7 @@ function InspectionPanelBody({
         hideTests={hideTests}
         onHide={onHide}
         onNavigateToModule={onNavigateToModule}
+        onReviewNotes={() => onTabChange?.("review-notes")}
       />
     );
   }
@@ -80,6 +101,7 @@ function InspectionPanelBody({
         group={group}
         onHide={onHide}
         onNavigateToModule={onNavigateToModule}
+        onReviewNotes={() => onTabChange?.("review-notes")}
       />
     );
   }

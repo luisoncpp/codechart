@@ -9,6 +9,7 @@ pub mod language_adapter;
 pub mod project_config;
 pub mod project_source;
 pub mod references;
+pub mod review_notes;
 pub mod semantic_comments;
 pub mod tauri_api;
 pub mod unity_assets;
@@ -35,6 +36,8 @@ pub fn run() {
             tauri_api::git_list_commits,
             tauri_api::git_diff_refs,
             tauri_api::git_diff_working_tree,
+            tauri_api::load_review_notes,
+            tauri_api::save_review_notes,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

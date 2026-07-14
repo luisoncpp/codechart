@@ -18,6 +18,7 @@ interface GroupInspectionProps {
   group: GroupNode;
   onHide?: () => void;
   onNavigateToModule: (moduleId: string) => void;
+  onReviewNotes?: () => void;
 }
 
 export function GroupInspection({
@@ -25,6 +26,7 @@ export function GroupInspection({
   group,
   onHide,
   onNavigateToModule,
+  onReviewNotes,
 }: GroupInspectionProps) {
   const parent = group.parentId ? findGroup(graph, group.parentId) : undefined;
   const modules = modulesInGroup(graph, group.id);
@@ -33,7 +35,7 @@ export function GroupInspection({
   const importedBy = dedupeEndpoints(groupImportedBy(graph, group.id), "source");
 
   return (
-    <PanelChrome onHide={onHide}>
+    <PanelChrome onHide={onHide} onTabChange={(tab) => { if (tab === "review-notes") onReviewNotes?.(); }}>
       <h2 style={{ fontSize: 14, margin: "0 0 4px" }}>{group.label}</h2>
       <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>{group.id}</p>
       <dl style={{ fontSize: 12, margin: "12px 0" }}>

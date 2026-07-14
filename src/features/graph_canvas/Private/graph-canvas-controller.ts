@@ -17,8 +17,9 @@ export class GraphCanvasController {
   constructor(
     store: GraphSessionStore,
     onSymbolClick?: (node: Node, event: React.MouseEvent) => void,
+    onReviewNoteClick?: (node: Node) => void,
   ) {
-    this.nodes = new GraphCanvasNodeHandlers(store, onSymbolClick);
+    this.nodes = new GraphCanvasNodeHandlers(store, onSymbolClick, onReviewNoteClick);
     this.viewport = new GraphCanvasViewportHandlers(store);
   }
 

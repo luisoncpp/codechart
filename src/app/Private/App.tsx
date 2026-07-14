@@ -1,11 +1,14 @@
 // @Architecture(descriptionShort="Root React App component containing the layout and canvas")
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createTauriAnalysisClient } from "../../ipc/analysis-client";
 import { createTauriProjectConfigClient } from "../../ipc/project-config-client";
 import { createTauriGitClient } from "../../ipc/git-client";
 import { createTauriShellClient } from "../../ipc/shell-client";
 import { ElkLayoutEngine } from "../../domain/layout";
 import { GraphSessionStore, useGraphSession } from "../../state/graph-session";
+import { ReviewNotesStore, useReviewNotes } from "../../state/review-notes";
+import { createTauriReviewNotesClient } from "../../ipc/review-notes-client";
+import { ReviewNotesProvider } from "../../features/review_notes";
 import { ProjectLoaderPanel } from "../../features/project_loader";
 import { GraphCanvas } from "../../features/graph_canvas";
 import {
@@ -26,17 +29,27 @@ export function App() {
     [git],
   );
   const session = useGraphSession(store);
+  const reviewNotes = useMemo(/*build review notes store*/ () => new ReviewNotesStore(createTauriReviewNotesClient()), []);
+  useReviewNotes(reviewNotes);
   const ready = session.getPhase() === "ready";
   const [inspectorOpen, setInspectorOpen] = useState(/*defaultOpen=*/true);
   const [inspectorWidth, setInspectorWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
+  const [activeTab, setActiveTab] = useState<"inspector" | "review-notes">("inspector");
+
+  useEffect(() => {
+    const graph = session.getGraph();
+    const root = session.getProjectRoot();
+    if (ready && graph && root) void reviewNotes.loadProject({ root, graph });
+  }, [ready, session, reviewNotes]);
 
   return (
     <div style={appShellStyle}>
       <ProjectLoaderPanel store={store} configClient={config} />
       {ready && (
+        <ReviewNotesProvider store={reviewNotes}>
         <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
           <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
-            <GraphCanvas store={store} git={git} shell={shell} />
+            <GraphCanvas store={store} git={git} shell={shell} reviewNotes={reviewNotes} onShowReviewNotes={() => { setInspectorOpen(true); setActiveTab("review-notes"); }} />
           </div>
           {inspectorOpen ? (
             <InspectionPanel
@@ -44,6 +57,9 @@ export function App() {
               width={inspectorWidth}
               onWidthChange={setInspectorWidth}
               onHide={() => setInspectorOpen(false)}
+              reviewNotes={reviewNotes}
+              activeTab={activeTab}
+              onTabChange={(tab) => { setActiveTab(tab); if (tab === "review-notes") reviewNotes.showAll(); }}
             />
           ) : (
             <button
@@ -56,7 +72,7 @@ export function App() {
               ◀
             </button>
           )}
-        </div>
+        </div></ReviewNotesProvider>
       )}
     </div>
   );

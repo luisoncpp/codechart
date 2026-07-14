@@ -23,3 +23,5 @@
 8. **Common failure modes** — clicking the pane clears selection (`onPaneClick`); a selection set
    before load is cleared by `loadProject`; clicking a group's collapse or connection toggle does
    not select it.
+
+Review Note badges are node controls. Their data attribute is handled before normal selection: a badge opens the Review Notes tab filtered to its module or group and does not select, collapse, or disconnect the node.

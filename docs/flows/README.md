@@ -50,3 +50,4 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [reveal-in-explorer.md](./reveal-in-explorer.md) | Right-click a module/symbol → copy its relative path or reveal it in the OS explorer |
 | [preview-symbol.md](./preview-symbol.md) | Click a symbol in L1.5 zoom → selection + resizable preview code widget next to it |
 | [visualize-diff.md](./visualize-diff.md) | Visualize diff modal → overlay green/red modules and green/red edges on the canvas |
+| [create-manage-review-note.md](./create-manage-review-note.md) | Source range to persisted Review Note and preview navigation |

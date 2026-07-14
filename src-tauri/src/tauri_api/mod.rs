@@ -4,6 +4,7 @@ use crate::analysis::analyze_project as run_analysis;
 use crate::contract::ProjectGraph;
 use crate::git::{self, GitCommit};
 use crate::project_source::{FsProjectSource, ProjectSource};
+use crate::review_notes::{load_review_notes as load_notes, save_review_notes as save_notes, ReviewNotesDocument};
 use crate::{
     ensure_unreal_defaults, read_project_config as load_project_config,
     write_project_config as save_project_config, ProjectConfig,
@@ -85,6 +86,16 @@ pub fn read_project_config(path: String) -> Result<ProjectConfig, String> {
 #[tauri::command]
 pub fn write_project_config(path: String, config: ProjectConfig) -> Result<(), String> {
     save_project_config(&path, config)
+}
+
+#[tauri::command]
+pub fn load_review_notes(root: String, module_paths: Vec<String>) -> Result<ReviewNotesDocument, String> {
+    load_notes(&root, module_paths)
+}
+
+#[tauri::command]
+pub fn save_review_notes(root: String, document: ReviewNotesDocument) -> Result<(), String> {
+    save_notes(&root, document)
 }
 
 #[cfg(test)]

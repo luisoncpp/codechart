@@ -20,3 +20,7 @@
 6. **Side effects** — lazy load file contents per opened module **and its import targets** (IPC `read_module_source`, cached by the store).
 7. **Files** — `preview_frames/`, `GraphCanvas.tsx`, `ModuleContextMenu.tsx`, `L2Content.tsx`, `DiffCodeLines.tsx`.
 8. **Common failure modes** — zooming below L1.5 hides the symbol-node entry point (the document action remains available while module nodes are visible), and any viewport move closes all frames; an identifier is clickable only if it resolves through import edges + `exportedSymbols` or the definition scan of an already-fetched source (soft edges don't count; imported-class methods aren't clickable until that module's source prefetch lands); the definition scan is a lexical heuristic (keyword-declared functions plus `name(args) {`-shaped lines), so an unusual formatting style can hide a definition or a rare call shape can produce a spurious clickable name — clicks on bare tokens resolve by name, first definer wins; placement falls back to overlapping-right in cramped viewports by design.
+
+Review Note navigation opens or raises the document frame for the anchored module and centers the selected range. Document frames use the shared inline source notes.
+
+The default frame is 680 by 360 pixels; user drag and resize behavior remains unchanged.

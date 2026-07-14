@@ -73,7 +73,7 @@ export function L2CodeBlock({
   const codePadding = `${6 / zoom}px 0`;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "max-content", minWidth: "100%" }}>
+    <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
       <div
         style={{
           fontSize: 8 / zoom,
@@ -87,8 +87,11 @@ export function L2CodeBlock({
       >
         Source Code
       </div>
-      <pre
+      <div style={{ width: "100%", minWidth: 0 }}><pre
         style={{
+          width: "100%",
+          minWidth: 0,
+          boxSizing: "border-box",
           margin: 0,
           padding: codePadding,
           background: "#fafafa",
@@ -111,7 +114,7 @@ export function L2CodeBlock({
             clickableNames={clickableNames}
           />
         ) : null}
-      </pre>
+      </pre></div>
     </div>
   );
 }

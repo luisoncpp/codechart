@@ -39,3 +39,5 @@ phase; **Reload** re-runs the last picked path. Builder `Err` → `failed` with 
   capability missing from `src-tauri/capabilities/default.json`.
 - **`failed` immediately** → IPC error (command not registered in `lib.rs`) or a
   builder invariant broke; the message is shown in the bar.
+
+Review Notes reconcile after a ready graph load. Their source UI stays disabled until that operation succeeds; a note-load error is retryable and does not hide the graph.

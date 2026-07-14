@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import {
   buildModuleDiffDisplay,
   UNCHANGED_MODULE_DIFF_OPACITY,
@@ -6,6 +6,7 @@ import {
   type FileLineDiff,
 } from "../../../domain/diff";
 import { tokenizeCode, type Token } from "./highlighter";
+import { InlineReviewNotes, useReviewNotesStore } from "../../review_notes";
 
 interface DiffCodeLinesProps {
   source: string;
@@ -30,6 +31,9 @@ export function DiffCodeLines({
   activeLineRef,
   clickableNames,
 }: DiffCodeLinesProps) {
+  const reviewNotes = useReviewNotesStore();
+  const notes = reviewNotes?.notesFor(path) ?? [];
+  const draft = reviewNotes?.getDraft();
   const rows = useMemo(
     () => buildModuleDiffDisplay(source, fileDiff),
     [source, fileDiff],
@@ -41,18 +45,25 @@ export function DiffCodeLines({
 
   return (
     <>
-      {rows.map((row, idx) => (
-        <DiffCodeLine
-          key={idx}
-          row={row}
-          tokens={tokenized[idx]!}
-          zoom={zoom}
-          prefix={lineClassPrefix}
-          active={row.kind !== "remove" && row.lineNumber === activeLine}
-          lineRef={row.kind !== "remove" && row.lineNumber === activeLine ? activeLineRef : undefined}
-          clickableNames={clickableNames}
-        />
-      ))}
+      {rows.map((row, idx) => {
+        const showNotes = row.kind !== "remove";
+        const lineNotes = showNotes ? notes.filter((note) => note.endLine === row.lineNumber) : [];
+        const showDraft = showNotes && draft?.path === path && draft.endLine === row.lineNumber;
+        return <Fragment key={idx}>
+          <DiffCodeLine
+            row={row}
+            tokens={tokenized[idx]!}
+            zoom={zoom}
+            prefix={lineClassPrefix}
+            active={showNotes && row.lineNumber === activeLine}
+            lineRef={showNotes && row.lineNumber === activeLine ? activeLineRef : undefined}
+            clickableNames={clickableNames}
+            anchored={showNotes && notes.some((note) => row.lineNumber >= note.startLine && row.lineNumber <= note.endLine)}
+            onLineClick={reviewNotes && showNotes ? (line, extend) => selectReviewLine(reviewNotes, source, path, line, extend) : undefined}
+          />
+          {showNotes && <InlineReviewNotes notes={lineNotes} showDraft={showDraft} zoom={zoom} />}
+        </Fragment>;
+      })}
     </>
   );
 }
@@ -72,6 +83,8 @@ interface DiffCodeLineProps {
   active?: boolean;
   lineRef?: React.RefObject<HTMLDivElement | null>;
   clickableNames?: ReadonlySet<string>;
+  anchored?: boolean;
+  onLineClick?: (line: number, extend: boolean) => void;
 }
 
 /** Token types whose text can never be a navigable identifier. */
@@ -83,7 +96,7 @@ function tokenClass(token: Token, clickableNames?: ReadonlySet<string>): string 
   return `hl-${token.type}${clickable ? " hl-clickable" : ""}`;
 }
 
-function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef, clickableNames }: DiffCodeLineProps) {
+function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef, clickableNames, anchored, onLineClick }: DiffCodeLineProps) {
   const fontSize = 12.5 / zoom;
   const gutter = row.kind === "add" ? "+" : row.kind === "remove" ? "-" : " ";
   const lineNumber = row.kind === "remove" ? "" : String(row.lineNumber);
@@ -113,7 +126,7 @@ function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef, clickableNam
       >
         {gutter}
       </span>
-      <span
+      {row.kind === "remove" ? <span
         className={`${prefix}__ln`}
         style={{
           flex: `0 0 ${18 / zoom}px`,
@@ -125,8 +138,8 @@ function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef, clickableNam
         }}
       >
         {lineNumber}
-      </span>
-      <span className={`${prefix}__text`} style={{ flex: 1 }}>
+      </span> : <button type="button" className={`${prefix}__ln`} onClick={(event) => onLineClick?.(row.lineNumber, event.shiftKey)} style={{ flex: `0 0 ${18 / zoom}px`, textAlign: "right", paddingRight: 6 / zoom, color: "#94a3b8", border: 0, background: "transparent", cursor: "pointer", fontSize: fontSize * 0.9 }}>{lineNumber}</button>}
+      <span className={`${prefix}__text${anchored ? ` ${prefix}__text--review-note` : ""}`} style={{ flex: 1, background: anchored ? "#f3e8ff" : undefined }}>
         {tokens.length === 0 ? " " : tokens.map((token, i) => (
           <span key={i} className={tokenClass(token, clickableNames)}>
             {token.text}
@@ -135,6 +148,14 @@ function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef, clickableNam
       </span>
     </div>
   );
+}
+
+function selectReviewLine(store: NonNullable<ReturnType<typeof useReviewNotesStore>>, source: string, path: string, line: number, extend: boolean) {
+  const current = store.getDraft();
+  const start = extend && current?.path === path ? Math.min(current.startLine, line) : line;
+  const end = extend && current?.path === path ? Math.max(current.startLine, line) : line;
+  const lines = source.split("\n").slice(start - 1, end);
+  store.beginDraft({ path, startLine: start, endLine: end, anchorLines: lines });
 }
 
 export function moduleDiffOpacity(

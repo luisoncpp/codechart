@@ -40,6 +40,7 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
           group→group edges). EdgeLayer ignores their position. */}
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <ConnectionToggle disconnected={!!data.disconnected} scale={scale} />
+      {!!data.reviewNoteCount && <button type="button" data-review-note-badge style={{ position: "absolute", right: 8 * scale, top: 6 * scale, zIndex: 3, border: "1px solid #7c3aed", borderRadius: 999, background: "#f3e8ff", color: "#5b21b6", fontSize: 9 * scale, cursor: "pointer" }}>{data.reviewNoteCount}</button>}
       {data.collapsed ? (
         <CollapsedCard data={data} text={text} scale={scale} width={width} height={height} />
       ) : (

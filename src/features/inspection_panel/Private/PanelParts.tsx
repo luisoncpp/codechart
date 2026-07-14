@@ -5,9 +5,13 @@ import { PanelResizeHandle } from "./PanelResizeHandle";
 
 export function PanelChrome({
   onHide,
+  activeTab = "inspector",
+  onTabChange,
   children,
 }: {
   onHide?: () => void;
+  activeTab?: "inspector" | "review-notes";
+  onTabChange?: (tab: "inspector" | "review-notes") => void;
   children: React.ReactNode;
 }) {
   const { width } = useInspectorLayout();
@@ -16,7 +20,10 @@ export function PanelChrome({
     <aside style={{ ...panelStyle, width, flexShrink: 0 }}>
       <PanelResizeHandle />
       <div style={headerStyle}>
-        <span style={headerLabelStyle}>Inspector</span>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" onClick={() => onTabChange?.("inspector")} style={tabStyle(activeTab === "inspector")}>Inspector</button>
+          <button type="button" onClick={() => onTabChange?.("review-notes")} style={tabStyle(activeTab === "review-notes")}>Review Notes</button>
+        </div>
         {onHide && (
           <button
             type="button"
@@ -80,3 +87,7 @@ const hideBtnStyle: React.CSSProperties = {
   borderRadius: 4,
   cursor: "pointer",
 };
+
+function tabStyle(active: boolean): React.CSSProperties {
+  return { ...headerLabelStyle, padding: 0, border: 0, background: "transparent", cursor: "pointer", color: active ? "#5b21b6" : "#64748b" };
+}
