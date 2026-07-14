@@ -3,6 +3,7 @@ import type React from "react";
 import type { Node } from "@xyflow/react";
 import type { GraphSessionStore } from "../../../state/graph-session";
 import { GraphCanvasNodeHandlers } from "./graph-canvas-node-handlers";
+import type { ModuleContextTarget } from "./graph-canvas-node-handlers";
 import { GraphCanvasViewportHandlers } from "./graph-canvas-viewport-handlers";
 
 /**
@@ -29,8 +30,8 @@ export class GraphCanvasController {
     this.nodes.onNodeDoubleClick(node);
   }
 
-  modulePathForContextMenu(node: Node): string | null {
-    return this.nodes.modulePathForContextMenu(node);
+  moduleForContextMenu(node: Node): ModuleContextTarget | null {
+    return this.nodes.moduleForContextMenu(node);
   }
 
   onPaneClick() {

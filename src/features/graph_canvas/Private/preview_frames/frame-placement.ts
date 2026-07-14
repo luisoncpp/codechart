@@ -18,6 +18,11 @@ export interface Position {
   left: number;
 }
 
+export interface ClientPoint {
+  x: number;
+  y: number;
+}
+
 const SPACING = 8;
 
 /** Initial placement next to a clicked symbol node (container-relative). */
@@ -38,6 +43,18 @@ export function computeWidgetPosition(
   }
   if (top < SPACING) top = SPACING;
 
+  return { top, left };
+}
+
+/** Initial placement for a document opened from a cursor-positioned menu. */
+export function computePointWidgetPosition(
+  point: ClientPoint,
+  containerRect: DOMRect,
+): Position {
+  const maxLeft = Math.max(SPACING, containerRect.width - FRAME_WIDTH - SPACING);
+  const maxTop = Math.max(SPACING, containerRect.height - FRAME_HEIGHT - SPACING);
+  const left = Math.min(Math.max(SPACING, point.x - containerRect.left), maxLeft);
+  const top = Math.min(Math.max(SPACING, point.y - containerRect.top), maxTop);
   return { top, left };
 }
 

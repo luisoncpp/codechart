@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { FileLineDiff } from "../../../../domain/diff";
 import { DiffCodeLines } from "../DiffCodeLines";
+import { L2CodeBlock, L2Description } from "../L2Content";
 import { findSymbolLine } from "./symbol-source-utils";
 import type { PreviewFrame } from "./frame-list";
 import type { Position } from "./frame-placement";
@@ -48,11 +49,13 @@ export function SymbolSourceWidget({
 }: SymbolSourceWidgetProps) {
   const lineRef = useRef<HTMLDivElement>(null);
   const targetLine = useMemo(
-    /*scanSourceForDefinition*/ () => findSymbolLine(frame.sourceText, frame.symbolName) + 1,
+    /*scanSourceForDefinition*/ () =>
+      frame.symbolName ? findSymbolLine(frame.sourceText, frame.symbolName) + 1 : undefined,
     [frame.sourceText, frame.symbolName],
   );
 
   useEffect(() => {
+    if (targetLine === undefined) return;
     const timer = setTimeout(/*centerDefinitionLine*/ () => {
       centerLineInBody(lineRef.current);
     }, /*delayInMs=*/50);
@@ -81,7 +84,9 @@ export function SymbolSourceWidget({
     >
       <div className="symbol-widget__header" onPointerDown={onHeaderPointerDown}>
         <div className="symbol-widget__info">
-          <div className="symbol-widget__title">{frame.symbolName}</div>
+          <div className="symbol-widget__title">
+            {frame.symbolName ?? frame.moduleLabel}
+          </div>
           <div className="symbol-widget__path">{frame.modulePath}</div>
         </div>
         <button
@@ -93,18 +98,65 @@ export function SymbolSourceWidget({
         </button>
       </div>
       <div className="symbol-widget__body" onClick={onCodeClick}>
-        <pre className="symbol-widget__code">
-          <DiffCodeLines
-            source={frame.sourceText}
-            path={frame.modulePath}
+        {frame.symbolName ? (
+          <SymbolCode
+            frame={frame}
             fileDiff={fileDiff}
-            lineClassPrefix="symbol-widget"
-            activeLine={targetLine}
-            activeLineRef={lineRef}
-            clickableNames={clickableSymbols}
+            targetLine={targetLine!}
+            lineRef={lineRef}
+            clickableSymbols={clickableSymbols}
           />
-        </pre>
+        ) : (
+          <DocumentContent
+            frame={frame}
+            fileDiff={fileDiff}
+            clickableSymbols={clickableSymbols}
+          />
+        )}
       </div>
+    </div>
+  );
+}
+
+interface CodeContentProps {
+  frame: PreviewFrame;
+  fileDiff?: FileLineDiff;
+  clickableSymbols: ReadonlySet<string>;
+}
+
+function SymbolCode(
+  props: CodeContentProps & {
+    targetLine: number;
+    lineRef: React.RefObject<HTMLDivElement | null>;
+  },
+) {
+  return (
+    <pre className="symbol-widget__code">
+      <DiffCodeLines
+        source={props.frame.sourceText}
+        path={props.frame.modulePath}
+        fileDiff={props.fileDiff}
+        lineClassPrefix="symbol-widget"
+        activeLine={props.targetLine}
+        activeLineRef={props.lineRef}
+        clickableNames={props.clickableSymbols}
+      />
+    </pre>
+  );
+}
+
+function DocumentContent({ frame, fileDiff, clickableSymbols }: CodeContentProps) {
+  return (
+    <div className="symbol-widget__document">
+      <L2Description description={frame.description} color={frame.color} zoom={1} />
+      <L2CodeBlock
+        snippet={frame.sourceText}
+        path={frame.modulePath}
+        zoom={1}
+        fileDiff={fileDiff}
+        clickableNames={clickableSymbols}
+        lineClassPrefix="symbol-widget"
+      />
     </div>
   );
 }

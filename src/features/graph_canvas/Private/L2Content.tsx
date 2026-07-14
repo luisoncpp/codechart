@@ -58,9 +58,18 @@ interface CodeBlockProps {
   path?: string;
   zoom: number;
   fileDiff?: FileLineDiff;
+  clickableNames?: ReadonlySet<string>;
+  lineClassPrefix?: string;
 }
 
-export function L2CodeBlock({ snippet, path, zoom, fileDiff }: CodeBlockProps) {
+export function L2CodeBlock({
+  snippet,
+  path,
+  zoom,
+  fileDiff,
+  clickableNames,
+  lineClassPrefix,
+}: CodeBlockProps) {
   const codePadding = `${6 / zoom}px 0`;
 
   return (
@@ -98,7 +107,8 @@ export function L2CodeBlock({ snippet, path, zoom, fileDiff }: CodeBlockProps) {
             path={path ?? ""}
             fileDiff={fileDiff}
             zoom={zoom}
-            lineClassPrefix="diff-code"
+            lineClassPrefix={lineClassPrefix ?? "diff-code"}
+            clickableNames={clickableNames}
           />
         ) : null}
       </pre>

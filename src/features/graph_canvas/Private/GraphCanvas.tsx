@@ -131,9 +131,9 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
           onNodeContextMenu={(e, node) => {
             e.preventDefault();
             if ((e.target as HTMLElement).closest("[data-connection-toggle]")) return;
-            const modulePath = controller.modulePathForContextMenu(node);
-            if (!modulePath) return;
-            setContextMenu({ x: e.clientX, y: e.clientY, modulePath });
+            const target = controller.moduleForContextMenu(node);
+            if (!target) return;
+            setContextMenu({ x: e.clientX, y: e.clientY, ...target });
           }}
           onPaneClick={() => {
             controller.onPaneClick();
@@ -184,6 +184,7 @@ export function GraphCanvas({ store, git, shell }: GraphCanvasProps) {
           menu={contextMenu}
           projectRoot={session.getProjectRoot()}
           shell={shell}
+          onOpenPreview={previews.openDocumentPreview}
           onClose={() => setContextMenu(null)}
         />
         {previews.framesView}

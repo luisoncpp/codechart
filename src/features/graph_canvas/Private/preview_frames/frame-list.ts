@@ -4,8 +4,12 @@
 export interface PreviewFrame {
   id: number;
   moduleId: string;
-  symbolName: string;
+  moduleLabel: string;
+  /** Null means the frame shows the complete L2 document from its beginning. */
+  symbolName: string | null;
   modulePath: string;
+  description?: string;
+  color: string;
   sourceText: string;
   top: number;
   left: number;

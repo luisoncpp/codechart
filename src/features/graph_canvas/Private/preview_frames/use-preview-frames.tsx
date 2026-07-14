@@ -1,13 +1,18 @@
 // @Architecture(descriptionShort="Hook adapter owning preview frame state, placement, and close-on-outside-click")
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { Node as FlowNode } from "@xyflow/react";
 import type { ProjectGraph } from "../../../../domain/graph";
 import type { GraphDiffOverlay } from "../../../../domain/diff";
 import type { GraphSessionStore } from "../../../../state/graph-session";
 import { SymbolSourceWidget, type FrameHandlers } from "./SymbolSourceWidget";
 import { openFrame, bringToFront, moveFrame, type PreviewFrame } from "./frame-list";
-import { computeWidgetPosition, placeAdjacentFrame, type FrameRect, type Position } from "./frame-placement";
+import {
+  computePointWidgetPosition,
+  computeWidgetPosition,
+} from "./frame-placement";
 import { combinedSymbolTargets, sourcePrefetchIds } from "./imported-symbol-resolver";
+import { placeNextToFrame } from "./live-frame-placement";
+import { useClosePreviewFrames } from "./use-close-preview-frames";
 
 interface PreviewFramesDeps {
   store: GraphSessionStore;
@@ -16,20 +21,11 @@ interface PreviewFramesDeps {
   containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-/** Container-relative live boxes of every rendered frame (honors user resizes/drags). */
-function liveFrameRects(container: HTMLElement): Map<number, FrameRect> {
-  const containerBox = container.getBoundingClientRect();
-  const rects = new Map<number, FrameRect>();
-  for (const el of container.querySelectorAll<HTMLElement>("[data-frame-id]")) {
-    const box = el.getBoundingClientRect();
-    rects.set(Number(el.dataset.frameId), {
-      top: box.top - containerBox.top,
-      left: box.left - containerBox.left,
-      width: box.width,
-      height: box.height,
-    });
-  }
-  return rects;
+interface DocumentPreviewRequest {
+  moduleId: string;
+  color: string;
+  x: number;
+  y: number;
 }
 
 export function usePreviewFrames(deps: PreviewFramesDeps) {
@@ -77,9 +73,40 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
       );
       const symbolName = (node.data?.label as string) || "";
       void prefetchSources(moduleId);
-      open(/*base=*/ [], { moduleId, symbolName, modulePath: module.path, sourceText, ...pos });
+      open(/*base=*/ [], {
+        moduleId,
+        moduleLabel: module.label,
+        symbolName,
+        modulePath: module.path,
+        color: typeof node.data?.color === "string" ? node.data.color : "#64748b",
+        sourceText,
+        ...pos,
+      });
     },
     [graph, store, containerRef, open, prefetchSources],
+  );
+
+  /** Context-menu action: open the module's complete L2 document at its beginning. */
+  const openDocumentPreview = useCallback(
+    async (request: DocumentPreviewRequest) => {
+      const container = containerRef.current;
+      const module = graph?.modules.find((item) => item.id === request.moduleId);
+      if (!container || !module) return;
+      const sourceText = await store.fetchModuleSource(module.id);
+      const pos = computePointWidgetPosition(request, container.getBoundingClientRect());
+      void prefetchSources(module.id);
+      open(/*base=*/ [], {
+        moduleId: module.id,
+        moduleLabel: module.label,
+        symbolName: null,
+        modulePath: module.path,
+        description: module.annotation?.descriptionLong || module.annotation?.descriptionShort,
+        color: request.color,
+        sourceText,
+        ...pos,
+      });
+    },
+    [containerRef, graph, open, prefetchSources, store],
   );
 
   /** Clickable symbol (import, function, or method) clicked inside a frame. */
@@ -90,18 +117,28 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
       if (!container || !graph || !sourceFrame) return;
       const target = combinedSymbolTargets(graph, sourceFrame.moduleId, moduleSources).get(symbolName);
       if (!target) return;
+      const targetModule = graph.modules.find((item) => item.id === target.moduleId);
+      if (!targetModule) return;
       const sourceText = await store.fetchModuleSource(target.moduleId);
       void prefetchSources(target.moduleId);
-      const pos = placeNextTo(sourceFrameId, container);
+      const pos = placeNextToFrame(sourceFrameId, container);
       if (!pos) return;
-      open(frames, { moduleId: target.moduleId, symbolName, modulePath: target.path, sourceText, ...pos });
+      open(frames, {
+        moduleId: target.moduleId,
+        moduleLabel: targetModule.label,
+        symbolName,
+        modulePath: target.path,
+        color: "#64748b",
+        sourceText,
+        ...pos,
+      });
     },
     [graph, store, containerRef, frames, open, moduleSources, prefetchSources],
   );
 
   const closeAll = useCallback(() => setFrames([]), []);
 
-  useCloseOnOutsideClick(frames.length > 0, closeAll);
+  useClosePreviewFrames(frames.length > 0, closeAll);
 
   const handlers = useMemo<FrameHandlers>(
     () => ({
@@ -141,15 +178,7 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     </>
   );
 
-  return { openFromSymbolNode, closeAll, framesView };
-}
-
-function placeNextTo(anchorFrameId: number, container: HTMLElement): Position | null {
-  const rects = liveFrameRects(container);
-  const anchor = rects.get(anchorFrameId);
-  if (!anchor) return null;
-  const containerSize = { width: container.clientWidth, height: container.clientHeight };
-  return placeAdjacentFrame(anchor, [...rects.values()], containerSize);
+  return { openFromSymbolNode, openDocumentPreview, closeAll, framesView };
 }
 
 const EMPTY_NAMES: ReadonlySet<string> = new Set();
@@ -164,25 +193,4 @@ function withNewSources(
   const next = new Map(prev);
   for (const [id, text] of fresh) next.set(id, text);
   return next;
-}
-
-/** Any click landing outside every open frame closes them all. */
-function useCloseOnOutsideClick(active: boolean, closeAll: () => void) {
-  useEffect(() => {
-    if (!active) return;
-    const handler = (e: MouseEvent) => {
-      const widgets = document.querySelectorAll(".symbol-widget");
-      for (const widget of widgets) {
-        if (widget.contains(e.target as globalThis.Node)) return;
-      }
-      closeAll();
-    };
-    const timer = setTimeout(/*attachAfterOpeningClick*/ () => {
-      document.addEventListener("click", handler);
-    }, /*delayInMs=*/0);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener("click", handler);
-    };
-  }, [active, closeAll]);
 }

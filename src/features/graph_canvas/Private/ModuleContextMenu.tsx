@@ -6,13 +6,16 @@ import { joinRootPath } from "./join-root-path";
 export interface ModuleContextMenuState {
   x: number;
   y: number;
+  moduleId: string;
   modulePath: string;
+  color: string;
 }
 
 interface ModuleContextMenuProps {
   menu: ModuleContextMenuState | null;
   projectRoot: string | null;
   shell: ShellClient;
+  onOpenPreview: (menu: ModuleContextMenuState) => void;
   onClose: () => void;
 }
 
@@ -20,6 +23,7 @@ export function ModuleContextMenu({
   menu,
   projectRoot,
   shell,
+  onOpenPreview,
   onClose,
 }: ModuleContextMenuProps) {
   useEffect(() => {
@@ -40,6 +44,11 @@ export function ModuleContextMenu({
 
   const reveal = () => {
     void shell.revealInExplorer(joinRootPath(projectRoot, menu.modulePath));
+    onClose();
+  };
+
+  const openPreview = () => {
+    onOpenPreview(menu);
     onClose();
   };
 
@@ -69,6 +78,14 @@ export function ModuleContextMenu({
           boxShadow: "0 4px 12px rgba(15, 23, 42, 0.12)",
         }}
       >
+        <button
+          type="button"
+          role="menuitem"
+          onClick={openPreview}
+          style={menuItemStyle}
+        >
+          Open file preview
+        </button>
         <button
           type="button"
           role="menuitem"

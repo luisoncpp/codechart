@@ -28,7 +28,7 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. `FocusNode` centers the viewport on inspector import navigation. |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules + groups) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
 | `SelectionNavigation` | `features/graph_canvas` | Top-left back/forward controls plus `Alt+Left` / `Alt+Right`; disabled states come from the session history pointer. |
-| `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; copies the graph-relative module path via the browser clipboard or reveals the file via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
+| `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, copies the graph-relative path, or reveals the file via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
 | `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
 
 ## Aesthetic rules (the visual gate)
@@ -267,7 +267,7 @@ hidden by zoom collapse.
   Defaults come from `GroupNode.disconnectedByDefault` / `disconnectedModuleIds` (parsed from `*.group.md`
   `disconnected` / `disconnectedModules`); session state seeds on load and user toggles layer on top.
   Modules inherit a parent group's disconnect (ancestor chain). Inspection still lists imports on the raw graph.
-- **Symbol source preview frames (L1.5, multi-frame):** owned by the nested deep module
+- **Source preview frames (document or symbol, multi-frame):** owned by the nested deep module
   `features/graph_canvas/Private/preview_frames/` (public interface: `usePreviewFrames`, `findSymbolLine`;
   `GraphCanvas` renders `framesView` and wires `openFromSymbolNode`/`closeAll`). Clicking an exported
   symbol node selects its parent module and opens a resizable, scrollable, **draggable** (header bar)
@@ -283,7 +283,11 @@ hidden by zoom collapse.
   of the clicked frame, else **below**, else **above**, else right-with-overlap
   (`placeAdjacentFrame`, pure; live DOM rects honor user resize/drag). Same module+symbol dedupes to a
   bring-to-front. Any click outside every frame closes them all; clicks inside any frame (scrollbars
-  included) close nothing; canvas pan/zoom closes all.
+  included) close nothing; canvas pan/zoom closes all. **Open file preview** in a module or symbol
+  context menu opens the parent module at the cursor without entering L2. The document frame starts
+  at the top and composes the same preferred module description plus complete highlighted source as
+  the L2 document. It retains clickable cross-module identifiers and diff rows; like a canvas symbol
+  click, opening it replaces existing frames.
 
 Store surface (TDD §5.1): `getZoomLevel`, `getReducedGraph`, `getCollapsedGroupIds`,
 `getDisconnectedGroupIds`, `getDisconnectedModuleIds`, `getSourceCache`,
