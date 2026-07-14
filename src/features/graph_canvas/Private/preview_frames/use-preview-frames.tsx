@@ -117,7 +117,7 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
 
   const openReviewNotePreview = useCallback(async (request: ReviewPreviewRequest) => {
     const container = containerRef.current;
-    const module = graph?.modules.find((item) => item.path === request.path);
+    const module = store.getGraph()?.modules.find((item) => item.path === request.path);
     if (!container || !module) return;
     const sourceText = await store.fetchModuleSource(module.id);
     const pos = computePointWidgetPosition({ x: container.getBoundingClientRect().left + 24, y: container.getBoundingClientRect().top + 24 }, container.getBoundingClientRect());
@@ -127,7 +127,7 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
       if (existing) return openFrame(previous.map((frame) => frame.id === existing.id ? { ...frame, activeRange } : frame), { ...existing, activeRange, id: existing.id });
       return openFrame(previous, { moduleId: module.id, moduleLabel: module.label, symbolName: null, modulePath: module.path, description: module.annotation?.descriptionLong || module.annotation?.descriptionShort, color: "#64748b", sourceText, activeRange, ...pos, id: nextId.current++ });
     });
-  }, [containerRef, graph, store]);
+  }, [containerRef, store]);
 
   /** Clickable symbol (import, function, or method) clicked inside a frame. */
   const openFromSymbolClick = useCallback(

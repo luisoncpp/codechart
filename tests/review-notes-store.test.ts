@@ -83,4 +83,20 @@ describe("ReviewNotesStore", () => {
     store.navigate(document.notes[1]!);
     expect(store.getNavigationRequest()).toMatchObject({ path: "src/core/store.ts", startLine: 2 });
   });
+
+  it("consumes navigation once and clears stale requests on project load", async () => {
+    const note = { id: "a", path: "src/main.ts", startLine: 1, endLine: 1, anchorLines: ["x"], body: "a" };
+    const store = new ReviewNotesStore(client());
+    await ready(store);
+    store.navigate(note);
+    const request = store.getNavigationRequest()!;
+
+    expect(store.consumeNavigationRequest(request.seq)).toBe(true);
+    expect(store.consumeNavigationRequest(request.seq)).toBe(false);
+    expect(store.getNavigationRequest()).toBeNull();
+
+    store.navigate(note);
+    await store.loadProject({ root: "/next", graph });
+    expect(store.getNavigationRequest()).toBeNull();
+  });
 });

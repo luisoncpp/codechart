@@ -41,6 +41,12 @@ export class ReviewNotesStore {
   onChange(listener: Listener) { this.listeners.add(listener); }
   offChange(listener: Listener) { this.listeners.delete(listener); }
 
+  consumeNavigationRequest(seq: number) {
+    if (this.navigation?.seq !== seq) return false;
+    this.navigation = null;
+    return true;
+  }
+
   async loadProject(input: { root: string; graph: ProjectGraph }) {
     const seq = ++this.loadSeq;
     this.root = input.root;
@@ -49,6 +55,7 @@ export class ReviewNotesStore {
     this.phase = "loading";
     this.error = null;
     this.draft = null;
+    this.navigation = null;
     this.emit();
     try {
       const document = await this.client.loadReviewNotes(input.root, input.graph.modules.map((module) => module.path));
@@ -110,6 +117,7 @@ export class ReviewNotesStore {
   done(id: string) {
     const index = this.document.notes.findIndex((note) => note.id === id);
     if (index < 0) return;
+    if (this.navigation?.id === id) this.navigation = null;
     this.undo = { note: this.document.notes[index]!, index };
     if (this.undoTimer) clearTimeout(this.undoTimer);
     this.undoTimer = setTimeout(/*expireUndo*/ () => { this.undo = null; this.emit(); }, /*delayInMs=*/5000);

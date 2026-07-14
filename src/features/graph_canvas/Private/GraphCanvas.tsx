@@ -70,8 +70,10 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
   const { openReviewNotePreview } = previews;
   const navigation = reviewNotes?.getNavigationRequest();
   useEffect(() => {
-    if (navigation) void openReviewNotePreview(navigation);
-  }, [navigation, openReviewNotePreview]);
+    if (!navigation || !reviewNotes) return;
+    if (!reviewNotes.consumeNavigationRequest(navigation.seq)) return;
+    void openReviewNotePreview(navigation);
+  }, [navigation, openReviewNotePreview, reviewNotes]);
 
   const controller = useMemo(
     /*build controller*/ () => new GraphCanvasController(store, previews.openFromSymbolNode, (node) => {
