@@ -83,6 +83,7 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
 
   const cacheVersion = session.getSourceCacheVersion();
   const groupDocCacheVersion = session.getGroupDocCacheVersion();
+  const reviewNotesDocument = reviewNotes?.getDocument();
   const heatOptions = useMemo(() => {
     if (!heatGraph || !heatmapEnabled || diffOverlay) return undefined;
     const moduleIds = new Set(
@@ -117,8 +118,10 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
   const displayProjected = useMemo(() => {
     if (!projected) return null;
     const diffed = diffOverlay ? applyDiffOverlay(projected, diffOverlay) : projected;
+    // The store identity is stable; its immutable document invalidates badge counts.
+    void reviewNotesDocument;
     return reviewNotes ? withReviewCounts(diffed, heatGraph, reviewNotes) : diffed;
-  }, [projected, diffOverlay, reviewNotes, heatGraph]);
+  }, [projected, diffOverlay, reviewNotes, reviewNotesDocument, heatGraph]);
 
   const styledEdges = useStyledEdges(displayProjected, edgeFocus);
 

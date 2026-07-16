@@ -49,3 +49,4 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 | [local-draft-state-avoids-canvas-rerenders.md](./local-draft-state-avoids-canvas-rerenders.md) | Keep high-frequency draft input out of global stores that re-render the React Flow canvas | 2026-07-14 |
 | [navigation-requests-must-be-consumed.md](./navigation-requests-must-be-consumed.md) | Retained UI commands replay when unrelated dependencies recreate an effect callback | 2026-07-14 |
 | [programmatic-canvas-moves-trigger-move-handlers.md](./programmatic-canvas-moves-trigger-move-handlers.md) | React Flow camera commands trigger move handlers and can undo the navigation UI that caused them | 2026-07-14 |
+| [stable-store-identity-does-not-invalidate-memos.md](./stable-store-identity-does-not-invalidate-memos.md) | External-store rerenders do not invalidate memos that depend only on the stable store object | 2026-07-16 |
