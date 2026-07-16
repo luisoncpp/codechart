@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Centers the canvas viewport on a module requested by the inspector")
+// @Architecture(descriptionShort="Centers the canvas viewport on a module requested by navigation")
 import { useEffect } from "react";
 import { useReactFlow, useStore, useStoreApi } from "@xyflow/react";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";

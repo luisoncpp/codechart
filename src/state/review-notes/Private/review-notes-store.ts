@@ -9,6 +9,7 @@ import type {
 
 type Phase = "idle" | "loading" | "ready" | "failed";
 type Listener = () => void;
+type UndoEntry = { note: ReviewNote; index: number };
 const EMPTY: ReviewNotesDocument = { version: 1, notes: [] };
 
 export class ReviewNotesStore {
@@ -23,7 +24,7 @@ export class ReviewNotesStore {
   private saveInFlight = false;
   private pending: ReviewNotesDocument | null = null;
   private debounce: ReturnType<typeof setTimeout> | null = null;
-  private undo: { note: ReviewNote; index: number } | null = null;
+  private undo: UndoEntry[] | null = null;
   private undoTimer: ReturnType<typeof setTimeout> | null = null;
   private navigation: ReviewNoteNavigationRequest | null = null;
   private navigationSeq = 0;
@@ -115,20 +116,27 @@ export class ReviewNotesStore {
     this.mutate(this.document.notes.map((note) => note.id === id ? { ...note, body } : note), /*immediate=*/false);
   }
   done(id: string) {
-    const index = this.document.notes.findIndex((note) => note.id === id);
-    if (index < 0) return;
-    if (this.navigation?.id === id) this.navigation = null;
-    this.undo = { note: this.document.notes[index]!, index };
+    this.doneAll([id]);
+  }
+  doneAll(ids: readonly string[]) {
+    const targets = new Set(ids);
+    const resolved = this.document.notes
+      .map((note, index) => ({ note, index }))
+      .filter(({ note }) => targets.has(note.id));
+    if (resolved.length === 0) return;
+    if (this.navigation && targets.has(this.navigation.id)) this.navigation = null;
+    this.undo = resolved;
     if (this.undoTimer) clearTimeout(this.undoTimer);
     this.undoTimer = setTimeout(/*expireUndo*/ () => { this.undo = null; this.emit(); }, /*delayInMs=*/5000);
-    this.mutate(this.document.notes.filter((note) => note.id !== id), /*immediate=*/true);
+    this.mutate(this.document.notes.filter((note) => !targets.has(note.id)), /*immediate=*/true);
   }
   undoDone() {
     if (!this.undo) return;
-    const { note, index } = this.undo;
+    const resolved = this.undo;
     this.undo = null;
     if (this.undoTimer) clearTimeout(this.undoTimer);
-    const notes = [...this.document.notes]; notes.splice(index, 0, note);
+    const notes = [...this.document.notes];
+    resolved.forEach(({ note, index }) => notes.splice(index, 0, note));
     this.mutate(notes, /*immediate=*/true);
   }
   canUndo = () => this.undo !== null;

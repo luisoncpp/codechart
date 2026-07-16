@@ -69,6 +69,25 @@ describe("ReviewNotesStore", () => {
     vi.useRealTimers();
   });
 
+  it("resolves multiple notes atomically and restores them with one Undo", async () => {
+    vi.useFakeTimers();
+    const document = { version: 1 as const, notes: [
+      { id: "a", path: "src/main.ts", startLine: 1, endLine: 1, anchorLines: ["a"], body: "one" },
+      { id: "b", path: "src/main.ts", startLine: 2, endLine: 2, anchorLines: ["b"], body: "two" },
+      { id: "c", path: "src/main.ts", startLine: 3, endLine: 3, anchorLines: ["c"], body: "three" },
+    ] };
+    const store = new ReviewNotesStore(client({ loadReviewNotes: async () => document }));
+    await ready(store);
+
+    store.doneAll(["a", "c"]);
+    expect(store.getDocument().notes.map((note) => note.id)).toEqual(["b"]);
+    expect(store.canUndo()).toBe(true);
+
+    store.undoDone();
+    expect(store.getDocument().notes.map((note) => note.id)).toEqual(["a", "b", "c"]);
+    vi.useRealTimers();
+  });
+
   it("derives module/group counts, filters, and navigation", async () => {
     const document = { version: 1 as const, notes: [
       { id: "a", path: "src/core/index.ts", startLine: 1, endLine: 1, anchorLines: ["x"], body: "a" },

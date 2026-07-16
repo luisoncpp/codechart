@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Main React Flow canvas rendering modules, groups, and edges")
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -30,7 +30,7 @@ import { LevelBadge } from "./LevelBadge";
 import { ViewControls } from "./ViewControls";
 import { SelectionNavigation } from "./SelectionNavigation";
 import type { ReviewNotesStore } from "../../../state/review-notes";
-import { moduleIdsInGroupTree, type ProjectedGraph } from "../../../domain/graph";
+import { useReviewNoteNavigation, withReviewCounts } from "./review-note-canvas";
 
 interface GraphCanvasProps {
   store: GraphSessionStore;
@@ -67,13 +67,9 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
 
   const containerRef = useRef<HTMLDivElement>(null);
   const previews = usePreviewFrames({ store, graph, diffOverlay, containerRef });
-  const { openReviewNotePreview } = previews;
-  const navigation = reviewNotes?.getNavigationRequest();
-  useEffect(() => {
-    if (!navigation || !reviewNotes) return;
-    if (!reviewNotes.consumeNavigationRequest(navigation.seq)) return;
-    void openReviewNotePreview(navigation);
-  }, [navigation, openReviewNotePreview, reviewNotes]);
+  const noteNavigation = useReviewNoteNavigation({
+    store, notes: reviewNotes, openPreview: previews.openReviewNotePreview,
+  });
 
   const controller = useMemo(
     /*build controller*/ () => new GraphCanvasController(store, previews.openFromSymbolNode, (node) => {
@@ -155,9 +151,14 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
             controller.onPaneClick();
             setContextMenu(null);
           }}
-          onMoveStart={() => previews.closeAll()}
+          onMoveStart={(event) => {
+            if (noteNavigation.shouldClosePreview(event)) previews.closeAll();
+          }}
           onMove={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}
-          onMoveEnd={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}
+          onMoveEnd={(_e, viewport) => {
+            noteNavigation.finishMove();
+            controller.onViewportZoom(viewport.zoom);
+          }}
           fitView
           fitViewOptions={fitOptions}
           minZoom={CANVAS_MIN_ZOOM}
@@ -207,22 +208,4 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
       </div>
     </ReactFlowProvider>
   );
-}
-
-function withReviewCounts(projected: ProjectedGraph, graph: ReturnType<GraphSessionStore["getGraph"]>, notes: ReviewNotesStore): ProjectedGraph {
-  if (!graph) return projected;
-  return {
-    ...projected,
-    nodes: projected.nodes.map((node) => {
-      if (node.type === "module") {
-        const count = notes.countForModule(node.id);
-        return count ? { ...node, data: { ...node.data, reviewNoteCount: count } } : node;
-      }
-      if (node.type === "group") {
-        const count = [...moduleIdsInGroupTree(graph, node.id)].reduce((total, id) => total + notes.countForModule(id), 0);
-        return count ? { ...node, data: { ...node.data, reviewNoteCount: count } } : node;
-      }
-      return node;
-    }),
-  };
 }
