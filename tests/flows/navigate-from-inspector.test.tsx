@@ -18,6 +18,21 @@ function viewportTransform(container: HTMLElement): string | null {
 }
 
 describe("flow: navigate-from-inspector", () => {
+  it("top-aligns import bullets when module paths wrap", async () => {
+    const store = await readyStore();
+    const edge = flowGoldenGraph.edges.find((e) => e.kind === "import")!;
+    store.select(edge.source);
+
+    renderInspectionPanel(store);
+    const imports = screen.getByText(/^Imports/).closest("div")!;
+    const link = within(imports).getByRole("button", { name: edge.target });
+    const item = link.closest("li")!;
+    const bullet = within(item).getByText("•");
+
+    expect(item).toHaveStyle({ display: "flex", alignItems: "flex-start" });
+    expect(bullet).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("clicking an import focuses the target module in the store", async () => {
     const store = await readyStore();
     const edge = flowGoldenGraph.edges.find((e) => e.kind === "import")!;

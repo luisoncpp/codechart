@@ -20,31 +20,73 @@ export function EdgeList({ title, edges, field, onItemClick }: EdgeListProps) {
       {edges.length === 0 ? (
         <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>None</p>
       ) : (
-        <ul style={{ fontSize: 12, paddingLeft: 16, margin: 0 }}>
-          {edges.map((e) => {
-            const moduleId = e[field];
-            if (!onItemClick) {
-              return <li key={e.id}>{moduleId}</li>;
-            }
-            return (
-              <li key={e.id} style={{ listStyle: "disc" }}>
-                <button
-                  type="button"
-                  onClick={() => onItemClick(moduleId)}
-                  style={linkButtonStyle}
-                >
-                  {moduleId}
-                </button>
-              </li>
-            );
-          })}
+        <ul style={listStyle}>
+          {edges.map((edge) => (
+            <EdgeItem
+              key={edge.id}
+              edge={edge}
+              field={field}
+              onItemClick={onItemClick}
+            />
+          ))}
         </ul>
       )}
     </div>
   );
 }
 
+function EdgeItem({ edge, field, onItemClick }: Omit<EdgeListProps, "title" | "edges"> & {
+  edge: Edge;
+}) {
+  const moduleId = edge[field];
+  return (
+    <li style={itemStyle}>
+      <Bullet />
+      {onItemClick ? (
+        <button
+          type="button"
+          onClick={() => onItemClick(moduleId)}
+          style={linkButtonStyle}
+        >
+          {moduleId}
+        </button>
+      ) : (
+        <span>{moduleId}</span>
+      )}
+    </li>
+  );
+}
+
+function Bullet() {
+  return (
+    <span aria-hidden="true" style={bulletStyle}>
+      •
+    </span>
+  );
+}
+
+const listStyle: React.CSSProperties = {
+  fontSize: 12,
+  paddingLeft: 0,
+  margin: 0,
+  listStyle: "none",
+};
+
+const itemStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 4,
+};
+
+const bulletStyle: React.CSSProperties = {
+  flex: "0 0 8px",
+  textAlign: "center",
+};
+
 const linkButtonStyle: React.CSSProperties = {
+  display: "block",
+  minWidth: 0,
+  overflowWrap: "anywhere",
   border: "none",
   background: "none",
   padding: 0,
