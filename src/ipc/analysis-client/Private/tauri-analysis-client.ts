@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="Bridges frontend requests to Tauri backend commands")
 import { invoke } from "@tauri-apps/api/core";
 import { ProjectGraph } from "../../../domain/graph";
-import { AnalysisClient } from "./analysis-client";
+import { AnalysisClient, ProjectSearchResult } from "./analysis-client";
 
 /** Calls the Rust `analyze_project` command over Tauri IPC for a real folder. */
 export function createTauriAnalysisClient(): AnalysisClient {
@@ -11,6 +11,13 @@ export function createTauriAnalysisClient(): AnalysisClient {
     },
     async readModuleSource(root: string, path: string): Promise<string> {
       return invoke<string>("read_module_source", { root, path });
+    },
+    async searchModuleSources(
+      root: string,
+      query: string,
+      modulePaths: string[],
+    ): Promise<ProjectSearchResult> {
+      return invoke<ProjectSearchResult>("search_module_sources", { root, query, modulePaths });
     },
   };
 }

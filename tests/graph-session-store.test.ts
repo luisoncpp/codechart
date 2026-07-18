@@ -9,8 +9,14 @@ import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 
 const graph = goldenGraph as unknown as ProjectGraph;
 
+const noSearchResults = async () => ({ matches: [], truncated: false });
+
 function clientReturning(g: ProjectGraph): AnalysisClient {
-  return { analyzeProject: async () => g, readModuleSource: async () => "" };
+  return {
+    analyzeProject: async () => g,
+    readModuleSource: async () => "",
+    searchModuleSources: noSearchResults,
+  };
 }
 
 function newStore(client: AnalysisClient): GraphSessionStore {
@@ -207,6 +213,7 @@ describe("GraphSessionStore semantic zoom", () => {
       readModuleSource: async () => {
         throw new Error("should not fetch source at L1.5");
       },
+      searchModuleSources: noSearchResults,
     };
     const store = newStore(client);
     await store.loadProject("/x");
@@ -232,6 +239,7 @@ describe("GraphSessionStore semantic zoom", () => {
     const client: AnalysisClient = {
       analyzeProject: async () => graph,
       readModuleSource: async (_root, path) => `// source of ${path}`,
+      searchModuleSources: noSearchResults,
     };
     const store = await readyStoreAtZoomLevel2(client);
     expect(store.getSourceCache().size).toBe(graph.modules.length);
@@ -252,6 +260,7 @@ describe("GraphSessionStore semantic zoom", () => {
     const client: AnalysisClient = {
       analyzeProject: async () => withDoc,
       readModuleSource: async (_root, path) => `# Doc for ${path}`,
+      searchModuleSources: noSearchResults,
     };
     const store = await readyStoreAtZoomLevel2(client);
     expect(store.getGroupDocCache().get("core")).toContain("Doc for docs/architecture/contract.md");

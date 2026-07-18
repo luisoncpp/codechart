@@ -10,6 +10,7 @@ pub mod project_config;
 pub mod project_source;
 pub mod references;
 pub mod review_notes;
+pub mod search;
 pub mod semantic_comments;
 pub mod tauri_api;
 pub mod unity_assets;
@@ -30,6 +31,7 @@ pub fn run() {
             tauri_api::analyze_project_at_ref,
             tauri_api::read_module_sources_at_ref,
             tauri_api::read_module_source,
+            tauri_api::search_module_sources,
             tauri_api::read_project_config,
             tauri_api::write_project_config,
             tauri_api::git_is_repo,

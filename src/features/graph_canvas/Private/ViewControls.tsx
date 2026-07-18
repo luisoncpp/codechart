@@ -7,6 +7,7 @@ interface ViewControlsProps {
   onHideTestsChange: (hide: boolean) => void;
   diffActive: boolean;
   onVisualizeDiff: () => void;
+  onOpenProjectSearch: () => void;
   heatmapEnabled: boolean;
   heatmapMode: HeatmapMode;
   heatmapGitAvailable: boolean;
@@ -21,6 +22,7 @@ export function ViewControls({
   onHideTestsChange,
   diffActive,
   onVisualizeDiff,
+  onOpenProjectSearch,
   heatmapEnabled,
   heatmapMode,
   heatmapGitAvailable,
@@ -38,6 +40,15 @@ export function ViewControls({
         />
         Hide tests
       </label>
+      <button
+        type="button"
+        aria-label="Search project"
+        title="Search project (Ctrl+Shift+F)"
+        onClick={onOpenProjectSearch}
+        style={buttonStyle}
+      >
+        Search project
+      </button>
       {!diffActive && (
         <>
           <HeatmapControls

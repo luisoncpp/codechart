@@ -26,6 +26,8 @@ import { FocusNode } from "./FocusNode";
 import { CANVAS_MIN_ZOOM } from "./use-zoom-counter-scale";
 import { GraphCanvasController } from "./graph-canvas-controller";
 import { usePreviewFrames } from "./preview_frames";
+import { ProjectSearch } from "./project_search";
+import { ProgrammaticMoveGuard } from "./programmatic-move-guard";
 import { LevelBadge } from "./LevelBadge";
 import { ViewControls } from "./ViewControls";
 import { SelectionNavigation } from "./SelectionNavigation";
@@ -63,12 +65,14 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
   const heatmapGitAvailable = session.getIsGitRepo() === true;
   const heatmapLoading = session.getPhase() === "loading";
   const [diffModalOpen, setDiffModalOpen] = useState(false);
+  const [projectSearchOpen, setProjectSearchOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<ModuleContextMenuState | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const previews = usePreviewFrames({ store, graph, diffOverlay, containerRef });
-  const noteNavigation = useReviewNoteNavigation({
-    store, notes: reviewNotes, openPreview: previews.openReviewNotePreview,
+  const moveGuard = useRef(new ProgrammaticMoveGuard()).current;
+  useReviewNoteNavigation({
+    store, notes: reviewNotes, openPreview: previews.openReviewNotePreview, guard: moveGuard,
   });
 
   const controller = useMemo(
@@ -155,11 +159,11 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
             setContextMenu(null);
           }}
           onMoveStart={(event) => {
-            if (noteNavigation.shouldClosePreview(event)) previews.closeAll();
+            if (moveGuard.shouldClosePreview(event)) previews.closeAll();
           }}
           onMove={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}
           onMoveEnd={(_e, viewport) => {
-            noteNavigation.finishMove();
+            moveGuard.finishMove();
             controller.onViewportZoom(viewport.zoom);
           }}
           fitView
@@ -187,6 +191,7 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
           onHideTestsChange={(hide) => store.setHideTests(hide)}
           diffActive={!!diffOverlay}
           onVisualizeDiff={() => setDiffModalOpen(true)}
+          onOpenProjectSearch={() => setProjectSearchOpen(/*open=*/true)}
           heatmapEnabled={heatmapEnabled}
           heatmapMode={heatmapMode}
           heatmapGitAvailable={heatmapGitAvailable}
@@ -208,6 +213,12 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
           onClose={() => setContextMenu(null)}
         />
         {previews.framesView}
+        <ProjectSearch
+          deps={{ store, moveGuard }}
+          belowDiffBar={!!diffOverlay}
+          open={projectSearchOpen}
+          onOpenChange={setProjectSearchOpen}
+        />
       </div>
     </ReactFlowProvider>
   );

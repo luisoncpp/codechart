@@ -5,6 +5,7 @@ use crate::contract::ProjectGraph;
 use crate::git::{self, GitCommit};
 use crate::project_source::{FsProjectSource, ProjectSource};
 use crate::review_notes::{load_review_notes as load_notes, save_review_notes as save_notes, ReviewNotesDocument};
+use crate::search::{search_sources, SearchResult};
 use crate::{
     ensure_unreal_defaults, read_project_config as load_project_config,
     write_project_config as save_project_config, ProjectConfig,
@@ -76,6 +77,18 @@ pub fn git_list_commits(path: String, limit: u32) -> Result<Vec<GitCommit>, Stri
 pub fn read_module_source(root: String, path: String) -> Result<String, String> {
     let source = FsProjectSource::new(&root);
     source.read_file(&path).map_err(|e| e.to_string())
+}
+
+/// Case-insensitive substring search over the given modules' working-tree
+/// sources. Unreadable files are skipped, so there is no failure mode.
+#[tauri::command]
+pub fn search_module_sources(
+    root: String,
+    query: String,
+    module_paths: Vec<String>,
+) -> SearchResult {
+    let source = FsProjectSource::new(&root);
+    search_sources(&source, &query, &module_paths)
 }
 
 #[tauri::command]

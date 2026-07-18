@@ -1,6 +1,6 @@
 use crate::contract::ProjectGraph;
 
-use super::{analyze_project, read_module_source};
+use super::{analyze_project, read_module_source, search_module_sources};
 
 const FIXTURE_DIR: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -42,6 +42,24 @@ fn read_module_source_returns_a_modules_contents() {
         .expect("reads the file");
     // The annotated module carries its @Architecture block in the source.
     assert!(src.contains("@Architecture"));
+}
+
+/// Project search: the command scans the given modules' working-tree sources.
+#[test]
+fn search_module_sources_finds_text_in_fixture_modules() {
+    let result = search_module_sources(
+        FIXTURE_DIR.to_string(),
+        "maketodo".to_string(),
+        vec!["src/core/store.ts".to_string(), "src/core/todo.ts".to_string()],
+    );
+
+    let matched_paths: Vec<&str> = result.matches.iter().map(|m| m.path.as_str()).collect();
+    assert!(matched_paths.contains(&"src/core/store.ts"));
+    assert!(matched_paths.contains(&"src/core/todo.ts"));
+    let todo_match = result.matches.iter().find(|m| m.path == "src/core/todo.ts").unwrap();
+    assert_eq!(todo_match.line, 8);
+    assert!(result.matches.iter().all(|m| m.line_text.contains("makeTodo")));
+    assert!(!result.truncated);
 }
 
 #[test]

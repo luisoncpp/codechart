@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Manages the global project, layout, and selection states")
-import { AnalysisClient } from "../../../ipc/analysis-client";
+import { AnalysisClient, ProjectSearchResult } from "../../../ipc/analysis-client";
 import { GitClient } from "../../../ipc/git-client";
 import type { GraphDiffOverlay } from "../../../domain/diff";
 import {
@@ -215,6 +215,18 @@ export class GraphSessionStore extends EventEmitter {
       this.sourceCacheVersion++;
       return fallback;
     }
+  }
+
+  /**
+   * Search the visible modules' sources (test modules excluded while hidden,
+   * so every result is navigable). Results are returned, never stored: the
+   * find bar keeps them locally so searching never re-renders the canvas.
+   */
+  async searchProjectSources(query: string): Promise<ProjectSearchResult> {
+    if (!this.root || !this.graph) return { matches: [], truncated: false };
+    const scope = this.hideTests ? filterTestModules(this.graph) : this.graph;
+    const paths = scope.modules.map((m) => m.path);
+    return this.client.searchModuleSources(this.root, query, paths);
   }
 
   /** Switch detail level. Collapse state updates for L0; layout stays fixed (projection-only). */
