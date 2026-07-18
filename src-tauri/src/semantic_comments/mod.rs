@@ -31,8 +31,29 @@ pub fn parse_annotations(text: &str) -> Vec<Annotation> {
 fn balanced_parens(s: &str) -> Option<&str> {
     let open = s.find('(')?;
     let inner = &s[open + 1..];
-    let close = inner.find(')')?;
-    Some(&inner[..close])
+    let mut depth = 1;
+    let mut quote = None;
+    let mut escaped = false;
+    for (offset, ch) in inner.char_indices() {
+        if let Some(delimiter) = quote {
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == delimiter {
+                quote = None;
+            }
+            continue;
+        }
+        match ch {
+            '"' | '\'' => quote = Some(ch),
+            '(' => depth += 1,
+            ')' if depth == 1 => return Some(&inner[..offset]),
+            ')' => depth -= 1,
+            _ => {}
+        }
+    }
+    None
 }
 
 fn annotation_from_pairs(body: &str) -> Option<Annotation> {

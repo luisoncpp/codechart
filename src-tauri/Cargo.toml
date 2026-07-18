@@ -8,7 +8,7 @@ default-run = "codechart"
 
 [lib]
 name = "codechart_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [[bin]]
 name = "codechart-cli"
@@ -36,3 +36,11 @@ tree-sitter-cpp = "0.23.4"
 tempfile = "3"
 
 [dev-dependencies]
+
+
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.test]
+debug = 0
+incremental = false

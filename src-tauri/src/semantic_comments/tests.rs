@@ -23,6 +23,18 @@ fn quoted_value_with_comma_not_split() {
 }
 
 #[test]
+fn quoted_value_with_closing_paren_not_truncated() {
+    let anns = parse_annotations(
+        r#"@Architecture(descriptionShort="Coordinates workers and retries)", type=Module)"#,
+    );
+    assert_eq!(
+        anns[0].description_short.as_deref(),
+        Some("Coordinates workers and retries)")
+    );
+    assert_eq!(anns[0].type_name.as_deref(), Some("Module"));
+}
+
+#[test]
 fn partial_block_only_some_keys() {
     let anns = parse_annotations("@Architecture(type=Facade)");
     assert_eq!(anns[0].type_name.as_deref(), Some("Facade"));

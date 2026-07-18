@@ -107,8 +107,9 @@ Unreal configured include roots when present (see [unreal-config.md](./unreal-co
 
 Scans arbitrary text for `@Architecture(key=value, key="quoted value", ...)`
 blocks. Recognized keys → `Annotation`: `type`, `group`, `descriptionShort`,
-`descriptionLong`, `icon`. Quotes protect commas inside values; unknown keys are
-ignored; empty/unterminated blocks degrade to no annotation (never panics).
+`descriptionLong`, `icon`. Quotes protect commas and parentheses inside values;
+unknown keys are ignored. The outer block uses balanced parentheses.
+Empty/unterminated blocks degrade to no annotation (never panics).
 
 **Decoupling:** the adapter only captures raw comment text; annotation parsing is
 a separate pure module (no tree-sitter dependency). Callers (CLI / `analysis`)
