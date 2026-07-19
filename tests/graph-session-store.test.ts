@@ -478,3 +478,45 @@ describe("GraphSessionStore local changes diff", () => {
     expect(store.getDiffOverlay()?.affectedModuleIds.has("src/core/store.ts")).toBe(true);
   });
 });
+
+describe("GraphSessionStore diff source snapshot", () => {
+  it("displays the diff's after snapshot so line highlights stay aligned", async () => {
+    // Live working-tree content has an extra comment prepended after the diff
+    // was computed, so it is shifted by one line versus the diffed snapshot.
+    const liveContent = "// added later\nkeep\nnew\n";
+    const afterSnapshot = "keep\nnew\n";
+    const diff = [
+      "diff --git a/src/core/store.ts b/src/core/store.ts",
+      "--- a/src/core/store.ts",
+      "+++ b/src/core/store.ts",
+      "@@ -1,2 +1,2 @@",
+      " keep",
+      "-old",
+      "+new",
+    ].join("\n");
+    const git: GitClient = {
+      isGitRepo: async () => true,
+      listCommits: async () => [],
+      analyzeProjectAtRef: async () => graph,
+      readModuleSourcesAtRef: async () => ({ "src/core/store.ts": afterSnapshot }),
+      diffRefs: async () => diff,
+      diffWorkingTree: async () => diff,
+    };
+    const client: AnalysisClient = {
+      analyzeProject: async () => graph,
+      readModuleSource: async () => liveContent,
+      searchModuleSources: noSearchResults,
+    };
+    const store = new GraphSessionStore(client, git, new ElkLayoutEngine());
+    await store.loadProject("/repo");
+
+    await store.applyDiffFromCommits("A", "B");
+
+    // Without the fix the cache would hold liveContent, shifting every
+    // highlight by one line relative to the diff coordinates.
+    expect(store.getSourceCache().get("src/core/store.ts")).toBe(afterSnapshot);
+
+    store.clearDiffOverlay();
+    expect(store.getSourceCache().get("src/core/store.ts")).not.toBe(afterSnapshot);
+  });
+});

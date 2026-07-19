@@ -35,11 +35,12 @@ export async function buildCommitDiffOverlay(
     git.readModuleSourcesAtRef(root, baseRef, knownPaths(before, paths)),
     git.readModuleSourcesAtRef(root, headRef, knownPaths(after, paths)),
   ]);
-  return attachSymbolDiff(overlay, {
+  const afterSourceByPath = new Map(Object.entries(afterSources));
+  return attachSymbolDiff({ ...overlay, afterSourceByPath }, {
     before,
     after,
     beforeSources: new Map(Object.entries(beforeSources)),
-    afterSources: new Map(Object.entries(afterSources)),
+    afterSources: afterSourceByPath,
     lineDiffByPath: overlay.lineDiffByPath,
   });
 }
@@ -83,7 +84,7 @@ export async function buildWorkingTreeDiffOverlay(
     git.readModuleSourcesAtRef(root, baseRef, knownPaths(before, paths)),
     readWorkingSources({ graph: current, client: input.client, root, paths }),
   ]);
-  return attachSymbolDiff(overlay, {
+  return attachSymbolDiff({ ...overlay, afterSourceByPath: afterSources }, {
     before,
     after: current,
     beforeSources: new Map(Object.entries(beforeSources)),

@@ -51,6 +51,8 @@ export class GraphSessionStore extends EventEmitter {
   private layoutSeq = 0;
   private diffOverlay: GraphDiffOverlay | null = null;
   private diffError: string | null = null;
+  /** Module ids whose sourceCache was overridden by the active diff snapshot. */
+  private diffSourceIds = new Set<string>();
   private heatmapEnabled = false;
   private heatmapMode: HeatmapMode = "activity";
   private isGitRepo: boolean | null = null;
@@ -99,8 +101,35 @@ export class GraphSessionStore extends EventEmitter {
     if (!this.diffOverlay && !this.diffError) return;
     this.diffOverlay = null;
     this.diffError = null;
+    this.restoreDiffSources();
     this.restoreHeatAfterDiff();
     this.emit("diff-changed");
+  }
+
+  /**
+   * Diff line highlights index the after-snapshot, so the L2 code panel and
+   * symbol widget must render that exact source. Override the cache for diffed
+   * paths (keyed by module id = path) while the overlay is active; drop the
+   * overrides on clear so the live file is re-read.
+   */
+  private applyDiffSources(overlay: GraphDiffOverlay) {
+    this.restoreDiffSources();
+    if (!this.graph) return;
+    const byPath = new Map(this.graph.modules.map((m) => [m.path, m.id]));
+    for (const [path, source] of overlay.afterSourceByPath) {
+      const id = byPath.get(path);
+      if (!id) continue;
+      this.sourceCache.set(id, source);
+      this.diffSourceIds.add(id);
+    }
+    if (this.diffSourceIds.size > 0) this.sourceCacheVersion++;
+  }
+
+  private restoreDiffSources() {
+    if (this.diffSourceIds.size === 0) return;
+    for (const id of this.diffSourceIds) this.sourceCache.delete(id);
+    this.diffSourceIds.clear();
+    this.sourceCacheVersion++;
   }
 
   setHeatmapEnabled(enabled: boolean) {
@@ -127,6 +156,7 @@ export class GraphSessionStore extends EventEmitter {
         baseRef,
         headRef,
       );
+      this.applyDiffSources(this.diffOverlay);
       this.pauseHeatForDiff();
       this.ensureDiffZoomFloor();
       this.emit("diff-changed");
@@ -148,6 +178,7 @@ export class GraphSessionStore extends EventEmitter {
         baseRef,
         current: this.graph,
       });
+      this.applyDiffSources(this.diffOverlay);
       this.pauseHeatForDiff();
       this.ensureDiffZoomFloor();
       this.emit("diff-changed");
@@ -314,6 +345,7 @@ export class GraphSessionStore extends EventEmitter {
     this.resetZoom();
     this.diffOverlay = null;
     this.diffError = null;
+    this.diffSourceIds.clear();
     this.heatmapSaved = null;
     this.isGitRepo = null;
     this.heatmapEnabled = false;

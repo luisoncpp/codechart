@@ -22,7 +22,7 @@ User clicks **Visualize diff…** on the canvas (top-right, when no diff is acti
 8. `edge-style` / `EdgeLayer` render added edges **green** (full opacity) and removed edges **red** with an **X** head instead of an arrow.
 9. Unchanged modules render at **~40% opacity**; affected/deleted keep full opacity + colored borders. Group titles and descriptions dim to the same level.
 10. **L0 is disabled** while diff is active — scroll zoom floors at **L1** so module diff highlights stay visible; normal L0 returns when diff is cleared.
-11. **L2 code blocks** and the **symbol source widget** show `+` green / `-` red diff rows when line diff data exists for that file.
+11. **L2 code blocks** and the **symbol source widget** show `+` green / `-` red diff rows when line diff data exists for that file. Line highlights index the **after-snapshot** coordinates, so while a diff is active the store overrides `sourceCache` (per diffed path) with the overlay's `afterSourceByPath` — the panels render that exact snapshot, not the live file, which may have drifted since the diff was computed. `clearDiffOverlay` drops the overrides so the live file is re-read.
 12. **Stop visualizing diff** (`DiffOverlayBar`) → `store.clearDiffOverlay()`.
 
 ## Reads
@@ -36,6 +36,7 @@ User clicks **Visualize diff…** on the canvas (top-right, when no diff is acti
 ## Writes
 
 - `GraphSessionStore.diffOverlay` (session-only; cleared on project reload)
+- `GraphSessionStore.sourceCache` — diffed paths overridden with the after-snapshot while the overlay is active; restored on clear
 
 ## Side effects
 
