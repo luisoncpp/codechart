@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ProjectSearchResult } from "../../../../ipc/analysis-client";
 import type { GraphSessionStore } from "../../../../state/graph-session";
 import type { ProgrammaticMoveGuard } from "../programmatic-move-guard";
-import { stepIndex } from "./match-stepper";
+import { stepIndex } from "../match-stepper";
 import { useDebouncedSearch } from "./use-debounced-search";
 import { ProjectSearchBar } from "./ProjectSearchBar";
 

@@ -289,6 +289,20 @@ hidden by zoom collapse.
   at the top and composes the same preferred module description plus complete highlighted source as
   the L2 document. It retains clickable cross-module identifiers and diff rows; like a canvas symbol
   click, opening it replaces existing frames.
+- **Find in frame (Ctrl/Cmd+F):** each frame has its own find bar (header `⌕` icon, or Ctrl/Cmd+F
+  targeting the focused frame first, else the hovered one; unclaimed presses fall through to the
+  browser — the global project search stays on Ctrl+Shift+F). All find state is component-local in
+  `use-frame-search.ts` (never the store or `usePreviewFrames`) — synchronous, no debounce/IPC.
+  Matching is pure (`frame-search.ts`): case-insensitive non-overlapping substrings over the frame's
+  `sourceText` plus, on document frames, the description (description matches come first in
+  navigation order). Highlights render by **nesting** `hl-match`/`hl-match--active` spans *inside*
+  each syntax-token span (`match-highlight.ts` `segmentTokenText` + `DiffCodeLines` `matchesByLine`
+  prop) so the token span keeps its full `textContent` — `hl-clickable` navigation and `tokenClass`
+  are untouched; `remove` diff rows never highlight (matches index the live source). Navigation
+  (Enter / Shift+Enter / ↑↓ buttons) steps via the shared `Private/match-stepper.ts` and centers the
+  active span with `centerElementInBody` (body-`scrollTop` math only). Frames are focusable
+  (`tabIndex=-1`, focused on pointerdown with `preventScroll`); Escape escalates: find bar first,
+  frame close second. Find-bar keys stop propagation so they never reach canvas/window shortcuts.
 
 Store surface (TDD §5.1): `getZoomLevel`, `getReducedGraph`, `getCollapsedGroupIds`,
 `getDisconnectedGroupIds`, `getDisconnectedModuleIds`, `getSourceCache`,

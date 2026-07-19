@@ -1,11 +1,11 @@
 import { Fragment, useMemo } from "react";
 import {
   buildModuleDiffDisplay,
-  UNCHANGED_MODULE_DIFF_OPACITY,
   type DiffDisplayRow,
   type FileLineDiff,
 } from "../../../domain/diff";
 import { tokenizeCode, type Token } from "./highlighter";
+import { segmentTokenText, type LineMatchRange } from "./match-highlight";
 import { InlineReviewNotes, useReviewNotesStore } from "../../review_notes";
 
 interface DiffCodeLinesProps {
@@ -18,6 +18,10 @@ interface DiffCodeLinesProps {
   activeLineRef?: React.RefObject<HTMLDivElement | null>;
   /** Identifiers to render as clickable (`hl-clickable`) navigation targets. */
   clickableNames?: ReadonlySet<string>;
+  /** Find-in-frame match ranges keyed by 1-based line number. */
+  matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
+  /** Attached to the currently active find-in-frame match span. */
+  activeMatchRef?: React.RefObject<HTMLElement | null>;
 }
 
 /** Code lines with optional unified-diff +/- green/red row styling. */
@@ -30,6 +34,8 @@ export function DiffCodeLines({
   activeLine,
   activeLineRef,
   clickableNames,
+  matchesByLine,
+  activeMatchRef,
 }: DiffCodeLinesProps) {
   const reviewNotes = useReviewNotesStore();
   const notes = reviewNotes?.notesFor(path) ?? [];
@@ -58,6 +64,8 @@ export function DiffCodeLines({
             active={showNotes && row.lineNumber === activeLine}
             lineRef={showNotes && row.lineNumber === activeLine ? activeLineRef : undefined}
             clickableNames={clickableNames}
+            matchRanges={showNotes ? matchesByLine?.get(row.lineNumber) : undefined}
+            activeMatchRef={activeMatchRef}
             anchored={showNotes && notes.some((note) => row.lineNumber >= note.startLine && row.lineNumber <= note.endLine)}
             onLineClick={reviewNotes && showNotes ? (line, extend) => selectReviewLine(reviewNotes, source, path, line, extend) : undefined}
           />
@@ -85,6 +93,8 @@ interface DiffCodeLineProps {
   clickableNames?: ReadonlySet<string>;
   anchored?: boolean;
   onLineClick?: (line: number, extend: boolean) => void;
+  matchRanges?: readonly LineMatchRange[];
+  activeMatchRef?: React.RefObject<HTMLElement | null>;
 }
 
 /** Token types whose text can never be a navigable identifier. */
@@ -96,7 +106,8 @@ function tokenClass(token: Token, clickableNames?: ReadonlySet<string>): string 
   return `hl-${token.type}${clickable ? " hl-clickable" : ""}`;
 }
 
-function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef, clickableNames, anchored, onLineClick }: DiffCodeLineProps) {
+function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef, clickableNames, anchored, onLineClick, matchRanges, activeMatchRef }: DiffCodeLineProps) {
+  let tokenStart = 0;
   const fontSize = 12.5 / zoom;
   const gutter = row.kind === "add" ? "+" : row.kind === "remove" ? "-" : " ";
   const lineNumber = row.kind === "remove" ? "" : String(row.lineNumber);
@@ -140,13 +151,43 @@ function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef, clickableNam
         {lineNumber}
       </span> : <button type="button" className={`${prefix}__ln`} onClick={(event) => onLineClick?.(row.lineNumber, event.shiftKey)} style={{ flex: `0 0 ${18 / zoom}px`, textAlign: "right", paddingRight: 6 / zoom, color: "#94a3b8", border: 0, background: "transparent", cursor: "pointer", fontSize: fontSize * 0.9 }}>{lineNumber}</button>}
       <span className={`${prefix}__text${anchored ? ` ${prefix}__text--review-note` : ""}`} style={{ flex: 1, background: anchored ? "#f3e8ff" : undefined }}>
-        {tokens.length === 0 ? " " : tokens.map((token, i) => (
-          <span key={i} className={tokenClass(token, clickableNames)}>
-            {token.text}
-          </span>
-        ))}
+        {tokens.length === 0 ? " " : tokens.map((token, i) => {
+          const start = tokenStart;
+          tokenStart += token.text.length;
+          return (
+            <span key={i} className={tokenClass(token, clickableNames)}>
+              {matchRanges?.length
+                ? renderTokenSegments(token.text, start, { matchRanges, activeMatchRef })
+                : token.text}
+            </span>
+          );
+        })}
       </span>
     </div>
+  );
+}
+
+interface SegmentOptions {
+  matchRanges: readonly LineMatchRange[];
+  activeMatchRef?: React.RefObject<HTMLElement | null>;
+}
+
+/** Nested match spans keep the token span's full textContent intact. */
+function renderTokenSegments(text: string, tokenStart: number, options: SegmentOptions) {
+  const segments = segmentTokenText(text, tokenStart, options.matchRanges);
+  if (segments.length === 1 && !segments[0]!.match) return text;
+  return segments.map((segment, i) =>
+    segment.match ? (
+      <span
+        key={i}
+        ref={segment.match === "active" ? (options.activeMatchRef as React.Ref<HTMLSpanElement>) : undefined}
+        className={`hl-match${segment.match === "active" ? " hl-match--active" : ""}`}
+      >
+        {segment.text}
+      </span>
+    ) : (
+      segment.text
+    ),
   );
 }
 
@@ -156,32 +197,4 @@ function selectReviewLine(store: NonNullable<ReturnType<typeof useReviewNotesSto
   const end = extend && current?.path === path ? Math.max(current.startLine, line) : line;
   const lines = source.split("\n").slice(start - 1, end);
   store.beginDraft({ path, startLine: start, endLine: end, anchorLines: lines });
-}
-
-export function moduleDiffOpacity(
-  diffState?: "affected" | "deleted" | "unchanged",
-): number {
-  if (diffState === "unchanged") return UNCHANGED_MODULE_DIFF_OPACITY;
-  return 1;
-}
-
-const DIFF_MODULE_BORDER_PX = 3;
-
-export function moduleDiffBorderWidth(
-  diffState: "affected" | "deleted" | "unchanged" | undefined,
-  fallbackPx = 2,
-): number {
-  if (diffState === "affected" || diffState === "deleted") return DIFF_MODULE_BORDER_PX;
-  return fallbackPx;
-}
-
-export function moduleDiffBorder(
-  diffState: "affected" | "deleted" | "unchanged" | undefined,
-  fallback: string,
-  counterScale = 1,
-): string {
-  const px = DIFF_MODULE_BORDER_PX * counterScale;
-  if (diffState === "affected") return `${px}px solid #16a34a`;
-  if (diffState === "deleted") return `${px}px solid #dc2626`;
-  return fallback;
 }

@@ -1,26 +1,15 @@
 // @Architecture(descriptionShort="Displays a draggable, resizable panel with the source code of a symbol")
 import { useEffect, useMemo, useRef } from "react";
 import type { FileLineDiff } from "../../../../domain/diff";
-import { DiffCodeLines } from "../DiffCodeLines";
-import { L2CodeBlock, L2Description } from "../L2Content";
 import { findSymbolLine } from "./symbol-source-utils";
 import type { PreviewFrame } from "./frame-list";
 import type { Position } from "./frame-placement";
 import { startFrameDrag } from "./frame-drag";
-
-/**
- * Center the definition line inside the widget's scrollable body only.
- * `scrollIntoView` would also scroll every outer ancestor (including the
- * window) when the frame sits near a viewport edge, shifting the whole app.
- */
-function centerLineInBody(lineEl: HTMLDivElement | null) {
-  const body = lineEl?.closest(".symbol-widget__body");
-  if (!lineEl || !body) return;
-  const lineBox = lineEl.getBoundingClientRect();
-  const bodyBox = body.getBoundingClientRect();
-  body.scrollTop +=
-    lineBox.top - bodyBox.top - body.clientHeight / 2 + lineBox.height / 2;
-}
+import { centerElementInBody } from "./center-in-body";
+import { DocumentContent, SymbolCode } from "./FrameBody";
+import { FrameFindBar } from "./FrameFindBar";
+import { useFrameSearch } from "./use-frame-search";
+import { codeMatchesByLine, descriptionRanges, matchCounter } from "./frame-search";
 
 export interface FrameHandlers {
   onClose: (id: number) => void;
@@ -40,6 +29,7 @@ interface SymbolSourceWidgetProps {
  * One preview frame: scrollable source code centered on the symbol's
  * definition line, draggable by its header bar. Identifiers matching
  * `clickableSymbols` navigate to the defining module in a new frame.
+ * Ctrl/Cmd+F (focused or hovered frame) opens an in-frame find bar.
  */
 export function SymbolSourceWidget({
   frame,
@@ -47,6 +37,7 @@ export function SymbolSourceWidget({
   fileDiff,
   handlers,
 }: SymbolSourceWidgetProps) {
+  const frameRef = useRef<HTMLDivElement>(null);
   const lineRef = useRef<HTMLDivElement>(null);
   const targetLine = useMemo(
     /*scanSourceForDefinition*/ () =>
@@ -54,18 +45,23 @@ export function SymbolSourceWidget({
     [frame.sourceText, frame.symbolName],
   );
   const reviewLine = frame.activeRange?.startLine;
+  const search = useFrameSearch({
+    frameRef,
+    description: frame.symbolName ? undefined : frame.description,
+    sourceText: frame.sourceText,
+  });
 
   useEffect(() => {
     const line = reviewLine ?? targetLine;
     if (line === undefined) return;
     const timer = setTimeout(/*centerDefinitionLine*/ () => {
-      centerLineInBody(lineRef.current);
+      centerElementInBody(lineRef.current);
     }, /*delayInMs=*/50);
     return () => clearTimeout(timer);
   }, [targetLine, reviewLine, frame.sourceText]);
 
   const onHeaderPointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest(".symbol-widget__close")) return;
+    if ((e.target as HTMLElement).closest("button")) return;
     startFrameDrag(e, { top: frame.top, left: frame.left }, /*commitDropPosition*/ (pos) =>
       handlers.onMove(frame.id, pos),
     );
@@ -76,13 +72,33 @@ export function SymbolSourceWidget({
     if (symbolEl?.textContent) handlers.onNavigate(frame.id, symbolEl.textContent);
   };
 
+  const onFramePointerDown = (e: React.PointerEvent) => {
+    handlers.onActivate(frame.id);
+    if ((e.target as HTMLElement).closest(".symbol-widget__find")) return;
+    frameRef.current?.focus({ preventScroll: true });
+  };
+
+  const onFrameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== "Escape") return;
+    e.stopPropagation();
+    if (search.barOpen) {
+      search.closeBar();
+      frameRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    handlers.onClose(frame.id);
+  };
+
   return (
     <div
+      ref={frameRef}
       className="symbol-widget"
       data-frame-id={frame.id}
+      tabIndex={-1}
       style={{ top: frame.top, left: frame.left, zIndex: 1000 + frame.zIndex }}
       onClick={(e) => e.stopPropagation()}
-      onPointerDown={() => handlers.onActivate(frame.id)}
+      onPointerDown={onFramePointerDown}
+      onKeyDown={onFrameKeyDown}
     >
       <div className="symbol-widget__header" onPointerDown={onHeaderPointerDown}>
         <div className="symbol-widget__info">
@@ -92,6 +108,13 @@ export function SymbolSourceWidget({
           <div className="symbol-widget__path">{frame.modulePath}</div>
         </div>
         <button
+          className="symbol-widget__find-toggle"
+          onClick={search.openBar}
+          aria-label="Find in file"
+        >
+          ⌕
+        </button>
+        <button
           className="symbol-widget__close"
           onClick={() => handlers.onClose(frame.id)}
           aria-label="Close widget"
@@ -99,6 +122,20 @@ export function SymbolSourceWidget({
           &times;
         </button>
       </div>
+      {search.barOpen && (
+        <FrameFindBar
+          query={search.query}
+          onQueryChange={search.setQuery}
+          counterText={matchCounter(search.activeIndex, search.matches.length)}
+          canNavigate={search.matches.length > 0}
+          onNavigate={search.navigate}
+          onClose={/*closeBarAndRefocusFrame*/ () => {
+            search.closeBar();
+            frameRef.current?.focus({ preventScroll: true });
+          }}
+          inputRef={search.inputRef}
+        />
+      )}
       <div className="symbol-widget__body" onClick={onCodeClick}>
         {frame.symbolName ? (
           <SymbolCode
@@ -107,58 +144,24 @@ export function SymbolSourceWidget({
             targetLine={targetLine!}
             lineRef={lineRef}
             clickableSymbols={clickableSymbols}
+            matchProps={{
+              matchesByLine: codeMatchesByLine(search.matches, search.activeIndex),
+              activeMatchRef: search.activeMatchRef,
+            }}
           />
         ) : (
           <DocumentContent
             frame={frame}
             fileDiff={fileDiff}
             clickableSymbols={clickableSymbols}
+            matchProps={{
+              matchesByLine: codeMatchesByLine(search.matches, search.activeIndex),
+              descriptionRanges: descriptionRanges(search.matches, search.activeIndex),
+              activeMatchRef: search.activeMatchRef,
+            }}
           />
         )}
       </div>
-    </div>
-  );
-}
-
-interface CodeContentProps {
-  frame: PreviewFrame;
-  fileDiff?: FileLineDiff;
-  clickableSymbols: ReadonlySet<string>;
-}
-
-function SymbolCode(
-  props: CodeContentProps & {
-    targetLine: number;
-    lineRef: React.RefObject<HTMLDivElement | null>;
-  },
-) {
-  return (
-    <pre className="symbol-widget__code">
-      <DiffCodeLines
-        source={props.frame.sourceText}
-        path={props.frame.modulePath}
-        fileDiff={props.fileDiff}
-        lineClassPrefix="symbol-widget"
-        activeLine={props.targetLine}
-        activeLineRef={props.lineRef}
-        clickableNames={props.clickableSymbols}
-      />
-    </pre>
-  );
-}
-
-function DocumentContent({ frame, fileDiff, clickableSymbols }: CodeContentProps) {
-  return (
-    <div className="symbol-widget__document">
-      <L2Description description={frame.description} color={frame.color} zoom={1} />
-      <L2CodeBlock
-        snippet={frame.sourceText}
-        path={frame.modulePath}
-        zoom={1}
-        fileDiff={fileDiff}
-        clickableNames={clickableSymbols}
-        lineClassPrefix="symbol-widget"
-      />
     </div>
   );
 }

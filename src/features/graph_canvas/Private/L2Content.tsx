@@ -1,13 +1,45 @@
 import type { FileLineDiff } from "../../../domain/diff";
 import { DiffCodeLines } from "./DiffCodeLines";
+import { segmentTokenText, type LineMatchRange } from "./match-highlight";
 
 interface DescriptionProps {
   description?: string;
   color: string;
   zoom: number;
+  /** Find-in-frame ranges over the description string. */
+  matchRanges?: readonly LineMatchRange[];
+  activeMatchRef?: React.RefObject<HTMLElement | null>;
 }
 
-export function L2Description({ description, color, zoom }: DescriptionProps) {
+function DescriptionText({ description, matchRanges, activeMatchRef }: Omit<DescriptionProps, "color" | "zoom">) {
+  if (!description) {
+    return (
+      <span style={{ fontStyle: "italic", color: "#94a3b8" }}>
+        No description provided for this module.
+      </span>
+    );
+  }
+  if (!matchRanges?.length) return <>{description}</>;
+  return (
+    <>
+      {segmentTokenText(description, /*tokenStart=*/0, matchRanges).map((segment, i) =>
+        segment.match ? (
+          <span
+            key={i}
+            ref={segment.match === "active" ? (activeMatchRef as React.Ref<HTMLSpanElement>) : undefined}
+            className={`hl-match${segment.match === "active" ? " hl-match--active" : ""}`}
+          >
+            {segment.text}
+          </span>
+        ) : (
+          segment.text
+        ),
+      )}
+    </>
+  );
+}
+
+export function L2Description({ description, color, zoom, matchRanges, activeMatchRef }: DescriptionProps) {
   const descSize = 13.75 / zoom;
   const padding = `${6 / zoom}px ${8 / zoom}px`;
   return (
@@ -43,11 +75,11 @@ export function L2Description({ description, color, zoom }: DescriptionProps) {
           wordBreak: "break-word",
         }}
       >
-        {description || (
-          <span style={{ fontStyle: "italic", color: "#94a3b8" }}>
-            No description provided for this module.
-          </span>
-        )}
+        <DescriptionText
+          description={description}
+          matchRanges={matchRanges}
+          activeMatchRef={activeMatchRef}
+        />
       </div>
     </div>
   );
@@ -60,6 +92,8 @@ interface CodeBlockProps {
   fileDiff?: FileLineDiff;
   clickableNames?: ReadonlySet<string>;
   lineClassPrefix?: string;
+  matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
+  activeMatchRef?: React.RefObject<HTMLElement | null>;
 }
 
 export function L2CodeBlock({
@@ -69,6 +103,8 @@ export function L2CodeBlock({
   fileDiff,
   clickableNames,
   lineClassPrefix,
+  matchesByLine,
+  activeMatchRef,
 }: CodeBlockProps) {
   const codePadding = `${6 / zoom}px 0`;
 
@@ -112,6 +148,8 @@ export function L2CodeBlock({
             zoom={zoom}
             lineClassPrefix={lineClassPrefix ?? "diff-code"}
             clickableNames={clickableNames}
+            matchesByLine={matchesByLine}
+            activeMatchRef={activeMatchRef}
           />
         ) : null}
       </pre></div>

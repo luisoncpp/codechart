@@ -14,7 +14,8 @@
    5. Symbol frames scroll their own body to center the definition line (`findSymbolLine` — which consults `scanFunctionDefinitions` for method definitions the keyword regex misses — + manual `scrollTop`, **not** `scrollIntoView`, which would scroll the window); document frames stay at the top.
    6. **Drag:** pointerdown on the header bar starts `startFrameDrag`; window-level pointermove writes `top`/`left` straight to the frame element (no React state per move — that re-rendered the whole canvas and lagged), and the final position is committed via `moveFrame` once on release; the click that trails a real drag is swallowed in capture phase so it can't close the frames.
    7. **Z-order:** pointerdown anywhere in a frame brings it to front (`bringToFront`).
-   8. **Close rules:** a document-level click landing outside every `.symbol-widget` closes **all** frames; clicks inside any frame (including scrollbars) close nothing; each frame's ✕ closes just that frame; canvas pan/zoom (`onMoveStart`) closes all.
+   8. **Close rules:** a document-level click landing outside every `.symbol-widget` closes **all** frames; clicks inside any frame (including scrollbars) close nothing; each frame's ✕ closes just that frame; canvas pan/zoom (`onMoveStart`) closes all; Escape on a focused frame closes it (after first closing its find bar, if open).
+   9. **Find in frame:** Ctrl/Cmd+F on a focused/hovered frame (or the header `⌕`) opens an in-frame find bar — see `docs/flows/find-in-preview.md`.
 4. **Reads** — store `graph` (modules, import edges, `exportedSymbols`), source cache, live frame DOM rects.
 5. **Writes** — store `selectedId` (symbol-node path only), `frames` + `moduleSources` state inside `usePreviewFrames`.
 6. **Side effects** — lazy load file contents per opened module **and its import targets** (IPC `read_module_source`, cached by the store).

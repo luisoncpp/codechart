@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stepIndex } from "../src/features/graph_canvas/Private/project_search/match-stepper";
+import { stepIndex } from "../src/features/graph_canvas/Private/match-stepper";
 
 describe("stepIndex", () => {
   it("steps forward from the not-yet-navigated state to the first match", () => {

@@ -14,7 +14,7 @@ import { L2DocumentNode } from "./L2DocumentNode";
 
 import { ModuleHeader } from "./ModuleHeader";
 
-import { moduleDiffBorder, moduleDiffOpacity } from "./DiffCodeLines";
+import { moduleDiffBorder, moduleDiffOpacity } from "./module-diff-style";
 
 import { useZoomCounterScale } from "./use-zoom-counter-scale";
 

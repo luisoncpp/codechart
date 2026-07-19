@@ -5,7 +5,7 @@ import { L2Header } from "./L2Header";
 import { L2Description, L2CodeBlock } from "./L2Content";
 import { L2ScrollableBody } from "./L2ScrollableBody";
 import { layoutKeyFromStyles, useL2ClampedLayout } from "./use-l2-clamped-layout";
-import { moduleDiffBorder, moduleDiffBorderWidth, moduleDiffOpacity } from "./DiffCodeLines";
+import { moduleDiffBorder, moduleDiffBorderWidth, moduleDiffOpacity } from "./module-diff-style";
 import { ConnectionToggle } from "./ConnectionToggle";
 import { l2HeatBorder, l2HeatHeaderBar } from "./heat-node-styles";
 
