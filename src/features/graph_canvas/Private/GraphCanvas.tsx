@@ -168,6 +168,7 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
           }}
           fitView
           fitViewOptions={fitOptions}
+          onlyRenderVisibleElements
           minZoom={CANVAS_MIN_ZOOM}
           maxZoom={12}
           proOptions={{ hideAttribution: true }}
