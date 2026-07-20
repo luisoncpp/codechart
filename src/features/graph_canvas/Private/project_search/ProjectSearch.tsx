@@ -1,11 +1,13 @@
-// @Architecture(descriptionShort="Ctrl+Shift+F find bar: full-text search over module sources with result navigation")
+// @Architecture(descriptionShort="Find bar: Ctrl+Shift+F full-text search / Ctrl+P go-to-file, with result navigation")
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ProjectSearchResult } from "../../../../ipc/analysis-client";
 import type { GraphSessionStore } from "../../../../state/graph-session";
+import type { FindBarMode } from "../canvas-ui-state";
 import type { ProgrammaticMoveGuard } from "../programmatic-move-guard";
 import { stepIndex } from "../match-stepper";
 import { useDebouncedSearch } from "./use-debounced-search";
+import { useFileNameSearch } from "./use-file-name-search";
 import { ProjectSearchBar } from "./ProjectSearchBar";
+import type { BarResult } from "./bar-result";
 
 export interface ProjectSearchDeps {
   store: GraphSessionStore;
@@ -17,53 +19,61 @@ interface ProjectSearchProps {
   deps: ProjectSearchDeps;
   belowDiffBar: boolean;
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  /** Mirrors the live query out (cleared on close) for preview-frame seeding. */
+  mode: FindBarMode;
+  onOpen: (mode: FindBarMode) => void;
+  onClose: () => void;
+  /** Mirrors the live content query out (cleared on close) for preview-frame seeding. */
   onQueryChange: (query: string) => void;
 }
 
 /**
- * Always mounted (renders nothing while closed) so the Ctrl+Shift+F listener exists
+ * Always mounted (renders nothing while closed) so the keyboard listener exists
  * before the bar opens. All search state is local: searching never touches the
  * session store, so the canvas does not re-render per keystroke.
  */
-export function ProjectSearch({ deps, belowDiffBar, open, onOpenChange, onQueryChange }: ProjectSearchProps) {
+export function ProjectSearch(props: ProjectSearchProps) {
+  const { deps, open, mode, onOpen, onClose, onQueryChange } = props;
   const [query, setQuery] = useState("");
-  const [result, setResult] = useState<ProjectSearchResult | null>(null);
+  const [result, setResult] = useState<BarResult | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const close = useCallback(/*clearAndHide*/ () => {
-    onOpenChange(/*open=*/false);
+  const clear = useCallback(/*resetLocalState*/ () => {
     setQuery("");
     onQueryChange("");
     setResult(null);
     setActiveIndex(-1);
-  }, [onOpenChange, onQueryChange]);
+  }, [onQueryChange]);
+
+  const close = useCallback(/*clearAndHide*/ () => {
+    onClose();
+    clear();
+  }, [onClose, clear]);
 
   const changeQuery = (next: string) => {
     setQuery(next);
-    onQueryChange(next);
+    if (mode === "content") onQueryChange(next);
   };
 
-  useOpenShortcut(onOpenChange, inputRef);
+  useOpenShortcut(onOpen, inputRef);
   useCloseOnProjectChange(deps.store, close);
   useEffect(/*focusInputOnOpen*/ () => {
     if (open) inputRef.current?.focus();
-  }, [open]);
+  }, [open, mode]);
+  useClearOnModeSwitch(mode, clear);
 
-  const onResult = useCallback((next: ProjectSearchResult | null) => {
+  const onResult = useCallback((next: BarResult | null) => {
     setResult(next);
     setActiveIndex(-1);
   }, []);
-  useDebouncedSearch(deps.store, open ? query : "", onResult);
+  useDebouncedSearch(deps.store, open && mode === "content" ? query : "", onResult);
+  useFileNameSearch(deps.store, open && mode === "files" ? query : "", onResult);
 
   const goToMatch = async (delta: 1 | -1) => {
-    if (!result || result.matches.length === 0) return;
-    const next = stepIndex(activeIndex, delta, result.matches.length);
+    if (!result || result.paths.length === 0) return;
+    const next = stepIndex(activeIndex, delta, result.paths.length);
     setActiveIndex(next);
-    const match = result.matches[next];
-    const module = deps.store.getGraph()?.modules.find((m) => m.path === match.path);
+    const module = deps.store.getGraph()?.modules.find((m) => m.path === result.paths[next]);
     if (!module) return;
     deps.moveGuard.begin();
     await deps.store.focusOn(module.id);
@@ -74,37 +84,62 @@ export function ProjectSearch({ deps, belowDiffBar, open, onOpenChange, onQueryC
     <ProjectSearchBar
       query={query}
       onQueryChange={changeQuery}
+      placeholder={mode === "files" ? "Go to file…" : "Search in project…"}
+      ariaLabel={mode === "files" ? "Go to file" : "Search in project"}
       counterText={counterText(result, activeIndex)}
       truncated={result?.truncated ?? false}
-      canNavigate={!!result && result.matches.length > 0}
+      canNavigate={!!result && result.paths.length > 0}
       onNavigate={(delta) => void goToMatch(delta)}
       onClose={close}
       inputRef={inputRef}
-      belowDiffBar={belowDiffBar}
+      belowDiffBar={props.belowDiffBar}
     />
   );
 }
 
-/** Ctrl/Cmd+Shift+F opens the bar (or refocuses it), even from another input. */
+/** Ctrl/Cmd+Shift+F opens content search, Ctrl/Cmd+P go-to-file — even from another input. */
 function useOpenShortcut(
-  setOpen: (open: boolean) => void,
+  onOpen: (mode: FindBarMode) => void,
   inputRef: React.RefObject<HTMLInputElement | null>,
 ) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || event.altKey || !event.shiftKey) return;
-      if (event.key.toLowerCase() !== "f") return;
+      const mode = shortcutMode(event);
+      if (!mode) return;
       event.preventDefault();
-      setOpen(true);
+      onOpen(mode);
       inputRef.current?.select();
       inputRef.current?.focus();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [setOpen, inputRef]);
+  }, [onOpen, inputRef]);
 }
 
-/** A project reload (or failure) invalidates line numbers — close and clear. */
+function shortcutMode(event: KeyboardEvent): FindBarMode | null {
+  if (!(event.ctrlKey || event.metaKey) || event.altKey) return null;
+  const key = event.key.toLowerCase();
+  if (event.shiftKey) return key === "f" ? "content" : null;
+  return key === "p" ? "files" : null;
+}
+
+/**
+ * A content query is meaningless as a file name (and vice versa): switching
+ * modes clears it. `clear` is read through a ref because it captures inline
+ * canvas props — depending on it would wipe results on unrelated re-renders.
+ */
+function useClearOnModeSwitch(mode: FindBarMode, clear: () => void) {
+  const clearRef = useRef(clear);
+  clearRef.current = clear;
+  const previousMode = useRef(mode);
+  useEffect(() => {
+    if (previousMode.current === mode) return;
+    previousMode.current = mode;
+    clearRef.current();
+  }, [mode]);
+}
+
+/** A project reload (or failure) invalidates results — close and clear. */
 function useCloseOnProjectChange(store: GraphSessionStore, close: () => void) {
   useEffect(() => {
     store.on("phase-changed", close);
@@ -112,9 +147,9 @@ function useCloseOnProjectChange(store: GraphSessionStore, close: () => void) {
   }, [store, close]);
 }
 
-function counterText(result: ProjectSearchResult | null, activeIndex: number): string | null {
+function counterText(result: BarResult | null, activeIndex: number): string | null {
   if (!result) return null;
-  if (result.matches.length === 0) return "No results";
-  const total = result.truncated ? `${result.matches.length}+` : `${result.matches.length}`;
+  if (result.paths.length === 0) return "No results";
+  const total = result.truncated ? `${result.paths.length}+` : `${result.paths.length}`;
   return `${activeIndex + 1} of ${total}`;
 }

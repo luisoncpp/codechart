@@ -52,4 +52,5 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [visualize-diff.md](./visualize-diff.md) | Visualize diff modal → overlay green/red modules and green/red edges on the canvas |
 | [create-manage-review-note.md](./create-manage-review-note.md) | Source range to persisted Review Note and preview navigation |
 | [search-project.md](./search-project.md) | Ctrl+Shift+F find bar or toolbar Search ▾ menu → full-text search of module sources → center each match |
+| [go-to-file.md](./go-to-file.md) | Ctrl+P (or Search ▾ → Go to file) → same find bar in file-name mode → filter module file names locally → center each match |
 | [find-in-preview.md](./find-in-preview.md) | Ctrl+F on a focused/hovered preview frame or header ⌕ → in-frame find bar → highlight and center matches |

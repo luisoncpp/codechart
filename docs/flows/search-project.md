@@ -1,6 +1,6 @@
 # Flow: search the project's source (Ctrl+Shift+F find bar)
 
-1. **Trigger** - press `Ctrl+Shift+F` / `Cmd+Shift+F` anywhere (even from another input), or use **Search ▾ → Search project** in the top toolbar (menu writes `CanvasUiState.setFindBarOpen`). `Ctrl+F` is left to the browser.
+1. **Trigger** - press `Ctrl+Shift+F` / `Cmd+Shift+F` anywhere (even from another input), or use **Search ▾ → Search project** in the top toolbar (menu calls `CanvasUiState.openFindBar("content")`). `Ctrl+F` is left to the browser; `Ctrl+P` opens the same bar in go-to-file mode (`docs/flows/go-to-file.md`).
 2. **Entry point** - `ProjectSearch` (`features/graph_canvas/Private/project_search/`), always mounted by `GraphCanvas` so its window `keydown` listener pre-exists; the bar renders top-center (drops below the diff overlay bar when a diff is active).
 3. **Step-by-step sequence**
    1. Typing updates local component state only; `useDebouncedSearch` waits 300 ms (queries under 2 chars clear results with no IPC; a sequence counter drops stale out-of-order responses).

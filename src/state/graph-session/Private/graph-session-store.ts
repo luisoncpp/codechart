@@ -260,6 +260,19 @@ export class GraphSessionStore extends EventEmitter {
     return this.client.searchModuleSources(this.root, query, paths);
   }
 
+  /**
+   * "Go to file": case-insensitive substring match over the visible modules'
+   * file names (not paths, not content). Pure and synchronous — no IPC.
+   */
+  searchModuleFiles(query: string): string[] {
+    if (!this.graph) return [];
+    const scope = this.hideTests ? filterTestModules(this.graph) : this.graph;
+    const needle = query.toLowerCase();
+    return scope.modules
+      .map((m) => m.path)
+      .filter((path) => fileName(path).toLowerCase().includes(needle));
+  }
+
   /** Switch detail level. Collapse state updates for L0; layout stays fixed (projection-only). */
   setZoomLevel(level: ZoomLevel) {
     if (this.diffOverlay && level === 0) level = 1;
@@ -549,4 +562,9 @@ export class GraphSessionStore extends EventEmitter {
     this.heatmapSaved = null;
     this.emit("heatmap-changed");
   }
+}
+
+/** Last segment of a repo-relative path (module paths always use `/`). */
+function fileName(path: string): string {
+  return path.slice(path.lastIndexOf("/") + 1);
 }

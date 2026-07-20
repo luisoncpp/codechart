@@ -201,7 +201,9 @@ export function GraphCanvas({ store, git, shell, ui, reviewNotes, onShowReviewNo
           deps={{ store, moveGuard }}
           belowDiffBar={!!diffOverlay}
           open={uiState.getFindBarOpen()}
-          onOpenChange={(open) => ui.setFindBarOpen(open)}
+          mode={uiState.getFindBarMode()}
+          onOpen={(mode) => ui.openFindBar(mode)}
+          onClose={() => ui.setFindBarOpen(/*open=*/false)}
           onQueryChange={(query) => ui.setFindQuery(query)}
         />
       </div>

@@ -4,6 +4,8 @@ import React from "react";
 interface ProjectSearchBarProps {
   query: string;
   onQueryChange: (query: string) => void;
+  placeholder: string;
+  ariaLabel: string;
   /** `null` hides the counter (no search ran). */
   counterText: string | null;
   /** True when the backend clipped the result set at its match cap. */
@@ -39,8 +41,8 @@ export function ProjectSearchBar(props: ProjectSearchBarProps) {
         value={props.query}
         onChange={(e) => props.onQueryChange(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder="Search in project…"
-        aria-label="Search in project"
+        placeholder={props.placeholder}
+        aria-label={props.ariaLabel}
         style={inputStyle}
       />
       {props.counterText !== null && (

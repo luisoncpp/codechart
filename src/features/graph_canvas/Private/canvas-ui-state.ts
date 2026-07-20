@@ -3,12 +3,16 @@ import { useEffect, useState } from "react";
 
 type Listener = () => void;
 
+/** What the find bar searches: module sources or module file names. */
+export type FindBarMode = "content" | "files";
+
 /**
  * Holds transient canvas UI flags that the toolbar menus also drive.
  * Kept out of GraphSessionStore: these are view chrome, not session data.
  */
 export class CanvasUiState {
   private findBarOpen = false;
+  private findBarMode: FindBarMode = "content";
   private findQuery = "";
   private diffModalOpen = false;
   private listeners: Listener[] = [];
@@ -20,6 +24,18 @@ export class CanvasUiState {
   setFindBarOpen(open: boolean) {
     if (this.findBarOpen === open) return;
     this.findBarOpen = open;
+    this.emit();
+  }
+
+  getFindBarMode(): FindBarMode {
+    return this.findBarMode;
+  }
+
+  /** Open (or retarget) the find bar in the given mode. */
+  openFindBar(mode: FindBarMode) {
+    if (this.findBarOpen && this.findBarMode === mode) return;
+    this.findBarOpen = true;
+    this.findBarMode = mode;
     this.emit();
   }
 
