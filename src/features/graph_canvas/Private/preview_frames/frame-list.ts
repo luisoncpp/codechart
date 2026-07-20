@@ -15,6 +15,8 @@ export interface PreviewFrame {
   left: number;
   zIndex: number;
   activeRange?: { startLine: number; endLine: number };
+  /** Seeds the in-frame find bar (open + pre-filled) when set, e.g. from project search. */
+  initialFindQuery?: string;
 }
 
 /** Default frame size — must match the `.symbol-widget` CSS box. */

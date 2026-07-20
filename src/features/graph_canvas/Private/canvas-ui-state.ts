@@ -9,6 +9,7 @@ type Listener = () => void;
  */
 export class CanvasUiState {
   private findBarOpen = false;
+  private findQuery = "";
   private diffModalOpen = false;
   private listeners: Listener[] = [];
 
@@ -20,6 +21,19 @@ export class CanvasUiState {
     if (this.findBarOpen === open) return;
     this.findBarOpen = open;
     this.emit();
+  }
+
+  /** The live project-search query ("" while the bar is closed or empty). */
+  getFindQuery(): string {
+    return this.findQuery;
+  }
+
+  /**
+   * Deliberately non-emitting: read on demand (e.g. when a preview frame
+   * opens) so typing in the find bar never re-renders the canvas.
+   */
+  setFindQuery(query: string) {
+    this.findQuery = query;
   }
 
   getDiffModalOpen(): boolean {
@@ -34,6 +48,7 @@ export class CanvasUiState {
 
   /** Project reload/failure invalidates any open chrome. */
   reset() {
+    this.findQuery = "";
     if (!this.findBarOpen && !this.diffModalOpen) return;
     this.findBarOpen = false;
     this.diffModalOpen = false;

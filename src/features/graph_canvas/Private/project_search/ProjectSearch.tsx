@@ -18,6 +18,8 @@ interface ProjectSearchProps {
   belowDiffBar: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Mirrors the live query out (cleared on close) for preview-frame seeding. */
+  onQueryChange: (query: string) => void;
 }
 
 /**
@@ -25,7 +27,7 @@ interface ProjectSearchProps {
  * before the bar opens. All search state is local: searching never touches the
  * session store, so the canvas does not re-render per keystroke.
  */
-export function ProjectSearch({ deps, belowDiffBar, open, onOpenChange }: ProjectSearchProps) {
+export function ProjectSearch({ deps, belowDiffBar, open, onOpenChange, onQueryChange }: ProjectSearchProps) {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<ProjectSearchResult | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -34,9 +36,15 @@ export function ProjectSearch({ deps, belowDiffBar, open, onOpenChange }: Projec
   const close = useCallback(/*clearAndHide*/ () => {
     onOpenChange(/*open=*/false);
     setQuery("");
+    onQueryChange("");
     setResult(null);
     setActiveIndex(-1);
-  }, [onOpenChange]);
+  }, [onOpenChange, onQueryChange]);
+
+  const changeQuery = (next: string) => {
+    setQuery(next);
+    onQueryChange(next);
+  };
 
   useOpenShortcut(onOpenChange, inputRef);
   useCloseOnProjectChange(deps.store, close);
@@ -65,7 +73,7 @@ export function ProjectSearch({ deps, belowDiffBar, open, onOpenChange }: Projec
   return (
     <ProjectSearchBar
       query={query}
-      onQueryChange={setQuery}
+      onQueryChange={changeQuery}
       counterText={counterText(result, activeIndex)}
       truncated={result?.truncated ?? false}
       canNavigate={!!result && result.matches.length > 0}

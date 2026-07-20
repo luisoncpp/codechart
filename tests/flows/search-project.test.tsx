@@ -90,6 +90,46 @@ describe("flow: search-project", () => {
     await waitFor(() => expect(store.getSelectedId()).toBe("src/core/todo.ts"));
   });
 
+  it("opening a preview while searching seeds the frame find bar with the query", async () => {
+    const { input } = await openFindBar();
+    await searchFor(input, "makeTodo");
+    fireEvent.keyDown(input, { key: "Enter" });
+    const moduleNode = await waitFor(() => {
+      const node = document.querySelector('[data-id="src/core/store.ts"]');
+      expect(node).toBeTruthy();
+      return node!;
+    });
+
+    fireEvent.contextMenu(moduleNode);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Open file preview" }));
+
+    const frameInput = await waitFor(() => {
+      const el = document.querySelector(".symbol-widget__find input");
+      expect(el).toBeTruthy();
+      return el as HTMLInputElement;
+    });
+    expect(frameInput.value).toBe("makeTodo");
+    await waitFor(() =>
+      expect(document.querySelector(".symbol-widget .hl-match")).toBeTruthy(),
+    );
+  });
+
+  it("opening a preview with the find bar closed leaves the frame find bar closed", async () => {
+    const store = await readyGraphStore();
+    renderGraphCanvas(store);
+    const moduleNode = await waitFor(() => {
+      const node = document.querySelector('[data-id="src/core/store.ts"]');
+      expect(node).toBeTruthy();
+      return node!;
+    });
+
+    fireEvent.contextMenu(moduleNode);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Open file preview" }));
+
+    await waitFor(() => expect(document.querySelector(".symbol-widget")).toBeTruthy());
+    expect(document.querySelector(".symbol-widget__find")).toBeNull();
+  });
+
   it("clicking Next in the bar does not open a preview", async () => {
     const { input } = await openFindBar();
     const bar = await searchFor(input, "makeTodo");

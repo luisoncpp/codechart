@@ -49,6 +49,7 @@ export function SymbolSourceWidget({
     frameRef,
     description: frame.symbolName ? undefined : frame.description,
     sourceText: frame.sourceText,
+    initialQuery: frame.initialFindQuery,
   });
 
   useEffect(() => {

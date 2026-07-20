@@ -60,7 +60,9 @@ export function GraphCanvas({ store, git, shell, ui, reviewNotes, onShowReviewNo
   const [contextMenu, setContextMenu] = useState<ModuleContextMenuState | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const previews = usePreviewFrames({ store, graph, diffOverlay, containerRef });
+  const previews = usePreviewFrames({
+    store, graph, diffOverlay, containerRef, getFindQuery: () => ui.getFindQuery(),
+  });
   const moveGuard = useRef(new ProgrammaticMoveGuard()).current;
   useReviewNoteNavigation({
     store, notes: reviewNotes, openPreview: previews.openReviewNotePreview, guard: moveGuard,
@@ -200,6 +202,7 @@ export function GraphCanvas({ store, git, shell, ui, reviewNotes, onShowReviewNo
           belowDiffBar={!!diffOverlay}
           open={uiState.getFindBarOpen()}
           onOpenChange={(open) => ui.setFindBarOpen(open)}
+          onQueryChange={(query) => ui.setFindQuery(query)}
         />
       </div>
     </ReactFlowProvider>

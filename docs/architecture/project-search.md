@@ -17,6 +17,7 @@ match-by-match navigation. See `docs/flows/search-project.md` for the end-to-end
 ## Invariants to preserve
 
 - Search results are never persisted in a store: they die with the bar (close, Esc, `phase-changed`).
+- The live query is mirrored into `CanvasUiState` via the **non-emitting** `setFindQuery` (cleared on close/reset): preview frames read it once at open time to seed their in-frame find bar (`PreviewFrame.initialFindQuery`). Keep the setter non-emitting — typing must never re-render the canvas.
 - The find bar must keep `data-preview-keep` on its root: `use-close-preview-frames` treats clicks inside it as "not outside", so using search does not dismiss an already-open preview.
 - Backend match semantics and the mock (`search-fixture-sources.ts`) must stay in sync: one match per file at its first matching line, 1-based lines, trim + clip, cap + `truncated`.
 - `search_module_sources` scans **only** the paths the frontend passes (the detected-modules contract); it must never walk the filesystem itself.

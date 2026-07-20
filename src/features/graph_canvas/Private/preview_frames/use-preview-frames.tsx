@@ -19,6 +19,8 @@ interface PreviewFramesDeps {
   graph: ProjectGraph | null;
   diffOverlay: GraphDiffOverlay | null;
   containerRef: React.RefObject<HTMLDivElement | null>;
+  /** The live project-search query; a new frame seeds its find bar with it. */
+  getFindQuery: () => string;
 }
 
 interface DocumentPreviewRequest {
@@ -35,7 +37,7 @@ interface ReviewPreviewRequest {
 }
 
 export function usePreviewFrames(deps: PreviewFramesDeps) {
-  const { store, graph, diffOverlay, containerRef } = deps;
+  const { store, graph, diffOverlay, containerRef, getFindQuery } = deps;
   const [frames, setFrames] = useState<readonly PreviewFrame[]>([]);
   const [moduleSources, setModuleSources] = useState<ReadonlyMap<string, string>>(new Map());
   const nextId = useRef(1);
@@ -56,9 +58,10 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
 
   const open = useCallback(
     (base: readonly PreviewFrame[], frame: Omit<PreviewFrame, "id" | "zIndex">) => {
-      setFrames(openFrame(base, { ...frame, id: nextId.current++ }));
+      const initialFindQuery = getFindQuery() || undefined;
+      setFrames(openFrame(base, { ...frame, initialFindQuery, id: nextId.current++ }));
     },
-    [],
+    [getFindQuery],
   );
 
   /** Symbol node clicked on the canvas: replace all frames with one next to it. */

@@ -8,6 +8,8 @@ interface UseFrameSearchArgs {
   frameRef: React.RefObject<HTMLDivElement | null>;
   description?: string;
   sourceText: string;
+  /** Opens the bar pre-filled on mount (e.g. carried over from project search). */
+  initialQuery?: string;
 }
 
 /** The frame the Ctrl+F press targets: focused frame first, hovered frame else. */
@@ -32,9 +34,9 @@ function useOpenShortcut(frameRef: React.RefObject<HTMLDivElement | null>, open:
   }, [frameRef, open]);
 }
 
-export function useFrameSearch({ frameRef, description, sourceText }: UseFrameSearchArgs) {
-  const [barOpen, setBarOpen] = useState(false);
-  const [query, setQueryState] = useState("");
+export function useFrameSearch({ frameRef, description, sourceText, initialQuery }: UseFrameSearchArgs) {
+  const [barOpen, setBarOpen] = useState(!!initialQuery);
+  const [query, setQueryState] = useState(initialQuery ?? "");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeMatchRef = useRef<HTMLElement>(null);
