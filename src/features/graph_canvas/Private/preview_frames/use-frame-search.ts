@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="Per-frame find state: query, matches, active index, Ctrl+F targeting, centering")
 import { useEffect, useMemo, useRef, useState } from "react";
-import { stepIndex } from "../match-stepper";
+import { stepIndex } from "../highlight/match-stepper";
 import { centerElementInBody } from "./center-in-body";
 import { findFrameMatches, type FrameMatch } from "./frame-search";
 

@@ -3,7 +3,7 @@ import { moduleIdsInGroupTree, type ProjectedGraph } from "../../../domain/graph
 import type { ReviewNoteNavigationRequest } from "../../../ipc/review-notes-client";
 import type { GraphSessionStore } from "../../../state/graph-session";
 import type { ReviewNotesStore } from "../../../state/review-notes";
-import type { ProgrammaticMoveGuard } from "./programmatic-move-guard";
+import type { ProgrammaticMoveGuard } from "./navigation/programmatic-move-guard";
 
 interface NavigationDeps {
   store: GraphSessionStore;

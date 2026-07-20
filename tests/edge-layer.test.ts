@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { styleEdge } from "../src/features/graph_canvas/Private/edge-style";
-import { buildEdgeLayerModel } from "../src/features/graph_canvas/Private/edge-layer-cache";
-import { boxesFromFlowNodes } from "../src/features/graph_canvas/Private/node-boxes";
+import { styleEdge } from "../src/features/graph_canvas/Private/edges/edge-style";
+import { buildEdgeLayerModel } from "../src/features/graph_canvas/Private/edges/edge-layer-cache";
+import { boxesFromFlowNodes } from "../src/features/graph_canvas/Private/edges/node-boxes";
 import type { RFNode } from "../src/domain/graph";
 
 describe("edge layer model", () => {

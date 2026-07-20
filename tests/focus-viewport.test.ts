@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   nodeCenterFromLayout,
   viewportCanPan,
-} from "../src/features/graph_canvas/Private/focus-viewport";
+} from "../src/features/graph_canvas/Private/navigation/focus-viewport";
 import type { LayoutedGraph } from "../src/domain/layout";
 
 const layout: LayoutedGraph = {

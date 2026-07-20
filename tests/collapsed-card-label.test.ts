@@ -4,7 +4,7 @@ import {
   collapsedDescription,
   collapsedLabelLayout,
   L0_LABEL_FONT,
-} from "../src/features/graph_canvas/Private/collapsed-description";
+} from "../src/features/graph_canvas/Private/descriptions/collapsed-description";
 import type { ProjectGraph } from "../src/domain/graph";
 import { renderGraphCanvas } from "./helpers/flow-graph-canvas";
 import { testGraphSessionStore } from "./helpers/test-graph-session-store";

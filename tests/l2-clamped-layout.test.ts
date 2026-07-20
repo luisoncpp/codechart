@@ -3,7 +3,7 @@ import {
   calculateVisibleBounds,
   groupDocBorderInset,
   moduleL2BorderInset,
-} from "../src/features/graph_canvas/Private/use-l2-clamped-layout";
+} from "../src/features/graph_canvas/Private/l2/use-l2-clamped-layout";
 
 describe("calculateVisibleBounds", () => {
   it("returns null when the node is fully outside the viewport", () => {

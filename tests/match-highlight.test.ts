@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   segmentTokenText,
   type LineMatchRange,
-} from "../src/features/graph_canvas/Private/match-highlight";
+} from "../src/features/graph_canvas/Private/highlight/match-highlight";
 
 function range(startCol: number, endCol: number, active = false): LineMatchRange {
   return { startCol, endCol, active };

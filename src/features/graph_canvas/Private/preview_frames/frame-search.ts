@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Pure find-in-frame matching over a frame's description and source text")
-import type { LineMatchRange } from "../match-highlight";
+import type { LineMatchRange } from "../highlight/match-highlight";
 
 /** One in-frame match. `line` is 1-based for code, always 0 for description. */
 export interface FrameMatch {

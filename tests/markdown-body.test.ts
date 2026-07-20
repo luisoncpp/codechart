@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stripMarkdownFrontmatter } from "../src/features/graph_canvas/Private/MarkdownBody";
+import { stripMarkdownFrontmatter } from "../src/features/graph_canvas/Private/l2/MarkdownBody";
 
 describe("stripMarkdownFrontmatter", () => {
   it("removes a leading YAML fence", () => {

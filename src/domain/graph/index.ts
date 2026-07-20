@@ -1,17 +1,17 @@
-export type { Annotation } from "./Annotation";
-export type { Diagnostic } from "./Diagnostic";
-export type { DiagnosticKind } from "./DiagnosticKind";
-export type { Edge } from "./Edge";
-export type { EdgeKind } from "./EdgeKind";
-export type { GroupNode } from "./GroupNode";
-export type { Language } from "./Language";
-export type { ModuleMetrics } from "./ModuleMetrics";
-export type { ModuleNode } from "./ModuleNode";
-export type { ProjectGraph } from "./ProjectGraph";
-export type { Severity } from "./Severity";
-export { projectGraphSummary } from "./Private/graph-projector";
-export { projectGraph } from "./Private/rf-projection";
-export type { RenderOptions } from "./Private/rf-projection";
+export type { Annotation } from "./model/Annotation";
+export type { Diagnostic } from "./model/Diagnostic";
+export type { DiagnosticKind } from "./model/DiagnosticKind";
+export type { Edge } from "./model/Edge";
+export type { EdgeKind } from "./model/EdgeKind";
+export type { GroupNode } from "./model/GroupNode";
+export type { Language } from "./model/Language";
+export type { ModuleMetrics } from "./model/ModuleMetrics";
+export type { ModuleNode } from "./model/ModuleNode";
+export type { ProjectGraph } from "./model/ProjectGraph";
+export type { Severity } from "./model/Severity";
+export { projectGraphSummary } from "./Private/projection/graph-projector";
+export { projectGraph } from "./Private/projection/rf-projection";
+export type { RenderOptions } from "./Private/projection/rf-projection";
 export { symbolBoxId, symbolNameFromId } from "./symbol-id";
 export { inferSymbolKind } from "./Private/symbol-kind";
 export type { SymbolKind } from "./Private/symbol-kind";
@@ -20,30 +20,30 @@ export {
   projectForZoom,
   isModuleExpanded,
   groupParentMap,
-} from "./Private/zoom-projection";
+} from "./Private/reduction/zoom-projection";
 export {
   allGroupIds,
   topLevelGroupIds,
   levelFromZoom,
   L0_ZOOM_BOUNDARY,
-} from "./Private/zoom-level";
-export { isTestModule, filterTestModules } from "./Private/test-modules";
+} from "./Private/reduction/zoom-level";
+export { isTestModule, filterTestModules } from "./Private/reduction/test-modules";
 export {
   isGroupDisconnected,
   isModuleDisconnected,
   filterDisconnectedEdges,
   defaultDisconnectedSets,
   countHiddenEdges,
-} from "./Private/connection-filter";
-export type { ZoomLevel } from "./Private/zoom-level";
-export type { HeatmapMode, ModuleHeat, HeatProjection } from "./Private/heat-types";
+} from "./Private/reduction/connection-filter";
+export type { ZoomLevel } from "./Private/reduction/zoom-level";
+export type { HeatmapMode, ModuleHeat, HeatProjection } from "./Private/heat/heat-types";
 export {
   computeHeatProjection,
   rawHeatValue,
   heatBand,
   formatChurn,
-} from "./Private/heat-scores";
-export { heatColor, heatFill, heatFillOpacity, heatLegendGradient } from "./Private/heat-colors";
+} from "./Private/heat/heat-scores";
+export { heatColor, heatFill, heatFillOpacity, heatLegendGradient } from "./Private/heat/heat-colors";
 export type {
   ProjectedGraph,
   GroupNodeData,
@@ -55,7 +55,7 @@ export type {
   SymbolRFNode,
   RFNode,
   RFEdgeT,
-} from "./Private/node-data";
+} from "./Private/projection/node-data";
 export {
   findModule,
   findGroup,

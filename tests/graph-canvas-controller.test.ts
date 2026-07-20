@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Node } from "@xyflow/react";
-import { GraphCanvasController } from "../src/features/graph_canvas/Private/graph-canvas-controller";
+import { GraphCanvasController } from "../src/features/graph_canvas/Private/controller/graph-canvas-controller";
 import type { GraphSessionStore } from "../src/state/graph-session";
 import {
   collapsedGroupNode,

@@ -3,7 +3,7 @@ import { ReactFlowProvider, type NodeProps } from "@xyflow/react";
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { SymbolNodeData, SymbolRFNode } from "../src/domain/graph";
-import { SymbolNodeView } from "../src/features/graph_canvas/Private/SymbolNodeView";
+import { SymbolNodeView } from "../src/features/graph_canvas/Private/nodes/SymbolNodeView";
 import "../src/features/graph_canvas/Private/graph-canvas.css";
 
 const CASES = ["added", "removed", "modified"] as const;

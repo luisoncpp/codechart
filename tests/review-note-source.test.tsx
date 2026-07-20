@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { DiffCodeLines } from "../src/features/graph_canvas/Private/DiffCodeLines";
+import { DiffCodeLines } from "../src/features/graph_canvas/Private/highlight/DiffCodeLines";
 import { ReviewNotesProvider } from "../src/features/review_notes";
 import { ReviewNotesStore, useReviewNotes } from "../src/state/review-notes";
 import type { ReviewNotesClient } from "../src/ipc/review-notes-client";

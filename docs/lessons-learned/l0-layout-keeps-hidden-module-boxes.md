@@ -18,4 +18,4 @@ own invisible topmost module — rendering `null` or a one-line ellipsis in a vi
 - `descriptionBoxGeometry` (L1 expanded path) is the counter-example: there the modules *are*
   visible, so it correctly uses all child boxes. Visibility depends on the consumer's level.
 
-See `visibleChildBoxes` in `src/domain/graph/Private/rf-projection-nodes.ts`.
+See `visibleChildBoxes` in `src/domain/graph/Private/projection/rf-projection-nodes.ts`.

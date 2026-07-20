@@ -16,20 +16,35 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
         └── EdgeList click (Imports / Imported by)
 ```
 
+## Internal structure (subgroups)
+
+Both deep modules organize their implementation into subfolders, each a config subgroup
+(`*.group.md`, facade-less = public inside the parent):
+
+- `domain/graph`: `model/` (ts-rs generated contract types — **also the `TS_RS_EXPORT_DIR`**,
+  never hand-edit), `Private/projection/` (rf-projection\* + `node-data` + palette),
+  `Private/reduction/` (zoom projection/levels, test filtering, disconnect filtering),
+  `Private/heat/` (heat scores/colors). Flat: `index.ts`, `symbol-id.ts`, `selectors.ts`,
+  `symbol-kind*.ts`.
+- `features/graph_canvas/Private`: `edges/`, `nodes/`, `descriptions/`, `l2/`, `highlight/`,
+  `navigation/`, `controller/`, `toolbar/`, plus the nested deep modules `preview_frames/`
+  and `project_search/` (those two keep `index.ts` facades). Flat: `GraphCanvas.tsx`,
+  `graph-canvas.css`, `review-note-canvas.ts`.
+
 ## Responsibilities
 
 | Piece | File | Role |
 |-------|------|------|
-| `projectGraph(graph, layout)` | `domain/graph/Private/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
-| `EdgeLayer` + `segmentForEdge` | `features/graph_canvas/Private/EdgeLayer.tsx`, `edge-path.ts` | Custom SVG edge layer (portal into RF's `.react-flow__edges`); React Flow receives `edges={[]}`. `segmentForEdge` computes both endpoints via `borderAnchor` from live node boxes (`boxesFromFlowNodes`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
-| `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
+| `projectGraph(graph, layout)` | `domain/graph/Private/projection/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
+| `EdgeLayer` + `segmentForEdge` | `features/graph_canvas/Private/edges/EdgeLayer.tsx`, `edge-path.ts` | Custom SVG edge layer (portal into RF's `.react-flow__edges`); React Flow receives `edges={[]}`. `segmentForEdge` computes both endpoints via `borderAnchor` from live node boxes (`boxesFromFlowNodes`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
+| `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/edges/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
 | selectors | `domain/graph/Private/selectors.ts` | `findModule`, `findGroup`, `groupOf`, `modulesInGroup`, `childGroupsOf`, `groupImportsOf`, `groupImportedBy`, `diagnosticsForGroup`, `edgeFocusForSelection`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. |
 | `GraphSessionStore` | `state/graph-session` | Owns `LayoutedGraph`, `selectedId`, and browser-style selection history. New selections truncate the forward branch; back/forward only move its pointer. Emits `phase-changed` + `selection-changed` + `focus-requested`. `focusOn(moduleId)` selects a module, expands collapsed ancestor groups when needed, and asks the canvas to center on it. |
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. `FocusNode` centers the viewport for inspector and Review Note navigation. Sets `onlyRenderVisibleElements` so only viewport-intersecting nodes stay mounted — without it, the one-node-per-symbol swarm at L1.5 made panning composite-bound. Safe with `EdgeLayer`: culling is render-only, and the edge layer reads the projected `nodes` prop + store `nodeLookup`, which culling never filters, so edges to off-screen nodes keep drawing. |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules + groups) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
 | `SelectionNavigation` | `features/graph_canvas` | Top-left back/forward controls plus `Alt+Left` / `Alt+Right`; disabled states come from the session history pointer. |
 | `ViewMenu` / `SearchMenu` | `features/graph_canvas` (facade exports) | Toolbar dropdowns (rendered by `App` into `ProjectLoaderPanel`'s `menus` slot, built on the shared `src/ui/dropdown_menu` module). View ▾: Hide tests, Heatmap + Activity/Risk, Visualize diff…; Search ▾: Search project (Ctrl+Shift+F). |
-| `CanvasUiState` | `features/graph_canvas/Private/canvas-ui-state.ts` (facade export) | Transient UI flags (`findBarOpen`, `diffModalOpen`) shared between the toolbar menus and `GraphCanvas`; kept out of `GraphSessionStore`. `App` instantiates it and resets on `phase-changed`. |
+| `CanvasUiState` | `features/graph_canvas/Private/controller/canvas-ui-state.ts` (facade export) | Transient UI flags (`findBarOpen`, `diffModalOpen`) shared between the toolbar menus and `GraphCanvas`; kept out of `GraphSessionStore`. `App` instantiates it and resets on `phase-changed`. |
 | `HeatmapLegend` | `features/graph_canvas` | Passive top-right gradient chip, shown only while the heatmap is on (below `LevelBadge`). The heatmap toggles themselves live in the View menu. |
 | `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, copies the graph-relative path, or reveals the file via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
 | `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
@@ -134,7 +149,7 @@ applies `projectForZoom` for manual per-group collapse at L1+. Display/edge rout
 `filterTestModules` **before** `projectForZoom` so empty-group pruning never sees modules already
 hidden by zoom collapse.
 
-- `projectForZoom` (`domain/graph/Private/zoom-projection.ts`, pure): drops modules under a
+- `projectForZoom` (`domain/graph/Private/reduction/zoom-projection.ts`, pure): drops modules under a
   collapsed group; keeps every collapsed group box visible (nested groups are not absorbed into a
   parent); **re-routes** edges whose endpoint was hidden onto the nearest collapsed ancestor group
   box; drops self-loops, **group↔ancestor-group edges** (a group nested at any depth inside the
@@ -278,7 +293,7 @@ hidden by zoom collapse.
 - **Connection disconnect affordance:** every group and module renders a plug toggle (`ConnectionToggle`, 🔌)
   at the **upper-right** corner, tagged `data-connection-toggle`. Click → `store.toggleGroupConnection` /
   `toggleModuleConnection`. Disconnected nodes stay visible; edges touching them are dropped by
-  `filterDisconnectedEdges` (`domain/graph/Private/connection-filter.ts`, pure) in `GraphSessionStore.reduceForView`.
+  `filterDisconnectedEdges` (`domain/graph/Private/reduction/connection-filter.ts`, pure) in `GraphSessionStore.reduceForView`.
   Defaults come from `GroupNode.disconnectedByDefault` / `disconnectedModuleIds` (parsed from `*.group.md`
   `disconnected` / `disconnectedModules`); session state seeds on load and user toggles layer on top.
   Modules inherit a parent group's disconnect (ancestor chain). Inspection still lists imports on the raw graph.

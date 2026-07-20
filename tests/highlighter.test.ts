@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tokenizeCode } from "../src/features/graph_canvas/Private/highlighter";
+import { tokenizeCode } from "../src/features/graph_canvas/Private/highlight/highlighter";
 
 describe("tokenizeCode", () => {
   it("tokenizes TypeScript code correctly", () => {

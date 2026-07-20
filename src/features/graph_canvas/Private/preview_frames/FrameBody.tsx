@@ -1,8 +1,8 @@
 // @Architecture(descriptionShort="Preview frame body: symbol source code or module document, with find-match threading")
 import type { FileLineDiff } from "../../../../domain/diff";
-import { DiffCodeLines } from "../DiffCodeLines";
-import { L2CodeBlock, L2Description } from "../L2Content";
-import type { LineMatchRange } from "../match-highlight";
+import { DiffCodeLines } from "../highlight/DiffCodeLines";
+import { L2CodeBlock, L2Description } from "../l2/L2Content";
+import type { LineMatchRange } from "../highlight/match-highlight";
 import type { PreviewFrame } from "./frame-list";
 
 export interface FrameMatchProps {

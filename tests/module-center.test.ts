@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { moduleCenter } from "../src/features/graph_canvas/Private/module-center";
+import { moduleCenter } from "../src/features/graph_canvas/Private/navigation/module-center";
 
 describe("moduleCenter", () => {
   it("returns the absolute center of a nested module node", () => {

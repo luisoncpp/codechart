@@ -5,7 +5,7 @@ import { ReactFlowProvider, useStoreApi } from "@xyflow/react";
 import type { GraphSessionStore } from "../src/state/graph-session";
 import { readyGraphStore } from "./helpers/flow-graph-canvas";
 import { renderCanvasWithGroup } from "./helpers/graph-canvas-dom";
-import { GroupDescription } from "../src/features/graph_canvas/Private/GroupDescription";
+import { GroupDescription } from "../src/features/graph_canvas/Private/descriptions/GroupDescription";
 
 /** GroupDescription reads React Flow's store (viewport dismissal), so direct
  *  renders need the provider. `setViewport` needs a mounted `<ReactFlow>`

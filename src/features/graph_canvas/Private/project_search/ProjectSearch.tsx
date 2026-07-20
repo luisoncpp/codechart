@@ -1,9 +1,9 @@
 // @Architecture(descriptionShort="Find bar: Ctrl+Shift+F full-text search / Ctrl+P go-to-file, with result navigation")
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GraphSessionStore } from "../../../../state/graph-session";
-import type { FindBarMode } from "../canvas-ui-state";
-import type { ProgrammaticMoveGuard } from "../programmatic-move-guard";
-import { stepIndex } from "../match-stepper";
+import type { FindBarMode } from "../controller/canvas-ui-state";
+import type { ProgrammaticMoveGuard } from "../navigation/programmatic-move-guard";
+import { stepIndex } from "../highlight/match-stepper";
 import { useDebouncedSearch } from "./use-debounced-search";
 import { useFileNameSearch } from "./use-file-name-search";
 import { ProjectSearchBar } from "./ProjectSearchBar";
