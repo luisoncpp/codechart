@@ -2,7 +2,7 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { GroupRFNode, GroupNodeData } from "../../../domain/graph";
 import { UNCHANGED_MODULE_DIFF_OPACITY } from "../../../domain/diff";
-import { DESC_BOX, expandedHeaderScale, fitDescriptionFontSize } from "../../../domain/layout";
+import { expandedHeaderScale } from "../../../domain/layout";
 import { iconFontSize, iconGlyph } from "./icon-map";
 import { ConnectionToggle } from "./ConnectionToggle";
 import { ChevronIcon } from "./ChevronIcon";
@@ -11,6 +11,7 @@ import { useZoomCounterScale } from "./use-zoom-counter-scale";
 import { groupShellStyle, groupTextColors } from "./heat-node-styles";
 import { darkenHex } from "./color-utils";
 import { collapsedDescription, collapsedLabelLayout } from "./collapsed-description";
+import { GroupDescription } from "./GroupDescription";
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
@@ -64,37 +65,6 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
       )}
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
-  );
-}
-
-/** Description drawn directly in the group (no box) at the layout-reserved box
- *  geometry, so modules pack around it. L1 shows the short text at the larger
- *  `l1FontSize`; L1.5+ (`showLong`) shows the long text at the smaller `fontSize`.
- *  The box fits both (`descriptionBoxSize`), so neither variant truncates. */
-function GroupDescription({
-  data,
-  descColor,
-}: {
-  data: GroupNodeData;
-  descColor: string;
-}) {
-  const showingLong = !!(data.showLong && data.descriptionLong);
-  const text = (showingLong ? data.descriptionLong : undefined) ?? data.descriptionShort;
-  if (!text || !data.descriptionBox) return null;
-  const { width, height } = data.descriptionBox;
-  const font = showingLong
-    ? DESC_BOX.fontSize
-    : fitDescriptionFontSize(text, width, height);
-  return (
-    <p
-      style={{
-        ...bandDescriptionStyle(descColor, data.descriptionBox, font),
-        opacity: groupLabelOpacity(data),
-      }}
-      title={text}
-    >
-      {text}
-    </p>
   );
 }
 
@@ -317,37 +287,5 @@ function cardDescriptionStyle(
       : {}),
     width: region.width,
     maxWidth: "100%",
-  };
-}
-
-/** In-group description, drawn at the layout-reserved box geometry (parent-relative).
- *  Projection has already raised `y` to the highest collision-free spot in the box's
- *  column (ELK centers a short column, so the reserved slot floats mid-group). World
- *  units at `font` (the box is packed to fit both fonts, so it never truncates) —
- *  not counter-scaled. `textAlign: left` overrides React Flow's centered node default. */
-function bandDescriptionStyle(
-  color: string,
-  box: { x: number; y: number; width: number; height: number },
-  font: number,
-) {
-  return {
-    position: "absolute" as const,
-    left: box.x,
-    top: box.y,
-    width: box.width,
-    height: box.height,
-    boxSizing: "border-box" as const,
-    padding: DESC_BOX.padding,
-    margin: 0,
-    fontSize: font,
-    fontFamily: SANS,
-    fontWeight: 500,
-    lineHeight: DESC_BOX.lineRatio,
-    textAlign: "left" as const,
-    color,
-    overflow: "hidden",
-    pointerEvents: "none" as const,
-    display: "flex",
-    alignItems: "center",
   };
 }
