@@ -11,7 +11,8 @@ and share counter + `focusOn` navigation.
 | Piece | File | Role |
 |-------|------|------|
 | `search::search_sources` | `src-tauri/src/search/mod.rs` | **Pure** (over the `ProjectSource` trait). Per-line lowercase `contains`; one `SearchMatch { path, line (1-based), lineText }` per matching file, using its first matching line, trimmed/clipped to 200 chars; stops at `MAX_MATCHES = 500` with `truncated: true`; unreadable files skipped. |
-| `search_module_sources` | `src-tauri/src/tauri_api/mod.rs` | Command glue: `FsProjectSource` over the working tree. Returns `SearchResult` directly (no error mode). |
+| `backend_shell` facade | `src-tauri/src/lib.rs` | Re-exports `search_sources` and `SearchResult`; callers outside the backend shell access search only through this public boundary. |
+| `search_module_sources` | `src-tauri/src/tauri_api/mod.rs` | Command glue: `FsProjectSource` over the working tree, then the `backend_shell` search export. Returns `SearchResult` directly (no error mode). |
 | `AnalysisClient.searchModuleSources` | `src/ipc/analysis-client` | IPC seam. `ProjectSearchMatch`/`ProjectSearchResult` are hand-mirrored TypeScript interfaces. The mock searches bundled fixture sources via `search-fixture-sources.ts` with matching semantics. |
 | `GraphSessionStore.searchProjectSources` | `state/graph-session` | Thin entry point (the client is private to the store). Scope = full graph, or `filterTestModules` while **Hide tests** is on, so every result is navigable. **Stores nothing, emits nothing.** |
 | `GraphSessionStore.searchModuleFiles` | `state/graph-session` | Go-to-file: pure, synchronous filter of the same visible scope by file **name** (last path segment) substring. No IPC, no cap. |

@@ -16,6 +16,7 @@ pub mod tauri_api;
 pub mod unity_assets;
 pub mod unreal_config;
 
+pub use search::{search_sources, SearchResult};
 pub use unreal_config::{
     ensure_unreal_defaults, read_project_config, unreal_options_from_source, write_project_config,
     ProjectConfig, UnrealOptions,

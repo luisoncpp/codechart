@@ -1,4 +1,5 @@
 use crate::contract::ProjectGraph;
+use crate::project_source::FsProjectSource;
 
 use super::{analyze_project, read_module_source, search_module_sources};
 
@@ -6,6 +7,7 @@ const FIXTURE_DIR: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../tests/fixtures/ts-basic-project"
 );
+const WORKSPACE_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/..");
 
 fn golden() -> ProjectGraph {
     let json = include_str!("../../../tests/fixtures/golden/project-graph.json");
@@ -60,6 +62,20 @@ fn search_module_sources_finds_text_in_fixture_modules() {
     assert_eq!(todo_match.line, 8);
     assert!(result.matches.iter().all(|m| m.line_text.contains("makeTodo")));
     assert!(!result.truncated);
+}
+
+#[test]
+fn search_command_does_not_bypass_the_backend_shell_facade() {
+    let source = FsProjectSource::new(WORKSPACE_DIR);
+    let graph = crate::analysis::analyze_project(&source, WORKSPACE_DIR).expect("builds");
+
+    assert!(
+        graph.edges.iter().all(|edge| {
+            edge.source != "src-tauri/src/tauri_api/mod.rs"
+                || edge.target != "src-tauri/src/search/mod.rs"
+        }),
+        "Tauri commands must access search through the backend_shell facade"
+    );
 }
 
 #[test]

@@ -4,11 +4,12 @@ use crate::analysis::analyze_project as run_analysis;
 use crate::contract::ProjectGraph;
 use crate::git::{self, GitCommit};
 use crate::project_source::{FsProjectSource, ProjectSource};
-use crate::review_notes::{load_review_notes as load_notes, save_review_notes as save_notes, ReviewNotesDocument};
-use crate::search::{search_sources, SearchResult};
+use crate::review_notes::{
+    load_review_notes as load_notes, save_review_notes as save_notes, ReviewNotesDocument,
+};
 use crate::{
-    ensure_unreal_defaults, read_project_config as load_project_config,
-    write_project_config as save_project_config, ProjectConfig,
+    ensure_unreal_defaults, read_project_config as load_project_config, search_sources,
+    write_project_config as save_project_config, ProjectConfig, SearchResult,
 };
 use std::collections::HashMap;
 
