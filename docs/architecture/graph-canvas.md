@@ -28,6 +28,9 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. `FocusNode` centers the viewport for inspector and Review Note navigation. Sets `onlyRenderVisibleElements` so only viewport-intersecting nodes stay mounted — without it, the one-node-per-symbol swarm at L1.5 made panning composite-bound. Safe with `EdgeLayer`: culling is render-only, and the edge layer reads the projected `nodes` prop + store `nodeLookup`, which culling never filters, so edges to off-screen nodes keep drawing. |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules + groups) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
 | `SelectionNavigation` | `features/graph_canvas` | Top-left back/forward controls plus `Alt+Left` / `Alt+Right`; disabled states come from the session history pointer. |
+| `ViewMenu` / `SearchMenu` | `features/graph_canvas` (facade exports) | Toolbar dropdowns (rendered by `App` into `ProjectLoaderPanel`'s `menus` slot, built on the shared `src/ui/dropdown_menu` module). View ▾: Hide tests, Heatmap + Activity/Risk, Visualize diff…; Search ▾: Search project (Ctrl+Shift+F). |
+| `CanvasUiState` | `features/graph_canvas/Private/canvas-ui-state.ts` (facade export) | Transient UI flags (`findBarOpen`, `diffModalOpen`) shared between the toolbar menus and `GraphCanvas`; kept out of `GraphSessionStore`. `App` instantiates it and resets on `phase-changed`. |
+| `HeatmapLegend` | `features/graph_canvas` | Passive top-right gradient chip, shown only while the heatmap is on (below `LevelBadge`). The heatmap toggles themselves live in the View menu. |
 | `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, copies the graph-relative path, or reveals the file via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
 | `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
 
@@ -82,7 +85,7 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   vanishing. Both live in `edge-style.ts` (`GraphCanvas` passes `edgeFocusForSelection` per render);
   pure `edgeRole`/`edgeOpacity`/`borderAnchor` are the testable seams (edges don't render under jsdom).
 - **Diff overlay (narrative diff visualizer):** optional session overlay from `GraphSessionStore.getDiffOverlay()`.
-  Enter via **Visualize diff…** (`DiffModal`: paste unified diff or pick two git revisions when the
+  Enter via toolbar **View ▾ → Visualize diff…** (`DiffModal`: paste unified diff or pick two git revisions when the
   project root is a repo). The **after** list includes **Local changes**: tracked staged/unstaged
   changes come from `git diff <before>`, while untracked files are full-add patches only when they
   survive Git ignore rules and have a module in the loaded graph. `domain/diff` compares before/after graphs (git mode) or parses diff paths
@@ -104,8 +107,9 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   **Mutually exclusive with the activity heatmap** — diff on pauses heat controls and restores prior heat state when cleared.
 - **Activity heatmap (git metrics overlay):** when the project root is a git repo, `analyze_project`
   stamps `ModuleMetrics.churn`, `bugRisk`, and `fixCommits` (90-day window, Rust `git::enrich_module_metrics`).
-  `ViewControls` exposes a **Heatmap** toggle + **Activity | Risk** segmented switch (Activity default);
-  disabled without git (tooltip: “Requires a git repository”). `computeHeatProjection` (`heat-scores.ts`,
+  The toolbar **View ▾** menu (`ViewMenu`) exposes a **Heatmap** checkbox + **Activity | Risk** radio items (Activity default);
+  disabled without git (tooltip: “Requires a git repository”). While the heatmap is on, `HeatmapLegend`
+  (passive gradient chip) renders at the canvas top-right below the level badge. `computeHeatProjection` (`heat-scores.ts`,
   pure) percentile-ranks visible modules (respecting **Hide tests**) into `heatScore`/`heatVisible` on
   projected nodes. Group scores use the **full** graph (not the L0-reduced view) so
   collapsed bird's-eye boxes match expanded L1 tints. Every module/group gets a score in

@@ -17,11 +17,12 @@ in the running app until the canvas renders.
 | 5 | 0 modules → `empty`; else ELK layout → `ready` | `GraphSessionStore.loadProject` | same as #2 |
 | 6 | Render canvas + collapsible inspection panel (left-edge drag to resize) | `App` gates on `phase==="ready"` | `app/Private/App.tsx` |
 | 6b | When ready, show collapsible **facade bypasses** list (textarea + **Copy list**) | `FacadeBypassList` | `project_loader/Private/FacadeBypassList.tsx` |
-| 6c | When the loaded graph contains at least one C++ module, show `Configure paths...`; hide it for non-C++ projects | `ProjectLoaderPanel` | `project_loader/Private/ProjectLoaderPanel.tsx` |
+| 6c | When the loaded graph contains at least one C++ module, show the ⚙ `Configure paths...` icon button; hide it for non-C++ projects | `ProjectLoaderPanel` | `project_loader/Private/ProjectLoaderPanel.tsx` |
+| 6d | Toolbar shows the project chip (folder basename, full path in tooltip) plus the **View ▾** / **Search ▾** menus (`App` fills the `menus` slot when ready) | `ProjectLoaderPanel` + `ViewMenu`/`SearchMenu` | `project_loader/Private/ProjectLoaderPanel.tsx`, `graph_canvas/Private/{ViewMenu,SearchMenu}.tsx` |
 
 ## Session phases
 `idle` → `loading` → (`ready` | `empty` | `failed`). The panel shows a hint per
-phase; **Reload** re-runs the last picked path. Builder `Err` → `failed` with the
+phase; the ↻ **Reload** icon button re-runs `session.getProjectRoot()` (the panel keeps no local path state). Builder `Err` → `failed` with the
 `BuildError` message (now `Display`-formatted).
 
 ## Reads / Writes / Side effects

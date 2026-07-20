@@ -51,5 +51,5 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [preview-symbol.md](./preview-symbol.md) | Click a symbol in L1.5 zoom → selection + resizable preview code widget next to it |
 | [visualize-diff.md](./visualize-diff.md) | Visualize diff modal → overlay green/red modules and green/red edges on the canvas |
 | [create-manage-review-note.md](./create-manage-review-note.md) | Source range to persisted Review Note and preview navigation |
-| [search-project.md](./search-project.md) | Ctrl+Shift+F find bar or toolbar button → full-text search of module sources → center each match |
+| [search-project.md](./search-project.md) | Ctrl+Shift+F find bar or toolbar Search ▾ menu → full-text search of module sources → center each match |
 | [find-in-preview.md](./find-in-preview.md) | Ctrl+F on a focused/hovered preview frame or header ⌕ → in-frame find bar → highlight and center matches |

@@ -40,11 +40,12 @@ describe("flow: search-project", () => {
     expect(screen.queryByRole("search")).toBeNull();
   });
 
-  it("opens from the toolbar button", async () => {
+  it("opens from the toolbar Search menu", async () => {
     const store = await readyGraphStore();
     renderGraphCanvas(store);
 
-    fireEvent.click(screen.getByRole("button", { name: "Search project" }));
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Search project/ }));
 
     expect(screen.getByRole("search")).toBeInTheDocument();
   });

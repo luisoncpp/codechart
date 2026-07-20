@@ -1,5 +1,10 @@
 import { render } from "@testing-library/react";
-import { GraphCanvas } from "../../src/features/graph_canvas";
+import {
+  CanvasUiState,
+  GraphCanvas,
+  SearchMenu,
+  ViewMenu,
+} from "../../src/features/graph_canvas";
 import { createMockGitClient } from "../../src/ipc/git-client";
 import { createMockShellClient } from "../../src/ipc/shell-client";
 import type { ShellClient } from "../../src/ipc/shell-client";
@@ -18,24 +23,32 @@ export async function readyGraphStore(): Promise<GraphSessionStore> {
   return store;
 }
 
+/** Renders the toolbar menus together with the canvas — the app's real entry points. */
 export function renderGraphCanvas(
   store: GraphSessionStore,
   shell: ShellClient = createMockShellClient(),
   reviewNotes?: ReviewNotesStore,
 ) {
-  if (reviewNotes) {
-    return render(
-      <SubscribedGraphCanvas store={store} shell={shell} reviewNotes={reviewNotes} />,
-    );
-  }
-  return render(
-    <GraphCanvas store={store} git={createMockGitClient()} shell={shell} />,
+  const ui = new CanvasUiState();
+  const canvas = reviewNotes ? (
+    <SubscribedGraphCanvas store={store} shell={shell} ui={ui} reviewNotes={reviewNotes} />
+  ) : (
+    <GraphCanvas store={store} git={createMockGitClient()} shell={shell} ui={ui} />
   );
+  const view = render(
+    <>
+      <ViewMenu store={store} ui={ui} />
+      <SearchMenu ui={ui} />
+      {canvas}
+    </>,
+  );
+  return { ...view, canvasUi: ui };
 }
 
-function SubscribedGraphCanvas({ store, shell, reviewNotes }: {
+function SubscribedGraphCanvas({ store, shell, ui, reviewNotes }: {
   store: GraphSessionStore;
   shell: ShellClient;
+  ui: CanvasUiState;
   reviewNotes: ReviewNotesStore;
 }) {
   useReviewNotes(reviewNotes);
@@ -45,6 +58,7 @@ function SubscribedGraphCanvas({ store, shell, reviewNotes }: {
         store={store}
         git={createMockGitClient()}
         shell={shell}
+        ui={ui}
         reviewNotes={reviewNotes}
       />
     </ReviewNotesProvider>

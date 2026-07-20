@@ -4,7 +4,7 @@ End-to-end flow for overlaying a git or pasted diff on the architecture map.
 
 ## Trigger
 
-User clicks **Visualize diff…** on the canvas (top-right, when no diff is active).
+User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden while a diff is active).
 
 ## Entry point
 

@@ -1,6 +1,6 @@
 # Flow: search the project's source (Ctrl+Shift+F find bar)
 
-1. **Trigger** - press `Ctrl+Shift+F` / `Cmd+Shift+F` anywhere (even from another input), or use the **Search project** button in the view-controls toolbar. `Ctrl+F` is left to the browser.
+1. **Trigger** - press `Ctrl+Shift+F` / `Cmd+Shift+F` anywhere (even from another input), or use **Search ▾ → Search project** in the top toolbar (menu writes `CanvasUiState.setFindBarOpen`). `Ctrl+F` is left to the browser.
 2. **Entry point** - `ProjectSearch` (`features/graph_canvas/Private/project_search/`), always mounted by `GraphCanvas` so its window `keydown` listener pre-exists; the bar renders top-center (drops below the diff overlay bar when a diff is active).
 3. **Step-by-step sequence**
    1. Typing updates local component state only; `useDebouncedSearch` waits 300 ms (queries under 2 chars clear results with no IPC; a sequence counter drops stale out-of-order responses).
@@ -12,5 +12,5 @@
 4. **Reads** - store `graph`, `root`, `hideTests`; module sources on disk (backend).
 5. **Writes** - none in stores while searching (find-bar local state only); navigation performs the usual `selectedId`, selection history, and focus sequence via `focusOn`.
 6. **Side effects** - viewport pan per jump; possible async re-layout when collapsed ancestors expand.
-7. **Files to inspect** - `project_search/{ProjectSearch,ProjectSearchBar}.tsx`, `use-debounced-search.ts`, `match-stepper.ts`, `ViewControls.tsx`, `graph-session-store.ts` (`searchProjectSources`), `analysis-client.ts`, `src-tauri/src/search/mod.rs`, `tauri_api/mod.rs`.
+7. **Files to inspect** - `project_search/{ProjectSearch,ProjectSearchBar}.tsx`, `use-debounced-search.ts`, `match-stepper.ts`, `SearchMenu.tsx`, `canvas-ui-state.ts`, `graph-session-store.ts` (`searchProjectSources`), `analysis-client.ts`, `src-tauri/src/search/mod.rs`, `tauri_api/mod.rs`.
 8. **Common failure modes** - sources edited after analysis make line numbers drift (stale until the project reloads, same staleness class as review-note anchors); toggling **Hide tests** after a search leaves stale results whose hidden modules select but do not center (`FocusNode` no-op); broad queries clip at 500 matches (counter shows `500+`). Find-bar clicks do not close existing preview frames (`[data-preview-keep]` opt-out in `use-close-preview-frames`).

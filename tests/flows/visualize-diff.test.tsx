@@ -17,7 +17,8 @@ describe("flow: visualize-diff", () => {
   it("clicking Visualize diff opens the diff modal", async () => {
     const store = await readyGraphStore();
     renderGraphCanvas(store);
-    fireEvent.click(screen.getByRole("button", { name: "Visualize diff…" }));
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Visualize diff…" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Visualize diff")).toBeInTheDocument();
   });
@@ -25,7 +26,8 @@ describe("flow: visualize-diff", () => {
   it("pasting a unified diff and clicking Visualize sets the diff overlay on the store", async () => {
     const store = await readyGraphStore();
     renderGraphCanvas(store);
-    fireEvent.click(screen.getByRole("button", { name: "Visualize diff…" }));
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Visualize diff…" }));
     fireEvent.change(screen.getByPlaceholderText(/Paste a unified diff/i), {
       target: { value: PASTED_DIFF },
     });

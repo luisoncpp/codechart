@@ -10,7 +10,7 @@ import { ReviewNotesStore, useReviewNotes } from "../../state/review-notes";
 import { createTauriReviewNotesClient } from "../../ipc/review-notes-client";
 import { ReviewNotesProvider } from "../../features/review_notes";
 import { ProjectLoaderPanel } from "../../features/project_loader";
-import { GraphCanvas } from "../../features/graph_canvas";
+import { CanvasUiState, GraphCanvas, SearchMenu, ViewMenu } from "../../features/graph_canvas";
 import {
   DEFAULT_INSPECTOR_WIDTH,
   InspectionPanel,
@@ -31,7 +31,14 @@ export function App() {
   const session = useGraphSession(store);
   const reviewNotes = useMemo(/*build review notes store*/ () => new ReviewNotesStore(createTauriReviewNotesClient()), []);
   useReviewNotes(reviewNotes);
+  const canvasUi = useMemo(/*build canvas ui state*/ () => new CanvasUiState(), []);
   const ready = session.getPhase() === "ready";
+
+  useEffect(/*closeCanvasChromeOnPhaseChange*/ () => {
+    const reset = () => canvasUi.reset();
+    store.on("phase-changed", reset);
+    return () => store.off("phase-changed", reset);
+  }, [store, canvasUi]);
   const [inspectorOpen, setInspectorOpen] = useState(/*defaultOpen=*/true);
   const [inspectorWidth, setInspectorWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
   const [activeTab, setActiveTab] = useState<"inspector" | "review-notes">("inspector");
@@ -44,12 +51,23 @@ export function App() {
 
   return (
     <div style={appShellStyle}>
-      <ProjectLoaderPanel store={store} configClient={config} />
+      <ProjectLoaderPanel
+        store={store}
+        configClient={config}
+        menus={
+          ready ? (
+            <>
+              <ViewMenu store={store} ui={canvasUi} />
+              <SearchMenu ui={canvasUi} />
+            </>
+          ) : null
+        }
+      />
       {ready && (
         <ReviewNotesProvider store={reviewNotes}>
         <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
           <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
-            <GraphCanvas store={store} git={git} shell={shell} reviewNotes={reviewNotes} onShowReviewNotes={() => { setInspectorOpen(true); setActiveTab("review-notes"); }} />
+            <GraphCanvas store={store} git={git} shell={shell} ui={canvasUi} reviewNotes={reviewNotes} onShowReviewNotes={() => { setInspectorOpen(true); setActiveTab("review-notes"); }} />
           </div>
           {inspectorOpen ? (
             <InspectionPanel

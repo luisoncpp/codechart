@@ -1,17 +1,11 @@
 // @Architecture(descriptionShort="Main React Flow canvas rendering modules, groups, and edges")
 import { useMemo, useState, useRef } from "react";
-import {
-  ReactFlow,
-  ReactFlowProvider,
-  Background,
-  Controls,
-  type FitViewOptions,
-} from "@xyflow/react";
+import { ReactFlow, ReactFlowProvider, Background, Controls } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./graph-canvas.css";
-import { L0_ZOOM_BOUNDARY, projectGraph } from "../../../domain/graph";
+import { projectGraph } from "../../../domain/graph";
 import { applyDiffOverlay } from "../../../domain/diff";
-import type { RFNode, RenderOptions, ZoomLevel } from "../../../domain/graph";
+import type { RFNode, RenderOptions } from "../../../domain/graph";
 import { edgeFocusForSelection, computeHeatProjection, isTestModule } from "../../../domain/graph";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { DiffModal, DiffOverlayBar } from "../../diff_visualizer";
@@ -22,6 +16,7 @@ import { nodeTypes } from "./node-types";
 import { EdgeLayer } from "./EdgeLayer";
 import { useStyledEdges } from "./use-styled-edges";
 import { FitView } from "./FitView";
+import { fitOptionsForLevel } from "./fit-options";
 import { FocusNode } from "./FocusNode";
 import { CANVAS_MIN_ZOOM } from "./use-zoom-counter-scale";
 import { GraphCanvasController } from "./graph-canvas-controller";
@@ -29,7 +24,8 @@ import { usePreviewFrames } from "./preview_frames";
 import { ProjectSearch } from "./project_search";
 import { ProgrammaticMoveGuard } from "./programmatic-move-guard";
 import { LevelBadge } from "./LevelBadge";
-import { ViewControls } from "./ViewControls";
+import { HeatmapLegend } from "./HeatmapLegend";
+import { CanvasUiState, useCanvasUiState } from "./canvas-ui-state";
 import { SelectionNavigation } from "./SelectionNavigation";
 import type { ReviewNotesStore } from "../../../state/review-notes";
 import { useReviewNoteNavigation, withReviewCounts } from "./review-note-canvas";
@@ -38,17 +34,14 @@ interface GraphCanvasProps {
   store: GraphSessionStore;
   git: GitClient;
   shell: ShellClient;
+  ui: CanvasUiState;
   reviewNotes?: ReviewNotesStore;
   onShowReviewNotes?: () => void;
 }
 
-function fitOptionsForLevel(level: ZoomLevel): FitViewOptions {
-  if (level === 0) return { padding: 0.18, maxZoom: L0_ZOOM_BOUNDARY };
-  return { padding: 0.12 };
-}
-
-export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes }: GraphCanvasProps) {
+export function GraphCanvas({ store, git, shell, ui, reviewNotes, onShowReviewNotes }: GraphCanvasProps) {
   const session = useGraphSession(store);
+  const uiState = useCanvasUiState(ui);
   const graph = session.getReducedGraph();
   const heatGraph = session.getGraph();
   const layout = session.getLayout();
@@ -64,8 +57,6 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
   const heatmapMode = session.getHeatmapMode();
   const heatmapGitAvailable = session.getIsGitRepo() === true;
   const heatmapLoading = session.getPhase() === "loading";
-  const [diffModalOpen, setDiffModalOpen] = useState(false);
-  const [projectSearchOpen, setProjectSearchOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<ModuleContextMenuState | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -187,24 +178,14 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
         {diffOverlay && (
           <DiffOverlayBar onStop={() => store.clearDiffOverlay()} />
         )}
-        <ViewControls
-          hideTests={hideTests}
-          onHideTestsChange={(hide) => store.setHideTests(hide)}
-          diffActive={!!diffOverlay}
-          onVisualizeDiff={() => setDiffModalOpen(true)}
-          onOpenProjectSearch={() => setProjectSearchOpen(/*open=*/true)}
-          heatmapEnabled={heatmapEnabled}
-          heatmapMode={heatmapMode}
-          heatmapGitAvailable={heatmapGitAvailable}
-          heatmapLoading={heatmapLoading}
-          onHeatmapEnabledChange={(enabled) => store.setHeatmapEnabled(enabled)}
-          onHeatmapModeChange={(mode) => store.setHeatmapMode(mode)}
-        />
+        {heatmapEnabled && heatmapGitAvailable && !heatmapLoading && !diffOverlay && (
+          <HeatmapLegend mode={heatmapMode} />
+        )}
         <DiffModal
           store={store}
           git={git}
-          open={diffModalOpen}
-          onClose={() => setDiffModalOpen(false)}
+          open={uiState.getDiffModalOpen()}
+          onClose={() => ui.setDiffModalOpen(/*open=*/false)}
         />
         <ModuleContextMenu
           menu={contextMenu}
@@ -217,8 +198,8 @@ export function GraphCanvas({ store, git, shell, reviewNotes, onShowReviewNotes 
         <ProjectSearch
           deps={{ store, moveGuard }}
           belowDiffBar={!!diffOverlay}
-          open={projectSearchOpen}
-          onOpenChange={setProjectSearchOpen}
+          open={uiState.getFindBarOpen()}
+          onOpenChange={(open) => ui.setFindBarOpen(open)}
         />
       </div>
     </ReactFlowProvider>
