@@ -108,8 +108,7 @@ pub fn window_days() -> u32 {
 
 fn git_bytes(path: &str, args: &[&str]) -> Result<Vec<u8>, String> {
     use std::path::Path;
-    use std::process::Command;
-    let output = Command::new("git")
+    let output = super::git_command()
         .args(["-C"])
         .arg(Path::new(path))
         .args(args)

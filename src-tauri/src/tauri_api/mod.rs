@@ -11,7 +11,14 @@ use crate::{
     ensure_unreal_defaults, read_project_config as load_project_config, search_sources,
     write_project_config as save_project_config, ProjectConfig, SearchResult,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitProjectSnapshot {
+    graph: ProjectGraph,
+    sources: HashMap<String, String>,
+}
 
 /// Analyze the project rooted at `path` (a user-chosen folder) and return the
 /// `ProjectGraph`. The path is used both as the filesystem root and as the
@@ -24,35 +31,36 @@ pub fn analyze_project(path: String) -> Result<ProjectGraph, String> {
     run_analysis(&source, &path).map_err(|e| e.to_string())
 }
 
-/// Analyze the project as it existed at a git ref (commit, branch, tag).
+/// Load one git tree for both analysis and selected source extraction.
 #[tauri::command]
-pub fn analyze_project_at_ref(path: String, git_ref: String) -> Result<ProjectGraph, String> {
+pub fn load_project_snapshot(
+    path: String,
+    git_ref: String,
+    module_paths: Vec<String>,
+) -> Result<GitProjectSnapshot, String> {
     let source = git::source_at_ref(&path, &git_ref)?;
-    run_analysis(&source, &path).map_err(|e| e.to_string())
+    let graph = run_analysis(&source, &path).map_err(|e| e.to_string())?;
+    let known: HashSet<&str> = graph
+        .modules
+        .iter()
+        .map(|module| module.path.as_str())
+        .collect();
+    let sources = module_paths
+        .into_iter()
+        .filter(|module_path| known.contains(module_path.as_str()))
+        .filter_map(|module_path| {
+            source
+                .read_file(&module_path)
+                .ok()
+                .map(|body| (module_path, body))
+        })
+        .collect();
+    Ok(GitProjectSnapshot { graph, sources })
 }
 
 #[tauri::command]
 pub fn git_diff_refs(path: String, base_ref: String, head_ref: String) -> Result<String, String> {
     git::diff_refs(&path, &base_ref, &head_ref)
-}
-
-/// Read selected module bodies from one snapshot without loading it once per file.
-#[tauri::command]
-pub fn read_module_sources_at_ref(
-    path: String,
-    git_ref: String,
-    module_paths: Vec<String>,
-) -> Result<HashMap<String, String>, String> {
-    let source = git::source_at_ref(&path, &git_ref)?;
-    module_paths
-        .into_iter()
-        .map(|module_path| {
-            source
-                .read_file(&module_path)
-                .map(|body| (module_path, body))
-                .map_err(|error| error.to_string())
-        })
-        .collect()
 }
 
 #[tauri::command]

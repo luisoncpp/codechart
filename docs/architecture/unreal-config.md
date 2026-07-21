@@ -31,7 +31,7 @@ deduced defaults:
 - each `*.Build.cs` directory
 - each module's `Public`, `Private`, and `Classes` folders
 
-`analyze_project_at_ref` does not write defaults; git-ref analysis stays
+`load_project_snapshot` does not write defaults; git-ref analysis stays
 read-only.
 
 ## Analysis Behavior

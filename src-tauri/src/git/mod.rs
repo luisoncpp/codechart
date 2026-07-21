@@ -79,7 +79,7 @@ fn batch_read_blobs(
     path: &str,
     entries: &[(String, String)],
 ) -> Result<Vec<(String, String)>, String> {
-    let mut child = Command::new("git");
+    let mut child = git_command();
     child
         .args(["-C"])
         .arg(Path::new(path))
@@ -170,7 +170,7 @@ fn git_output(path: &str, args: &[&str]) -> Result<String, String> {
 }
 
 fn git_bytes(path: &str, args: &[&str]) -> Result<Vec<u8>, String> {
-    let mut cmd = Command::new("git");
+    let mut cmd = git_command();
     cmd.args(["-C"]).arg(Path::new(path)).args(args);
     let output = cmd
         .output()
@@ -180,6 +180,16 @@ fn git_bytes(path: &str, args: &[&str]) -> Result<Vec<u8>, String> {
         return Err(stderr.trim().to_string());
     }
     Ok(output.stdout)
+}
+
+fn git_command() -> Command {
+    let mut command = Command::new("git");
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x08000000);
+    }
+    command
 }
 
 #[cfg(test)]

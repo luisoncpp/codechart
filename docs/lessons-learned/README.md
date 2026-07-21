@@ -21,6 +21,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [historical-analysis-and-sources-must-share-a-git-snapshot.md](./historical-analysis-and-sources-must-share-a-git-snapshot.md) | An analyzed Git tree already contains every source; reuse it for changed bodies, and hide child consoles on Windows | 2026-07-20 |
 | [create-tauri-app-force-deletes-untracked-files.md](./create-tauri-app-force-deletes-untracked-files.md) | Scaffolding with `-f` can wipe untracked project files | 2026-06-19 |
 | [single-parent-collapses-overlap-invariants.md](./single-parent-collapses-overlap-invariants.md) | A single `groupId`/`parentId` makes 2 of 5 graph invariants structural | 2026-06-19 |
 | [tree-sitter-crate-version-pairing.md](./tree-sitter-crate-version-pairing.md) | tree-sitter runtime/grammar crate versions + 0.24 API shape for new adapters | 2026-06-19 |

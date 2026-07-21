@@ -1,7 +1,11 @@
 // @Architecture(descriptionShort="Tauri IPC implementation of the git client")
 import { invoke } from "@tauri-apps/api/core";
-import type { ProjectGraph } from "../../../domain/graph";
-import type { GitClient, GitCommit } from "./git-client";
+import type {
+  GitClient,
+  GitCommit,
+  GitProjectSnapshot,
+  GitSnapshotInput,
+} from "./git-client";
 
 export function createTauriGitClient(): GitClient {
   return {
@@ -11,18 +15,11 @@ export function createTauriGitClient(): GitClient {
     async listCommits(path: string, limit: number): Promise<GitCommit[]> {
       return invoke<GitCommit[]>("git_list_commits", { path, limit });
     },
-    async analyzeProjectAtRef(path: string, gitRef: string): Promise<ProjectGraph> {
-      return invoke<ProjectGraph>("analyze_project_at_ref", { path, gitRef });
-    },
-    async readModuleSourcesAtRef(
-      path: string,
-      gitRef: string,
-      modulePaths: string[],
-    ): Promise<Record<string, string>> {
-      return invoke<Record<string, string>>("read_module_sources_at_ref", {
-        path,
-        gitRef,
-        modulePaths,
+    async loadProjectSnapshot(input: GitSnapshotInput): Promise<GitProjectSnapshot> {
+      return invoke<GitProjectSnapshot>("load_project_snapshot", {
+        path: input.path,
+        gitRef: input.gitRef,
+        modulePaths: input.modulePaths,
       });
     },
     async diffRefs(path: string, baseRef: string, headRef: string): Promise<string> {

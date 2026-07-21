@@ -15,7 +15,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 1. **Paste mode** — user pastes unified diff text → `overlayFromPastedDiff` maps file paths to module ids on the loaded graph (module borders only; no edge overlay).
 2. **Git commits mode** (repo root must be a git checkout) — user picks **before** (left) and **after** (right) via searchable commit menus (last 100 commits). Selecting a commit for **after** with **before** empty auto-fills its parent.
 3. **Local changes** is the first **after** option. Selecting it defaults **before** to the latest commit. `git diff <before>` supplies tracked staged/unstaged changes; eligible untracked files are appended as full-add patches. Eligibility is the loaded graph's module paths intersected with `git ls-files --others --exclude-standard`, so ignored and unsupported files never enter the diff.
-4. Commit-to-commit runs `git diff` + two `analyzeProjectAtRef` snapshots. Local changes analyzes **before** at its ref and uses the loaded current graph as **after**. Git paths drive **module** highlights; graph comparison drives **edge** add/remove; `LayoutEngine.layout(before)` supplies ghost positions for deleted modules.
+4. Commit-to-commit runs `git diff`, extracts the changed paths, then loads one combined graph/source snapshot per ref. Local changes loads one combined snapshot for **before** and uses the loaded current graph as **after**. Git paths drive **module** highlights; graph comparison drives **edge** add/remove; `LayoutEngine.layout(before)` supplies ghost positions for deleted modules.
 5. Store sets `diffOverlay` and emits `diff-changed`.
 6. `GraphCanvas` re-projects the reduced graph, then `applyDiffOverlay` stamps `data.diffState` on nodes/edges, sets `diffVisualizing` on group nodes, and injects ghost modules + phantom removed edges.
 7. In **L1.5**, commit and local-change comparisons read changed modules from both snapshots and intersect changed lines with exported-symbol declaration/implementation ranges. Added symbols render **green/solid**, removed symbols are restored from the before layout as **red/dashed** ghost boxes, and retained symbols whose declaration or implementation changed render **yellow/dotted**.
@@ -28,8 +28,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 ## Reads
 
 - Current session `ProjectGraph` + `LayoutedGraph` (display base)
-- Git tree at two refs (`git ls-tree` + `git cat-file --batch`, via `MemoryProjectSource`)
-- Changed module bodies at the before/after refs for source-range-aware symbol states
+- Git tree at two refs (`git ls-tree` + `git cat-file --batch`, via `MemoryProjectSource`), each reused for graph analysis and changed module bodies
 - Working tree tracked diff + Git's ignored-aware untracked list
 - Pasted unified diff text (path headers only)
 
@@ -40,7 +39,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 
 ## Side effects
 
-- Git commit mode runs two full analyses + one layout and reads changed module bodies from both snapshots (can be slow on large repos)
+- Git commit mode runs two full analyses + one layout. Each historical tree is loaded once, and Git child processes are created without console windows on Windows.
 
 ## Files to inspect
 

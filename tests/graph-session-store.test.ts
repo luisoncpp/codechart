@@ -456,8 +456,7 @@ describe("GraphSessionStore local changes diff", () => {
     const git: GitClient = {
       isGitRepo: async () => true,
       listCommits: async () => [],
-      analyzeProjectAtRef: async () => graph,
-      readModuleSourcesAtRef: async () => ({}),
+      loadProjectSnapshot: async () => ({ graph, sources: {} }),
       diffRefs: async () => "",
       diffWorkingTree,
     };
@@ -480,6 +479,42 @@ describe("GraphSessionStore local changes diff", () => {
 });
 
 describe("GraphSessionStore diff source snapshot", () => {
+  it("loads each historical revision only once", async () => {
+    const loadProjectSnapshot = vi.fn(async () => ({ graph, sources: {} }));
+    const diff = [
+      "diff --git a/src/core/store.ts b/src/core/store.ts",
+      "--- a/src/core/store.ts",
+      "+++ b/src/core/store.ts",
+    ].join("\n");
+    const git: GitClient = {
+      isGitRepo: async () => true,
+      listCommits: async () => [],
+      diffRefs: async () => diff,
+      diffWorkingTree: async () => "",
+      loadProjectSnapshot,
+    };
+    const store = new GraphSessionStore(
+      clientReturning(graph),
+      git,
+      new ElkLayoutEngine(),
+    );
+    await store.loadProject("/repo");
+
+    await store.applyDiffFromCommits("A", "B");
+
+    expect(loadProjectSnapshot).toHaveBeenCalledTimes(2);
+    expect(loadProjectSnapshot).toHaveBeenNthCalledWith(1, {
+      path: "/repo",
+      gitRef: "A",
+      modulePaths: ["src/core/store.ts"],
+    });
+    expect(loadProjectSnapshot).toHaveBeenNthCalledWith(2, {
+      path: "/repo",
+      gitRef: "B",
+      modulePaths: ["src/core/store.ts"],
+    });
+  });
+
   it("displays the diff's after snapshot so line highlights stay aligned", async () => {
     // Live working-tree content has an extra comment prepended after the diff
     // was computed, so it is shifted by one line versus the diffed snapshot.
@@ -497,8 +532,10 @@ describe("GraphSessionStore diff source snapshot", () => {
     const git: GitClient = {
       isGitRepo: async () => true,
       listCommits: async () => [],
-      analyzeProjectAtRef: async () => graph,
-      readModuleSourcesAtRef: async () => ({ "src/core/store.ts": afterSnapshot }),
+      loadProjectSnapshot: async ({ gitRef }) => ({
+        graph,
+        sources: gitRef === "B" ? { "src/core/store.ts": afterSnapshot } : {},
+      }),
       diffRefs: async () => diff,
       diffWorkingTree: async () => diff,
     };

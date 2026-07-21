@@ -114,6 +114,8 @@ Both deep modules organize their implementation into subfolders, each a config s
   added as **green/solid**, removed as **red/dashed** ghosts from the before layout, and modified as
   **yellow/dotted**; the border styles preserve meaning without color alone. Exact symbol states are
   available for commit/local comparisons, which can read both snapshots; pasted diffs remain module-level.
+  Historical comparisons load each Git tree once and reuse its in-memory source for both graph analysis
+  and changed-source extraction; Git child processes do not create console windows on Windows.
   **L0 bird's-eye is disabled** while diff is active — scroll zoom floors at L1
   so module-level highlights remain visible; clearing the overlay restores normal L0 behavior.
   **L2 source panels and the symbol preview widget** show unified-diff rows:

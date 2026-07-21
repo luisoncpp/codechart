@@ -148,14 +148,13 @@ export class GraphSessionStore extends EventEmitter {
     if (!this.root || !this.graph) return;
     this.diffError = null;
     try {
-      this.diffOverlay = await buildCommitDiffOverlay(
-        this.client,
-        this.git,
-        this.layoutEngine,
-        this.root,
+      this.diffOverlay = await buildCommitDiffOverlay({
+        git: this.git,
+        layoutEngine: this.layoutEngine,
+        root: this.root,
         baseRef,
         headRef,
-      );
+      });
       this.applyDiffSources(this.diffOverlay);
       this.pauseHeatForDiff();
       this.ensureDiffZoomFloor();
