@@ -70,10 +70,24 @@ describe("find-in-frame", () => {
     expect(container.querySelector(".symbol-widget__find")).toBeNull();
   });
 
-  it("opens the bar via the header icon", () => {
+  it("opens the bar via the header toggle, which advertises the shortcut", () => {
     const { container } = renderWidget(makeFrame());
-    fireEvent.click(container.querySelector(".symbol-widget__find-toggle")!);
+    const toggle = container.querySelector(".symbol-widget__find-toggle")!;
+    expect(toggle).toHaveAttribute("title", expect.stringContaining("Ctrl+F"));
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(toggle);
     expect(container.querySelector(".symbol-widget__find")).not.toBeNull();
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("closes the bar when the header toggle is clicked again", () => {
+    const { container, handlers } = renderWidget(makeFrame());
+    const toggle = container.querySelector(".symbol-widget__find-toggle")!;
+    fireEvent.click(toggle);
+    typeQuery(container, "foo");
+    fireEvent.click(toggle);
+    expect(container.querySelector(".symbol-widget__find")).toBeNull();
+    expect(handlers.onClose).not.toHaveBeenCalled();
   });
 
   it("highlights all matches with one active and shows the counter", () => {

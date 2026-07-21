@@ -2,7 +2,7 @@
 
 ## Trigger
 
-Ctrl/Cmd+F while a preview frame is focused (or, failing that, hovered), or clicking the `⌕` icon in a frame's header. A frame opened while project search has a query auto-opens pre-filled with it (`PreviewFrame.initialFindQuery`, read from `CanvasUiState.getFindQuery` at open time; the frame input is not focused).
+Ctrl/Cmd+F while a preview frame is focused (or, failing that, hovered), or the `⌕` toggle in the frame header's right-side action cluster (grouped with ✕; its tooltip advertises the shortcut, and clicking it while the bar is open closes the bar). A frame opened while project search has a query auto-opens pre-filled with it (`PreviewFrame.initialFindQuery`, read from `CanvasUiState.getFindQuery` at open time; the frame input is not focused).
 
 ## Entry point
 

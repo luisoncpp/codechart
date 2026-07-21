@@ -276,6 +276,14 @@
   outline: none;
 }
 
+.symbol-widget__actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+}
+
 .symbol-widget__find-toggle {
   background: transparent;
   border: none;
@@ -283,7 +291,6 @@
   color: #94a3b8;
   cursor: pointer;
   padding: 0 4px;
-  margin-left: 8px;
   line-height: 1;
   border-radius: 4px;
   transition: color 0.1s, background-color 0.1s;
@@ -292,6 +299,12 @@
 .symbol-widget__find-toggle:hover {
   color: #475569;
   background: #e2e8f0;
+}
+
+.symbol-widget__find-toggle--active,
+.symbol-widget__find-toggle--active:hover {
+  color: #2563eb;
+  background: #dbeafe;
 }
 
 .symbol-widget__find {

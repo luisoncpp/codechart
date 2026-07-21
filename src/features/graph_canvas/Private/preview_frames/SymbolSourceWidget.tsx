@@ -29,7 +29,8 @@ interface SymbolSourceWidgetProps {
  * One preview frame: scrollable source code centered on the symbol's
  * definition line, draggable by its header bar. Identifiers matching
  * `clickableSymbols` navigate to the defining module in a new frame.
- * Ctrl/Cmd+F (focused or hovered frame) opens an in-frame find bar.
+ * Ctrl/Cmd+F (focused or hovered frame) or the header ⌕ toggle opens an
+ * in-frame find bar.
  */
 export function SymbolSourceWidget({
   frame,
@@ -79,12 +80,16 @@ export function SymbolSourceWidget({
     frameRef.current?.focus({ preventScroll: true });
   };
 
+  const closeBarAndRefocusFrame = () => {
+    search.closeBar();
+    frameRef.current?.focus({ preventScroll: true });
+  };
+
   const onFrameKeyDown = (e: React.KeyboardEvent) => {
     if (e.key !== "Escape") return;
     e.stopPropagation();
     if (search.barOpen) {
-      search.closeBar();
-      frameRef.current?.focus({ preventScroll: true });
+      closeBarAndRefocusFrame();
       return;
     }
     handlers.onClose(frame.id);
@@ -108,20 +113,28 @@ export function SymbolSourceWidget({
           </div>
           <div className="symbol-widget__path">{frame.modulePath}</div>
         </div>
-        <button
-          className="symbol-widget__find-toggle"
-          onClick={search.openBar}
-          aria-label="Find in file"
-        >
-          ⌕
-        </button>
-        <button
-          className="symbol-widget__close"
-          onClick={() => handlers.onClose(frame.id)}
-          aria-label="Close widget"
-        >
-          &times;
-        </button>
+        <div className="symbol-widget__actions">
+          <button
+            className={
+              search.barOpen
+                ? "symbol-widget__find-toggle symbol-widget__find-toggle--active"
+                : "symbol-widget__find-toggle"
+            }
+            onClick={search.barOpen ? closeBarAndRefocusFrame : search.openBar}
+            aria-label="Find in file"
+            aria-pressed={search.barOpen}
+            title="Find in file (Ctrl+F)"
+          >
+            ⌕
+          </button>
+          <button
+            className="symbol-widget__close"
+            onClick={() => handlers.onClose(frame.id)}
+            aria-label="Close widget"
+          >
+            &times;
+          </button>
+        </div>
       </div>
       {search.barOpen && (
         <FrameFindBar
@@ -130,10 +143,7 @@ export function SymbolSourceWidget({
           counterText={matchCounter(search.activeIndex, search.matches.length)}
           canNavigate={search.matches.length > 0}
           onNavigate={search.navigate}
-          onClose={/*closeBarAndRefocusFrame*/ () => {
-            search.closeBar();
-            frameRef.current?.focus({ preventScroll: true });
-          }}
+          onClose={closeBarAndRefocusFrame}
           inputRef={search.inputRef}
         />
       )}
