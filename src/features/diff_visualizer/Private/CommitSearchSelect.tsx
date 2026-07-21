@@ -4,6 +4,18 @@ import {
   LOCAL_CHANGES_REF,
   type GitCommit,
 } from "../../../ipc/git-client";
+import {
+  emptyStyle,
+  fieldStyle,
+  labelStyle,
+  listStyle,
+  menuStyle,
+  optionSelectedStyle,
+  optionStyle,
+  searchStyle,
+  triggerStyle,
+  triggerTextStyle,
+} from "./commit-search-select-styles";
 
 interface CommitSearchSelectProps {
   label: string;
@@ -26,6 +38,7 @@ export function CommitSearchSelect({
   const [query, setQuery] = useState("");
 
   const selected = commits.find((c) => c.hash === value) ?? null;
+  const selectedDate = selected?.date.slice(0, 10);
   const filtered = useMemo(
     () => commits.filter((c) => matchesCommit(c, query)),
     [commits, query],
@@ -49,7 +62,9 @@ export function CommitSearchSelect({
 
   return (
     <div ref={rootRef} style={fieldStyle}>
-      <span style={labelStyle}>{label}</span>
+      <span style={labelStyle}>
+        {label}{selectedDate ? ` (${selectedDate})` : ""}
+      </span>
       <button
         type="button"
         aria-expanded={open}
@@ -111,99 +126,3 @@ function formatCommit(commit: GitCommit): string {
   if (commit.hash === LOCAL_CHANGES_REF) return commit.message;
   return `${commit.hash.slice(0, 7)} — ${commit.message}`;
 }
-
-const fieldStyle: React.CSSProperties = {
-  position: "relative",
-  flex: 1,
-  minWidth: 0,
-  display: "flex",
-  flexDirection: "column",
-  gap: 4,
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 600,
-  letterSpacing: "0.04em",
-  textTransform: "uppercase",
-  color: "#64748b",
-};
-
-const triggerStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 8,
-  width: "100%",
-  padding: "7px 10px",
-  borderRadius: 6,
-  border: "1px solid #cbd5e1",
-  background: "#f8fafc",
-  fontSize: 12,
-  textAlign: "left",
-  cursor: "pointer",
-};
-
-const triggerTextStyle: React.CSSProperties = {
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-  fontFamily: "ui-monospace, monospace",
-};
-
-const menuStyle: React.CSSProperties = {
-  position: "absolute",
-  top: "calc(100% + 4px)",
-  left: 0,
-  right: 0,
-  zIndex: 2,
-  background: "#fff",
-  border: "1px solid #cbd5e1",
-  borderRadius: 8,
-  boxShadow: "0 10px 30px #0f172a22",
-  overflow: "hidden",
-};
-
-const searchStyle: React.CSSProperties = {
-  width: "100%",
-  boxSizing: "border-box",
-  padding: "8px 10px",
-  border: "none",
-  borderBottom: "1px solid #e2e8f0",
-  fontSize: 12,
-  outline: "none",
-};
-
-const listStyle: React.CSSProperties = {
-  listStyle: "none",
-  margin: 0,
-  padding: 4,
-  maxHeight: 220,
-  overflowY: "auto",
-};
-
-const optionStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "6px 8px",
-  border: "none",
-  borderRadius: 4,
-  background: "transparent",
-  fontSize: 12,
-  fontFamily: "ui-monospace, monospace",
-  textAlign: "left",
-  cursor: "pointer",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-};
-
-const optionSelectedStyle: React.CSSProperties = {
-  background: "#eef2ff",
-  color: "#3730a3",
-};
-
-const emptyStyle: React.CSSProperties = {
-  padding: "10px 8px",
-  fontSize: 12,
-  color: "#94a3b8",
-};

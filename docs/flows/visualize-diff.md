@@ -13,7 +13,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 ## Sequence
 
 1. **Paste mode** — user pastes unified diff text → `overlayFromPastedDiff` maps file paths to module ids on the loaded graph (module borders only; no edge overlay).
-2. **Git commits mode** (repo root must be a git checkout) — user picks **before** (left) and **after** (right) via searchable commit menus (last 100 commits). Selecting a commit for **after** with **before** empty auto-fills its parent.
+2. **Git commits mode** (repo root must be a git checkout) — user picks **before** (left) and **after** (right) via searchable commit menus (last 100 commits). Each selected commit's snapshot label includes its date as `BEFORE (YYYY-MM-DD)` or `AFTER (YYYY-MM-DD)`. Selecting a commit for **after** with **before** empty auto-fills its parent.
 3. **Local changes** is the first **after** option. Selecting it defaults **before** to the latest commit. `git diff <before>` supplies tracked staged/unstaged changes; eligible untracked files are appended as full-add patches. Eligibility is the loaded graph's module paths intersected with `git ls-files --others --exclude-standard`, so ignored and unsupported files never enter the diff.
 4. Commit-to-commit runs `git diff`, extracts the changed paths, then loads one combined graph/source snapshot per ref. Local changes loads one combined snapshot for **before** and uses the loaded current graph as **after**. Git paths drive **module** highlights; graph comparison drives **edge** add/remove; `LayoutEngine.layout(before)` supplies ghost positions for deleted modules.
 5. Store sets `diffOverlay` and emits `diff-changed`.
