@@ -20,6 +20,7 @@ interface ModuleInspectionProps {
   graph: ProjectGraph;
   module: ModuleNode;
   hideTests: boolean;
+  metricsWindowDays: number;
   onHide?: () => void;
   onNavigateToModule: (moduleId: string) => void;
   onReviewNotes?: () => void;
@@ -29,6 +30,7 @@ export function ModuleInspection({
   graph,
   module,
   hideTests,
+  metricsWindowDays,
   onHide,
   onNavigateToModule,
   onReviewNotes,
@@ -43,7 +45,12 @@ export function ModuleInspection({
         <Row label="Facade" value={module.isFacade ? "Yes" : "No"} />
         <Row label="Language" value={module.language} />
         <Row label="LOC" value={String(module.metrics.loc)} />
-        <ModuleHeatRows graph={graph} module={module} hideTests={hideTests} />
+        <ModuleHeatRows
+          graph={graph}
+          module={module}
+          hideTests={hideTests}
+          metricsWindowDays={metricsWindowDays}
+        />
       </dl>
       <MetadataSection module={module} group={group} />
       <SymbolList symbols={module.exportedSymbols} language={module.language} />

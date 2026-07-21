@@ -69,7 +69,7 @@ describe("flow: open-project", () => {
       fireEvent.click(screen.getByRole("button", { name: "Reload" }));
     });
     await waitFor(() => expect(analyzeProject).toHaveBeenCalledTimes(2));
-    expect(analyzeProject).toHaveBeenLastCalledWith("/my/project");
+    expect(analyzeProject).toHaveBeenLastCalledWith("/my/project", 90);
   });
 
   it("saving include paths writes config and reloads the project", async () => {

@@ -44,6 +44,15 @@ struct GraphParts {
 /// assemble the validated `ProjectGraph`. `root` is recorded verbatim onto the
 /// graph (callers own the project path → id relationship).
 pub fn analyze_project(source: &dyn ProjectSource, root: &str) -> Result<ProjectGraph, BuildError> {
+    analyze_project_with_metrics_window(source, root, crate::git::DEFAULT_METRICS_WINDOW_DAYS)
+}
+
+/// Analyze a project using the requested lookback window for git-derived metrics.
+pub fn analyze_project_with_metrics_window(
+    source: &dyn ProjectSource,
+    root: &str,
+    metrics_window_days: u32,
+) -> Result<ProjectGraph, BuildError> {
     let unreal = unreal_options_from_source(source);
     let (defs, config_diags) = discover_group_defs(source);
     let patterns = ignore_patterns_with_unreal(&defs, &unreal);
@@ -58,7 +67,7 @@ pub fn analyze_project(source: &dyn ProjectSource, root: &str) -> Result<Project
 
     let mut modules = build_modules(&parsed, &groups, &edges);
     if crate::git::is_git_repo(root) {
-        crate::git::enrich_module_metrics(root, &mut modules);
+        crate::git::enrich_module_metrics(root, &mut modules, metrics_window_days);
     }
     let parts = GraphParts {
         modules,

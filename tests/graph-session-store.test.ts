@@ -50,6 +50,22 @@ describe("GraphSessionStore (no DOM)", () => {
     expect(store.getLayout()?.modules.length).toBe(graph.modules.length);
   });
 
+  it("uses 90 metric days by default and can reanalyze with another window", async () => {
+    const analyzeProject = vi.fn(async () => graph);
+    const store = newStore({
+      analyzeProject,
+      readModuleSource: async () => "",
+      searchModuleSources: noSearchResults,
+    });
+    await store.loadProject("/x");
+    expect(analyzeProject).toHaveBeenLastCalledWith("/x", 90);
+
+    await store.setMetricsWindowDays(14);
+
+    expect(analyzeProject).toHaveBeenLastCalledWith("/x", 14);
+    expect(store.getMetricsWindowDays()).toBe(14);
+  });
+
   it("an empty graph yields the empty phase and no layout", async () => {
     const empty = { ...graph, modules: [], edges: [] };
     const store = newStore(clientReturning(empty));

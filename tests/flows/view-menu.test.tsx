@@ -1,15 +1,18 @@
-import { describe, expect, it } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { readyGraphStore, renderGraphCanvas } from "../helpers/flow-graph-canvas";
 import { createMockAnalysisClient } from "../../src/ipc/analysis-client";
 import { createMockGitClient } from "../../src/ipc/git-client";
 import { ElkLayoutEngine } from "../../src/domain/layout";
 import { GraphSessionStore } from "../../src/state/graph-session";
+import type { AnalysisClient } from "../../src/ipc/analysis-client";
 
 /** A ready store whose project looks like a git repository (heatmap available). */
-async function readyGitGraphStore(): Promise<GraphSessionStore> {
+async function readyGitGraphStore(
+  analysis: AnalysisClient = createMockAnalysisClient(),
+): Promise<GraphSessionStore> {
   const git = { ...createMockGitClient(), isGitRepo: async () => true };
-  const store = new GraphSessionStore(createMockAnalysisClient(), git, new ElkLayoutEngine());
+  const store = new GraphSessionStore(analysis, git, new ElkLayoutEngine());
   await store.loadProject("/sample");
   return store;
 }
@@ -56,6 +59,26 @@ describe("flow: view-menu", () => {
 
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Risk" }));
     expect(store.getHeatmapMode()).toBe("risk");
+  });
+
+  it("changes the heatmap timeframe from the legend modal", async () => {
+    const analysis = createMockAnalysisClient();
+    const analyzeProject = vi.spyOn(analysis, "analyzeProject");
+    const store = await readyGitGraphStore(analysis);
+    store.setHeatmapEnabled(true);
+    renderGraphCanvas(store);
+
+    fireEvent.click(screen.getByRole("button", { name: "Last 90 days" }));
+    expect(screen.getByRole("dialog", { name: "Activity timeframe" })).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Number of days" }), {
+      target: { value: "14" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Last 14 days" }))
+      .toBeInTheDocument());
+    expect(analyzeProject).toHaveBeenLastCalledWith("/sample", 14);
+    expect(store.getMetricsWindowDays()).toBe(14);
   });
 
   it("hides Visualize diff… while a diff overlay is active", async () => {

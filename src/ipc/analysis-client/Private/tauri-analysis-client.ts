@@ -6,8 +6,8 @@ import { AnalysisClient, ProjectSearchResult } from "./analysis-client";
 /** Calls the Rust `analyze_project` command over Tauri IPC for a real folder. */
 export function createTauriAnalysisClient(): AnalysisClient {
   return {
-    async analyzeProject(path: string): Promise<ProjectGraph> {
-      return invoke<ProjectGraph>("analyze_project", { path });
+    async analyzeProject(path: string, metricsWindowDays: number): Promise<ProjectGraph> {
+      return invoke<ProjectGraph>("analyze_project", { path, metricsWindowDays });
     },
     async readModuleSource(root: string, path: string): Promise<string> {
       return invoke<string>("read_module_source", { root, path });

@@ -1,6 +1,8 @@
 // @Architecture(descriptionShort="Defines the abstract interface for the analyzer client")
 import { ProjectGraph } from "../../../domain/graph";
 
+export const DEFAULT_METRICS_WINDOW_DAYS = 90;
+
 /** One full-text hit: a line of a module's source. Mirrors Rust `SearchMatch`. */
 export interface ProjectSearchMatch {
   path: string;
@@ -18,7 +20,7 @@ export interface ProjectSearchResult {
 }
 
 export interface AnalysisClient {
-  analyzeProject(path: string): Promise<ProjectGraph>;
+  analyzeProject(path: string, metricsWindowDays: number): Promise<ProjectGraph>;
   /**
    * Read one module's source for the L2 semantic-zoom snippet (Phase 10).
    * `root` is the analyzed folder, `path` the module's repo-relative id. Fetched

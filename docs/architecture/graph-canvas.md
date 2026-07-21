@@ -45,7 +45,7 @@ Both deep modules organize their implementation into subfolders, each a config s
 | `SelectionNavigation` | `features/graph_canvas` | Top-left back/forward controls plus `Alt+Left` / `Alt+Right`; disabled states come from the session history pointer. |
 | `ViewMenu` / `SearchMenu` | `features/graph_canvas` (facade exports) | Toolbar dropdowns (rendered by `App` into `ProjectLoaderPanel`'s `menus` slot, built on the shared `src/ui/dropdown_menu` module). View ▾: Hide tests, Heatmap + Activity/Risk, Visualize diff…; Search ▾: Search project (Ctrl+Shift+F). |
 | `CanvasUiState` | `features/graph_canvas/Private/controller/canvas-ui-state.ts` (facade export) | Transient UI flags (`findBarOpen`, `diffModalOpen`) shared between the toolbar menus and `GraphCanvas`; kept out of `GraphSessionStore`. `App` instantiates it and resets on `phase-changed`. |
-| `HeatmapLegend` | `features/graph_canvas` | Passive top-right gradient chip, shown only while the heatmap is on (below `LevelBadge`). The heatmap toggles themselves live in the View menu. |
+| `HeatmapLegend` | `features/graph_canvas` | Top-right gradient chip, shown only while the heatmap is on (below `LevelBadge`). Its timeframe label opens `MetricsWindowModal`; the heatmap toggles themselves live in the View menu. |
 | `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, copies the graph-relative path, or reveals the file via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
 | `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
 
@@ -123,7 +123,9 @@ Both deep modules organize their implementation into subfolders, each a config s
   selection dimming for stamped edges. **Stop visualizing diff** clears overlay state; reload clears it too.
   **Mutually exclusive with the activity heatmap** — diff on pauses heat controls and restores prior heat state when cleared.
 - **Activity heatmap (git metrics overlay):** when the project root is a git repo, `analyze_project`
-  stamps `ModuleMetrics.churn`, `bugRisk`, and `fixCommits` (90-day window, Rust `git::enrich_module_metrics`).
+  stamps `ModuleMetrics.churn`, `bugRisk`, and `fixCommits` for the session's lookback window
+  (90 days by default, Rust `git::enrich_module_metrics`). `GraphSessionStore` owns the selected day
+  count; changing it from `HeatmapLegend` reanalyzes the project and updates legend and inspector labels.
   The toolbar **View ▾** menu (`ViewMenu`) exposes a **Heatmap** checkbox + **Activity | Risk** radio items (Activity default);
   disabled without git (tooltip: “Requires a git repository”). While the heatmap is on, `HeatmapLegend`
   (passive gradient chip) renders at the canvas top-right below the level badge. `computeHeatProjection` (`heat-scores.ts`,

@@ -1,5 +1,9 @@
 // @Architecture(descriptionShort="Manages the global project, layout, and selection states")
-import { AnalysisClient, ProjectSearchResult } from "../../../ipc/analysis-client";
+import {
+  AnalysisClient,
+  DEFAULT_METRICS_WINDOW_DAYS,
+  ProjectSearchResult,
+} from "../../../ipc/analysis-client";
 import { GitClient } from "../../../ipc/git-client";
 import type { GraphDiffOverlay } from "../../../domain/diff";
 import {
@@ -55,6 +59,7 @@ export class GraphSessionStore extends EventEmitter {
   private diffSourceIds = new Set<string>();
   private heatmapEnabled = false;
   private heatmapMode: HeatmapMode = "activity";
+  private metricsWindowDays = DEFAULT_METRICS_WINDOW_DAYS;
   private isGitRepo: boolean | null = null;
   private heatmapSaved: { enabled: boolean; mode: HeatmapMode } | null = null;
   private focusRequestId: string | null = null;
@@ -91,6 +96,7 @@ export class GraphSessionStore extends EventEmitter {
   getDiffError = () => this.diffError;
   getHeatmapEnabled = () => this.heatmapEnabled;
   getHeatmapMode = () => this.heatmapMode;
+  getMetricsWindowDays = () => this.metricsWindowDays;
   getIsGitRepo = () => this.isGitRepo;
   getFocusRequest = () =>
     this.focusRequestId === null
@@ -141,6 +147,27 @@ export class GraphSessionStore extends EventEmitter {
   setHeatmapMode(mode: HeatmapMode) {
     if (mode === this.heatmapMode || this.diffOverlay) return;
     this.heatmapMode = mode;
+    this.emit("heatmap-changed");
+  }
+
+  async setMetricsWindowDays(days: number) {
+    if (!Number.isInteger(days) || days < 1) {
+      throw new Error("Enter a whole number of at least 1 day.");
+    }
+    if (days === this.metricsWindowDays) return;
+    if (!this.root) throw new Error("Open a project before changing the timeframe.");
+    const previousGraph = this.graph;
+    const graph = await this.client.analyzeProject(this.root, days);
+    this.graph = graph;
+    this.syncReduced();
+    try {
+      await this.recomputeLayout();
+    } catch (cause) {
+      this.graph = previousGraph;
+      this.syncReduced();
+      throw cause;
+    }
+    this.metricsWindowDays = days;
     this.emit("heatmap-changed");
   }
 
@@ -349,6 +376,7 @@ export class GraphSessionStore extends EventEmitter {
   }
 
   async loadProject(path: string) {
+    if (this.root !== path) this.metricsWindowDays = DEFAULT_METRICS_WINDOW_DAYS;
     this.root = path;
     this.phase = "loading";
     this.error = null;
@@ -366,7 +394,7 @@ export class GraphSessionStore extends EventEmitter {
 
     try {
       this.isGitRepo = await this.git.isGitRepo(path);
-      this.graph = await this.client.analyzeProject(path);
+      this.graph = await this.client.analyzeProject(path, this.metricsWindowDays);
       if (this.graph.modules.length === 0) this.phase = "empty";
       else {
         const defaults = defaultDisconnectedSets(this.graph);

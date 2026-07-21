@@ -3,7 +3,7 @@ mod metrics;
 mod metrics_log;
 mod working_tree;
 
-pub use metrics::{enrich_module_metrics, metrics_window_days};
+pub use metrics::{enrich_module_metrics, DEFAULT_METRICS_WINDOW_DAYS};
 pub use working_tree::working_tree_diff;
 
 use std::collections::HashMap;

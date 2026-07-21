@@ -55,6 +55,7 @@ export function GraphCanvas({ store, git, shell, ui, reviewNotes, onShowReviewNo
   const hideTests = session.getHideTests();
   const heatmapEnabled = session.getHeatmapEnabled();
   const heatmapMode = session.getHeatmapMode();
+  const metricsWindowDays = session.getMetricsWindowDays();
   const heatmapGitAvailable = session.getIsGitRepo() === true;
   const heatmapLoading = session.getPhase() === "loading";
   const [contextMenu, setContextMenu] = useState<ModuleContextMenuState | null>(null);
@@ -181,7 +182,11 @@ export function GraphCanvas({ store, git, shell, ui, reviewNotes, onShowReviewNo
           <DiffOverlayBar onStop={() => store.clearDiffOverlay()} />
         )}
         {heatmapEnabled && heatmapGitAvailable && !heatmapLoading && !diffOverlay && (
-          <HeatmapLegend mode={heatmapMode} />
+          <HeatmapLegend
+            mode={heatmapMode}
+            days={metricsWindowDays}
+            onApplyDays={(days) => store.setMetricsWindowDays(days)}
+          />
         )}
         <DiffModal
           store={store}

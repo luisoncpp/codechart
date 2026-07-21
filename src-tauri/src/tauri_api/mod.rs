@@ -1,6 +1,9 @@
 // @Architecture(descriptionShort="Tauri IPC commands bridging frontend to analysis")
 
-use crate::analysis::analyze_project as run_analysis;
+use crate::analysis::{
+    analyze_project as run_analysis,
+    analyze_project_with_metrics_window as run_analysis_with_metrics_window,
+};
 use crate::contract::ProjectGraph;
 use crate::git::{self, GitCommit};
 use crate::project_source::{FsProjectSource, ProjectSource};
@@ -25,10 +28,17 @@ pub struct GitProjectSnapshot {
 /// graph's recorded `root`. Build failures surface as a string error so the
 /// frontend's `failed` session phase can show them.
 #[tauri::command]
-pub fn analyze_project(path: String) -> Result<ProjectGraph, String> {
+pub fn analyze_project(
+    path: String,
+    metrics_window_days: Option<u32>,
+) -> Result<ProjectGraph, String> {
+    let window_days = metrics_window_days.unwrap_or(crate::git::DEFAULT_METRICS_WINDOW_DAYS);
+    if window_days == 0 {
+        return Err("Metrics window must be at least one day.".to_string());
+    }
     ensure_unreal_defaults(&path)?;
     let source = FsProjectSource::new(&path);
-    run_analysis(&source, &path).map_err(|e| e.to_string())
+    run_analysis_with_metrics_window(&source, &path, window_days).map_err(|e| e.to_string())
 }
 
 /// Load one git tree for both analysis and selected source extraction.
