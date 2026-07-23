@@ -90,8 +90,8 @@ External URLs are ignored.
 ### C++ forms handled
 
 C++ sources (`.cpp`/`.cc`/`.cxx`/`.h`/`.hpp`/`.hxx`) via `cpp/`:
-quoted `#include "…"` → relative side-effect edges (`./path` when not already
-relative); angle-bracket `#include <…>` skipped (system/external). Top-level
+quoted `#include "…"` → side-effect dependencies with the include path preserved;
+angle-bracket `#include <…>` skipped (system/external). Top-level
 and namespace-scoped `class`/`struct`/`enum`/`union` definitions and function
 declarations/definitions populate `exported_symbols`; forward declarations do
 not. Qualified out-of-class
@@ -102,10 +102,11 @@ Unreal export macros between a type keyword and name (for example,
 the export. Unreal `GENERATED_*_BODY()` macros are also masked because
 tree-sitter can otherwise treat the following `public:` label as a constructor
 initializer and swallow later declarations into that type. Masking preserves
-byte offsets. `: Base, IFoo` base lists populate `implements`. Resolution uses
-the standard relative-import pass with `.cpp`/`.h`/`.hpp` extension candidates,
-then Unreal configured include roots when present (see
-[unreal-config.md](./unreal-config.md)).
+byte offsets. `: Base, IFoo` base lists populate `implements`. Resolution first
+checks the importing file's directory, then Unreal configured include roots.
+A bare quoted include with no in-scope target is external metadata because it
+may come from a compiler include path; an explicitly `./` or `../` include that
+misses remains an unresolved warning (see [unreal-config.md](./unreal-config.md)).
 
 ## `semantic_comments::parse_annotations(text) -> Vec<Annotation>`
 

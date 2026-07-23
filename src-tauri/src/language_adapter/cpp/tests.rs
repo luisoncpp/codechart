@@ -16,11 +16,11 @@ fn specifiers(module: &ParsedModule) -> Vec<&str> {
 }
 
 #[test]
-fn quoted_include_becomes_relative_specifier() {
+fn quoted_include_preserves_include_path_specifier() {
     let source = r#"#include "utils/helper.h"
 "#;
     let m = parse("src/main.cpp", source);
-    assert_eq!(specifiers(&m), vec!["./utils/helper.h"]);
+    assert_eq!(specifiers(&m), vec!["utils/helper.h"]);
     assert_eq!(m.imports[0].kind, ImportKind::SideEffect);
 }
 

@@ -49,10 +49,10 @@ When `hideGeneratedFiles` is true, analysis ignores `**/*.generated.h`,
 `DerivedDataCache/**`. Filesystem walks also skip the heavy Unreal output
 directories.
 
-When resolving C++ includes, `references::cpp` first tries the normal relative
-resolver. If that misses, it strips a leading `./` and searches `knownPaths`.
-If no project file matches and `hideGeneratedFiles` is true, Unreal generated
-includes such as `*.generated.h` and `*.gen.cpp` are treated as external
-metadata. If no project file matches and `excludeEngineReferences` is true,
-common Unreal Engine headers/prefixes are also external metadata instead of
-unresolved imports.
+When resolving C++ includes, `references::cpp` first searches beside the
+importer, then strips a leading `./` and searches `knownPaths`. If no project
+file matches, a bare quoted include is external metadata because Unreal module
+dependencies may supply it from outside the analyzed root. An explicitly
+relative `./` or `../` miss remains an unresolved warning. Generated includes
+are external when `hideGeneratedFiles` is true; common Unreal Engine
+headers/prefixes are external when `excludeEngineReferences` is true.

@@ -36,11 +36,13 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
   importer (`references::csharp`). A `using` only produces edges to modules that
   export types actually referenced in the file; fully-qualified type names resolve
   without a matching `using`. Miss (e.g. `System`) → external metadata.
-- **C++ include roots** → `.cpp`/`.h` importers first use the normal
-  relative resolver. If that misses, `references::cpp` searches configured
-  `.codechart/config.json` `unreal.knownPaths`. When
+- **C++ include roots** → `.cpp`/`.h` importers first search beside the importer,
+  then configured `.codechart/config.json` `unreal.knownPaths`. A bare quoted
+  include that has no in-scope target is external metadata because a compiler
+  include path or Unreal module dependency may supply it. Explicit `./` or
+  `../` misses remain `unresolvedImport` warnings. When
   `excludeEngineReferences` is true, common Unreal Engine headers/prefixes are
-  external metadata rather than `unresolvedImport` warnings.
+  also external metadata.
 
 **Edge id** = `${source}->${target}:import:${ordinal}`. Edges are sorted by
 `(source, target)`; `ordinal` disambiguates repeated same-pair imports (0-based).
