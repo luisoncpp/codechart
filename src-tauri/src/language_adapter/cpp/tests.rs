@@ -94,6 +94,44 @@ public:
 }
 
 #[test]
+fn unreal_generated_body_does_not_swallow_following_structs() {
+    let source = r#"
+USTRUCT(BlueprintType)
+struct FGoalSaveData {
+    GENERATED_BODY()
+public:
+    // The key for the goal group.
+    // UPROPERTY(BlueprintReadOnly, Category = "Save", SaveGame)
+    // FName GoalGroupID;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Save", SaveGame)
+    TMap<FString, FGoalGroupMetadata> CurrentGoalMetadata;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Save", SaveGame)
+    TMap<FName, FGoalGroupMetadata> GoalGroupsMetadata;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Save", SaveGame)
+    TArray<FName> CompletedGoalGroupIDs;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Save", SaveGame)
+    TArray<FName> FailedGoalGroupIDs;
+};
+
+USTRUCT(BlueprintType)
+struct FScenarioSaveData {
+    GENERATED_BODY()
+public:
+    int32 SaveVersion = 0;
+};
+"#;
+    let m = parse("SaveSystem/RexSaveGame.h", source);
+    assert_eq!(
+        m.exported_symbols,
+        vec!["FGoalSaveData", "FScenarioSaveData"]
+    );
+}
+
+#[test]
 fn forward_declarations_are_not_module_exports() {
     let source = r#"
 class ARexAIController;
