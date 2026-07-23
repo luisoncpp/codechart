@@ -299,6 +299,18 @@ export class GraphSessionStore extends EventEmitter {
       .filter((path) => fileName(path).toLowerCase().includes(needle));
   }
 
+  /** "Go to symbol": case-insensitive substring match over exported names. */
+  searchExportedSymbols(query: string): string[] {
+    if (!this.graph) return [];
+    const scope = this.hideTests ? filterTestModules(this.graph) : this.graph;
+    const needle = query.toLowerCase();
+    return scope.modules
+      .filter((module) =>
+        module.exportedSymbols.some((symbol) => symbol.toLowerCase().includes(needle)),
+      )
+      .map((module) => module.path);
+  }
+
   /** Switch detail level. Collapse state updates for L0; layout stays fixed (projection-only). */
   setZoomLevel(level: ZoomLevel) {
     if (this.diffOverlay && level === 0) level = 1;

@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Toolbar Search menu: opens the project find bar in content or file-name mode")
+// @Architecture(descriptionShort="Toolbar Search menu: opens the find bar in content, file, or symbol mode")
 import { DropdownMenu, MenuActionItem } from "../../../../ui/dropdown_menu";
 import { CanvasUiState } from "../controller/canvas-ui-state";
 
@@ -19,6 +19,10 @@ export function SearchMenu({ ui }: SearchMenuProps) {
         label="Go to file"
         shortcut="Ctrl+P"
         onSelect={() => ui.openFindBar("files")}
+      />
+      <MenuActionItem
+        label="Go to symbol"
+        onSelect={() => ui.openFindBar("symbols")}
       />
     </DropdownMenu>
   );

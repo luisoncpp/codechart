@@ -53,5 +53,6 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [create-manage-review-note.md](./create-manage-review-note.md) | Source range to persisted Review Note and preview navigation |
 | [search-project.md](./search-project.md) | Ctrl+Shift+F find bar or toolbar Search ▾ menu → full-text search of module sources → center each match |
 | [go-to-file.md](./go-to-file.md) | Ctrl+P (or Search ▾ → Go to file) → same find bar in file-name mode → filter module file names locally → center each match |
+| [go-to-symbol.md](./go-to-symbol.md) | Search ▾ → Go to symbol → filter exported symbol names in the analyzed graph → center each matching module |
 | [find-in-preview.md](./find-in-preview.md) | Ctrl+F on a focused/hovered preview frame or header ⌕ → in-frame find bar → highlight and center matches |
 | [change-metrics-timeframe.md](./change-metrics-timeframe.md) | Click the heatmap's timeframe label → choose days → recompute Git activity/risk metrics |

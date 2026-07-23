@@ -16,4 +16,4 @@ Covers only what's already implemented. For architecture docs of not implemented
 | [shell-client.md](./shell-client.md) | `ipc/shell-client` | Reveal a module file in the OS explorer via Tauri opener plugin |
 | [unity-prefabs.md](./unity-prefabs.md) | `unity_assets` + `unity_prefab` adapter + `references::unity` | `.prefab` YAML → script/nested-prefab soft edges; serialized fields as `exportedSymbols` |
 | [review-notes.md](./review-notes.md) | project-local Review Notes | Versioned persistence, reconciliation, inline notes, badges, and sidebar navigation |
-| [project-search.md](./project-search.md) | `search` (Rust) + `project_search` find bar | Ctrl+Shift+F full-text search over detected modules' sources; match navigation via `focusOn` |
+| [project-search.md](./project-search.md) | `search` (Rust) + `project_search` find bar | Ctrl+Shift+F content search, Ctrl+P file search, and Search ▾ exported-symbol search; match navigation via `focusOn` |

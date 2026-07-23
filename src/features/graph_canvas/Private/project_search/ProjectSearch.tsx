@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Find bar: Ctrl+Shift+F full-text search / Ctrl+P go-to-file, with result navigation")
+// @Architecture(descriptionShort="Find bar: content, file, and exported-symbol search with navigation")
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GraphSessionStore } from "../../../../state/graph-session";
 import type { FindBarMode } from "../controller/canvas-ui-state";
@@ -6,6 +6,7 @@ import type { ProgrammaticMoveGuard } from "../navigation/programmatic-move-guar
 import { stepIndex } from "../highlight/match-stepper";
 import { useDebouncedSearch } from "./use-debounced-search";
 import { useFileNameSearch } from "./use-file-name-search";
+import { useSymbolSearch } from "./use-symbol-search";
 import { ProjectSearchBar } from "./ProjectSearchBar";
 import type { BarResult } from "./bar-result";
 
@@ -68,6 +69,7 @@ export function ProjectSearch(props: ProjectSearchProps) {
   }, []);
   useDebouncedSearch(deps.store, open && mode === "content" ? query : "", onResult);
   useFileNameSearch(deps.store, open && mode === "files" ? query : "", onResult);
+  useSymbolSearch(deps.store, open && mode === "symbols" ? query : "", onResult);
 
   const goToMatch = async (delta: 1 | -1) => {
     if (!result || result.paths.length === 0) return;
@@ -84,8 +86,8 @@ export function ProjectSearch(props: ProjectSearchProps) {
     <ProjectSearchBar
       query={query}
       onQueryChange={changeQuery}
-      placeholder={mode === "files" ? "Go to file…" : "Search in project…"}
-      ariaLabel={mode === "files" ? "Go to file" : "Search in project"}
+      placeholder={placeholderFor(mode)}
+      ariaLabel={ariaLabelFor(mode)}
       counterText={counterText(result, activeIndex)}
       truncated={result?.truncated ?? false}
       canNavigate={!!result && result.paths.length > 0}
@@ -95,6 +97,18 @@ export function ProjectSearch(props: ProjectSearchProps) {
       belowDiffBar={props.belowDiffBar}
     />
   );
+}
+
+function placeholderFor(mode: FindBarMode): string {
+  if (mode === "files") return "Go to file…";
+  if (mode === "symbols") return "Go to symbol…";
+  return "Search in project…";
+}
+
+function ariaLabelFor(mode: FindBarMode): string {
+  if (mode === "files") return "Go to file";
+  if (mode === "symbols") return "Go to symbol";
+  return "Search in project";
 }
 
 /** Ctrl/Cmd+Shift+F opens content search, Ctrl/Cmd+P go-to-file — even from another input. */

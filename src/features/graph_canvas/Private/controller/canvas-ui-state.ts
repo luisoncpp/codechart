@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 
 type Listener = () => void;
 
-/** What the find bar searches: module sources or module file names. */
-export type FindBarMode = "content" | "files";
+/** What the find bar searches: sources, file names, or exported symbols. */
+export type FindBarMode = "content" | "files" | "symbols";
 
 /**
  * Holds transient canvas UI flags that the toolbar menus also drive.
