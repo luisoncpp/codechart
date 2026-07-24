@@ -1,70 +1,63 @@
-// @Architecture(descriptionShort="Visual folder selector panel for loading project analysis")
-import { useState } from "react";
+// @Architecture(descriptionShort="Top toolbar: project chip, load controls, menu slot, and status")
+import type { ReactNode } from "react";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { architectureViolations, projectGraphSummary } from "../../../domain/graph";
-import {
-  createMockProjectConfigClient,
-  type ProjectConfigClient,
-} from "../../../ipc/project-config-client";
-import { UnrealConfigModal } from "../../project_config";
 import { FolderPicker, pickFolder as defaultPickFolder } from "./pick-folder";
 import { FacadeBypassList } from "./FacadeBypassList";
-
-const defaultConfigClient = createMockProjectConfigClient();
+import { StatusText } from "./StatusText";
+import { projectBasename } from "./project-basename";
 
 interface ProjectLoaderPanelProps {
   store: GraphSessionStore;
-  configClient?: ProjectConfigClient;
   /** Injectable for tests; defaults to the native Tauri directory dialog. */
   pickFolder?: FolderPicker;
+  /** Slot for toolbar dropdown menus (composed by the app shell). */
+  menus?: ReactNode;
 }
 
 /** Top bar: pick a folder to analyze, reload it, and show session phase/summary. */
 export function ProjectLoaderPanel({
   store,
-  configClient = defaultConfigClient,
   pickFolder = defaultPickFolder,
+  menus,
 }: ProjectLoaderPanelProps) {
   const session = useGraphSession(store);
-  const [path, setPath] = useState<string | null>(null);
-  const [configOpen, setConfigOpen] = useState(false);
+  const path = session.getProjectRoot();
   const phase = session.getPhase();
   const graph = session.getGraph();
   const summary = graph ? projectGraphSummary(graph) : null;
   const bypasses = graph ? architectureViolations(graph) : [];
-  const hasCppModules = graph?.modules.some((module) => module.language === "cpp") ?? false;
 
   const open = async () => {
     const picked = await pickFolder();
     if (!picked) return;
-    setPath(picked);
     session.loadProject(picked);
   };
 
   return (
     <header style={barStyle}>
-      <strong style={{ fontSize: 14 }}>Codechart</strong>
       <button type="button" onClick={open} disabled={phase === "loading"}>
         {phase === "loading" ? "Loading…" : "Open folder…"}
       </button>
       {path && (
+        <span style={projectChipStyle} title={path}>
+          {projectBasename(path)}
+        </span>
+      )}
+      {path && (
         <button
           type="button"
+          aria-label="Reload"
+          title="Reload"
           onClick={() => session.loadProject(path)}
           disabled={phase === "loading"}
+          style={iconButtonStyle}
         >
-          Reload
+          ↻
         </button>
       )}
-      {path && hasCppModules && (
-        <button
-          type="button"
-          onClick={() => setConfigOpen(true)}
-          disabled={phase === "loading"}
-        >
-          Configure paths...
-        </button>
-      )}
+      {menus}
+      <span style={{ marginLeft: "auto" }} />
       <StatusText
         phase={phase}
         path={path}
@@ -72,40 +65,8 @@ export function ProjectLoaderPanel({
         error={session.getError()}
       />
       {phase === "ready" && <FacadeBypassList violations={bypasses} />}
-      <UnrealConfigModal
-        open={configOpen}
-        root={path}
-        client={configClient}
-        onClose={() => setConfigOpen(false)}
-        onSaved={() => path && session.loadProject(path)}
-      />
     </header>
   );
-}
-
-interface StatusTextProps {
-  phase: ReturnType<GraphSessionStore["getPhase"]>;
-  path: string | null;
-  summary: { moduleCount: number; edgeCount: number; diagnosticCount: number } | null;
-  error: string | null;
-}
-
-/** The right-hand status message — varies by session phase. */
-function StatusText({ phase, path, summary, error }: StatusTextProps) {
-  if (phase === "idle")
-    return <span style={hintStyle}>Open a project folder to map it.</span>;
-  if (phase === "empty")
-    return <span style={hintStyle}>No supported source files found in {path}.</span>;
-  if (phase === "failed")
-    return <span style={{ ...hintStyle, color: "#dc2626" }}>Error: {error}</span>;
-  if (summary)
-    return (
-      <span style={hintStyle}>
-        {summary.moduleCount} modules · {summary.edgeCount} edges ·{" "}
-        {summary.diagnosticCount} diagnostics
-      </span>
-    );
-  return null;
 }
 
 const barStyle = {
@@ -117,4 +78,24 @@ const barStyle = {
   fontFamily: "sans-serif",
 } as const;
 
-const hintStyle = { fontSize: 12, color: "#475569" } as const;
+const projectChipStyle: React.CSSProperties = {
+  padding: "3px 8px",
+  fontSize: 12,
+  fontWeight: 600,
+  color: "#334155",
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+  borderRadius: 6,
+  cursor: "default",
+};
+
+const iconButtonStyle: React.CSSProperties = {
+  padding: "3px 8px",
+  fontSize: 13,
+  lineHeight: 1,
+  color: "#475569",
+  background: "#ffffff",
+  border: "1px solid #e2e8f0",
+  borderRadius: 6,
+  cursor: "pointer",
+};

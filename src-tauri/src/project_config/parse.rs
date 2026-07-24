@@ -44,7 +44,10 @@ fn split_frontmatter(content: &str) -> Result<(&str, &str), ConfigError> {
 
 /// First non-empty paragraph of the body, used when `descriptionShort` is absent.
 fn first_paragraph(body: &str) -> Option<String> {
-    body.split("\n\n")
+    // CRLF bodies separate paragraphs with \r\n\r\n — normalize before
+    // splitting or the whole body passes as one "paragraph".
+    body.replace("\r\n", "\n")
+        .split("\n\n")
         .map(str::trim)
         .find(|p| !p.is_empty() && !p.starts_with('#'))
         .map(|p| p.replace('\n', " "))

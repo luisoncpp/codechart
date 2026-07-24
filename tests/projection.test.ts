@@ -11,7 +11,7 @@ import {
   computeHeatProjection,
 } from "../src/domain/graph";
 import type { ProjectGraph } from "../src/domain/graph";
-import { collapsedDescription } from "../src/features/graph_canvas/Private/collapsed-description";
+import { collapsedDescription } from "../src/features/graph_canvas/Private/descriptions/collapsed-description";
 
 const graph = goldenGraph as unknown as ProjectGraph;
 let layout: LayoutedGraph;

@@ -10,11 +10,13 @@ pub mod project_config;
 pub mod project_source;
 pub mod references;
 pub mod review_notes;
+pub mod search;
 pub mod semantic_comments;
 pub mod tauri_api;
 pub mod unity_assets;
 pub mod unreal_config;
 
+pub use search::{search_sources, SearchResult};
 pub use unreal_config::{
     ensure_unreal_defaults, read_project_config, unreal_options_from_source, write_project_config,
     ProjectConfig, UnrealOptions,
@@ -27,9 +29,9 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             tauri_api::analyze_project,
-            tauri_api::analyze_project_at_ref,
-            tauri_api::read_module_sources_at_ref,
+            tauri_api::load_project_snapshot,
             tauri_api::read_module_source,
+            tauri_api::search_module_sources,
             tauri_api::read_project_config,
             tauri_api::write_project_config,
             tauri_api::git_is_repo,

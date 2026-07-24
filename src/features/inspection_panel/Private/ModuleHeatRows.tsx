@@ -14,10 +14,12 @@ export function ModuleHeatRows({
   graph,
   module,
   hideTests,
+  metricsWindowDays,
 }: {
   graph: ProjectGraph;
   module: ModuleNode;
   hideTests: boolean;
+  metricsWindowDays: number;
 }) {
   const hasMetrics =
     module.metrics.churn !== undefined || module.metrics.bugRisk !== undefined;
@@ -36,11 +38,11 @@ export function ModuleHeatRows({
   return (
     <>
       <Row
-        label="Activity (90d)"
+        label={`Activity (${metricsWindowDays}d)`}
         value={`${heatBand(actScore)} · churn ${formatChurn(module.metrics.churn)}`}
       />
       <Row
-        label="Bug risk (90d)"
+        label={`Bug risk (${metricsWindowDays}d)`}
         value={`${heatBand(riskScore)} · ${module.metrics.fixCommits ?? 0} fix commits`}
       />
     </>

@@ -3,9 +3,9 @@ use std::collections::BTreeMap;
 
 use crate::contract::ModuleNode;
 
-use super::metrics_log::{
-    is_fix_commit, load_commit_stats, metrics_skip_path, twr_weight, window_days,
-};
+use super::metrics_log::{is_fix_commit, load_commit_stats, metrics_skip_path, twr_weight};
+
+pub const DEFAULT_METRICS_WINDOW_DAYS: u32 = 90;
 
 struct RawMetrics {
     churn_lines: u32,
@@ -13,9 +13,9 @@ struct RawMetrics {
     fix_commits: u32,
 }
 
-/// Stamp 90-day git metrics onto analyzed modules when `repo` is a git checkout.
-pub fn enrich_module_metrics(repo: &str, modules: &mut [ModuleNode]) {
-    let Ok(commits) = load_commit_stats(repo) else {
+/// Stamp git metrics from the requested window onto analyzed modules.
+pub fn enrich_module_metrics(repo: &str, modules: &mut [ModuleNode], window_days: u32) {
+    let Ok(commits) = load_commit_stats(repo, window_days) else {
         return;
     };
     if commits.is_empty() {
@@ -69,10 +69,6 @@ fn apply_raw(module: &mut ModuleNode, raw: Option<&RawMetrics>) {
     if raw.fix_commits > 0 {
         module.metrics.fix_commits = Some(raw.fix_commits);
     }
-}
-
-pub fn metrics_window_days() -> u32 {
-    window_days()
 }
 
 #[cfg(test)]
@@ -134,7 +130,11 @@ mod tests {
             exported_symbols: vec![],
             annotation: None,
         }];
-        enrich_module_metrics(dir.to_str().unwrap(), &mut modules);
+        enrich_module_metrics(
+            dir.to_str().unwrap(),
+            &mut modules,
+            DEFAULT_METRICS_WINDOW_DAYS,
+        );
         assert!(modules[0].metrics.churn.unwrap() > 0.0);
         assert!(modules[0].metrics.bug_risk.unwrap() > 0.0);
         assert_eq!(modules[0].metrics.fix_commits, Some(1));

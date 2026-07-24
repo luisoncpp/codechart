@@ -10,10 +10,13 @@ use std::path::{Path, PathBuf};
 use crate::project_source::ProjectSource;
 
 pub const CONFIG_PATH: &str = ".codechart/config.json";
+pub const DEFAULT_EDITOR: &str = "code";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectConfig {
+    #[serde(default = "default_editor")]
+    pub editor: String,
     pub unreal: UnrealConfig,
 }
 
@@ -35,6 +38,7 @@ pub struct UnrealOptions {
 impl Default for ProjectConfig {
     fn default() -> Self {
         Self {
+            editor: default_editor(),
             unreal: UnrealConfig {
                 known_paths: Vec::new(),
                 hide_generated_files: true,
@@ -131,6 +135,7 @@ fn deduced_config(source: &dyn ProjectSource) -> Option<ProjectConfig> {
             known_paths: paths,
             ..ProjectConfig::default().unreal
         },
+        ..ProjectConfig::default()
     })
 }
 
@@ -180,6 +185,10 @@ fn normalized_paths(paths: &[String]) -> Vec<String> {
         .collect::<BTreeSet<_>>()
         .into_iter()
         .collect()
+}
+
+fn default_editor() -> String {
+    DEFAULT_EDITOR.to_string()
 }
 
 #[cfg(test)]

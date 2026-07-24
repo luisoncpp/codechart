@@ -1,7 +1,7 @@
 import { expect, vi } from "vitest";
 import type { Node } from "@xyflow/react";
 import type React from "react";
-import { GraphCanvasController } from "../../src/features/graph_canvas/Private/graph-canvas-controller";
+import { GraphCanvasController } from "../../src/features/graph_canvas/Private/controller/graph-canvas-controller";
 import type { GraphSessionStore } from "../../src/state/graph-session";
 
 export function spyGraphCanvasStore() {

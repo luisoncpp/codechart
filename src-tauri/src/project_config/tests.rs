@@ -43,6 +43,19 @@ fn description_short_falls_back_to_first_paragraph() {
 }
 
 #[test]
+fn description_short_first_paragraph_handles_crlf_bodies() {
+    // Regression: a Windows-authored group file separates paragraphs with
+    // \r\n\r\n; splitting on "\n\n" never matched, so the short description
+    // silently became the whole body (visually duplicating the long one).
+    let md = "---\r\nid: x\r\n---\r\n\r\nFirst real paragraph here.\r\n\r\nSecond paragraph.\r\n";
+    let def = parse_group_def("x.group.md", md).expect("valid");
+    assert_eq!(
+        def.description_short.as_deref(),
+        Some("First real paragraph here.")
+    );
+}
+
+#[test]
 fn membership_sources_disable_folder_ownership() {
     let md = "---\nid: shared\nmatch:\n  - \"src/**/types.ts\"\n\
               files:\n  - src/core/todo.ts\n---\n";

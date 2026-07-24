@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { expandCollapsedAncestors } from "../src/state/graph-session/Private/ensure-node-visible";
 import goldenGraph from "./fixtures/golden/project-graph.json";
-import type { ProjectGraph } from "../../src/domain/graph";
+import type { ProjectGraph } from "../src/domain/graph";
 
 const graph = goldenGraph as unknown as ProjectGraph;
 

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { projectGraph } from "../src/domain/graph";
 import { styleEdge } from "../src/features/graph_canvas";
-import { buildEdgeLayerModel } from "../src/features/graph_canvas/Private/edge-layer-cache";
-import { boxesFromFlowNodes } from "../src/features/graph_canvas/Private/node-boxes";
+import { buildEdgeLayerModel } from "../src/features/graph_canvas/Private/edges/edge-layer-cache";
+import { boxesFromFlowNodes } from "../src/features/graph_canvas/Private/edges/node-boxes";
 import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 
 async function readyProjected() {

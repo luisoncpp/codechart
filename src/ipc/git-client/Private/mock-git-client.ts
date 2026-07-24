@@ -11,11 +11,8 @@ export function createMockGitClient(): GitClient {
     async listCommits(): Promise<[]> {
       return [];
     },
-    async analyzeProjectAtRef(): Promise<ProjectGraph> {
-      return golden as unknown as ProjectGraph;
-    },
-    async readModuleSourcesAtRef(): Promise<Record<string, string>> {
-      return {};
+    async loadProjectSnapshot() {
+      return { graph: golden as unknown as ProjectGraph, sources: {} };
     },
     async diffRefs(): Promise<string> {
       return "";

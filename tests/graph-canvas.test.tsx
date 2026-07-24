@@ -6,7 +6,10 @@ import { edgeRole, styleEdge } from "../src/features/graph_canvas";
 import { projectForZoom, allGroupIds } from "../src/domain/graph";
 import { renderInspectionPanel } from "./helpers/render-inspection-panel";
 import { GraphSessionStore } from "../src/state/graph-session";
-import type { ShellClient } from "../src/ipc/shell-client";
+import {
+  createMockShellClient,
+  type ShellClient,
+} from "../src/ipc/shell-client";
 import type { ProjectGraph } from "../src/domain/graph";
 import {
   readyGraphStore,
@@ -93,9 +96,12 @@ describe("GraphCanvas", () => {
     );
   });
 
-  it("right-clicking a module opens reveal-in-explorer menu", async () => {
+  it("right-clicking a module opens the module context menu", async () => {
     const revealInExplorer = vi.fn();
-    const shell: ShellClient = { revealInExplorer };
+    const shell: ShellClient = {
+      ...createMockShellClient(),
+      revealInExplorer,
+    };
     const { container } = renderGraphCanvas(store, shell);
     await waitFor(() =>
       expect(container.querySelector(".react-flow__node")).toBeTruthy(),

@@ -1,17 +1,15 @@
 // @Architecture(descriptionShort="Parses git log numstat output for module metrics")
 use std::collections::BTreeMap;
 
-const WINDOW_DAYS: u32 = 90;
-
 pub struct CommitStat {
     pub epoch: u64,
     pub message: String,
     pub files: BTreeMap<String, (u32, u32)>,
 }
 
-/// Fetch non-merge commits with per-file add/delete counts in the last 90 days.
-pub fn load_commit_stats(repo: &str) -> Result<Vec<CommitStat>, String> {
-    let since = format!("{WINDOW_DAYS}.days.ago");
+/// Fetch non-merge commits with per-file add/delete counts in the requested window.
+pub fn load_commit_stats(repo: &str, window_days: u32) -> Result<Vec<CommitStat>, String> {
+    let since = format!("{window_days}.days.ago");
     let raw = git_bytes(
         repo,
         &[
@@ -102,14 +100,9 @@ pub fn twr_weight(epoch: u64, min_epoch: u64, max_epoch: u64) -> f64 {
     1.0 / (1.0 + (-12.0 * t + 12.0).exp())
 }
 
-pub fn window_days() -> u32 {
-    WINDOW_DAYS
-}
-
 fn git_bytes(path: &str, args: &[&str]) -> Result<Vec<u8>, String> {
     use std::path::Path;
-    use std::process::Command;
-    let output = Command::new("git")
+    let output = super::git_command()
         .args(["-C"])
         .arg(Path::new(path))
         .args(args)

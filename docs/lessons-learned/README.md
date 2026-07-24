@@ -21,6 +21,10 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [tauri-opener-default-excludes-open-path.md](./tauri-opener-default-excludes-open-path.md) | `openPath` needs both command permission and a matching path/application scope; surface launch failures | 2026-07-24 |
+| [cpp-bare-quoted-includes-may-be-external.md](./cpp-bare-quoted-includes-may-be-external.md) | Preserve bare quoted C++ includes so dependency headers outside the analysis root do not become false unresolved diagnostics | 2026-07-22 |
+| [historical-analysis-and-sources-must-share-a-git-snapshot.md](./historical-analysis-and-sources-must-share-a-git-snapshot.md) | An analyzed Git tree already contains every source; reuse it for changed bodies, and hide child consoles on Windows | 2026-07-20 |
+| [unreal-generated-body-can-swallow-later-declarations.md](./unreal-generated-body-can-swallow-later-declarations.md) | Mask `GENERATED_*_BODY()` tokens so tree-sitter does not absorb later Unreal types into one struct | 2026-07-22 |
 | [create-tauri-app-force-deletes-untracked-files.md](./create-tauri-app-force-deletes-untracked-files.md) | Scaffolding with `-f` can wipe untracked project files | 2026-06-19 |
 | [single-parent-collapses-overlap-invariants.md](./single-parent-collapses-overlap-invariants.md) | A single `groupId`/`parentId` makes 2 of 5 graph invariants structural | 2026-06-19 |
 | [tree-sitter-crate-version-pairing.md](./tree-sitter-crate-version-pairing.md) | tree-sitter runtime/grammar crate versions + 0.24 API shape for new adapters | 2026-06-19 |
@@ -50,3 +54,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 | [navigation-requests-must-be-consumed.md](./navigation-requests-must-be-consumed.md) | Retained UI commands replay when unrelated dependencies recreate an effect callback | 2026-07-14 |
 | [programmatic-canvas-moves-trigger-move-handlers.md](./programmatic-canvas-moves-trigger-move-handlers.md) | React Flow camera commands trigger move handlers and can undo the navigation UI that caused them | 2026-07-14 |
 | [stable-store-identity-does-not-invalidate-memos.md](./stable-store-identity-does-not-invalidate-memos.md) | External-store rerenders do not invalidate memos that depend only on the stable store object | 2026-07-16 |
+| [diff-line-highlights-index-after-snapshot.md](./diff-line-highlights-index-after-snapshot.md) | Line-diff coordinates index the after-snapshot; decorate that snapshot, not the live `sourceCache` file, or highlights shift | 2026-07-19 |
+| [react-flow-culling-is-inert-under-jsdom.md](./react-flow-culling-is-inert-under-jsdom.md) | `onlyRenderVisibleElements` force-renders unmeasured nodes; jsdom's no-op ResizeObserver means everything still renders — assert the prop, not the culling | 2026-07-19 |
+| [crlf-bodies-break-newline-splitting.md](./crlf-bodies-break-newline-splitting.md) | Windows CRLF group files defeat `"\n\n"` paragraph splits (whole body becomes `descriptionShort`); normalize `\r\n` first, and compare prose whitespace-normalized, not byte-equal | 2026-07-20 |
+| [ts-rs-export-dir-is-configured-twice.md](./ts-rs-export-dir-is-configured-twice.md) | `src/domain/graph/model` is ts-rs output; `TS_RS_EXPORT_DIR` lives in both `.cargo/config.toml` and the `check` script — update both when moving it | 2026-07-20 |

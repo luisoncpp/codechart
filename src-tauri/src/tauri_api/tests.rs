@@ -1,11 +1,13 @@
 use crate::contract::ProjectGraph;
+use crate::project_source::FsProjectSource;
 
-use super::{analyze_project, read_module_source};
+use super::{analyze_project, read_module_source, search_module_sources};
 
 const FIXTURE_DIR: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../tests/fixtures/ts-basic-project"
 );
+const WORKSPACE_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/..");
 
 fn golden() -> ProjectGraph {
     let json = include_str!("../../../tests/fixtures/golden/project-graph.json");
@@ -18,7 +20,7 @@ fn golden() -> ProjectGraph {
 /// is the repo-relative fixture path) is `root` — patched here before the diff.
 #[test]
 fn command_on_the_fixture_returns_the_golden_model() {
-    let graph = analyze_project(FIXTURE_DIR.to_string()).expect("analysis succeeds");
+    let graph = analyze_project(FIXTURE_DIR.to_string(), None).expect("analysis succeeds");
 
     let mut expected = golden();
     expected.root = FIXTURE_DIR.to_string();
@@ -29,8 +31,8 @@ fn command_on_the_fixture_returns_the_golden_model() {
 #[test]
 fn command_on_a_missing_folder_yields_an_empty_graph() {
     // A non-existent root lists no files; analysis still builds a valid (empty) graph.
-    let graph =
-        analyze_project(format!("{FIXTURE_DIR}/does-not-exist")).expect("builds an empty graph");
+    let graph = analyze_project(format!("{FIXTURE_DIR}/does-not-exist"), None)
+        .expect("builds an empty graph");
     assert!(graph.modules.is_empty());
     assert!(graph.edges.is_empty());
 }
@@ -42,6 +44,47 @@ fn read_module_source_returns_a_modules_contents() {
         .expect("reads the file");
     // The annotated module carries its @Architecture block in the source.
     assert!(src.contains("@Architecture"));
+}
+
+/// Project search: the command scans the given modules' working-tree sources.
+#[test]
+fn search_module_sources_finds_text_in_fixture_modules() {
+    let result = search_module_sources(
+        FIXTURE_DIR.to_string(),
+        "maketodo".to_string(),
+        vec!["src/core/store.ts".to_string(), "src/core/todo.ts".to_string()],
+    );
+
+    let matched_paths: Vec<&str> = result.matches.iter().map(|m| m.path.as_str()).collect();
+    assert!(matched_paths.contains(&"src/core/store.ts"));
+    assert!(matched_paths.contains(&"src/core/todo.ts"));
+    let todo_match = result.matches.iter().find(|m| m.path == "src/core/todo.ts").unwrap();
+    assert_eq!(todo_match.line, 8);
+    assert!(result.matches.iter().all(|m| m.line_text.contains("makeTodo")));
+    assert!(!result.truncated);
+}
+
+#[test]
+fn command_rejects_a_zero_day_metrics_window() {
+    let result = analyze_project(FIXTURE_DIR.to_string(), Some(0));
+    assert_eq!(
+        result.unwrap_err(),
+        "Metrics window must be at least one day."
+    );
+}
+
+#[test]
+fn search_command_does_not_bypass_the_backend_shell_facade() {
+    let source = FsProjectSource::new(WORKSPACE_DIR);
+    let graph = crate::analysis::analyze_project(&source, WORKSPACE_DIR).expect("builds");
+
+    assert!(
+        graph.edges.iter().all(|edge| {
+            edge.source != "src-tauri/src/tauri_api/mod.rs"
+                || edge.target != "src-tauri/src/search/mod.rs"
+        }),
+        "Tauri commands must access search through the backend_shell facade"
+    );
 }
 
 #[test]

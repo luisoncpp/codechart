@@ -22,7 +22,7 @@ impl LanguageAdapter for CppAdapter {
         parser
             .set_language(&tree_sitter_cpp::LANGUAGE.into())
             .map_err(|e| ParseError::Language(e.to_string()))?;
-        let parse_source = mask_unreal_api_macros(source);
+        let parse_source = mask_unreal_syntax(source);
         let tree = parser
             .parse(&parse_source, None)
             .ok_or(ParseError::NoTree)?;
@@ -39,6 +39,11 @@ impl LanguageAdapter for CppAdapter {
     }
 }
 
+fn mask_unreal_syntax(source: &str) -> String {
+    let without_api_macros = mask_unreal_api_macros(source);
+    mask_unreal_generated_body_macros(&without_api_macros)
+}
+
 fn mask_unreal_api_macros(source: &str) -> String {
     let pattern = regex::Regex::new(r"\b(class|struct)(\s+)([A-Z][A-Z0-9_]*_API)(\s+)")
         .expect("static Unreal API macro regex");
@@ -49,6 +54,18 @@ fn mask_unreal_api_macros(source: &str) -> String {
                 "{}{}{}{}",
                 &captures[1], &captures[2], padding, &captures[4]
             )
+        })
+        .into_owned()
+}
+
+fn mask_unreal_generated_body_macros(source: &str) -> String {
+    let pattern = regex::Regex::new(
+        r"\bGENERATED_(?:BODY|UCLASS_BODY|USTRUCT_BODY|IINTERFACE_BODY|UINTERFACE_BODY)[ \t]*\([ \t]*\)",
+    )
+    .expect("static Unreal generated-body macro regex");
+    pattern
+        .replace_all(source, |captures: &regex::Captures| {
+            " ".repeat(captures[0].len())
         })
         .into_owned()
 }

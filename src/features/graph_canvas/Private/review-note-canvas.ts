@@ -1,17 +1,18 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { moduleIdsInGroupTree, type ProjectedGraph } from "../../../domain/graph";
 import type { ReviewNoteNavigationRequest } from "../../../ipc/review-notes-client";
 import type { GraphSessionStore } from "../../../state/graph-session";
 import type { ReviewNotesStore } from "../../../state/review-notes";
+import type { ProgrammaticMoveGuard } from "./navigation/programmatic-move-guard";
 
 interface NavigationDeps {
   store: GraphSessionStore;
   notes?: ReviewNotesStore;
   openPreview: (request: ReviewNoteNavigationRequest) => Promise<void>;
+  guard: ProgrammaticMoveGuard;
 }
 
-export function useReviewNoteNavigation({ store, notes, openPreview }: NavigationDeps) {
-  const keepPreviewDuringFocus = useRef(false);
+export function useReviewNoteNavigation({ store, notes, openPreview, guard }: NavigationDeps) {
   const navigation = notes?.getNavigationRequest();
 
   useEffect(() => {
@@ -19,18 +20,12 @@ export function useReviewNoteNavigation({ store, notes, openPreview }: Navigatio
     if (!notes.consumeNavigationRequest(navigation.seq)) return;
     const module = store.getGraph()?.modules.find((item) => item.path === navigation.path);
     if (!module) return;
-    keepPreviewDuringFocus.current = true;
+    guard.begin();
     void (async () => {
       await store.focusOn(module.id);
       await openPreview(navigation);
     })();
-  }, [navigation, notes, openPreview, store]);
-
-  return {
-    shouldClosePreview: (event: MouseEvent | TouchEvent | null) =>
-      event !== null || !keepPreviewDuringFocus.current,
-    finishMove: () => { keepPreviewDuringFocus.current = false; },
-  };
+  }, [navigation, notes, openPreview, store, guard]);
 }
 
 export function withReviewCounts(

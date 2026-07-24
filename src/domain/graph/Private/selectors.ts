@@ -1,10 +1,10 @@
 // @Architecture(descriptionShort="Selector functions for querying the projected graph state")
-import type { ProjectGraph } from "../ProjectGraph";
-import { isTestModule } from "./test-modules";
-import type { ModuleNode } from "../ModuleNode";
-import type { GroupNode } from "../GroupNode";
-import type { Edge } from "../Edge";
-import type { Diagnostic } from "../Diagnostic";
+import type { ProjectGraph } from "../model/ProjectGraph";
+import { isTestModule } from "./reduction/test-modules";
+import type { ModuleNode } from "../model/ModuleNode";
+import type { GroupNode } from "../model/GroupNode";
+import type { Edge } from "../model/Edge";
+import type { Diagnostic } from "../model/Diagnostic";
 
 export function findModule(
   graph: ProjectGraph,

@@ -129,6 +129,22 @@ fn unreal_defaults_hide_generated_files_and_resolve_include_roots() {
     }));
 }
 
+#[test]
+fn unreal_bare_includes_outside_analysis_root_are_external() {
+    let source = memory(&[
+        ("Warlords/Warlords.Build.cs", ""),
+        (
+            "Warlords/Public/SaveSystem/RexSaveGame.h",
+            "#include \"Quest.h\"\n#include \"GenericTeamAgentInterface.h\"\n",
+        ),
+    ]);
+    let graph = analyze_project(&source, "mem").expect("builds");
+    assert!(
+        graph.diagnostics.is_empty(),
+        "bare includes may come from Unreal module dependencies"
+    );
+}
+
 /// A source whose `b.ts` cannot be read — exercises the `parseError` partial path.
 struct FlakySource;
 

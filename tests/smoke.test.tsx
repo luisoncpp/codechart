@@ -12,7 +12,7 @@ describe("ProjectLoaderPanel", () => {
   it("starts idle and prompts the user to open a project", () => {
     renderProjectLoaderPanel(async () => null);
 
-    expect(screen.getByText("Codechart")).toBeInTheDocument();
+    expect(screen.queryByText("Codechart")).toBeNull();
     expect(screen.getByRole("button", { name: "Open folder…" })).toBeInTheDocument();
     expect(
       screen.getByText("Open a project folder to map it."),
@@ -24,6 +24,14 @@ describe("ProjectLoaderPanel", () => {
     clickOpenFolder();
     await waitForGraphSummary();
     expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();
+  });
+
+  it("shows the open project's name with the full path as tooltip", async () => {
+    renderProjectLoaderPanel(async () => "/some/project");
+    clickOpenFolder();
+    await waitForGraphSummary();
+    const chip = screen.getByText("project");
+    expect(chip).toHaveAttribute("title", "/some/project");
   });
 
   it("lists facade bypasses in a modal with a copyable textarea", async () => {

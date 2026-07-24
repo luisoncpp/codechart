@@ -2,7 +2,8 @@
 use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
+
+use super::git_command;
 
 pub fn working_tree_diff(
     path: &str,
@@ -59,7 +60,7 @@ fn git_text(path: &str, args: &[&str]) -> Result<String, String> {
 }
 
 fn git_bytes(path: &str, args: &[&str]) -> Result<Vec<u8>, String> {
-    let output = Command::new("git")
+    let output = git_command()
         .args(["-C"])
         .arg(Path::new(path))
         .args(args)
@@ -108,7 +109,7 @@ mod tests {
     }
 
     fn run_git(root: &Path, args: &[&str]) {
-        let status = Command::new("git")
+        let status = git_command()
             .args(["-C"])
             .arg(root)
             .args(args)

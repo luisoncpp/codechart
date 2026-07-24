@@ -1,7 +1,8 @@
 // @Architecture(descriptionShort="Mock analysis client using static fixtures for web development")
 import goldenGraph from "../../../../tests/fixtures/golden/project-graph.json";
 import { ProjectGraph } from "../../../domain/graph";
-import { AnalysisClient } from "./analysis-client";
+import { AnalysisClient, ProjectSearchResult } from "./analysis-client";
+import { searchSourceEntries } from "./search-fixture-sources";
 
 // The fixture project's source, bundled at build time so the L2 snippet path
 // runs with zero Rust (jsdom/browser have no fs). Keyed by glob path; matched by
@@ -26,6 +27,17 @@ export function createMockAnalysisClient(): AnalysisClient {
         key.endsWith(`/${path}`),
       );
       return entry?.[1] ?? `// ${path}`;
+    },
+    async searchModuleSources(
+      _root: string,
+      query: string,
+      modulePaths: string[],
+    ): Promise<ProjectSearchResult> {
+      const entries = modulePaths.flatMap((path) => {
+        const hit = Object.entries(FIXTURE_SOURCES).find(([key]) => key.endsWith(`/${path}`));
+        return hit ? [[path, hit[1]] as const] : [];
+      });
+      return searchSourceEntries(entries, query, /*cap=*/ 500);
     },
   };
 }

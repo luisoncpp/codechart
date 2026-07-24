@@ -1,7 +1,7 @@
 # Flow: navigate inspector selection history
 
 1. **Trigger** — click the top-left back/forward button or press `Alt+Left` / `Alt+Right`.
-2. **Entry point** — `SelectionNavigation` in `features/graph_canvas/Private/SelectionNavigation.tsx`.
+2. **Entry point** — `SelectionNavigation` in `features/graph_canvas/Private/toolbar/SelectionNavigation.tsx`.
 3. **Sequence**
    1. The control checks `GraphSessionStore.canGoBack()` / `canGoForward()`.
    2. `goBack()` / `goForward()` moves the history pointer without changing its entries.

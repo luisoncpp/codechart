@@ -9,8 +9,14 @@ import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 
 const graph = goldenGraph as unknown as ProjectGraph;
 
+const noSearchResults = async () => ({ matches: [], truncated: false });
+
 function clientReturning(g: ProjectGraph): AnalysisClient {
-  return { analyzeProject: async () => g, readModuleSource: async () => "" };
+  return {
+    analyzeProject: async () => g,
+    readModuleSource: async () => "",
+    searchModuleSources: noSearchResults,
+  };
 }
 
 function newStore(client: AnalysisClient): GraphSessionStore {
@@ -42,6 +48,22 @@ describe("GraphSessionStore (no DOM)", () => {
     expect(store.getPhase()).toBe("ready");
     expect(store.getGraph()).not.toBeNull();
     expect(store.getLayout()?.modules.length).toBe(graph.modules.length);
+  });
+
+  it("uses 90 metric days by default and can reanalyze with another window", async () => {
+    const analyzeProject = vi.fn(async () => graph);
+    const store = newStore({
+      analyzeProject,
+      readModuleSource: async () => "",
+      searchModuleSources: noSearchResults,
+    });
+    await store.loadProject("/x");
+    expect(analyzeProject).toHaveBeenLastCalledWith("/x", 90);
+
+    await store.setMetricsWindowDays(14);
+
+    expect(analyzeProject).toHaveBeenLastCalledWith("/x", 14);
+    expect(store.getMetricsWindowDays()).toBe(14);
   });
 
   it("an empty graph yields the empty phase and no layout", async () => {
@@ -207,6 +229,7 @@ describe("GraphSessionStore semantic zoom", () => {
       readModuleSource: async () => {
         throw new Error("should not fetch source at L1.5");
       },
+      searchModuleSources: noSearchResults,
     };
     const store = newStore(client);
     await store.loadProject("/x");
@@ -232,6 +255,7 @@ describe("GraphSessionStore semantic zoom", () => {
     const client: AnalysisClient = {
       analyzeProject: async () => graph,
       readModuleSource: async (_root, path) => `// source of ${path}`,
+      searchModuleSources: noSearchResults,
     };
     const store = await readyStoreAtZoomLevel2(client);
     expect(store.getSourceCache().size).toBe(graph.modules.length);
@@ -252,6 +276,7 @@ describe("GraphSessionStore semantic zoom", () => {
     const client: AnalysisClient = {
       analyzeProject: async () => withDoc,
       readModuleSource: async (_root, path) => `# Doc for ${path}`,
+      searchModuleSources: noSearchResults,
     };
     const store = await readyStoreAtZoomLevel2(client);
     expect(store.getGroupDocCache().get("core")).toContain("Doc for docs/architecture/contract.md");
@@ -447,8 +472,7 @@ describe("GraphSessionStore local changes diff", () => {
     const git: GitClient = {
       isGitRepo: async () => true,
       listCommits: async () => [],
-      analyzeProjectAtRef: async () => graph,
-      readModuleSourcesAtRef: async () => ({}),
+      loadProjectSnapshot: async () => ({ graph, sources: {} }),
       diffRefs: async () => "",
       diffWorkingTree,
     };
@@ -467,5 +491,85 @@ describe("GraphSessionStore local changes diff", () => {
       graph.modules.map((module) => module.path),
     );
     expect(store.getDiffOverlay()?.affectedModuleIds.has("src/core/store.ts")).toBe(true);
+  });
+});
+
+describe("GraphSessionStore diff source snapshot", () => {
+  it("loads each historical revision only once", async () => {
+    const loadProjectSnapshot = vi.fn(async () => ({ graph, sources: {} }));
+    const diff = [
+      "diff --git a/src/core/store.ts b/src/core/store.ts",
+      "--- a/src/core/store.ts",
+      "+++ b/src/core/store.ts",
+    ].join("\n");
+    const git: GitClient = {
+      isGitRepo: async () => true,
+      listCommits: async () => [],
+      diffRefs: async () => diff,
+      diffWorkingTree: async () => "",
+      loadProjectSnapshot,
+    };
+    const store = new GraphSessionStore(
+      clientReturning(graph),
+      git,
+      new ElkLayoutEngine(),
+    );
+    await store.loadProject("/repo");
+
+    await store.applyDiffFromCommits("A", "B");
+
+    expect(loadProjectSnapshot).toHaveBeenCalledTimes(2);
+    expect(loadProjectSnapshot).toHaveBeenNthCalledWith(1, {
+      path: "/repo",
+      gitRef: "A",
+      modulePaths: ["src/core/store.ts"],
+    });
+    expect(loadProjectSnapshot).toHaveBeenNthCalledWith(2, {
+      path: "/repo",
+      gitRef: "B",
+      modulePaths: ["src/core/store.ts"],
+    });
+  });
+
+  it("displays the diff's after snapshot so line highlights stay aligned", async () => {
+    // Live working-tree content has an extra comment prepended after the diff
+    // was computed, so it is shifted by one line versus the diffed snapshot.
+    const liveContent = "// added later\nkeep\nnew\n";
+    const afterSnapshot = "keep\nnew\n";
+    const diff = [
+      "diff --git a/src/core/store.ts b/src/core/store.ts",
+      "--- a/src/core/store.ts",
+      "+++ b/src/core/store.ts",
+      "@@ -1,2 +1,2 @@",
+      " keep",
+      "-old",
+      "+new",
+    ].join("\n");
+    const git: GitClient = {
+      isGitRepo: async () => true,
+      listCommits: async () => [],
+      loadProjectSnapshot: async ({ gitRef }) => ({
+        graph,
+        sources: gitRef === "B" ? { "src/core/store.ts": afterSnapshot } : {},
+      }),
+      diffRefs: async () => diff,
+      diffWorkingTree: async () => diff,
+    };
+    const client: AnalysisClient = {
+      analyzeProject: async () => graph,
+      readModuleSource: async () => liveContent,
+      searchModuleSources: noSearchResults,
+    };
+    const store = new GraphSessionStore(client, git, new ElkLayoutEngine());
+    await store.loadProject("/repo");
+
+    await store.applyDiffFromCommits("A", "B");
+
+    // Without the fix the cache would hold liveContent, shifting every
+    // highlight by one line relative to the diff coordinates.
+    expect(store.getSourceCache().get("src/core/store.ts")).toBe(afterSnapshot);
+
+    store.clearDiffOverlay();
+    expect(store.getSourceCache().get("src/core/store.ts")).not.toBe(afterSnapshot);
   });
 });

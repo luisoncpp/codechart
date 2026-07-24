@@ -21,6 +21,7 @@ End-to-end backend sequence that turns a folder of source into a `ProjectGraph`.
 | 6d | Pair Tauri `invoke("cmd")` with `#[tauri::command] fn cmd` → `soft` edges + `unresolvedIpc` diagnostics | `classify_tauri_ipc` (via `resolve_edges`) | `analysis/mod.rs`, `references/tauri_ipc.rs` |
 | 6e | Pair interface importers with cross-group implementors → `soft` seam edges (Phase 10) | `classify_interface_seams` (via `resolve_edges`) | `analysis/mod.rs`, `references/interface_seams.rs` |
 | 7 | Build `ModuleNode`s (id/label/lang/group/facade/loc/annotation) | `build_modules` | `analysis/nodes.rs` |
+| 7b | For Git repositories, enrich modules with activity/risk metrics from the requested lookback window | `enrich_module_metrics` | `git/metrics.rs`, `git/metrics_log.rs` |
 | 8 | Merge + sort diagnostics | `merge` | `diagnostics/mod.rs` |
 | 9 | Validate invariants + emit graph | `ProjectGraphBuilder::build` | `contract/builder.rs`, `contract/validate.rs` |
 

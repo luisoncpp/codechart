@@ -1,5 +1,9 @@
 // @Architecture(descriptionShort="Manages the global project, layout, and selection states")
-import { AnalysisClient } from "../../../ipc/analysis-client";
+import {
+  AnalysisClient,
+  DEFAULT_METRICS_WINDOW_DAYS,
+  ProjectSearchResult,
+} from "../../../ipc/analysis-client";
 import { GitClient } from "../../../ipc/git-client";
 import type { GraphDiffOverlay } from "../../../domain/diff";
 import {
@@ -51,8 +55,11 @@ export class GraphSessionStore extends EventEmitter {
   private layoutSeq = 0;
   private diffOverlay: GraphDiffOverlay | null = null;
   private diffError: string | null = null;
+  /** Module ids whose sourceCache was overridden by the active diff snapshot. */
+  private diffSourceIds = new Set<string>();
   private heatmapEnabled = false;
   private heatmapMode: HeatmapMode = "activity";
+  private metricsWindowDays = DEFAULT_METRICS_WINDOW_DAYS;
   private isGitRepo: boolean | null = null;
   private heatmapSaved: { enabled: boolean; mode: HeatmapMode } | null = null;
   private focusRequestId: string | null = null;
@@ -89,6 +96,7 @@ export class GraphSessionStore extends EventEmitter {
   getDiffError = () => this.diffError;
   getHeatmapEnabled = () => this.heatmapEnabled;
   getHeatmapMode = () => this.heatmapMode;
+  getMetricsWindowDays = () => this.metricsWindowDays;
   getIsGitRepo = () => this.isGitRepo;
   getFocusRequest = () =>
     this.focusRequestId === null
@@ -99,8 +107,35 @@ export class GraphSessionStore extends EventEmitter {
     if (!this.diffOverlay && !this.diffError) return;
     this.diffOverlay = null;
     this.diffError = null;
+    this.restoreDiffSources();
     this.restoreHeatAfterDiff();
     this.emit("diff-changed");
+  }
+
+  /**
+   * Diff line highlights index the after-snapshot, so the L2 code panel and
+   * symbol widget must render that exact source. Override the cache for diffed
+   * paths (keyed by module id = path) while the overlay is active; drop the
+   * overrides on clear so the live file is re-read.
+   */
+  private applyDiffSources(overlay: GraphDiffOverlay) {
+    this.restoreDiffSources();
+    if (!this.graph) return;
+    const byPath = new Map(this.graph.modules.map((m) => [m.path, m.id]));
+    for (const [path, source] of overlay.afterSourceByPath) {
+      const id = byPath.get(path);
+      if (!id) continue;
+      this.sourceCache.set(id, source);
+      this.diffSourceIds.add(id);
+    }
+    if (this.diffSourceIds.size > 0) this.sourceCacheVersion++;
+  }
+
+  private restoreDiffSources() {
+    if (this.diffSourceIds.size === 0) return;
+    for (const id of this.diffSourceIds) this.sourceCache.delete(id);
+    this.diffSourceIds.clear();
+    this.sourceCacheVersion++;
   }
 
   setHeatmapEnabled(enabled: boolean) {
@@ -115,18 +150,39 @@ export class GraphSessionStore extends EventEmitter {
     this.emit("heatmap-changed");
   }
 
+  async setMetricsWindowDays(days: number) {
+    if (!Number.isInteger(days) || days < 1) {
+      throw new Error("Enter a whole number of at least 1 day.");
+    }
+    if (days === this.metricsWindowDays) return;
+    if (!this.root) throw new Error("Open a project before changing the timeframe.");
+    const previousGraph = this.graph;
+    const graph = await this.client.analyzeProject(this.root, days);
+    this.graph = graph;
+    this.syncReduced();
+    try {
+      await this.recomputeLayout();
+    } catch (cause) {
+      this.graph = previousGraph;
+      this.syncReduced();
+      throw cause;
+    }
+    this.metricsWindowDays = days;
+    this.emit("heatmap-changed");
+  }
+
   async applyDiffFromCommits(baseRef: string, headRef: string) {
     if (!this.root || !this.graph) return;
     this.diffError = null;
     try {
-      this.diffOverlay = await buildCommitDiffOverlay(
-        this.client,
-        this.git,
-        this.layoutEngine,
-        this.root,
+      this.diffOverlay = await buildCommitDiffOverlay({
+        git: this.git,
+        layoutEngine: this.layoutEngine,
+        root: this.root,
         baseRef,
         headRef,
-      );
+      });
+      this.applyDiffSources(this.diffOverlay);
       this.pauseHeatForDiff();
       this.ensureDiffZoomFloor();
       this.emit("diff-changed");
@@ -148,6 +204,7 @@ export class GraphSessionStore extends EventEmitter {
         baseRef,
         current: this.graph,
       });
+      this.applyDiffSources(this.diffOverlay);
       this.pauseHeatForDiff();
       this.ensureDiffZoomFloor();
       this.emit("diff-changed");
@@ -215,6 +272,43 @@ export class GraphSessionStore extends EventEmitter {
       this.sourceCacheVersion++;
       return fallback;
     }
+  }
+
+  /**
+   * Search the visible modules' sources (test modules excluded while hidden,
+   * so every result is navigable). Results are returned, never stored: the
+   * find bar keeps them locally so searching never re-renders the canvas.
+   */
+  async searchProjectSources(query: string): Promise<ProjectSearchResult> {
+    if (!this.root || !this.graph) return { matches: [], truncated: false };
+    const scope = this.hideTests ? filterTestModules(this.graph) : this.graph;
+    const paths = scope.modules.map((m) => m.path);
+    return this.client.searchModuleSources(this.root, query, paths);
+  }
+
+  /**
+   * "Go to file": case-insensitive substring match over the visible modules'
+   * file names (not paths, not content). Pure and synchronous — no IPC.
+   */
+  searchModuleFiles(query: string): string[] {
+    if (!this.graph) return [];
+    const scope = this.hideTests ? filterTestModules(this.graph) : this.graph;
+    const needle = query.toLowerCase();
+    return scope.modules
+      .map((m) => m.path)
+      .filter((path) => fileName(path).toLowerCase().includes(needle));
+  }
+
+  /** "Go to symbol": case-insensitive substring match over exported names. */
+  searchExportedSymbols(query: string): string[] {
+    if (!this.graph) return [];
+    const scope = this.hideTests ? filterTestModules(this.graph) : this.graph;
+    const needle = query.toLowerCase();
+    return scope.modules
+      .filter((module) =>
+        module.exportedSymbols.some((symbol) => symbol.toLowerCase().includes(needle)),
+      )
+      .map((module) => module.path);
   }
 
   /** Switch detail level. Collapse state updates for L0; layout stays fixed (projection-only). */
@@ -294,6 +388,7 @@ export class GraphSessionStore extends EventEmitter {
   }
 
   async loadProject(path: string) {
+    if (this.root !== path) this.metricsWindowDays = DEFAULT_METRICS_WINDOW_DAYS;
     this.root = path;
     this.phase = "loading";
     this.error = null;
@@ -302,6 +397,7 @@ export class GraphSessionStore extends EventEmitter {
     this.resetZoom();
     this.diffOverlay = null;
     this.diffError = null;
+    this.diffSourceIds.clear();
     this.heatmapSaved = null;
     this.isGitRepo = null;
     this.heatmapEnabled = false;
@@ -310,7 +406,7 @@ export class GraphSessionStore extends EventEmitter {
 
     try {
       this.isGitRepo = await this.git.isGitRepo(path);
-      this.graph = await this.client.analyzeProject(path);
+      this.graph = await this.client.analyzeProject(path, this.metricsWindowDays);
       if (this.graph.modules.length === 0) this.phase = "empty";
       else {
         const defaults = defaultDisconnectedSets(this.graph);
@@ -505,4 +601,9 @@ export class GraphSessionStore extends EventEmitter {
     this.heatmapSaved = null;
     this.emit("heatmap-changed");
   }
+}
+
+/** Last segment of a repo-relative path (module paths always use `/`). */
+function fileName(path: string): string {
+  return path.slice(path.lastIndexOf("/") + 1);
 }

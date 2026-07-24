@@ -19,6 +19,12 @@ export interface GraphDiffOverlay {
   unifiedDiff: string | null;
   /** Per repo-relative path line add/remove maps. */
   lineDiffByPath: ReadonlyMap<string, FileLineDiff>;
+  /**
+   * After-snapshot source per repo-relative path. Line highlights index the
+   * after snapshot, so panels must render this exact text (not the live file,
+   * which may have drifted since the diff was computed). Empty in paste mode.
+   */
+  afterSourceByPath: ReadonlyMap<string, string>;
 }
 
 export interface ParsedDiffPaths {
@@ -33,4 +39,7 @@ export interface GraphDiffInput {
 }
 
 /** Graph diff without line-level parse (added by `attachLineDiff`). */
-export type GraphDiffCore = Omit<GraphDiffOverlay, "unifiedDiff" | "lineDiffByPath">;
+export type GraphDiffCore = Omit<
+  GraphDiffOverlay,
+  "unifiedDiff" | "lineDiffByPath" | "afterSourceByPath"
+>;

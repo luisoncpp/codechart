@@ -37,6 +37,7 @@ export function InspectionPanel({
         graph={graph}
         selectedId={selectedId}
         hideTests={session.getHideTests()}
+        metricsWindowDays={session.getMetricsWindowDays()}
         onHide={onHide}
         onNavigateToModule={(moduleId) => store.focusOn(moduleId)}
         reviewNotes={reviewNotes}
@@ -51,6 +52,7 @@ function InspectionPanelBody({
   graph,
   selectedId,
   hideTests,
+  metricsWindowDays,
   onHide,
   onNavigateToModule,
   reviewNotes,
@@ -60,6 +62,7 @@ function InspectionPanelBody({
   graph: ProjectGraph | null;
   selectedId: string | null;
   hideTests: boolean;
+  metricsWindowDays: number;
   onHide?: () => void;
   onNavigateToModule: (moduleId: string) => void;
   reviewNotes?: ReviewNotesStore;
@@ -86,6 +89,7 @@ function InspectionPanelBody({
         graph={graph}
         module={module}
         hideTests={hideTests}
+        metricsWindowDays={metricsWindowDays}
         onHide={onHide}
         onNavigateToModule={onNavigateToModule}
         onReviewNotes={() => onTabChange?.("review-notes")}

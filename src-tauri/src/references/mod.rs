@@ -125,7 +125,7 @@ fn resolve_cpp_module(
     diagnostics: &mut Vec<Diagnostic>,
 ) {
     for import in module.imports.iter().chain(module.reexports.iter()) {
-        if !is_relative(&import.specifier) || is_asset_import(&import.specifier) {
+        if is_asset_import(&import.specifier) {
             continue;
         }
         match resolve_cpp_import(&module.path, import, ctx.known, ctx.options) {

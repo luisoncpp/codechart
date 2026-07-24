@@ -14,7 +14,10 @@ export interface PreviewFrame {
   top: number;
   left: number;
   zIndex: number;
+  pinned: boolean;
   activeRange?: { startLine: number; endLine: number };
+  /** Seeds the in-frame find bar (open + pre-filled) when set, e.g. from project search. */
+  initialFindQuery?: string;
 }
 
 /** Default frame size — must match the `.symbol-widget` CSS box. */
@@ -62,4 +65,20 @@ export function moveFrame(
   pos: { top: number; left: number },
 ): readonly PreviewFrame[] {
   return frames.map((f) => (f.id === id ? { ...f, ...pos } : f));
+}
+
+/** Toggle whether outside clicks should keep a frame open. */
+export function togglePin(
+  frames: readonly PreviewFrame[],
+  id: number,
+): readonly PreviewFrame[] {
+  return frames.map((f) => (f.id === id ? { ...f, pinned: !f.pinned } : f));
+}
+
+/** Close only transient frames; pinned frames remain in their current order. */
+export function closeUnpinned(
+  frames: readonly PreviewFrame[],
+): readonly PreviewFrame[] {
+  const remaining = frames.filter((frame) => frame.pinned);
+  return remaining.length === frames.length ? frames : remaining;
 }

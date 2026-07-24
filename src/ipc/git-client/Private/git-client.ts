@@ -7,15 +7,21 @@ export interface GitCommit {
 
 export const LOCAL_CHANGES_REF = "__codechart_local_changes__";
 
+export interface GitProjectSnapshot {
+  graph: import("../../../domain/graph").ProjectGraph;
+  sources: Record<string, string>;
+}
+
+export interface GitSnapshotInput {
+  path: string;
+  gitRef: string;
+  modulePaths: string[];
+}
+
 export interface GitClient {
   isGitRepo(path: string): Promise<boolean>;
   listCommits(path: string, limit: number): Promise<GitCommit[]>;
-  analyzeProjectAtRef(path: string, gitRef: string): Promise<import("../../../domain/graph").ProjectGraph>;
-  readModuleSourcesAtRef(
-    path: string,
-    gitRef: string,
-    modulePaths: string[],
-  ): Promise<Record<string, string>>;
+  loadProjectSnapshot(input: GitSnapshotInput): Promise<GitProjectSnapshot>;
   diffRefs(path: string, baseRef: string, headRef: string): Promise<string>;
   diffWorkingTree(path: string, baseRef: string, eligiblePaths: string[]): Promise<string>;
 }

@@ -16,19 +16,37 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
         └── EdgeList click (Imports / Imported by)
 ```
 
+## Internal structure (subgroups)
+
+Both deep modules organize their implementation into subfolders, each a config subgroup
+(`*.group.md`, facade-less = public inside the parent):
+
+- `domain/graph`: `model/` (ts-rs generated contract types — **also the `TS_RS_EXPORT_DIR`**,
+  never hand-edit), `Private/projection/` (rf-projection\* + `node-data` + palette),
+  `Private/reduction/` (zoom projection/levels, test filtering, disconnect filtering),
+  `Private/heat/` (heat scores/colors). Flat: `index.ts`, `symbol-id.ts`, `selectors.ts`,
+  `symbol-kind*.ts`.
+- `features/graph_canvas/Private`: `edges/`, `nodes/`, `descriptions/`, `l2/`, `highlight/`,
+  `navigation/`, `controller/`, `toolbar/`, plus the nested deep modules `preview_frames/`
+  and `project_search/` (those two keep `index.ts` facades). Flat: `GraphCanvas.tsx`,
+  `graph-canvas.css`, `review-note-canvas.ts`.
+
 ## Responsibilities
 
 | Piece | File | Role |
 |-------|------|------|
-| `projectGraph(graph, layout)` | `domain/graph/Private/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
-| `EdgeLayer` + `segmentForEdge` | `features/graph_canvas/Private/EdgeLayer.tsx`, `edge-path.ts` | Custom SVG edge layer (portal into RF's `.react-flow__edges`); React Flow receives `edges={[]}`. `segmentForEdge` computes both endpoints via `borderAnchor` from live node boxes (`boxesFromFlowNodes`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
-| `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
+| `projectGraph(graph, layout)` | `domain/graph/Private/projection/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
+| `EdgeLayer` + `segmentForEdge` | `features/graph_canvas/Private/edges/EdgeLayer.tsx`, `edge-path.ts` | Custom SVG edge layer (portal into RF's `.react-flow__edges`); React Flow receives `edges={[]}`. `segmentForEdge` computes both endpoints via `borderAnchor` from live node boxes (`boxesFromFlowNodes`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
+| `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/edges/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
 | selectors | `domain/graph/Private/selectors.ts` | `findModule`, `findGroup`, `groupOf`, `modulesInGroup`, `childGroupsOf`, `groupImportsOf`, `groupImportedBy`, `diagnosticsForGroup`, `edgeFocusForSelection`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. |
 | `GraphSessionStore` | `state/graph-session` | Owns `LayoutedGraph`, `selectedId`, and browser-style selection history. New selections truncate the forward branch; back/forward only move its pointer. Emits `phase-changed` + `selection-changed` + `focus-requested`. `focusOn(moduleId)` selects a module, expands collapsed ancestor groups when needed, and asks the canvas to center on it. |
-| `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. `FocusNode` centers the viewport for inspector and Review Note navigation. |
+| `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. `FocusNode` centers the viewport for inspector and Review Note navigation. Sets `onlyRenderVisibleElements` so only viewport-intersecting nodes stay mounted — without it, the one-node-per-symbol swarm at L1.5 made panning composite-bound. Safe with `EdgeLayer`: culling is render-only, and the edge layer reads the projected `nodes` prop + store `nodeLookup`, which culling never filters, so edges to off-screen nodes keep drawing. |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules + groups) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
 | `SelectionNavigation` | `features/graph_canvas` | Top-left back/forward controls plus `Alt+Left` / `Alt+Right`; disabled states come from the session history pointer. |
-| `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, copies the graph-relative path, or reveals the file via `ShellClient` (`ipc/shell-client`, Tauri `revealItemInDir`). |
+| `ViewMenu` / `SearchMenu` | `features/graph_canvas` (facade exports) | Toolbar dropdowns (rendered by `App` into `ProjectLoaderPanel`'s `menus` slot, built on the shared `src/ui/dropdown_menu` module). View ▾: Hide tests, Heatmap + Activity/Risk, Visualize diff…; Search ▾: Search project (Ctrl+Shift+F), Go to file (Ctrl+P), Go to symbol. |
+| `CanvasUiState` | `features/graph_canvas/Private/controller/canvas-ui-state.ts` (facade export) | Transient UI flags (`findBarOpen`, `findBarMode`, `diffModalOpen`) shared between the toolbar menus and `GraphCanvas`; kept out of `GraphSessionStore`. `App` instantiates it and resets on `phase-changed`. |
+| `HeatmapLegend` | `features/graph_canvas` | Top-right gradient chip, shown only while the heatmap is on (below `LevelBadge`). Its timeframe label opens `MetricsWindowModal`; the heatmap toggles themselves live in the View menu. |
+| `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, opens the absolute path in the project-configured editor, copies the graph-relative path, or reveals the file via `ShellClient`. |
 | `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
 
 ## Aesthetic rules (the visual gate)
@@ -82,7 +100,7 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   vanishing. Both live in `edge-style.ts` (`GraphCanvas` passes `edgeFocusForSelection` per render);
   pure `edgeRole`/`edgeOpacity`/`borderAnchor` are the testable seams (edges don't render under jsdom).
 - **Diff overlay (narrative diff visualizer):** optional session overlay from `GraphSessionStore.getDiffOverlay()`.
-  Enter via **Visualize diff…** (`DiffModal`: paste unified diff or pick two git revisions when the
+  Enter via toolbar **View ▾ → Visualize diff…** (`DiffModal`: paste unified diff or pick two git revisions when the
   project root is a repo). The **after** list includes **Local changes**: tracked staged/unstaged
   changes come from `git diff <before>`, while untracked files are full-add patches only when they
   survive Git ignore rules and have a module in the loaded graph. `domain/diff` compares before/after graphs (git mode) or parses diff paths
@@ -96,6 +114,8 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   added as **green/solid**, removed as **red/dashed** ghosts from the before layout, and modified as
   **yellow/dotted**; the border styles preserve meaning without color alone. Exact symbol states are
   available for commit/local comparisons, which can read both snapshots; pasted diffs remain module-level.
+  Historical comparisons load each Git tree once and reuse its in-memory source for both graph analysis
+  and changed-source extraction; Git child processes do not create console windows on Windows.
   **L0 bird's-eye is disabled** while diff is active — scroll zoom floors at L1
   so module-level highlights remain visible; clearing the overlay restores normal L0 behavior.
   **L2 source panels and the symbol preview widget** show unified-diff rows:
@@ -103,9 +123,12 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
   selection dimming for stamped edges. **Stop visualizing diff** clears overlay state; reload clears it too.
   **Mutually exclusive with the activity heatmap** — diff on pauses heat controls and restores prior heat state when cleared.
 - **Activity heatmap (git metrics overlay):** when the project root is a git repo, `analyze_project`
-  stamps `ModuleMetrics.churn`, `bugRisk`, and `fixCommits` (90-day window, Rust `git::enrich_module_metrics`).
-  `ViewControls` exposes a **Heatmap** toggle + **Activity | Risk** segmented switch (Activity default);
-  disabled without git (tooltip: “Requires a git repository”). `computeHeatProjection` (`heat-scores.ts`,
+  stamps `ModuleMetrics.churn`, `bugRisk`, and `fixCommits` for the session's lookback window
+  (90 days by default, Rust `git::enrich_module_metrics`). `GraphSessionStore` owns the selected day
+  count; changing it from `HeatmapLegend` reanalyzes the project and updates legend and inspector labels.
+  The toolbar **View ▾** menu (`ViewMenu`) exposes a **Heatmap** checkbox + **Activity | Risk** radio items (Activity default);
+  disabled without git (tooltip: “Requires a git repository”). While the heatmap is on, `HeatmapLegend`
+  (passive gradient chip) renders at the canvas top-right below the level badge. `computeHeatProjection` (`heat-scores.ts`,
   pure) percentile-ranks visible modules (respecting **Hide tests**) into `heatScore`/`heatVisible` on
   projected nodes. Group scores use the **full** graph (not the L0-reduced view) so
   collapsed bird's-eye boxes match expanded L1 tints. Every module/group gets a score in
@@ -130,7 +153,7 @@ applies `projectForZoom` for manual per-group collapse at L1+. Display/edge rout
 `filterTestModules` **before** `projectForZoom` so empty-group pruning never sees modules already
 hidden by zoom collapse.
 
-- `projectForZoom` (`domain/graph/Private/zoom-projection.ts`, pure): drops modules under a
+- `projectForZoom` (`domain/graph/Private/reduction/zoom-projection.ts`, pure): drops modules under a
   collapsed group; keeps every collapsed group box visible (nested groups are not absorbed into a
   parent); **re-routes** edges whose endpoint was hidden onto the nearest collapsed ancestor group
   box; drops self-loops, **group↔ancestor-group edges** (a group nested at any depth inside the
@@ -207,7 +230,18 @@ hidden by zoom collapse.
     blindly pinned to the top (a module ELK placed up there blocks it; the box stops just below). Floored
     at the group content top (`groupPadding + groupHeaderHeight`). `textAlign: left` (React Flow's node
     default is centered). World units at `DESC_BOX.l1FontSize` (22, = `LABEL_FIT.maxFont`) — reads at the
-    same scale as the module filenames, not counter-scaled.
+    same scale as the module filenames, not counter-scaled. **Hovering the short text opens a custom
+    tooltip with the full `descriptionLong`** (`GroupDescription.tsx` + `DescriptionTooltip.tsx`): a
+    `position: fixed` div portaled to `document.body`, so it renders in screen space (unaffected by
+    canvas zoom, never clipped by the node) with no OS/native-`title` length truncation; it scrolls
+    internally past 60vh and flips above the cursor in the bottom half of the viewport. The `<p>` takes
+    `pointerEvents: auto` only when a tooltip exists (L1 with a long description); the tooltip is
+    suppressed whenever the displayed text already **is** the long one — at L1.5+ (inline long text)
+    or when `descriptionLong` equals the displayed short text — and the `<p>` stays inert then.
+    An open tooltip **dismisses on any viewport change** (pan or zoom): a `DismissOnViewportMove`
+    child mounts only while the tooltip is open and compares the live React Flow `transform`
+    against the value captured at hover, so the per-frame store subscription costs nothing
+    while no tooltip is showing.
   - **L1.5+ (`showLong`):** same box shows `descriptionLong` (falls back to `descriptionShort`) at the
     smaller `DESC_BOX.fontSize` (16): the long prose is denser, so a modest font keeps the box compact
     while L1's short blurb still reads large. The two fonts are independent on purpose.
@@ -263,13 +297,13 @@ hidden by zoom collapse.
 - **Connection disconnect affordance:** every group and module renders a plug toggle (`ConnectionToggle`, 🔌)
   at the **upper-right** corner, tagged `data-connection-toggle`. Click → `store.toggleGroupConnection` /
   `toggleModuleConnection`. Disconnected nodes stay visible; edges touching them are dropped by
-  `filterDisconnectedEdges` (`domain/graph/Private/connection-filter.ts`, pure) in `GraphSessionStore.reduceForView`.
+  `filterDisconnectedEdges` (`domain/graph/Private/reduction/connection-filter.ts`, pure) in `GraphSessionStore.reduceForView`.
   Defaults come from `GroupNode.disconnectedByDefault` / `disconnectedModuleIds` (parsed from `*.group.md`
   `disconnected` / `disconnectedModules`); session state seeds on load and user toggles layer on top.
   Modules inherit a parent group's disconnect (ancestor chain). Inspection still lists imports on the raw graph.
 - **Source preview frames (document or symbol, multi-frame):** owned by the nested deep module
   `features/graph_canvas/Private/preview_frames/` (public interface: `usePreviewFrames`, `findSymbolLine`;
-  `GraphCanvas` renders `framesView` and wires `openFromSymbolNode`/`closeAll`). Clicking an exported
+  `GraphCanvas` renders `framesView` and wires `openFromSymbolNode`/`closeTransient`). Clicking an exported
   symbol node selects its parent module and opens a resizable, scrollable, **draggable** (header bar)
   frame next to the symbol, centered on the symbol's definition line (centering scrolls only the frame
   body — never `scrollIntoView`, which would scroll the window). Inside a frame, clickable identifiers
@@ -282,13 +316,28 @@ hidden by zoom collapse.
   opens the defining module's frame (possibly the same module, for local functions/methods) **right**
   of the clicked frame, else **below**, else **above**, else right-with-overlap
   (`placeAdjacentFrame`, pure; live DOM rects honor user resize/drag). Same module+symbol dedupes to a
-  bring-to-front. Any click outside every frame closes them all; clicks inside any frame (scrollbars
-  included) close nothing; user canvas pan/zoom closes all. Review Note navigation preserves its
+  bring-to-front. Each frame exposes a pin toggle in its header; an outside click closes only unpinned
+  frames, while pinned frames remain open. Clicks inside any frame (scrollbars included) close nothing;
+  direct close closes that frame, and canvas move-start events close only unpinned frames. Review Note navigation preserves its
   preview during the programmatic move that centers the owning module. **Open file preview** in a module or symbol
   context menu opens the parent module at the cursor without entering L2. The document frame starts
   at the top and composes the same preferred module description plus complete highlighted source as
   the L2 document. It retains clickable cross-module identifiers and diff rows; like a canvas symbol
   click, opening it replaces existing frames.
+- **Find in frame (Ctrl/Cmd+F):** each frame has its own find bar (header `⌕` icon, or Ctrl/Cmd+F
+  targeting the focused frame first, else the hovered one; unclaimed presses fall through to the
+  browser — the global project search stays on Ctrl+Shift+F). All find state is component-local in
+  `use-frame-search.ts` (never the store or `usePreviewFrames`) — synchronous, no debounce/IPC.
+  Matching is pure (`frame-search.ts`): case-insensitive non-overlapping substrings over the frame's
+  `sourceText` plus, on document frames, the description (description matches come first in
+  navigation order). Highlights render by **nesting** `hl-match`/`hl-match--active` spans *inside*
+  each syntax-token span (`match-highlight.ts` `segmentTokenText` + `DiffCodeLines` `matchesByLine`
+  prop) so the token span keeps its full `textContent` — `hl-clickable` navigation and `tokenClass`
+  are untouched; `remove` diff rows never highlight (matches index the live source). Navigation
+  (Enter / Shift+Enter / ↑↓ buttons) steps via the shared `Private/match-stepper.ts` and centers the
+  active span with `centerElementInBody` (body-`scrollTop` math only). Frames are focusable
+  (`tabIndex=-1`, focused on pointerdown with `preventScroll`); Escape escalates: find bar first,
+  frame close second. Find-bar keys stop propagation so they never reach canvas/window shortcuts.
 
 Store surface (TDD §5.1): `getZoomLevel`, `getReducedGraph`, `getCollapsedGroupIds`,
 `getDisconnectedGroupIds`, `getDisconnectedModuleIds`, `getSourceCache`,

@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use crate::language_adapter::ParsedImport;
 use crate::UnrealOptions;
 
-use super::resolve::{resolve_path, resolve_relative};
+use super::resolve::{is_relative, resolve_path, resolve_relative};
 
 pub fn is_cpp_path(path: &str) -> bool {
     path.ends_with(".cpp")
@@ -38,6 +38,9 @@ pub fn resolve_cpp_import(
         return CppResolution::External;
     }
     if options.exclude_engine_references && is_engine_include(include) {
+        return CppResolution::External;
+    }
+    if !is_relative(&import.specifier) {
         return CppResolution::External;
     }
     CppResolution::Unresolved

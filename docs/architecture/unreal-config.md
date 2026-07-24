@@ -1,17 +1,18 @@
-# Unreal Project Config
+# Project Config and Unreal Paths
 
 **Status: implemented.** Source: `src-tauri/src/unreal_config/`,
 `src-tauri/src/references/cpp.rs`, `src/features/project_config/`.
 
 ## Responsibility
 
-Unreal support layers project-local include-path configuration on top of the
-existing C++ adapter. The config lives at `.codechart/config.json` in the
-analyzed project and is edited from the header's generic `Configure paths...`
-modal.
+CodeChart stores project-local application settings at `.codechart/config.json`.
+The Settings menu edits the preferred editor for module files and, for C++
+projects, opens the existing include-path configuration modal. Unreal support
+layers project-local include-path configuration on top of the C++ adapter.
 
 ```json
 {
+  "editor": "code",
   "unreal": {
     "knownPaths": ["Source/Game/Public", "Source/Game/Private"],
     "hideGeneratedFiles": true,
@@ -20,7 +21,12 @@ modal.
 }
 ```
 
-## Defaults
+`editor` is the application name or full executable path passed to Tauri
+`openPath`. Missing values deserialize as `code`, keeping existing config files
+backward compatible. Editor and Unreal modal saves use read-modify-write so
+neither setting replaces the other.
+
+## Unreal Defaults
 
 `tauri_api::analyze_project` calls `unreal_config::ensure_unreal_defaults`
 before filesystem analysis. If no config exists and the folder looks like an
@@ -31,7 +37,7 @@ deduced defaults:
 - each `*.Build.cs` directory
 - each module's `Public`, `Private`, and `Classes` folders
 
-`analyze_project_at_ref` does not write defaults; git-ref analysis stays
+`load_project_snapshot` does not write defaults; git-ref analysis stays
 read-only.
 
 ## Analysis Behavior
@@ -49,10 +55,10 @@ When `hideGeneratedFiles` is true, analysis ignores `**/*.generated.h`,
 `DerivedDataCache/**`. Filesystem walks also skip the heavy Unreal output
 directories.
 
-When resolving C++ includes, `references::cpp` first tries the normal relative
-resolver. If that misses, it strips a leading `./` and searches `knownPaths`.
-If no project file matches and `hideGeneratedFiles` is true, Unreal generated
-includes such as `*.generated.h` and `*.gen.cpp` are treated as external
-metadata. If no project file matches and `excludeEngineReferences` is true,
-common Unreal Engine headers/prefixes are also external metadata instead of
-unresolved imports.
+When resolving C++ includes, `references::cpp` first searches beside the
+importer, then strips a leading `./` and searches `knownPaths`. If no project
+file matches, a bare quoted include is external metadata because Unreal module
+dependencies may supply it from outside the analyzed root. An explicitly
+relative `./` or `../` miss remains an unresolved warning. Generated includes
+are external when `hideGeneratedFiles` is true; common Unreal Engine
+headers/prefixes are external when `excludeEngineReferences` is true.

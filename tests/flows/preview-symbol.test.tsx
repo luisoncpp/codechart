@@ -110,6 +110,29 @@ describe("flow: preview-symbol", () => {
     );
   });
 
+  it("keeps a pinned frame open through an outside click until it is unpinned", async () => {
+    const store = await readyGraphStore();
+    store.setZoomLevel(/*level=*/1.5);
+    const { container } = await clickSymbolOnCanvas(store, "src/core/store.ts::TodoStore");
+    await waitFor(() =>
+      expect(document.querySelector(".symbol-widget")).toBeTruthy(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Pin frame" }));
+    expect(screen.getByRole("button", { name: "Unpin frame" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    fireEvent.click(container.querySelector(".react-flow__pane")!);
+    expect(document.querySelector(".symbol-widget")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Unpin frame" }));
+    fireEvent.click(container.querySelector(".react-flow__pane")!);
+    await waitFor(() =>
+      expect(document.querySelector(".symbol-widget")).toBeNull(),
+    );
+  });
+
   it("does not reopen a completed Review Note preview after zooming out and in", async () => {
     const store = await readyGraphStore();
     const reviewNotes = await readyReviewNotes(store.getGraph()!);
@@ -133,4 +156,95 @@ describe("flow: preview-symbol", () => {
 
     expect(document.querySelector(".symbol-widget")).toBeNull();
   });
+
+  it("allows opening another preview frame when a pinned frame is already present", async () => {
+    const store = await readyGraphStore();
+    store.setZoomLevel(/*level=*/1.5);
+    const symbolId1 = "src/core/store.ts::TodoStore";
+    const symbolId2 = "src/core/todo.ts::makeTodo";
+
+    const { container } = await clickSymbolOnCanvas(store, symbolId1);
+    await waitFor(() =>
+      expect(document.querySelectorAll(".symbol-widget").length).toBe(1),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Pin frame" }));
+
+    const symbolNode2 = await waitFor(() => {
+      const el = container.querySelector(`[data-id="${symbolId2}"]`);
+      expect(el).toBeTruthy();
+      return el!;
+    });
+
+    await act(async () => {
+      fireEvent.click(symbolNode2);
+    });
+
+    await waitFor(() => {
+      expect(document.querySelectorAll(".symbol-widget").length).toBe(2);
+    });
+  });
+
+  it("allows opening document preview from context menu when a pinned frame is present", async () => {
+    const store = await readyGraphStore();
+    store.setZoomLevel(/*level=*/1.5);
+    const symbolId = "src/core/store.ts::TodoStore";
+    const moduleId = "src/core/todo.ts";
+
+    const { container } = await clickSymbolOnCanvas(store, symbolId);
+    await waitFor(() =>
+      expect(document.querySelectorAll(".symbol-widget").length).toBe(1),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Pin frame" }));
+
+    const moduleNode = await waitFor(() => {
+      const node = container.querySelector(`[data-id="${moduleId}"]`);
+      expect(node).toBeTruthy();
+      return node!;
+    });
+
+    fireEvent.contextMenu(moduleNode);
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: "Open file preview" }),
+    );
+
+    await waitFor(() => {
+      expect(document.querySelectorAll(".symbol-widget").length).toBe(2);
+    });
+  });
+
+  it("allows navigating to another definition from inside a pinned frame", async () => {
+    const store = await readyGraphStore();
+    store.setZoomLevel(/*level=*/1.5);
+    await clickSymbolOnCanvas(store, "src/core/store.ts::TodoStore");
+    await waitFor(() =>
+      expect(document.querySelector(".symbol-widget")).toBeTruthy(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Pin frame" }));
+
+    const methodToken = await waitFor(() => {
+      const token = [...document.querySelectorAll(".hl-clickable")].find(
+        (el) => el.textContent === "toggle",
+      );
+      expect(token).toBeTruthy();
+      return token!;
+    });
+
+    await act(async () => {
+      fireEvent.click(methodToken);
+    });
+
+    await waitFor(() => {
+      expect(document.querySelectorAll(".symbol-widget").length).toBe(2);
+      const titles = [...document.querySelectorAll(".symbol-widget__title")].map(
+        (el) => el.textContent,
+      );
+      expect(titles).toContain("toggle");
+    });
+  });
 });
+
+
+

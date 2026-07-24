@@ -12,16 +12,17 @@ in the running app until the canvas renders.
 |---|------|----------|------|
 | 1 | Native directory dialog → absolute path (or null on cancel) | `pickFolder` | `project_loader/Private/pick-folder.ts` |
 | 2 | Remember path; kick off load | `session.loadProject(path)` | `state/graph-session/Private/graph-session-store.ts` |
-| 3 | IPC `analyze_project { path }` → Rust | `createTauriAnalysisClient` | `ipc/analysis-client/Private/tauri-analysis-client.ts` |
+| 3 | IPC `analyze_project { path, metricsWindowDays }` → Rust (90 days by default) | `createTauriAnalysisClient` | `ipc/analysis-client/Private/tauri-analysis-client.ts` |
 | 4 | Backend pipeline → `ProjectGraph` | `tauri_api::analyze_project` | `src-tauri/src/tauri_api/mod.rs` (→ [analyze-project](./analyze-project.md)) |
 | 5 | 0 modules → `empty`; else ELK layout → `ready` | `GraphSessionStore.loadProject` | same as #2 |
 | 6 | Render canvas + collapsible inspection panel (left-edge drag to resize) | `App` gates on `phase==="ready"` | `app/Private/App.tsx` |
 | 6b | When ready, show collapsible **facade bypasses** list (textarea + **Copy list**) | `FacadeBypassList` | `project_loader/Private/FacadeBypassList.tsx` |
-| 6c | When the loaded graph contains at least one C++ module, show `Configure paths...`; hide it for non-C++ projects | `ProjectLoaderPanel` | `project_loader/Private/ProjectLoaderPanel.tsx` |
+| 6c | Toolbar shows the project chip (folder basename, full path in tooltip) plus **View ▾**, **Search ▾**, and **Settings ▾** (`App` fills the `menus` slot when ready) | `ProjectLoaderPanel` + app menus | `project_loader/Private/ProjectLoaderPanel.tsx`, `app/Private/App.tsx` |
+| 6d | Load the project's editor preference from `.codechart/config.json`; missing or old config defaults to `code` | `App` + `ProjectConfigClient` | `app/Private/App.tsx`, `ipc/project-config-client` |
 
 ## Session phases
 `idle` → `loading` → (`ready` | `empty` | `failed`). The panel shows a hint per
-phase; **Reload** re-runs the last picked path. Builder `Err` → `failed` with the
+phase; the ↻ **Reload** icon button re-runs `session.getProjectRoot()` (the panel keeps no local path state). Builder `Err` → `failed` with the
 `BuildError` message (now `Display`-formatted).
 
 ## Reads / Writes / Side effects
