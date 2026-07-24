@@ -54,10 +54,20 @@ fn explicit_config_wins_over_deduced_defaults() {
 }
 
 #[test]
+fn config_without_editor_uses_vscode_default() {
+    let source = memory(&[(
+        CONFIG_PATH,
+        r#"{"unreal":{"knownPaths":[],"hideGeneratedFiles":true,"excludeEngineReferences":true}}"#,
+    )]);
+    assert_eq!(config_from_source(&source).editor, DEFAULT_EDITOR);
+}
+
+#[test]
 fn read_write_project_config_round_trips() {
     let temp = tempfile::tempdir().expect("tempdir");
     let root = temp.path().to_string_lossy().to_string();
     let config = ProjectConfig {
+        editor: "code-insiders".into(),
         unreal: UnrealConfig {
             known_paths: vec!["Source/Game/Public".into()],
             hide_generated_files: false,
@@ -79,6 +89,7 @@ fn ensure_defaults_fills_empty_existing_config() {
     write_project_config(
         &root,
         ProjectConfig {
+            editor: "zed".into(),
             unreal: UnrealConfig {
                 known_paths: Vec::new(),
                 hide_generated_files: false,
@@ -95,4 +106,5 @@ fn ensure_defaults_fills_empty_existing_config() {
         .iter()
         .any(|p| p == "Source/Game/Public"));
     assert!(!config.unreal.hide_generated_files, "preserve user toggle");
+    assert_eq!(config.editor, "zed", "preserve the project editor");
 }

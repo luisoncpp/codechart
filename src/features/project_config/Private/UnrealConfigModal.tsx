@@ -103,6 +103,7 @@ export function UnrealConfigModal({
 
 function cleanConfig(config: ProjectConfig): ProjectConfig {
   return {
+    ...config,
     unreal: {
       ...config.unreal,
       knownPaths: config.unreal.knownPaths.map((p) => p.trim()).filter(Boolean),

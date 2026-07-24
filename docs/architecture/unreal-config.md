@@ -1,17 +1,18 @@
-# Unreal Project Config
+# Project Config and Unreal Paths
 
 **Status: implemented.** Source: `src-tauri/src/unreal_config/`,
 `src-tauri/src/references/cpp.rs`, `src/features/project_config/`.
 
 ## Responsibility
 
-Unreal support layers project-local include-path configuration on top of the
-existing C++ adapter. The config lives at `.codechart/config.json` in the
-analyzed project and is edited from the header's generic `Configure paths...`
-modal.
+CodeChart stores project-local application settings at `.codechart/config.json`.
+The Settings menu edits the preferred editor for module files and, for C++
+projects, opens the existing include-path configuration modal. Unreal support
+layers project-local include-path configuration on top of the C++ adapter.
 
 ```json
 {
+  "editor": "code",
   "unreal": {
     "knownPaths": ["Source/Game/Public", "Source/Game/Private"],
     "hideGeneratedFiles": true,
@@ -20,7 +21,12 @@ modal.
 }
 ```
 
-## Defaults
+`editor` is the application name or full executable path passed to Tauri
+`openPath`. Missing values deserialize as `code`, keeping existing config files
+backward compatible. Editor and Unreal modal saves use read-modify-write so
+neither setting replaces the other.
+
+## Unreal Defaults
 
 `tauri_api::analyze_project` calls `unreal_config::ensure_unreal_defaults`
 before filesystem analysis. If no config exists and the folder looks like an

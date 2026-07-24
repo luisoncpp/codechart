@@ -34,12 +34,21 @@ interface GraphCanvasProps {
   store: GraphSessionStore;
   git: GitClient;
   shell: ShellClient;
+  editor: string;
   ui: CanvasUiState;
   reviewNotes?: ReviewNotesStore;
   onShowReviewNotes?: () => void;
 }
 
-export function GraphCanvas({ store, git, shell, ui, reviewNotes, onShowReviewNotes }: GraphCanvasProps) {
+export function GraphCanvas({
+  store,
+  git,
+  shell,
+  editor,
+  ui,
+  reviewNotes,
+  onShowReviewNotes,
+}: GraphCanvasProps) {
   const session = useGraphSession(store);
   const uiState = useCanvasUiState(ui);
   const graph = session.getReducedGraph();
@@ -198,6 +207,7 @@ export function GraphCanvas({ store, git, shell, ui, reviewNotes, onShowReviewNo
           menu={contextMenu}
           projectRoot={session.getProjectRoot()}
           shell={shell}
+          editor={editor}
           onOpenPreview={previews.openDocumentPreview}
           onClose={() => setContextMenu(null)}
         />

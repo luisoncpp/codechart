@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { ProjectLoaderPanel } from "../../src/features/project_loader";
 import type { ProjectGraph } from "../../src/domain/graph";
-import { defaultProjectConfig } from "../../src/ipc/project-config-client";
 import goldenGraph from "../fixtures/golden/project-graph.json";
 import { testGraphSessionStore } from "../helpers/test-graph-session-store";
 import {
@@ -70,47 +69,6 @@ describe("flow: open-project", () => {
     });
     await waitFor(() => expect(analyzeProject).toHaveBeenCalledTimes(2));
     expect(analyzeProject).toHaveBeenLastCalledWith("/my/project", 90);
-  });
-
-  it("saving include paths writes config and reloads the project", async () => {
-    const { store, analyzeProject } = spiedStore(cppGraph());
-    const config = defaultProjectConfig();
-    const readProjectConfig = vi.fn(async () => config);
-    const writeProjectConfig = vi.fn(async () => {});
-    render(
-      <ProjectLoaderPanel
-        store={store}
-        pickFolder={async () => "/my/project"}
-        configClient={{ readProjectConfig, writeProjectConfig }}
-      />,
-    );
-    await act(async () => {
-      clickOpenFolder();
-    });
-    await waitFor(() => expect(store.getPhase()).toBe("ready"));
-    fireEvent.click(screen.getByRole("button", { name: "Configure paths..." }));
-    await waitFor(() => expect(readProjectConfig).toHaveBeenCalledWith("/my/project"));
-    expect(
-      screen.getByRole("heading", { name: "C++ include paths" }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("dialog")).toHaveStyle({
-      maxHeight: "calc(100vh - 32px)",
-      overflowY: "auto",
-    });
-    fireEvent.click(await screen.findByRole("button", { name: "Add include path" }));
-    fireEvent.change(screen.getByPlaceholderText("path/to/include"), {
-      target: { value: "Source/Game/Public" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Save and reload" }));
-    await waitFor(() => expect(writeProjectConfig).toHaveBeenCalledOnce());
-    expect(writeProjectConfig).toHaveBeenCalledWith("/my/project", {
-      unreal: {
-        knownPaths: ["Source/Game/Public"],
-        hideGeneratedFiles: true,
-        excludeEngineReferences: true,
-      },
-    });
-    await waitFor(() => expect(analyzeProject).toHaveBeenCalledTimes(2));
   });
 
   it("clicking Copy list copies the facade bypass list", async () => {

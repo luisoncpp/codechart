@@ -21,6 +21,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [tauri-opener-default-excludes-open-path.md](./tauri-opener-default-excludes-open-path.md) | `openPath` needs both command permission and a matching path/application scope; surface launch failures | 2026-07-24 |
 | [cpp-bare-quoted-includes-may-be-external.md](./cpp-bare-quoted-includes-may-be-external.md) | Preserve bare quoted C++ includes so dependency headers outside the analysis root do not become false unresolved diagnostics | 2026-07-22 |
 | [historical-analysis-and-sources-must-share-a-git-snapshot.md](./historical-analysis-and-sources-must-share-a-git-snapshot.md) | An analyzed Git tree already contains every source; reuse it for changed bodies, and hide child consoles on Windows | 2026-07-20 |
 | [unreal-generated-body-can-swallow-later-declarations.md](./unreal-generated-body-can-swallow-later-declarations.md) | Mask `GENERATED_*_BODY()` tokens so tree-sitter does not absorb later Unreal types into one struct | 2026-07-22 |

@@ -28,12 +28,25 @@ export function renderGraphCanvas(
   store: GraphSessionStore,
   shell: ShellClient = createMockShellClient(),
   reviewNotes?: ReviewNotesStore,
+  editor = "code",
 ) {
   const ui = new CanvasUiState();
   const canvas = reviewNotes ? (
-    <SubscribedGraphCanvas store={store} shell={shell} ui={ui} reviewNotes={reviewNotes} />
+    <SubscribedGraphCanvas
+      store={store}
+      shell={shell}
+      editor={editor}
+      ui={ui}
+      reviewNotes={reviewNotes}
+    />
   ) : (
-    <GraphCanvas store={store} git={createMockGitClient()} shell={shell} ui={ui} />
+    <GraphCanvas
+      store={store}
+      git={createMockGitClient()}
+      shell={shell}
+      editor={editor}
+      ui={ui}
+    />
   );
   const view = render(
     <>
@@ -45,9 +58,10 @@ export function renderGraphCanvas(
   return { ...view, canvasUi: ui };
 }
 
-function SubscribedGraphCanvas({ store, shell, ui, reviewNotes }: {
+function SubscribedGraphCanvas({ store, shell, editor, ui, reviewNotes }: {
   store: GraphSessionStore;
   shell: ShellClient;
+  editor: string;
   ui: CanvasUiState;
   reviewNotes: ReviewNotesStore;
 }) {
@@ -58,6 +72,7 @@ function SubscribedGraphCanvas({ store, shell, ui, reviewNotes }: {
         store={store}
         git={createMockGitClient()}
         shell={shell}
+        editor={editor}
         ui={ui}
         reviewNotes={reviewNotes}
       />

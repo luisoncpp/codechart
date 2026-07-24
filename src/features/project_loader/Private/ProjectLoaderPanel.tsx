@@ -1,22 +1,14 @@
 // @Architecture(descriptionShort="Top toolbar: project chip, load controls, menu slot, and status")
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { architectureViolations, projectGraphSummary } from "../../../domain/graph";
-import {
-  createMockProjectConfigClient,
-  type ProjectConfigClient,
-} from "../../../ipc/project-config-client";
-import { UnrealConfigModal } from "../../project_config";
 import { FolderPicker, pickFolder as defaultPickFolder } from "./pick-folder";
 import { FacadeBypassList } from "./FacadeBypassList";
 import { StatusText } from "./StatusText";
 import { projectBasename } from "./project-basename";
 
-const defaultConfigClient = createMockProjectConfigClient();
-
 interface ProjectLoaderPanelProps {
   store: GraphSessionStore;
-  configClient?: ProjectConfigClient;
   /** Injectable for tests; defaults to the native Tauri directory dialog. */
   pickFolder?: FolderPicker;
   /** Slot for toolbar dropdown menus (composed by the app shell). */
@@ -26,18 +18,15 @@ interface ProjectLoaderPanelProps {
 /** Top bar: pick a folder to analyze, reload it, and show session phase/summary. */
 export function ProjectLoaderPanel({
   store,
-  configClient = defaultConfigClient,
   pickFolder = defaultPickFolder,
   menus,
 }: ProjectLoaderPanelProps) {
   const session = useGraphSession(store);
-  const [configOpen, setConfigOpen] = useState(false);
   const path = session.getProjectRoot();
   const phase = session.getPhase();
   const graph = session.getGraph();
   const summary = graph ? projectGraphSummary(graph) : null;
   const bypasses = graph ? architectureViolations(graph) : [];
-  const hasCppModules = graph?.modules.some((module) => module.language === "cpp") ?? false;
 
   const open = async () => {
     const picked = await pickFolder();
@@ -67,18 +56,6 @@ export function ProjectLoaderPanel({
           ↻
         </button>
       )}
-      {path && hasCppModules && (
-        <button
-          type="button"
-          aria-label="Configure paths..."
-          title="Configure paths..."
-          onClick={() => setConfigOpen(true)}
-          disabled={phase === "loading"}
-          style={iconButtonStyle}
-        >
-          ⚙
-        </button>
-      )}
       {menus}
       <span style={{ marginLeft: "auto" }} />
       <StatusText
@@ -88,13 +65,6 @@ export function ProjectLoaderPanel({
         error={session.getError()}
       />
       {phase === "ready" && <FacadeBypassList violations={bypasses} />}
-      <UnrealConfigModal
-        open={configOpen}
-        root={path}
-        client={configClient}
-        onClose={() => setConfigOpen(false)}
-        onSaved={() => path && session.loadProject(path)}
-      />
     </header>
   );
 }

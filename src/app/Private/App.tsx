@@ -1,7 +1,10 @@
 // @Architecture(descriptionShort="Root React App component containing the layout and canvas")
 import { useEffect, useMemo, useState } from "react";
 import { createTauriAnalysisClient } from "../../ipc/analysis-client";
-import { createTauriProjectConfigClient } from "../../ipc/project-config-client";
+import {
+  DEFAULT_EDITOR,
+  createTauriProjectConfigClient,
+} from "../../ipc/project-config-client";
 import { createTauriGitClient } from "../../ipc/git-client";
 import { createTauriShellClient } from "../../ipc/shell-client";
 import { ElkLayoutEngine } from "../../domain/layout";
@@ -10,6 +13,7 @@ import { ReviewNotesStore, useReviewNotes } from "../../state/review-notes";
 import { createTauriReviewNotesClient } from "../../ipc/review-notes-client";
 import { ReviewNotesProvider } from "../../features/review_notes";
 import { ProjectLoaderPanel } from "../../features/project_loader";
+import { SettingsMenu } from "../../features/project_settings";
 import { CanvasUiState, GraphCanvas, SearchMenu, ViewMenu } from "../../features/graph_canvas";
 import {
   DEFAULT_INSPECTOR_WIDTH,
@@ -29,10 +33,30 @@ export function App() {
     [git],
   );
   const session = useGraphSession(store);
+  const projectRoot = session.getProjectRoot();
+  const graph = session.getGraph();
   const reviewNotes = useMemo(/*build review notes store*/ () => new ReviewNotesStore(createTauriReviewNotesClient()), []);
   useReviewNotes(reviewNotes);
   const canvasUi = useMemo(/*build canvas ui state*/ () => new CanvasUiState(), []);
   const ready = session.getPhase() === "ready";
+  const [editor, setEditor] = useState(DEFAULT_EDITOR);
+  const hasCppModules = graph?.modules.some((module) => module.language === "cpp") ?? false;
+
+  useEffect(() => {
+    if (!projectRoot) {
+      setEditor(DEFAULT_EDITOR);
+      return;
+    }
+    let active = true;
+    setEditor(DEFAULT_EDITOR);
+    config
+      .readProjectConfig(projectRoot)
+      .then((projectConfig) => active && setEditor(projectConfig.editor))
+      .catch(() => active && setEditor(DEFAULT_EDITOR));
+    return () => {
+      active = false;
+    };
+  }, [config, projectRoot]);
 
   useEffect(/*closeCanvasChromeOnPhaseChange*/ () => {
     const reset = () => canvasUi.reset();
@@ -53,12 +77,23 @@ export function App() {
     <div style={appShellStyle}>
       <ProjectLoaderPanel
         store={store}
-        configClient={config}
         menus={
-          ready ? (
+          projectRoot ? (
             <>
-              <ViewMenu store={store} ui={canvasUi} />
-              <SearchMenu ui={canvasUi} />
+              {ready && (
+                <>
+                  <ViewMenu store={store} ui={canvasUi} />
+                  <SearchMenu ui={canvasUi} />
+                </>
+              )}
+              <SettingsMenu
+                root={projectRoot}
+                editor={editor}
+                hasCppModules={hasCppModules}
+                client={config}
+                onEditorSaved={setEditor}
+                onCppConfigSaved={() => store.loadProject(projectRoot)}
+              />
             </>
           ) : null
         }
@@ -67,7 +102,7 @@ export function App() {
         <ReviewNotesProvider store={reviewNotes}>
         <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
           <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
-            <GraphCanvas store={store} git={git} shell={shell} ui={canvasUi} reviewNotes={reviewNotes} onShowReviewNotes={() => { setInspectorOpen(true); setActiveTab("review-notes"); }} />
+            <GraphCanvas store={store} git={git} shell={shell} editor={editor} ui={canvasUi} reviewNotes={reviewNotes} onShowReviewNotes={() => { setInspectorOpen(true); setActiveTab("review-notes"); }} />
           </div>
           {inspectorOpen ? (
             <InspectionPanel
