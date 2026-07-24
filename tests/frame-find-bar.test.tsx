@@ -18,12 +18,19 @@ function makeFrame(overrides: Partial<PreviewFrame> = {}): PreviewFrame {
     top: 0,
     left: 0,
     zIndex: 0,
+    pinned: false,
     ...overrides,
   };
 }
 
 function makeHandlers(): FrameHandlers {
-  return { onClose: vi.fn(), onMove: vi.fn(), onActivate: vi.fn(), onNavigate: vi.fn() };
+  return {
+    onClose: vi.fn(),
+    onMove: vi.fn(),
+    onActivate: vi.fn(),
+    onTogglePin: vi.fn(),
+    onNavigate: vi.fn(),
+  };
 }
 
 function renderWidget(frame: PreviewFrame, handlers = makeHandlers()) {

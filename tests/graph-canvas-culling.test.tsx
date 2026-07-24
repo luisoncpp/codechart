@@ -1,9 +1,10 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, expect, it, vi } from "vitest";
-import { waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import goldenGraph from "./fixtures/golden/project-graph.json";
 import type { ProjectGraph } from "../src/domain/graph";
 import { readyGraphStore, renderGraphCanvas } from "./helpers/flow-graph-canvas";
+import { clickSymbolOnCanvas } from "./helpers/click-symbol-on-canvas";
 
 const graph = goldenGraph as unknown as ProjectGraph;
 
@@ -37,5 +38,20 @@ describe("GraphCanvas viewport culling", () => {
       const nodes = container.querySelectorAll(".react-flow__node");
       expect(nodes).toHaveLength(graph.groups.length + graph.modules.length);
     });
+  });
+
+  it("keeps pinned previews open when the canvas reports an outside move", async () => {
+    const store = await readyGraphStore();
+    store.setZoomLevel(/*level=*/1.5);
+    await clickSymbolOnCanvas(store, "src/core/store.ts::TodoStore");
+    await waitFor(() =>
+      expect(document.querySelector(".symbol-widget")).toBeTruthy(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Pin frame" }));
+
+    const onMoveStart = recorded.props?.onMoveStart as (event: MouseEvent) => void;
+    act(() => onMoveStart(new MouseEvent("pointerdown")));
+
+    expect(document.querySelector(".symbol-widget")).toBeTruthy();
   });
 });

@@ -162,7 +162,7 @@ export function GraphCanvas({
             setContextMenu(null);
           }}
           onMoveStart={(event) => {
-            if (moveGuard.shouldClosePreview(event)) previews.closeAll();
+            if (moveGuard.shouldClosePreview(event)) previews.closeTransient();
           }}
           onMove={(_e, viewport) => controller.onViewportZoom(viewport.zoom)}
           onMoveEnd={(_e, viewport) => {

@@ -4,15 +4,31 @@ import type { Node as FlowNode } from "@xyflow/react";
 import type { ProjectGraph } from "../../../../domain/graph";
 import type { GraphDiffOverlay } from "../../../../domain/diff";
 import type { GraphSessionStore } from "../../../../state/graph-session";
-import { SymbolSourceWidget, type FrameHandlers } from "./SymbolSourceWidget";
-import { openFrame, bringToFront, moveFrame, type PreviewFrame } from "./frame-list";
+import { type FrameHandlers } from "./SymbolSourceWidget";
 import {
-  computePointWidgetPosition,
-  computeWidgetPosition,
-} from "./frame-placement";
+  openFrame,
+  bringToFront,
+  moveFrame,
+  togglePin,
+  closeUnpinned,
+  type PreviewFrame,
+} from "./frame-list";
+import { computePointWidgetPosition, computeWidgetPosition } from "./frame-placement";
 import { combinedSymbolTargets, sourcePrefetchIds } from "./imported-symbol-resolver";
 import { placeNextToFrame } from "./live-frame-placement";
 import { useClosePreviewFrames } from "./use-close-preview-frames";
+import { PreviewFramesView } from "./PreviewFramesView";
+import { withNewSources } from "./source-cache";
+import { createReviewNotePreview } from "./review-note-preview";
+
+interface PreviewFramesDeps {
+  store: GraphSessionStore;
+  graph: ProjectGraph | null;
+  diffOverlay: GraphDiffOverlay | null;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  /** The live project-search query; a new frame seeds its find bar with it. */
+  getFindQuery: () => string;
+}
 
 interface PreviewFramesDeps {
   store: GraphSessionStore;
@@ -30,17 +46,14 @@ interface DocumentPreviewRequest {
   y: number;
 }
 
-interface ReviewPreviewRequest {
-  path: string;
-  startLine: number;
-  endLine: number;
-}
-
 export function usePreviewFrames(deps: PreviewFramesDeps) {
   const { store, graph, diffOverlay, containerRef, getFindQuery } = deps;
   const [frames, setFrames] = useState<readonly PreviewFrame[]>([]);
   const [moduleSources, setModuleSources] = useState<ReadonlyMap<string, string>>(new Map());
   const nextId = useRef(1);
+
+  const framesRef = useRef(frames);
+  framesRef.current = frames;
 
   /** Warm sources for a module + its imports so function/method names resolve. */
   const prefetchSources = useCallback(
@@ -57,9 +70,20 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
   );
 
   const open = useCallback(
-    (base: readonly PreviewFrame[], frame: Omit<PreviewFrame, "id" | "zIndex">) => {
+    (
+      mode: "close-unpinned" | "keep-all",
+      frame: Omit<PreviewFrame, "id" | "zIndex" | "pinned">,
+    ) => {
       const initialFindQuery = getFindQuery() || undefined;
-      setFrames(openFrame(base, { ...frame, initialFindQuery, id: nextId.current++ }));
+      setFrames((prev) => {
+        const base = mode === "close-unpinned" ? closeUnpinned(prev) : prev;
+        return openFrame(base, {
+          ...frame,
+          pinned: false,
+          initialFindQuery,
+          id: nextId.current++,
+        });
+      });
     },
     [getFindQuery],
   );
@@ -82,7 +106,7 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
       );
       const symbolName = (node.data?.label as string) || "";
       void prefetchSources(moduleId);
-      open(/*base=*/ [], {
+      open("close-unpinned", {
         moduleId,
         moduleLabel: module.label,
         symbolName,
@@ -104,7 +128,7 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
       const sourceText = await store.fetchModuleSource(module.id);
       const pos = computePointWidgetPosition(request, container.getBoundingClientRect());
       void prefetchSources(module.id);
-      open(/*base=*/ [], {
+      open("close-unpinned", {
         moduleId: module.id,
         moduleLabel: module.label,
         symbolName: null,
@@ -118,25 +142,16 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     [containerRef, graph, open, prefetchSources, store],
   );
 
-  const openReviewNotePreview = useCallback(async (request: ReviewPreviewRequest) => {
-    const container = containerRef.current;
-    const module = store.getGraph()?.modules.find((item) => item.path === request.path);
-    if (!container || !module) return;
-    const sourceText = await store.fetchModuleSource(module.id);
-    const pos = computePointWidgetPosition({ x: container.getBoundingClientRect().left + 24, y: container.getBoundingClientRect().top + 24 }, container.getBoundingClientRect());
-    const activeRange = { startLine: request.startLine, endLine: request.endLine };
-    setFrames((previous) => {
-      const existing = previous.find((frame) => frame.moduleId === module.id && frame.symbolName === null);
-      if (existing) return openFrame(previous.map((frame) => frame.id === existing.id ? { ...frame, activeRange } : frame), { ...existing, activeRange, id: existing.id });
-      return openFrame(previous, { moduleId: module.id, moduleLabel: module.label, symbolName: null, modulePath: module.path, description: module.annotation?.descriptionLong || module.annotation?.descriptionShort, color: "#64748b", sourceText, activeRange, ...pos, id: nextId.current++ });
-    });
-  }, [containerRef, store]);
+  const openReviewNotePreview = useMemo(
+    () => createReviewNotePreview({ containerRef, store, nextId, setFrames }),
+    [containerRef, store],
+  );
 
   /** Clickable symbol (import, function, or method) clicked inside a frame. */
   const openFromSymbolClick = useCallback(
     async (sourceFrameId: number, symbolName: string) => {
       const container = containerRef.current;
-      const sourceFrame = frames.find((f) => f.id === sourceFrameId);
+      const sourceFrame = framesRef.current.find((f) => f.id === sourceFrameId);
       if (!container || !graph || !sourceFrame) return;
       const target = combinedSymbolTargets(graph, sourceFrame.moduleId, moduleSources).get(symbolName);
       if (!target) return;
@@ -144,9 +159,12 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
       if (!targetModule) return;
       const sourceText = await store.fetchModuleSource(target.moduleId);
       void prefetchSources(target.moduleId);
-      const pos = placeNextToFrame(sourceFrameId, container);
-      if (!pos) return;
-      open(frames, {
+      const containerBox = container.getBoundingClientRect();
+      const pos = placeNextToFrame(sourceFrameId, container) ?? computePointWidgetPosition(
+        { x: containerBox.left + 24, y: containerBox.top + 24 },
+        containerBox,
+      );
+      open("keep-all", {
         moduleId: target.moduleId,
         moduleLabel: targetModule.label,
         symbolName,
@@ -156,18 +174,22 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
         ...pos,
       });
     },
-    [graph, store, containerRef, frames, open, moduleSources, prefetchSources],
+    [graph, store, containerRef, open, moduleSources, prefetchSources],
   );
 
-  const closeAll = useCallback(() => setFrames([]), []);
+  const closeTransient = useCallback(
+    () => setFrames((previous) => closeUnpinned(previous)),
+    [],
+  );
 
-  useClosePreviewFrames(frames.length > 0, closeAll);
+  useClosePreviewFrames(frames.length > 0, closeTransient);
 
   const handlers = useMemo<FrameHandlers>(
     () => ({
       onClose: (id) => setFrames((prev) => prev.filter((f) => f.id !== id)),
       onMove: (id, pos) => setFrames((prev) => moveFrame(prev, id, pos)),
       onActivate: (id) => setFrames((prev) => bringToFront(prev, id)),
+      onTogglePin: (id) => setFrames((prev) => togglePin(prev, id)),
       onNavigate: openFromSymbolClick,
     }),
     [openFromSymbolClick],
@@ -187,33 +209,11 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     [graph, frames, moduleSources],
   );
 
-  const framesView = (
-    <>
-      {frames.map((frame) => (
-        <SymbolSourceWidget
-          key={frame.id}
-          frame={frame}
-          clickableSymbols={clickableByModule.get(frame.moduleId) ?? EMPTY_NAMES}
-          fileDiff={diffOverlay?.lineDiffByPath.get(frame.modulePath)}
-          handlers={handlers}
-        />
-      ))}
-    </>
-  );
-
-  return { openFromSymbolNode, openDocumentPreview, openReviewNotePreview, closeAll, framesView };
-}
-
-const EMPTY_NAMES: ReadonlySet<string> = new Set();
-
-/** Merge fetched sources; returns the previous map untouched when nothing is new. */
-function withNewSources(
-  prev: ReadonlyMap<string, string>,
-  entries: readonly (readonly [string, string])[],
-): ReadonlyMap<string, string> {
-  const fresh = entries.filter(([id, text]) => text && prev.get(id) !== text);
-  if (fresh.length === 0) return prev;
-  const next = new Map(prev);
-  for (const [id, text] of fresh) next.set(id, text);
-  return next;
+  return {
+    openFromSymbolNode,
+    openDocumentPreview,
+    openReviewNotePreview,
+    closeTransient,
+    framesView: <PreviewFramesView frames={frames} clickableByModule={clickableByModule} diffOverlay={diffOverlay} handlers={handlers} />,
+  };
 }

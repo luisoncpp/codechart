@@ -15,6 +15,7 @@ export interface FrameHandlers {
   onClose: (id: number) => void;
   onMove: (id: number, pos: Position) => void;
   onActivate: (id: number) => void;
+  onTogglePin: (id: number) => void;
   onNavigate: (id: number, symbolName: string) => void;
 }
 
@@ -98,7 +99,7 @@ export function SymbolSourceWidget({
   return (
     <div
       ref={frameRef}
-      className="symbol-widget"
+      className={frame.pinned ? "symbol-widget symbol-widget--pinned" : "symbol-widget"}
       data-frame-id={frame.id}
       tabIndex={-1}
       style={{ top: frame.top, left: frame.left, zIndex: 1000 + frame.zIndex }}
@@ -114,6 +115,19 @@ export function SymbolSourceWidget({
           <div className="symbol-widget__path">{frame.modulePath}</div>
         </div>
         <div className="symbol-widget__actions">
+          <button
+            className={
+              frame.pinned
+                ? "symbol-widget__pin symbol-widget__pin--active"
+                : "symbol-widget__pin"
+            }
+            onClick={() => handlers.onTogglePin(frame.id)}
+            aria-label={frame.pinned ? "Unpin frame" : "Pin frame"}
+            aria-pressed={frame.pinned}
+            title={frame.pinned ? "Unpin frame" : "Pin frame"}
+          >
+            📌
+          </button>
           <button
             className={
               search.barOpen

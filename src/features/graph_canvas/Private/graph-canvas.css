@@ -228,6 +228,11 @@
   animation: widget-fade-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.symbol-widget--pinned {
+  border-color: #f59e0b;
+  box-shadow: 0 10px 15px -3px rgb(180 83 9 / 0.16), 0 4px 6px -4px rgb(180 83 9 / 0.16);
+}
+
 @keyframes widget-fade-in {
   from {
     opacity: 0;
@@ -305,6 +310,36 @@
 .symbol-widget__find-toggle--active:hover {
   color: #2563eb;
   background: #dbeafe;
+}
+
+.symbol-widget__pin {
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  border-radius: 4px;
+  filter: grayscale(1);
+  opacity: 0.75;
+  transition: color 0.1s, background-color 0.1s, filter 0.1s, opacity 0.1s;
+}
+
+.symbol-widget__pin:hover {
+  color: #92400e;
+  background: #fef3c7;
+  /* The pin is an emoji; reduced saturation keeps unpinning visible under the cursor. */
+  filter: saturate(0.5);
+  opacity: 1;
+}
+
+.symbol-widget__pin--active,
+.symbol-widget__pin--active:hover {
+  color: #b45309;
+  background: #fef3c7;
+  filter: none;
+  opacity: 1;
 }
 
 .symbol-widget__find {

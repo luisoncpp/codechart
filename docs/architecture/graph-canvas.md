@@ -303,7 +303,7 @@ hidden by zoom collapse.
   Modules inherit a parent group's disconnect (ancestor chain). Inspection still lists imports on the raw graph.
 - **Source preview frames (document or symbol, multi-frame):** owned by the nested deep module
   `features/graph_canvas/Private/preview_frames/` (public interface: `usePreviewFrames`, `findSymbolLine`;
-  `GraphCanvas` renders `framesView` and wires `openFromSymbolNode`/`closeAll`). Clicking an exported
+  `GraphCanvas` renders `framesView` and wires `openFromSymbolNode`/`closeTransient`). Clicking an exported
   symbol node selects its parent module and opens a resizable, scrollable, **draggable** (header bar)
   frame next to the symbol, centered on the symbol's definition line (centering scrolls only the frame
   body — never `scrollIntoView`, which would scroll the window). Inside a frame, clickable identifiers
@@ -316,8 +316,9 @@ hidden by zoom collapse.
   opens the defining module's frame (possibly the same module, for local functions/methods) **right**
   of the clicked frame, else **below**, else **above**, else right-with-overlap
   (`placeAdjacentFrame`, pure; live DOM rects honor user resize/drag). Same module+symbol dedupes to a
-  bring-to-front. Any click outside every frame closes them all; clicks inside any frame (scrollbars
-  included) close nothing; user canvas pan/zoom closes all. Review Note navigation preserves its
+  bring-to-front. Each frame exposes a pin toggle in its header; an outside click closes only unpinned
+  frames, while pinned frames remain open. Clicks inside any frame (scrollbars included) close nothing;
+  direct close closes that frame, and canvas move-start events close only unpinned frames. Review Note navigation preserves its
   preview during the programmatic move that centers the owning module. **Open file preview** in a module or symbol
   context menu opens the parent module at the cursor without entering L2. The document frame starts
   at the top and composes the same preferred module description plus complete highlighted source as

@@ -3,6 +3,8 @@ import {
   openFrame,
   bringToFront,
   moveFrame,
+  togglePin,
+  closeUnpinned,
   type PreviewFrame,
 } from "../src/features/graph_canvas/Private/preview_frames/frame-list";
 
@@ -16,6 +18,7 @@ function makeFrame(id: number, moduleId: string, symbolName: string): PreviewFra
     top: 0,
     left: 0,
     zIndex: id,
+    pinned: false,
   };
 }
 
@@ -62,5 +65,24 @@ describe("moveFrame", () => {
     const next = moveFrame(base, 2, { top: 40, left: 50 });
     expect(next.find((f) => f.id === 2)).toMatchObject({ top: 40, left: 50 });
     expect(next.find((f) => f.id === 1)).toMatchObject({ top: 0, left: 0 });
+  });
+});
+
+describe("pinning", () => {
+  it("toggles one frame without changing the others", () => {
+    const next = togglePin(base, 1);
+    expect(next.find((f) => f.id === 1)?.pinned).toBe(true);
+    expect(next.find((f) => f.id === 2)?.pinned).toBe(false);
+  });
+
+  it("closes unpinned frames and keeps pinned frames", () => {
+    const pinned = togglePin(base, 2);
+    const next = closeUnpinned(pinned);
+    expect(next.map((frame) => frame.id)).toEqual([2]);
+  });
+
+  it("keeps the same list when every frame is pinned", () => {
+    const pinned = togglePin(togglePin(base, 1), 2);
+    expect(closeUnpinned(pinned)).toBe(pinned);
   });
 });

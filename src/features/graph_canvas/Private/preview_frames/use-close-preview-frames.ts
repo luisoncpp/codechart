@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
-/** Any click landing outside every open frame closes them all. */
-export function useClosePreviewFrames(active: boolean, closeAll: () => void) {
+/** Any click landing outside every open frame closes only unpinned frames. */
+export function useClosePreviewFrames(active: boolean, closeUnpinned: () => void) {
   useEffect(() => {
     if (!active) return;
     const handler = (e: MouseEvent) => {
@@ -11,7 +11,7 @@ export function useClosePreviewFrames(active: boolean, closeAll: () => void) {
       for (const widget of widgets) {
         if (widget.contains(e.target as globalThis.Node)) return;
       }
-      closeAll();
+      closeUnpinned();
     };
     const timer = setTimeout(/*attachAfterOpeningClick*/ () => {
       document.addEventListener("click", handler);
@@ -20,5 +20,5 @@ export function useClosePreviewFrames(active: boolean, closeAll: () => void) {
       clearTimeout(timer);
       document.removeEventListener("click", handler);
     };
-  }, [active, closeAll]);
+  }, [active, closeUnpinned]);
 }
