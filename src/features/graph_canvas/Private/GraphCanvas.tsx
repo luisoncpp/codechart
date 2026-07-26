@@ -6,7 +6,12 @@ import "./graph-canvas.css";
 import { projectGraph } from "../../../domain/graph";
 import { applyDiffOverlay } from "../../../domain/diff";
 import type { RFNode, RenderOptions } from "../../../domain/graph";
-import { edgeFocusForSelection, computeHeatProjection, isTestModule } from "../../../domain/graph";
+import {
+  edgeFocusForSelection,
+  computeHeatProjection,
+  groupLocTotals,
+  isTestModule,
+} from "../../../domain/graph";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { DiffModal, DiffOverlayBar } from "../../diff_visualizer";
 import type { GitClient } from "../../../ipc/git-client";
@@ -91,16 +96,30 @@ export function GraphCanvas({
   const cacheVersion = session.getSourceCacheVersion();
   const groupDocCacheVersion = session.getGroupDocCacheVersion();
   const reviewNotesDocument = reviewNotes?.getDocument();
+  // Counted modules for full-graph overlays: what the canvas actually draws.
+  const visibleModuleIds = useMemo(
+    /*collect drawn module ids*/ () =>
+      new Set(
+        (heatGraph?.modules ?? [])
+          .filter((m) => !hideTests || !isTestModule(m.path))
+          .map((m) => m.id),
+      ),
+    [heatGraph, hideTests],
+  );
   const heatOptions = useMemo(() => {
     if (!heatGraph || !heatmapEnabled || diffOverlay) return undefined;
-    const moduleIds = new Set(
-      heatGraph.modules
-        .filter((m) => !hideTests || !isTestModule(m.path))
-        .map((m) => m.id),
-    );
-    const projection = computeHeatProjection(heatGraph, heatmapMode, moduleIds);
+    const projection = computeHeatProjection(heatGraph, heatmapMode, visibleModuleIds);
     return { ...projection, mode: heatmapMode };
-  }, [heatGraph, heatmapEnabled, heatmapMode, hideTests, diffOverlay]);
+  }, [heatGraph, heatmapEnabled, heatmapMode, visibleModuleIds, diffOverlay]);
+  // Group totals need the full graph: the reduced one drops collapsed modules.
+  const lineCountsVisible = uiState.getLineCountsVisible();
+  const locTotals = useMemo(
+    /*sum group-tree LOC*/ () =>
+      heatGraph && lineCountsVisible
+        ? groupLocTotals(heatGraph, visibleModuleIds)
+        : undefined,
+    [heatGraph, visibleModuleIds, lineCountsVisible],
+  );
 
   const projected = useMemo(
     /*reproject on model/zoom change*/ () => {
@@ -113,13 +132,14 @@ export function GraphCanvas({
         snippets: level === 2 ? session.getSourceCache() : undefined,
         groupDocs: level === 2 ? session.getGroupDocCache() : undefined,
         heat: heatOptions,
+        locTotals,
       };
       // cacheVersion busts memo when L2 caches update without session identity change
       void cacheVersion;
       void groupDocCacheVersion;
       return projectGraph(graph, layout, options);
     },
-    [graph, layout, level, session, cacheVersion, groupDocCacheVersion, heatOptions],
+    [graph, layout, level, session, cacheVersion, groupDocCacheVersion, heatOptions, locTotals],
   );
 
   const displayProjected = useMemo(() => {

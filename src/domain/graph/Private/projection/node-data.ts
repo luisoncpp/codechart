@@ -39,6 +39,8 @@ export interface GroupNodeData extends Record<string, unknown> {
   heatMode?: "activity" | "risk";
   heatmapActive?: boolean;
   reviewNoteCount?: number;
+  /** Lines of code summed over this group's module tree (counter badge). */
+  loc?: number;
 }
 
 /** Data carried by a custom module node. */
@@ -74,6 +76,8 @@ export interface ModuleNodeData extends Record<string, unknown> {
   /** True while the heatmap overlay is enabled (cold nodes use neutral chrome). */
   heatmapActive?: boolean;
   reviewNoteCount?: number;
+  /** Lines of code in this module's source (counter badge). */
+  loc?: number;
 }
 
 /** Data carried by an exported-symbol box nested under a module. */

@@ -74,3 +74,4 @@ export {
   architectureViolations,
 } from "./Private/selectors";
 export type { EdgeFocus } from "./Private/selectors";
+export { groupLocTotals, formatLoc } from "./Private/loc-totals";

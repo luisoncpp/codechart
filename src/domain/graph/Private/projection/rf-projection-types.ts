@@ -18,6 +18,9 @@ export interface RenderOptions {
   groupDocs?: Map<string, string>;
   /** Normalized heat scores when the heatmap overlay is enabled. */
   heat?: HeatProjection & { mode: "activity" | "risk" };
+  /** groupId → LOC of its module tree (`groupLocTotals` over the **full** graph);
+   *  presence turns the module/group line counters on (View ▾ → Line counts). */
+  locTotals?: Map<string, number>;
 }
 
 /** Shared projection state passed to the per-node builders (keeps arity ≤ 3). */

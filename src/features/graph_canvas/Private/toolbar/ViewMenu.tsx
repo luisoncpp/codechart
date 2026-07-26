@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Toolbar View menu: test filter, heatmap toggles, and diff entry")
+// @Architecture(descriptionShort="Toolbar View menu: test filter, line counts, heatmap toggles, and diff entry")
 import {
   DropdownMenu,
   MenuActionItem,
@@ -8,7 +8,7 @@ import {
 } from "../../../../ui/dropdown_menu";
 import { GraphSessionStore, useGraphSession } from "../../../../state/graph-session";
 import type { HeatmapMode } from "../../../../domain/graph";
-import { CanvasUiState } from "../controller/canvas-ui-state";
+import { CanvasUiState, useCanvasUiState } from "../controller/canvas-ui-state";
 
 interface ViewMenuProps {
   store: GraphSessionStore;
@@ -18,6 +18,7 @@ interface ViewMenuProps {
 /** Toolbar dropdown for canvas view options (hide tests, heatmap, diff overlay). */
 export function ViewMenu({ store, ui }: ViewMenuProps) {
   const session = useGraphSession(store);
+  const uiState = useCanvasUiState(ui);
   const gitAvailable = session.getIsGitRepo() === true;
   const loading = session.getPhase() === "loading";
   const heatmapEnabled = session.getHeatmapEnabled();
@@ -30,6 +31,11 @@ export function ViewMenu({ store, ui }: ViewMenuProps) {
         label="Hide tests"
         checked={session.getHideTests()}
         onChange={(hide) => store.setHideTests(hide)}
+      />
+      <MenuCheckboxItem
+        label="Line counts"
+        checked={uiState.getLineCountsVisible()}
+        onChange={(visible) => ui.setLineCountsVisible(visible)}
       />
       <MenuCheckboxItem
         label={loading ? "Computing heatmap…" : "Heatmap"}

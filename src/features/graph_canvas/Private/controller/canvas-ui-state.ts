@@ -15,6 +15,7 @@ export class CanvasUiState {
   private findBarMode: FindBarMode = "content";
   private findQuery = "";
   private diffModalOpen = false;
+  private lineCountsVisible = false;
   private listeners: Listener[] = [];
 
   getFindBarOpen(): boolean {
@@ -50,6 +51,17 @@ export class CanvasUiState {
    */
   setFindQuery(query: string) {
     this.findQuery = query;
+  }
+
+  /** Off by default: the LOC badges are opt-in chrome, not part of the map. */
+  getLineCountsVisible(): boolean {
+    return this.lineCountsVisible;
+  }
+
+  setLineCountsVisible(visible: boolean) {
+    if (this.lineCountsVisible === visible) return;
+    this.lineCountsVisible = visible;
+    this.emit();
   }
 
   getDiffModalOpen(): boolean {

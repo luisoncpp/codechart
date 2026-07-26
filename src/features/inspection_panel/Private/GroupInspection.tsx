@@ -7,6 +7,7 @@ import {
   groupImportsOf,
   groupImportedBy,
   diagnosticsForGroup,
+  groupLocTotals,
 } from "../../../domain/graph";
 import { EdgeList } from "./EdgeList";
 import { MetadataSection } from "./MetadataSection";
@@ -42,6 +43,7 @@ export function GroupInspection({
         <Row label="Parent" value={parent?.label ?? "—"} />
         <Row label="Facades" value={facadeLabel(group)} />
         <Row label="Modules" value={String(modules.length)} />
+        <Row label="LOC" value={String(groupLocTotals(graph).get(group.id) ?? 0)} />
         {children.length > 0 && (
           <Row label="Child groups" value={children.map((g) => g.label).join(", ")} />
         )}

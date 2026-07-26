@@ -14,6 +14,8 @@ import { L2DocumentNode } from "../l2/L2DocumentNode";
 
 import { ModuleHeader } from "./ModuleHeader";
 
+import { LocBadge } from "./LocBadge";
+
 import { moduleDiffBorder, moduleDiffOpacity } from "./module-diff-style";
 
 import { useZoomCounterScale } from "./use-zoom-counter-scale";
@@ -137,6 +139,8 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
         </div>
 
       )}
+
+      <LocBadge loc={data.loc} scale={zoomScale} />
 
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
 

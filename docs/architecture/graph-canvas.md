@@ -43,12 +43,12 @@ Both deep modules organize their implementation into subfolders, each a config s
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. `FocusNode` centers the viewport for inspector and Review Note navigation. Sets `onlyRenderVisibleElements` so only viewport-intersecting nodes stay mounted — without it, the one-node-per-symbol swarm at L1.5 made panning composite-bound. Safe with `EdgeLayer`: culling is render-only, and the edge layer reads the projected `nodes` prop + store `nodeLookup`, which culling never filters, so edges to off-screen nodes keep drawing. |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules + groups) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
 | `SelectionNavigation` | `features/graph_canvas` | Top-left back/forward controls plus `Alt+Left` / `Alt+Right`; disabled states come from the session history pointer. |
-| `ViewMenu` / `SearchMenu` | `features/graph_canvas` (facade exports) | Toolbar dropdowns (rendered by `App` into `ProjectLoaderPanel`'s `menus` slot, built on the shared `src/ui/dropdown_menu` module). View ▾: Hide tests, Heatmap + Activity/Risk, Visualize diff…; Search ▾: Search project (Ctrl+Shift+F), Go to file (Ctrl+P), Go to symbol. |
-| `CanvasUiState` | `features/graph_canvas/Private/controller/canvas-ui-state.ts` (facade export) | Transient UI flags (`findBarOpen`, `findBarMode`, `diffModalOpen`) shared between the toolbar menus and `GraphCanvas`; kept out of `GraphSessionStore`. `App` instantiates it and resets on `phase-changed`. |
+| `ViewMenu` / `SearchMenu` | `features/graph_canvas` (facade exports) | Toolbar dropdowns (rendered by `App` into `ProjectLoaderPanel`'s `menus` slot, built on the shared `src/ui/dropdown_menu` module). View ▾: Hide tests, Line counts, Heatmap + Activity/Risk, Visualize diff…; Search ▾: Search project (Ctrl+Shift+F), Go to file (Ctrl+P), Go to symbol. |
+| `CanvasUiState` | `features/graph_canvas/Private/controller/canvas-ui-state.ts` (facade export) | Transient UI flags (`findBarOpen`, `findBarMode`, `diffModalOpen`, `lineCountsVisible`) shared between the toolbar menus and `GraphCanvas`; kept out of `GraphSessionStore`. `App` instantiates it and resets on `phase-changed`. |
 | `HeatmapLegend` | `features/graph_canvas` | Top-right gradient chip, shown only while the heatmap is on (below `LevelBadge`). Its timeframe label opens `MetricsWindowModal`; the heatmap toggles themselves live in the View menu. |
 | `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, opens the absolute path in the project-configured editor, copies the graph-relative path, or reveals the file via `ShellClient`. |
 | `LineTokenizer` / `tokenizeCode` | `features/graph_canvas/Private/highlight/line-tokenizer.ts`, `highlighter.ts` | Lexical highlighter. `LineTokenizer` tokenizes **one line at a time** and is the only stateful piece: it remembers an open block comment (`getLanguageForFile().blockComment`, `/* */` for every language except Python/`.prefab`) so `/* … */` spanning lines stays `hl-comment`. Renderers that emit rows independently (`DiffCodeLines`) **must reuse one instance per document, in line order**; `remove` diff rows come from the before-snapshot and are rendered plain, so they never touch the state. `tokenizeCode(code, path)` is the stateless whole-text wrapper. Consequence: multi-line **strings** (template literals, Python docstrings) are still tokenized per line and do not carry. |
-| `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
+| `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, LOC (module-tree total), child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
 
 ## Aesthetic rules (the visual gate)
 
@@ -135,6 +135,20 @@ Both deep modules organize their implementation into subfolders, each a config s
   collapsed bird's-eye boxes match expanded L1 tints. Every module/group gets a score in
   `[0, 1]` (inactive = `0`, coldest gradient stop); brand colors are never used while the
   overlay is on. Visual stack: diff > selection > violation > heat > default chrome.
+- **Line counters (opt-in):** with **View ▾ → Line counts** on (`CanvasUiState.lineCountsVisible`,
+  **off by default**, kept out of `GraphSessionStore` like the other view chrome), every module and
+  group box carries a quiet lower-right LOC badge
+  (`LocBadge` + `formatLoc`: exact under 1000, else `1.2k` / `12k`). A module shows
+  `ModuleMetrics.loc`; a group shows the **sum of its whole module tree**, so a parent includes
+  nested subgroups. Totals come from `groupLocTotals(graph, visibleModuleIds)`
+  (`domain/graph/Private/loc-totals.ts`, pure) computed by `GraphCanvas` over the **full** graph and
+  passed as `RenderOptions.locTotals` **only while the toggle is on** (its presence is what turns the
+  badges on, like `snippets` for L2) — the reduced graph has no modules under a collapsed group, so
+  computing inside projection would zero every L0 card. The `visibleModuleIds` set (shared with the
+  heat projection) keeps the total in step with **Hide tests**. The badge is **absolutely positioned**:
+  the label/description fitters measure the box, so an in-flow counter would shift every fitted font
+  size. L2 document nodes render no badge. `GroupInspection` shows the same tree total as a `LOC` row
+  (modules already had one).
 - **Icons:** sparing, name → glyph map (`icon-map.tsx`); unknown names render no glyph.
 
 ## Semantic zoom L0/L1/L2 + metadata (Phase 10)

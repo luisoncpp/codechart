@@ -6,6 +6,7 @@ import { expandedHeaderScale } from "../../../../domain/layout";
 import { iconFontSize, iconGlyph } from "./icon-map";
 import { ConnectionToggle } from "./ConnectionToggle";
 import { ChevronIcon } from "./ChevronIcon";
+import { LocBadge } from "./LocBadge";
 import { GroupL2Description } from "../descriptions/GroupL2Description";
 import { useZoomCounterScale } from "./use-zoom-counter-scale";
 import { groupShellStyle, groupTextColors } from "./heat-node-styles";
@@ -63,6 +64,7 @@ export function GroupNodeView({ data, width, height }: NodeProps<GroupRFNode>) {
           )}
         </>
       )}
+      <LocBadge loc={data.loc} scale={scale} />
       <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
     </div>
   );

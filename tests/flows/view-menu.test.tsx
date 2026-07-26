@@ -34,6 +34,23 @@ describe("flow: view-menu", () => {
     expect(screen.getByRole("menu")).toBeInTheDocument();
   });
 
+  it("Line counts starts off and reveals the LOC badges when checked", async () => {
+    const store = await readyGraphStore();
+    const { container, canvasUi } = renderGraphCanvas(store);
+    openViewMenu();
+
+    const item = screen.getByRole("menuitemcheckbox", { name: "Line counts" });
+    expect(item).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(item);
+
+    expect(canvasUi.getLineCountsVisible()).toBe(true);
+    expect(item).toHaveAttribute("aria-checked", "true");
+    await waitFor(() =>
+      expect(container.querySelectorAll("[data-loc-badge]").length).toBeGreaterThan(0),
+    );
+  });
+
   it("disables the Heatmap item when the project is not a git repository", async () => {
     const store = await readyGraphStore();
     renderGraphCanvas(store);
