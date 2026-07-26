@@ -109,34 +109,50 @@ const defaultRules: Rule[] = [
   ...tokenTailRules(),
 ];
 
-export function getRulesForFile(filepath: string): Rule[] {
+/** Delimiters of a comment that may span several lines. */
+export interface BlockComment {
+  open: string;
+  close: string;
+}
+
+export interface Language {
+  rules: Rule[];
+  /** Absent when the language has no multi-line comment form (e.g. Python). */
+  blockComment?: BlockComment;
+}
+
+const SLASH_STAR: BlockComment = { open: "/*", close: "*/" };
+
+const cStyle = (rules: Rule[]): Language => ({ rules, blockComment: SLASH_STAR });
+
+export function getLanguageForFile(filepath: string): Language {
   const ext = filepath.split(".").pop()?.toLowerCase();
   switch (ext) {
     case "ts":
     case "tsx":
     case "js":
     case "jsx":
-      return jsRules;
+      return cStyle(jsRules);
     case "rs":
-      return rustRules;
+      return cStyle(rustRules);
     case "cs":
-      return csharpRules;
+      return cStyle(csharpRules);
     case "prefab":
-      return defaultRules;
+      return { rules: defaultRules };
     case "css":
-      return cssRules;
+      return cStyle(cssRules);
     case "cpp":
     case "cc":
     case "cxx":
     case "h":
     case "hpp":
     case "hxx":
-      return cppRules;
+      return cStyle(cppRules);
     case "py":
-      return pythonRules;
+      return { rules: pythonRules };
     case "go":
-      return goRules;
+      return cStyle(goRules);
     default:
-      return defaultRules;
+      return cStyle(defaultRules);
   }
 }

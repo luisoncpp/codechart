@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="Lightweight token-based syntax highlighter for multiple languages")
 
-import { getRulesForFile } from "./highlighter-language-rules";
+import { LineTokenizer } from "./line-tokenizer";
 
 export interface Token {
   type: string;
@@ -17,43 +17,6 @@ export interface Rule {
  * Returns an array of lines, where each line is an array of Token objects.
  */
 export function tokenizeCode(code: string, filepath: string): Token[][] {
-  const rules = getRulesForFile(filepath);
-  const tokens: Token[] = [];
-  let remaining = code;
-
-  const maxIterations = code.length * 2 + 100;
-  let iterations = 0;
-
-  while (remaining.length > 0 && iterations < maxIterations) {
-    iterations++;
-    let matched = false;
-    for (const rule of rules) {
-      const match = remaining.match(rule.regex);
-      if (match) {
-        tokens.push({ type: rule.type, text: match[0] });
-        remaining = remaining.slice(match[0].length);
-        matched = true;
-        break;
-      }
-    }
-    if (!matched) {
-      tokens.push({ type: "text", text: remaining[0] });
-      remaining = remaining.slice(1);
-    }
-  }
-
-  const lines: Token[][] = [[]];
-  for (const token of tokens) {
-    const parts = token.text.split("\n");
-    for (let i = 0; i < parts.length; i++) {
-      if (i > 0) {
-        lines.push([]);
-      }
-      if (parts[i].length > 0) {
-        lines[lines.length - 1].push({ type: token.type, text: parts[i] });
-      }
-    }
-  }
-
-  return lines;
+  const tokenizer = new LineTokenizer(filepath);
+  return code.split("\n").map((line) => tokenizer.tokenizeLine(line));
 }

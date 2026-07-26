@@ -4,7 +4,8 @@ import {
   type DiffDisplayRow,
   type FileLineDiff,
 } from "../../../../domain/diff";
-import { tokenizeCode, type Token } from "./highlighter";
+import type { Token } from "./highlighter";
+import { LineTokenizer } from "./line-tokenizer";
 import { segmentTokenText, type LineMatchRange } from "./match-highlight";
 import { InlineReviewNotes, useReviewNotesStore } from "../../../review_notes";
 
@@ -44,10 +45,7 @@ export function DiffCodeLines({
     () => buildModuleDiffDisplay(source, fileDiff),
     [source, fileDiff],
   );
-  const tokenized = useMemo(
-    () => rows.map((row) => tokenizeRow(row, path)),
-    [rows, path],
-  );
+  const tokenized = useMemo(() => tokenizeRows(rows, path), [rows, path]);
 
   return (
     <>
@@ -76,11 +74,14 @@ export function DiffCodeLines({
   );
 }
 
-function tokenizeRow(row: DiffDisplayRow, path: string): Token[] {
-  if (row.kind === "remove") {
-    return [{ type: "plain", text: row.text }];
-  }
-  return tokenizeCode(row.text, path)[0] ?? [];
+/** One tokenizer for the whole document so block comments span rows. */
+function tokenizeRows(rows: readonly DiffDisplayRow[], path: string): Token[][] {
+  const tokenizer = new LineTokenizer(path);
+  return rows.map((row) =>
+    row.kind === "remove"
+      ? [{ type: "plain", text: row.text }]
+      : tokenizer.tokenizeLine(row.text),
+  );
 }
 
 interface DiffCodeLineProps {

@@ -21,6 +21,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [per-line-tokenizing-drops-multi-line-syntax.md](./per-line-tokenizing-drops-multi-line-syntax.md) | A stateless lexer called per diff row cannot see a later `*/`; test the tokenizer at the renderer's granularity | 2026-07-26 |
 | [client-rects-are-visual-pixels-scrolltop-is-layout.md](./client-rects-are-visual-pixels-scrolltop-is-layout.md) | An open animation's `scale()` makes client rects disagree with `scrollTop`; the centering error grows with distance to the target | 2026-07-26 |
 | [l0-collapses-ancestors-so-per-group-expand-needs-the-chain.md](./l0-collapses-ancestors-so-per-group-expand-needs-the-chain.md) | L0 collapses every ancestor too, so expanding one group must walk the chain; layout reduction ≠ display reduction | 2026-07-26 |
 | [tauri-opener-default-excludes-open-path.md](./tauri-opener-default-excludes-open-path.md) | `openPath` needs both command permission and a matching path/application scope; surface launch failures | 2026-07-24 |

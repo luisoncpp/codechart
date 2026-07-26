@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { tokenizeCode } from "../src/features/graph_canvas/Private/highlight/highlighter";
+import { LineTokenizer } from "../src/features/graph_canvas/Private/highlight/line-tokenizer";
 
 describe("tokenizeCode", () => {
   it("tokenizes TypeScript code correctly", () => {
@@ -130,9 +131,52 @@ describe("tokenizeCode", () => {
     expect(lines[2].some((t) => t.text === "two")).toBe(true);
   });
 
+  it("keeps every line of a multi-line block comment highlighted", () => {
+    const lines = tokenizeCode("/*\n * doc\n */\nconst x = 1;", "test.ts");
+
+    expect(lines[0]).toEqual([{ type: "comment", text: "/*" }]);
+    expect(lines[1]).toEqual([{ type: "comment", text: " * doc" }]);
+    expect(lines[2]).toEqual([{ type: "comment", text: " */" }]);
+    expect(lines[3]!.some((t) => t.type === "keyword" && t.text === "const")).toBe(true);
+  });
+
+  it("resumes normal tokens after a block comment closes mid-line", () => {
+    const lines = tokenizeCode("/* note\n*/ const x = 1;", "test.ts");
+
+    expect(lines[1]![0]).toEqual({ type: "comment", text: "*/" });
+    expect(lines[1]!.some((t) => t.type === "keyword" && t.text === "const")).toBe(true);
+  });
+
+  it("does not carry block comments in languages without them", () => {
+    const lines = tokenizeCode("x = 1 /* not a comment\ny = 2", "script.py");
+
+    expect(lines[1]!.some((t) => t.type === "comment")).toBe(false);
+  });
+
   it("tokenizes C++ member access as one operator", () => {
     const tokens = tokenizeCode("Pawn->GetController();", "Example.cpp")[0]!;
 
     expect(tokens.map((token) => token.text)).toContain("->");
+  });
+});
+
+describe("LineTokenizer", () => {
+  it("carries block-comment state across independently tokenized lines", () => {
+    const tokenizer = new LineTokenizer("test.ts");
+
+    expect(tokenizer.tokenizeLine("/* start")).toEqual([{ type: "comment", text: "/* start" }]);
+    expect(tokenizer.tokenizeLine("  middle")).toEqual([{ type: "comment", text: "  middle" }]);
+    expect(tokenizer.tokenizeLine("")).toEqual([]);
+    expect(tokenizer.tokenizeLine("*/")).toEqual([{ type: "comment", text: "*/" }]);
+    expect(
+      tokenizer.tokenizeLine("const x = 1;").some((t) => t.type === "keyword"),
+    ).toBe(true);
+  });
+
+  it("treats a closed block comment on one line as a single token", () => {
+    const tokens = new LineTokenizer("test.ts").tokenizeLine("/* a */ /* b");
+
+    expect(tokens[0]).toEqual({ type: "comment", text: "/* a */" });
+    expect(tokens[2]).toEqual({ type: "comment", text: "/* b" });
   });
 });
