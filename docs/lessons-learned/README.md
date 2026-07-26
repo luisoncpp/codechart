@@ -21,6 +21,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [client-rects-are-visual-pixels-scrolltop-is-layout.md](./client-rects-are-visual-pixels-scrolltop-is-layout.md) | An open animation's `scale()` makes client rects disagree with `scrollTop`; the centering error grows with distance to the target | 2026-07-26 |
 | [l0-collapses-ancestors-so-per-group-expand-needs-the-chain.md](./l0-collapses-ancestors-so-per-group-expand-needs-the-chain.md) | L0 collapses every ancestor too, so expanding one group must walk the chain; layout reduction ≠ display reduction | 2026-07-26 |
 | [tauri-opener-default-excludes-open-path.md](./tauri-opener-default-excludes-open-path.md) | `openPath` needs both command permission and a matching path/application scope; surface launch failures | 2026-07-24 |
 | [cpp-bare-quoted-includes-may-be-external.md](./cpp-bare-quoted-includes-may-be-external.md) | Preserve bare quoted C++ includes so dependency headers outside the analysis root do not become false unresolved diagnostics | 2026-07-22 |
