@@ -25,3 +25,22 @@ export function expandCollapsedAncestors(
   }
   return changed;
 }
+
+/** Expand a group's collapsed ancestor chain (the group itself is the caller's
+ *  business). At L0 every group starts collapsed, so expanding a nested group
+ *  alone would swap its card for a header and still show nothing — its contents
+ *  stay hidden under the collapsed parent. */
+export function expandCollapsedGroupAncestors(
+  graph: ProjectGraph,
+  groupId: string,
+  collapsed: Set<string>,
+): boolean {
+  const parentOf = groupParentMap(graph);
+  let changed = false;
+  let ancestor = parentOf.get(groupId) ?? null;
+  while (ancestor) {
+    if (collapsed.delete(ancestor)) changed = true;
+    ancestor = parentOf.get(ancestor) ?? null;
+  }
+  return changed;
+}

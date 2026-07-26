@@ -21,6 +21,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [l0-collapses-ancestors-so-per-group-expand-needs-the-chain.md](./l0-collapses-ancestors-so-per-group-expand-needs-the-chain.md) | L0 collapses every ancestor too, so expanding one group must walk the chain; layout reduction ≠ display reduction | 2026-07-26 |
 | [tauri-opener-default-excludes-open-path.md](./tauri-opener-default-excludes-open-path.md) | `openPath` needs both command permission and a matching path/application scope; surface launch failures | 2026-07-24 |
 | [cpp-bare-quoted-includes-may-be-external.md](./cpp-bare-quoted-includes-may-be-external.md) | Preserve bare quoted C++ includes so dependency headers outside the analysis root do not become false unresolved diagnostics | 2026-07-22 |
 | [historical-analysis-and-sources-must-share-a-git-snapshot.md](./historical-analysis-and-sources-must-share-a-git-snapshot.md) | An analyzed Git tree already contains every source; reuse it for changed bodies, and hide child consoles on Windows | 2026-07-20 |

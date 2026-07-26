@@ -27,7 +27,10 @@ import {
   buildPasteDiffOverlay,
   buildWorkingTreeDiffOverlay,
 } from "./build-diff-overlay";
-import { expandCollapsedAncestors } from "./ensure-node-visible";
+import {
+  expandCollapsedAncestors,
+  expandCollapsedGroupAncestors,
+} from "./ensure-node-visible";
 import { SelectionHistory } from "./selection-history";
 
 export type SessionPhase = "idle" | "loading" | "ready" | "failed" | "empty";
@@ -346,11 +349,18 @@ export class GraphSessionStore extends EventEmitter {
     void this.recomputeLayout();
   }
 
-  /** Per-group override layered on top of the level's default (TDD §8). */
+  /** Per-group override layered on top of the level's default (TDD §8).
+   *  Expanding also expands the ancestor chain, otherwise a nested group's
+   *  contents stay hidden under a still-collapsed parent (the L0 default). */
   toggleGroup(id: string, collapse = !this.collapsedGroupIds.has(id)) {
     if (collapse === this.collapsedGroupIds.has(id)) return;
     if (collapse) this.collapsedGroupIds.add(id);
-    else this.collapsedGroupIds.delete(id);
+    else {
+      this.collapsedGroupIds.delete(id);
+      if (this.graph) {
+        expandCollapsedGroupAncestors(this.graph, id, this.collapsedGroupIds);
+      }
+    }
     this.syncReduced();
     this.emit("zoom-changed");
     void this.recomputeLayout();
@@ -512,11 +522,10 @@ export class GraphSessionStore extends EventEmitter {
     };
     const layout = await this.layoutEngine.layout(reduced, opts);
     if (seq !== this.layoutSeq) return; // a newer recompute won
-    this.reduced = filterDisconnectedEdges(
-      reduced,
-      this.disconnectedGroupIds,
-      this.disconnectedModuleIds,
-    );
+    // The display graph is always the *view* reduction — at L0 the layout graph
+    // is the full one (collapse is projection-only there), so reusing it would
+    // drop the group→group edge aggregation.
+    this.reduced = this.reduceForView(graph);
     this.layout = layout;
     this.captureExpandedSizes(layout);
     this.emit("layout-changed");

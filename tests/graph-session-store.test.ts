@@ -223,6 +223,32 @@ describe("GraphSessionStore semantic zoom", () => {
     await done2;
   });
 
+  it("expanding a nested group at L0 also expands its collapsed ancestors", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.setZoomLevel(0);
+    expect(store.getCollapsedGroupIds().has("app")).toBe(true); // core's parent
+    const done = nextLayout(store);
+    store.toggleGroup("core");
+    await done;
+    expect(store.getCollapsedGroupIds().has("core")).toBe(false);
+    expect(store.getCollapsedGroupIds().has("app")).toBe(false);
+    const visible = store.getReducedGraph()!.modules.map((m) => m.id);
+    expect(visible).toContain("src/core/store.ts");
+  });
+
+  it("an L0 re-layout keeps the zoom-reduced display graph", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.setZoomLevel(0);
+    const done = nextLayout(store);
+    store.toggleGroup("core");
+    await done;
+    // "ui" stays collapsed: its modules must not reappear in the display graph.
+    const visible = store.getReducedGraph()!.modules.map((m) => m.id);
+    expect(visible).not.toContain("src/ui/App.tsx");
+  });
+
   it("L1.5 reveals symbol boxes without re-layout (footprint unchanged)", async () => {
     const client: AnalysisClient = {
       analyzeProject: async () => graph,

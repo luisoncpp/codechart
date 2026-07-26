@@ -149,7 +149,9 @@ ProjectGraph ──filterTestModules?──▶ base graph
 ```
 
 Layout uses the test-filtered **full** graph at L0 (L0 collapse is projection-only there) and
-applies `projectForZoom` for manual per-group collapse at L1+. Display/edge routing always runs
+applies `projectForZoom` for manual per-group collapse at L1+. The two reductions are **separate**:
+`reduceForLayout` feeds the layout engine, `reduceForView` feeds `getReducedGraph()` — a re-layout must
+never publish its layout graph as the display graph, or L0 loses its group→group edge aggregation. Display/edge routing always runs
 `filterTestModules` **before** `projectForZoom` so empty-group pruning never sees modules already
 hidden by zoom collapse.
 
@@ -294,6 +296,9 @@ hidden by zoom collapse.
   and calls `store.toggleGroup` on a single click; double-clicking anywhere on the group still toggles via
   `onNodeDoubleClick`. Keep the `data-group-toggle` attribute — it's how the controller distinguishes a
   toggle click from a select/body click without threading a callback through the pure projection.
+  **Expanding a group also expands its collapsed ancestors** (`expandCollapsedGroupAncestors`): at L0
+  every group is collapsed, so expanding a nested group alone would only swap its card for the quiet
+  header and still reveal nothing (its modules stay hidden under the collapsed parent).
 - **Connection disconnect affordance:** every group and module renders a plug toggle (`ConnectionToggle`, 🔌)
   at the **upper-right** corner, tagged `data-connection-toggle`. Click → `store.toggleGroupConnection` /
   `toggleModuleConnection`. Disconnected nodes stay visible; edges touching them are dropped by
