@@ -14,7 +14,7 @@ TypeScript was the first impl; C++ follows the same pipeline.
 
 `language_adapter::`
 - `trait LanguageAdapter { fn parse(&self, path, source) -> Result<ParsedModule, ParseError> }`
-- `registry_for(ext) -> Option<Box<dyn LanguageAdapter>>` — pick by extension (`ts`/`tsx`/`mts`/`cts`/`rs`/`cs`/`css`/`cpp`/`cc`/`cxx`/`h`/`hpp`/`hxx`/`prefab`).
+- `registry_for(ext) -> Option<Box<dyn LanguageAdapter>>` — pick by extension (`ts`/`tsx`/`mts`/`cts`/`js`/`jsx`/`mjs`/`cjs`/`rs`/`cs`/`css`/`cpp`/`cc`/`cxx`/`h`/`hpp`/`hxx`/`prefab`).
 - `registry_for_path(path)` — convenience over the path's extension.
 - Data: `ParsedModule`, `ParsedImport`, `ImportKind`, `CommentBlock`.
 

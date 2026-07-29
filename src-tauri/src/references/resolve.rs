@@ -121,6 +121,7 @@ fn strip_js_like_extension(base: &str) -> Option<&str> {
     base.strip_suffix(".js")
         .or_else(|| base.strip_suffix(".jsx"))
         .or_else(|| base.strip_suffix(".mjs"))
+        .or_else(|| base.strip_suffix(".cjs"))
 }
 
 /// Extensionless import candidates: `.ts`/`.tsx`/`.rs`, then folder indexes.
@@ -128,6 +129,10 @@ fn extensionless_candidates(base: &str) -> Vec<String> {
     vec![
         format!("{base}.ts"),
         format!("{base}.tsx"),
+        format!("{base}.js"),
+        format!("{base}.jsx"),
+        format!("{base}.mjs"),
+        format!("{base}.cjs"),
         format!("{base}.rs"),
         format!("{base}.cs"),
         format!("{base}.css"),
@@ -136,6 +141,8 @@ fn extensionless_candidates(base: &str) -> Vec<String> {
         format!("{base}.hpp"),
         format!("{base}/index.ts"),
         format!("{base}/index.tsx"),
+        format!("{base}/index.js"),
+        format!("{base}/index.jsx"),
         format!("{base}/mod.rs"),
         format!("{base}/lib.rs"),
         format!("{base}/main.rs"),

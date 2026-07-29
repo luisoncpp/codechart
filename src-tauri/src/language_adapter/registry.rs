@@ -7,9 +7,10 @@ use crate::language_adapter::adapter_types::LanguageAdapter;
 /// extension is unsupported. Extensions are matched case-sensitively.
 pub fn registry_for(ext: &str) -> Option<Box<dyn LanguageAdapter>> {
     match ext {
-        "ts" | "tsx" | "mts" | "cts" => {
-            Some(Box::new(typescript::TypeScriptAdapter::new(ext == "tsx")))
+        "ts" | "mts" | "cts" | "js" | "mjs" | "cjs" => {
+            Some(Box::new(typescript::TypeScriptAdapter::new(false)))
         }
+        "tsx" | "jsx" => Some(Box::new(typescript::TypeScriptAdapter::new(true))),
         "rs" => Some(Box::new(rust::RustAdapter::new())),
         "cs" => Some(Box::new(csharp::CSharpAdapter::new())),
         "prefab" => Some(Box::new(unity_prefab::UnityPrefabAdapter::new())),
@@ -33,6 +34,14 @@ mod tests {
     fn picks_typescript_adapters() {
         assert!(registry_for("ts").is_some());
         assert!(registry_for("tsx").is_some());
+    }
+
+    #[test]
+    fn picks_javascript_adapters() {
+        assert!(registry_for_path("app.js").is_some());
+        assert!(registry_for_path("App.jsx").is_some());
+        assert!(registry_for_path("lib.mjs").is_some());
+        assert!(registry_for_path("config.cjs").is_some());
     }
 
     #[test]

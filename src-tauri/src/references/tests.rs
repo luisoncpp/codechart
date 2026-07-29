@@ -177,6 +177,40 @@ fn unresolved_project_cpp_include_still_warns() {
 }
 
 #[test]
+fn resolves_extensionless_import_to_js_when_only_js_exists() {
+    let parsed = vec![module("src/a.js", &["./b"]), module("src/b.js", &[])];
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/a.js".into(), "src/b.js".into())]
+    );
+}
+
+#[test]
+fn resolves_explicit_js_import_to_js_module() {
+    let parsed = vec![
+        module("src/a.js", &["./util.js"]),
+        module("src/util.js", &[]),
+        module("src/util.ts", &[]),
+    ];
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/a.js".into(), "src/util.ts".into())]
+    );
+}
+
+#[test]
+fn resolves_explicit_js_import_to_js_when_no_ts_counterpart() {
+    let parsed = vec![
+        module("src/a.js", &["./util.js"]),
+        module("src/util.js", &[]),
+    ];
+    assert_eq!(
+        edge_targets(&parsed),
+        [("src/a.js".into(), "src/util.js".into())]
+    );
+}
+
+#[test]
 fn resolves_js_extension_to_ts_source() {
     let parsed = vec![
         module(

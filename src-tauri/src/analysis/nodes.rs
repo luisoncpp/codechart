@@ -29,7 +29,7 @@ impl ParsedFile {
 /// Map a source path's extension to its contract `Language`.
 pub fn language_for(path: &str) -> Language {
     match path.rsplit('.').next() {
-        Some("tsx") => Language::Tsx,
+        Some("tsx") | Some("jsx") => Language::Tsx,
         Some("rs") => Language::Rust,
         Some("cs") => Language::CSharp,
         Some("prefab") => Language::UnityPrefab,

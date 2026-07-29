@@ -7,7 +7,7 @@ use crate::language_adapter::adapter_types::{
 use crate::project_source::{MemoryProjectSource, ProjectSource};
 
 fn parse(path: &str, source: &str) -> ParsedModule {
-    let is_tsx = path.ends_with(".tsx");
+    let is_tsx = path.ends_with(".tsx") || path.ends_with(".jsx");
     TypeScriptAdapter::new(is_tsx)
         .parse(path, source)
         .expect("parse succeeds")
@@ -19,6 +19,15 @@ fn specifiers(module: &ParsedModule) -> Vec<&str> {
         .iter()
         .map(|i| i.specifier.as_str())
         .collect()
+}
+
+#[test]
+fn javascript_file_import_and_export() {
+    let m = parse("util.js", r#"import { foo } from "./foo"; export function bar() {}"#);
+    assert_eq!(specifiers(&m), vec!["./foo"]);
+    assert_eq!(m.imports[0].kind, ImportKind::Named);
+    assert_eq!(m.imports[0].names, vec!["foo"]);
+    assert_eq!(m.exported_symbols, vec!["bar"]);
 }
 
 #[test]
