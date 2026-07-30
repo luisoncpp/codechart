@@ -3,6 +3,7 @@
 pub mod analysis;
 pub mod contract;
 pub mod diagnostics;
+pub mod diff_reviews;
 pub mod git;
 pub mod grouping;
 pub mod language_adapter;
@@ -40,6 +41,8 @@ pub fn run() {
             tauri_api::git_diff_working_tree,
             tauri_api::load_review_notes,
             tauri_api::save_review_notes,
+            tauri_api::load_diff_review,
+            tauri_api::save_diff_review,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

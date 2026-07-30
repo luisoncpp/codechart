@@ -67,6 +67,8 @@ export interface ModuleNodeData extends Record<string, unknown> {
   diffState?: "affected" | "deleted" | "unchanged";
   /** Parsed line diff for code panels (add/remove highlights). */
   diffLineDiff?: FileLineDiff;
+  /** Diff review progress — user marked this file as reviewed (checkmark + dimmed). */
+  diffReviewed?: boolean;
   /** Normalized heat score in [0, 1] when heatmap overlay is active. */
   heatScore?: number;
   /** False when score is at or below the cold percentile. */

@@ -3,8 +3,9 @@ import { UNCHANGED_MODULE_DIFF_OPACITY } from "../../../../domain/diff";
 
 export function moduleDiffOpacity(
   diffState?: "affected" | "deleted" | "unchanged",
+  reviewed?: boolean,
 ): number {
-  if (diffState === "unchanged") return UNCHANGED_MODULE_DIFF_OPACITY;
+  if (diffState === "unchanged" || reviewed) return UNCHANGED_MODULE_DIFF_OPACITY;
   return 1;
 }
 

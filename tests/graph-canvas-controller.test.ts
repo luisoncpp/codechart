@@ -57,6 +57,17 @@ describe("GraphCanvasController.onNodeClick", () => {
     );
     expect(store.toggleModuleConnection).toHaveBeenCalledWith("m1");
   });
+
+  it("toggles diff review without selecting when the review checkbox is clicked", () => {
+    const store = spyGraphCanvasStore();
+    const moduleNode = { id: "m1", type: "module" } as unknown as Node;
+    new GraphCanvasController(store as unknown as GraphSessionStore).onNodeClick(
+      moduleNode,
+      mockNodeClickEvent({ onDiffReview: true }),
+    );
+    expect(store.toggleDiffReviewed).toHaveBeenCalledWith("m1");
+    expect(store.select).not.toHaveBeenCalled();
+  });
 });
 
 describe("GraphCanvasController.onViewportZoom", () => {

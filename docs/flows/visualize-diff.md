@@ -24,6 +24,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 10. **L0 is disabled** while diff is active — scroll zoom floors at **L1** so module diff highlights stay visible; normal L0 returns when diff is cleared.
 11. **L2 code blocks** and the **symbol source widget** show `+` green / `-` red diff rows when line diff data exists for that file. Line highlights index the **after-snapshot** coordinates, so while a diff is active the store overrides `sourceCache` (per diffed path) with the overlay's `afterSourceByPath` — the panels render that exact snapshot, not the live file, which may have drifted since the diff was computed. `clearDiffOverlay` drops the overrides so the live file is re-read.
 12. **Stop visualizing diff** (`DiffOverlayBar`) → `store.clearDiffOverlay()`.
+13. **Review tracking** — while active, diffed files can be checkmarked as reviewed (card checkbox or the bar's `Reviewed X/Y` checklist); marks persist per project+diff id and restore when the same diff is re-applied. See [mark-file-reviewed](./mark-file-reviewed.md).
 
 ## Reads
 
