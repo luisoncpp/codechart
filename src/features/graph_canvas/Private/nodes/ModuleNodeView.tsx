@@ -82,7 +82,7 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
 
   if (data.snippet !== undefined) {
 
-    return <L2DocumentNode data={data} selected={selected} color={color} textColor={textColor} />;
+    return <L2DocumentNode data={data} selected={selected} color={color} textColor={textColor} boxWidth={boxW} boxHeight={boxH} />;
 
   }
 
@@ -112,7 +112,7 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
 
       <ConnectionToggle disconnected={!!data.disconnected} scale={zoomScale} />
       {(data.diffState === "affected" || data.diffState === "deleted") && (
-        <DiffReviewToggle reviewed={!!data.diffReviewed} scale={zoomScale} />
+        <DiffReviewToggle reviewed={!!data.diffReviewed} scale={zoomScale} boxWidth={boxW} boxHeight={boxH} />
       )}
       {!!data.reviewNoteCount && <button type="button" data-review-note-badge style={reviewBadgeStyle(zoomScale)}>{data.reviewNoteCount}</button>}
 
