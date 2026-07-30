@@ -93,6 +93,31 @@ describe("GraphSessionStore diff review", () => {
     expect(saved.length).toBe(0);
   });
 
+  it("unmarks every reviewed file and persists the empty set", async () => {
+    const { client, saved } = stubReviewClient(["src/core/store.ts"]);
+    const store = storeWith(client);
+    await store.loadProject("/repo");
+    await store.applyDiffFromPaste(PASTE);
+    expect(store.getDiffReviewedIds().size).toBe(1);
+
+    store.unmarkAllDiffReviewed();
+    expect(store.getDiffReviewedIds().size).toBe(0);
+    await flushMicrotasks();
+    expect(saved.at(-1)).toEqual([]);
+  });
+
+  it("unmark with nothing marked or no active diff is a no-op", async () => {
+    const { client, saved } = stubReviewClient();
+    const store = storeWith(client);
+    await store.loadProject("/repo");
+    store.unmarkAllDiffReviewed();
+    await store.applyDiffFromPaste(PASTE);
+    store.unmarkAllDiffReviewed();
+    expect(store.getDiffReviewedIds().size).toBe(0);
+    await flushMicrotasks();
+    expect(saved.length).toBe(0);
+  });
+
   it("surfaces a load failure without breaking the diff overlay", async () => {
     const client: DiffReviewClient = {
       loadDiffReview: async () => {

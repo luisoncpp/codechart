@@ -5,6 +5,7 @@ interface ReviewChecklistProps {
   deletedIds: readonly string[];
   reviewedIds: ReadonlySet<string>;
   onToggle: (moduleId: string) => void;
+  onUnmarkAll: () => void;
 }
 
 /** Dropdown under the diff bar: one checkbox row per changed (or deleted) file. */
@@ -13,9 +14,20 @@ export function ReviewChecklist({
   deletedIds,
   reviewedIds,
   onToggle,
+  onUnmarkAll,
 }: ReviewChecklistProps) {
+  const nothingReviewed = reviewedIds.size === 0;
   return (
     <div style={panelStyle} role="group" aria-label="Diff review checklist">
+      <button
+        type="button"
+        onClick={onUnmarkAll}
+        disabled={nothingReviewed}
+        title="Clear every reviewed mark in this diff"
+        style={unmarkAllStyle(nothingReviewed)}
+      >
+        Unmark all
+      </button>
       {affectedIds.map((id) => (
         <ChecklistRow
           key={id}
@@ -78,6 +90,21 @@ const panelStyle: React.CSSProperties = {
   boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
   zIndex: 6,
 };
+
+const unmarkAllStyle = (disabled: boolean): React.CSSProperties => ({
+  display: "block",
+  width: "100%",
+  textAlign: "left",
+  fontSize: 11,
+  fontWeight: 600,
+  padding: "3px 6px 6px",
+  marginBottom: 4,
+  background: "none",
+  border: "none",
+  borderBottom: "1px solid #dcfce7",
+  color: disabled ? "#9ca3af" : "#dc2626",
+  cursor: disabled ? "default" : "pointer",
+});
 
 const rowStyle: React.CSSProperties = {
   display: "flex",

@@ -112,6 +112,12 @@ export class GraphSessionStore extends EventEmitter {
     if (this.diffReview.toggle(moduleId) === null) return;
     this.emit("diff-changed");
   }
+
+  /** Unmark every reviewed file of the active diff (persisted; useful to restart a review). */
+  unmarkAllDiffReviewed() {
+    if (this.diffReview.unmarkAll() === null) return;
+    this.emit("diff-changed");
+  }
   getHeatmapEnabled = () => this.heatmapEnabled;
   getHeatmapMode = () => this.heatmapMode;
   getMetricsWindowDays = () => this.metricsWindowDays;

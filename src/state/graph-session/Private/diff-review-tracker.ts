@@ -59,6 +59,15 @@ export class DiffReviewTracker {
     return this.reviewed;
   }
 
+  /** Unmark every reviewed file; returns the new set (or null if inactive or already empty). */
+  unmarkAll(): ReadonlySet<string> | null {
+    if (!this.reviewId || this.reviewed.size === 0) return null;
+    this.reviewed = new Set();
+    this.pending = this.reviewed;
+    void this.flushSave();
+    return this.reviewed;
+  }
+
   private async flushSave() {
     if (this.saveInFlight || !this.pending || !this.root || !this.reviewId) return;
     const snapshot = this.pending;

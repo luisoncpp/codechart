@@ -33,6 +33,34 @@ describe("DiffOverlayBar review checklist", () => {
     expect(screen.getByRole("button", { name: /Reviewed 1\/1/ })).toBeTruthy();
   });
 
+  it("unmarks all files from the top of the checklist", async () => {
+    const store = await storeWithDiff();
+    store.toggleDiffReviewed("src/core/store.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    render(<DiffOverlayBar store={store} onStop={() => {}} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Reviewed 1\/1/ }));
+    fireEvent.click(screen.getByRole("button", { name: /unmark all/i }));
+
+    expect(store.getDiffReviewedIds().size).toBe(0);
+    expect(screen.getByRole("button", { name: /Reviewed 0\/1/ })).toBeTruthy();
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(screen.getByRole("button", { name: /unmark all/i })).toBeDisabled();
+  });
+
+  it("keeps the unmarked state when the same diff is re-applied", async () => {
+    const store = await storeWithDiff();
+    store.toggleDiffReviewed("src/core/store.ts");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    store.unmarkAllDiffReviewed();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    store.clearDiffOverlay();
+    await store.applyDiffFromPaste(PASTE);
+
+    expect(store.getDiffReviewedIds().size).toBe(0);
+  });
+
   it("restores persisted progress for a re-applied diff", async () => {
     const store = await storeWithDiff();
     store.toggleDiffReviewed("src/core/store.ts");
