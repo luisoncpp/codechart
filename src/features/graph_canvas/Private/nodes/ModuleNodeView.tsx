@@ -10,6 +10,8 @@ import { fitModuleHeaderFontSize, MODULE_BOX } from "../../../../domain/layout";
 
 import { ConnectionToggle } from "./ConnectionToggle";
 
+import { DiffReviewToggle } from "./DiffReviewToggle";
+
 import { L2DocumentNode } from "../l2/L2DocumentNode";
 
 import { ModuleHeader } from "./ModuleHeader";
@@ -80,7 +82,7 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
 
   if (data.snippet !== undefined) {
 
-    return <L2DocumentNode data={data} selected={selected} color={color} textColor={textColor} />;
+    return <L2DocumentNode data={data} selected={selected} color={color} textColor={textColor} boxWidth={boxW} boxHeight={boxH} />;
 
   }
 
@@ -98,6 +100,7 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
     selected,
     detail,
     diffState: data.diffState,
+    diffReviewed: !!data.diffReviewed,
     counterScale: zoomScale,
   };
 
@@ -108,6 +111,9 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
 
       <ConnectionToggle disconnected={!!data.disconnected} scale={zoomScale} />
+      {(data.diffState === "affected" || data.diffState === "deleted") && (
+        <DiffReviewToggle reviewed={!!data.diffReviewed} scale={zoomScale} boxWidth={boxW} boxHeight={boxH} />
+      )}
       {!!data.reviewNoteCount && <button type="button" data-review-note-badge style={reviewBadgeStyle(zoomScale)}>{data.reviewNoteCount}</button>}
 
       {detail && <div style={l15HeatBarStyle(data)} />}
@@ -212,6 +218,7 @@ interface CardStyleOptions {
   selected: boolean;
   detail: boolean;
   diffState?: "affected" | "deleted" | "unchanged";
+  diffReviewed?: boolean;
   counterScale: number;
 }
 
@@ -223,6 +230,7 @@ function cardStyle({
   selected,
   detail,
   diffState,
+  diffReviewed,
   counterScale,
 }: CardStyleOptions) {
   const defaultBorder = moduleCardBorder(data, color, isFacade);
@@ -241,7 +249,7 @@ function cardStyle({
     border: diffBorder,
     outline: selected ? "2px solid #2563eb" : "none",
     overflow: "hidden",
-    opacity: moduleDiffOpacity(diffState),
+    opacity: moduleDiffOpacity(diffState, /*reviewed=*/diffReviewed),
   };
 }
 

@@ -6,7 +6,7 @@ Review Notes are versioned, project-local review reminders in `.codechart/review
 
 - `src-tauri/src/review_notes` owns v1 validation, strict project-relative POSIX paths, anchor reconciliation, and same-directory atomic persistence.
 - `ipc/review-notes-client` transports complete documents through Tauri or an in-memory client.
-- `state/review-notes` owns the current project/document, load and save state, drafts, serialized saves, retryable latest snapshots, five-second Undo, filters, counts, atomic single/batch resolution, and preview-navigation requests.
+- `state/review-notes` owns the current project/document, load and save state, drafts, serialized saves, retryable latest snapshots, five-second Undo, filters, counts, atomic single/batch resolution, and preview-navigation requests. `clearAll` (settings "clear review info") wipes every note with an immediate save and no Undo; it is a no-op when there is nothing to clear, so a malformed (failed-load) file is never overwritten.
 - `features/review_notes` supplies the shared inline source disclosures and Review Notes sidebar content.
 - `features/graph_canvas/Private/review-note-canvas` overlays note counts and adapts one-shot sidebar navigation into module focus plus preview opening.
 - `App` composes this independent store after a graph becomes ready and passes it to the canvas and sidebar.

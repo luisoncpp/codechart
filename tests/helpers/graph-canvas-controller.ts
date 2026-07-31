@@ -10,6 +10,7 @@ export function spyGraphCanvasStore() {
     toggleGroup: vi.fn(),
     toggleGroupConnection: vi.fn(),
     toggleModuleConnection: vi.fn(),
+    toggleDiffReviewed: vi.fn(),
     setZoomLevel: vi.fn(),
     getZoomLevel: vi.fn(() => 1 as const),
     getDiffOverlay: vi.fn(() => null),
@@ -18,12 +19,13 @@ export function spyGraphCanvasStore() {
 
 /** A click whose target is inside an optional affordance button. */
 export function mockNodeClickEvent(
-  opts: { onCollapse?: boolean; onConnection?: boolean } = {},
+  opts: { onCollapse?: boolean; onConnection?: boolean; onDiffReview?: boolean } = {},
 ): React.MouseEvent {
   const target = {
     closest: (sel: string) => {
       if (opts.onCollapse && sel === "[data-group-toggle]") return {};
       if (opts.onConnection && sel === "[data-connection-toggle]") return {};
+      if (opts.onDiffReview && sel === "[data-diff-review-toggle]") return {};
       return null;
     },
   } as unknown as HTMLElement;

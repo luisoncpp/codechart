@@ -17,7 +17,14 @@
   font-weight: 600;
 }
 
+.review-notes-sidebar__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .review-notes-sidebar__resolve-all,
+.review-notes-sidebar__copy-all,
 .review-notes-sidebar__undo {
   padding: 5px 9px;
   color: #475569;
@@ -29,6 +36,7 @@
 }
 
 .review-notes-sidebar__resolve-all:hover:not(:disabled),
+.review-notes-sidebar__copy-all:hover:not(:disabled),
 .review-notes-sidebar__undo:hover {
   color: #166534;
   background: #f0fdf4;
@@ -39,6 +47,18 @@
   color: #94a3b8;
   background: #f8fafc;
   cursor: default;
+}
+
+.review-notes-sidebar__copy-all--copied:not(:disabled) {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.review-notes-sidebar__copy-all--failed:not(:disabled) {
+  color: #b45309;
+  background: #fffbeb;
+  border-color: #fcd34d;
 }
 
 .review-notes-sidebar__list {
@@ -107,6 +127,7 @@
 .review-notes-sidebar__resolve:focus-visible,
 .review-notes-sidebar__open:focus-visible,
 .review-notes-sidebar__resolve-all:focus-visible,
+.review-notes-sidebar__copy-all:focus-visible,
 .review-notes-sidebar__undo:focus-visible {
   outline: 2px solid #2563eb;
   outline-offset: -2px;
