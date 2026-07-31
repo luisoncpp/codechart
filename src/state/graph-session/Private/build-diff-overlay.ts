@@ -18,17 +18,18 @@ interface CommitDiffInput {
   root: string;
   baseRef: string;
   headRef: string;
+  hideTopLevelDotDirs: boolean;
 }
 
 export async function buildCommitDiffOverlay(
   input: CommitDiffInput,
 ): Promise<GraphDiffOverlay> {
-  const { git, layoutEngine, root, baseRef, headRef } = input;
+  const { git, layoutEngine, root, baseRef, headRef, hideTopLevelDotDirs } = input;
   const unifiedDiff = await git.diffRefs(root, baseRef, headRef);
   const modulePaths = changedPaths(unifiedDiff);
   const [beforeSnapshot, afterSnapshot] = await Promise.all([
-    git.loadProjectSnapshot({ path: root, gitRef: baseRef, modulePaths }),
-    git.loadProjectSnapshot({ path: root, gitRef: headRef, modulePaths }),
+    git.loadProjectSnapshot({ path: root, gitRef: baseRef, modulePaths, hideTopLevelDotDirs }),
+    git.loadProjectSnapshot({ path: root, gitRef: headRef, modulePaths, hideTopLevelDotDirs }),
   ]);
   const { graph: before, sources: beforeSources } = beforeSnapshot;
   const { graph: after, sources: afterSources } = afterSnapshot;
@@ -62,17 +63,23 @@ interface WorkingTreeDiffInput {
   root: string;
   baseRef: string;
   current: ProjectGraph;
+  hideTopLevelDotDirs: boolean;
 }
 
 export async function buildWorkingTreeDiffOverlay(input: WorkingTreeDiffInput): Promise<GraphDiffOverlay> {
-  const { git, layoutEngine, root, baseRef, current } = input;
+  const { git, layoutEngine, root, baseRef, current, hideTopLevelDotDirs } = input;
   const unifiedDiff = await git.diffWorkingTree(
     root,
     baseRef,
     current.modules.map((module) => module.path),
   );
   const modulePaths = changedPaths(unifiedDiff);
-  const snapshot = await git.loadProjectSnapshot({ path: root, gitRef: baseRef, modulePaths });
+  const snapshot = await git.loadProjectSnapshot({
+    path: root,
+    gitRef: baseRef,
+    modulePaths,
+    hideTopLevelDotDirs,
+  });
   const { graph: before, sources: beforeSources } = snapshot;
   const pathOverlay = overlayFromPastedDiff(unifiedDiff, current);
   const graphOverlay = compareGraphs({ before, after: current });

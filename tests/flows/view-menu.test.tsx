@@ -34,6 +34,26 @@ describe("flow: view-menu", () => {
     expect(screen.getByRole("menu")).toBeInTheDocument();
   });
 
+  it("Hide dot directories starts on and reloads the project when unchecked", async () => {
+    const analysis = createMockAnalysisClient();
+    const analyzeProject = vi.spyOn(analysis, "analyzeProject");
+    const store = await readyGitGraphStore(analysis);
+    renderGraphCanvas(store);
+    openViewMenu();
+
+    const item = screen.getByRole("menuitemcheckbox", { name: "Hide dot directories" });
+    expect(item).toHaveAttribute("aria-checked", "true");
+    expect(store.getHideDotDirectories()).toBe(true);
+
+    fireEvent.click(item);
+
+    await waitFor(() => expect(store.getHideDotDirectories()).toBe(false));
+    expect(analyzeProject).toHaveBeenLastCalledWith("/sample", {
+      metricsWindowDays: 90,
+      hideTopLevelDotDirs: false,
+    });
+  });
+
   it("Line counts starts off and reveals the LOC badges when checked", async () => {
     const store = await readyGraphStore();
     const { container, canvasUi } = renderGraphCanvas(store);
@@ -94,7 +114,10 @@ describe("flow: view-menu", () => {
 
     await waitFor(() => expect(screen.getByRole("button", { name: "Last 14 days" }))
       .toBeInTheDocument());
-    expect(analyzeProject).toHaveBeenLastCalledWith("/sample", 14);
+    expect(analyzeProject).toHaveBeenLastCalledWith("/sample", {
+      metricsWindowDays: 14,
+      hideTopLevelDotDirs: true,
+    });
     expect(store.getMetricsWindowDays()).toBe(14);
   });
 

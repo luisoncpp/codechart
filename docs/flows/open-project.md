@@ -12,7 +12,7 @@ in the running app until the canvas renders.
 |---|------|----------|------|
 | 1 | Native directory dialog → absolute path (or null on cancel) | `pickFolder` | `project_loader/Private/pick-folder.ts` |
 | 2 | Remember path; kick off load | `session.loadProject(path)` | `state/graph-session/Private/graph-session-store.ts` |
-| 3 | IPC `analyze_project { path, metricsWindowDays }` → Rust (90 days by default) | `createTauriAnalysisClient` | `ipc/analysis-client/Private/tauri-analysis-client.ts` |
+| 3 | IPC `analyze_project { path, metricsWindowDays, hideTopLevelDotDirs }` → Rust (90 days + hide dot dirs by default) | `createTauriAnalysisClient` | `ipc/analysis-client/Private/tauri-analysis-client.ts` |
 | 4 | Backend pipeline → `ProjectGraph` | `tauri_api::analyze_project` | `src-tauri/src/tauri_api/mod.rs` (→ [analyze-project](./analyze-project.md)) |
 | 5 | 0 modules → `empty`; else ELK layout → `ready` | `GraphSessionStore.loadProject` | same as #2 |
 | 6 | Render canvas + collapsible inspection panel (left-edge drag to resize) | `App` gates on `phase==="ready"` | `app/Private/App.tsx` |

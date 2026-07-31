@@ -20,7 +20,7 @@ fn golden() -> ProjectGraph {
 /// is the repo-relative fixture path) is `root` — patched here before the diff.
 #[test]
 fn command_on_the_fixture_returns_the_golden_model() {
-    let graph = analyze_project(FIXTURE_DIR.to_string(), None).expect("analysis succeeds");
+    let graph = analyze_project(FIXTURE_DIR.to_string(), None, None).expect("analysis succeeds");
 
     let mut expected = golden();
     expected.root = FIXTURE_DIR.to_string();
@@ -31,7 +31,7 @@ fn command_on_the_fixture_returns_the_golden_model() {
 #[test]
 fn command_on_a_missing_folder_yields_an_empty_graph() {
     // A non-existent root lists no files; analysis still builds a valid (empty) graph.
-    let graph = analyze_project(format!("{FIXTURE_DIR}/does-not-exist"), None)
+    let graph = analyze_project(format!("{FIXTURE_DIR}/does-not-exist"), None, None)
         .expect("builds an empty graph");
     assert!(graph.modules.is_empty());
     assert!(graph.edges.is_empty());
@@ -66,7 +66,7 @@ fn search_module_sources_finds_text_in_fixture_modules() {
 
 #[test]
 fn command_rejects_a_zero_day_metrics_window() {
-    let result = analyze_project(FIXTURE_DIR.to_string(), Some(0));
+    let result = analyze_project(FIXTURE_DIR.to_string(), Some(0), None);
     assert_eq!(
         result.unwrap_err(),
         "Metrics window must be at least one day."

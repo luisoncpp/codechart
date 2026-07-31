@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Toolbar View menu: test filter, line counts, heatmap toggles, and diff entry")
+// @Architecture(descriptionShort="Toolbar View menu: test/dot-dir filters, line counts, heatmap toggles, and diff entry")
 import {
   DropdownMenu,
   MenuActionItem,
@@ -31,6 +31,11 @@ export function ViewMenu({ store, ui }: ViewMenuProps) {
         label="Hide tests"
         checked={session.getHideTests()}
         onChange={(hide) => store.setHideTests(hide)}
+      />
+      <MenuCheckboxItem
+        label="Hide dot directories"
+        checked={session.getHideDotDirectories()}
+        onChange={(hide) => void store.setHideDotDirectories(hide)}
       />
       <MenuCheckboxItem
         label="Line counts"

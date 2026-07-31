@@ -1,9 +1,6 @@
 // @Architecture(descriptionShort="Tauri IPC commands bridging frontend to analysis")
 
-use crate::analysis::{
-    analyze_project as run_analysis,
-    analyze_project_with_metrics_window as run_analysis_with_metrics_window,
-};
+use crate::analysis::{analyze_project_with_options as run_analysis_with_options, AnalyzeOptions};
 use crate::contract::ProjectGraph;
 use crate::git::{self, GitCommit};
 use crate::project_source::{FsProjectSource, ProjectSource};
@@ -35,6 +32,7 @@ pub struct GitProjectSnapshot {
 pub fn analyze_project(
     path: String,
     metrics_window_days: Option<u32>,
+    hide_top_level_dot_dirs: Option<bool>,
 ) -> Result<ProjectGraph, String> {
     let window_days = metrics_window_days.unwrap_or(crate::git::DEFAULT_METRICS_WINDOW_DAYS);
     if window_days == 0 {
@@ -42,7 +40,15 @@ pub fn analyze_project(
     }
     ensure_unreal_defaults(&path)?;
     let source = FsProjectSource::new(&path);
-    run_analysis_with_metrics_window(&source, &path, window_days).map_err(|e| e.to_string())
+    run_analysis_with_options(
+        &source,
+        &path,
+        AnalyzeOptions {
+            metrics_window_days: window_days,
+            hide_top_level_dot_dirs: hide_top_level_dot_dirs.unwrap_or(true),
+        },
+    )
+    .map_err(|e| e.to_string())
 }
 
 /// Load one git tree for both analysis and selected source extraction.
@@ -51,9 +57,18 @@ pub fn load_project_snapshot(
     path: String,
     git_ref: String,
     module_paths: Vec<String>,
+    hide_top_level_dot_dirs: Option<bool>,
 ) -> Result<GitProjectSnapshot, String> {
     let source = git::source_at_ref(&path, &git_ref)?;
-    let graph = run_analysis(&source, &path).map_err(|e| e.to_string())?;
+    let graph = run_analysis_with_options(
+        &source,
+        &path,
+        AnalyzeOptions {
+            metrics_window_days: crate::git::DEFAULT_METRICS_WINDOW_DAYS,
+            hide_top_level_dot_dirs: hide_top_level_dot_dirs.unwrap_or(true),
+        },
+    )
+    .map_err(|e| e.to_string())?;
     let known: HashSet<&str> = graph
         .modules
         .iter()

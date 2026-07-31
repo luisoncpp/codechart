@@ -13,7 +13,10 @@ mod parse;
 #[cfg(test)]
 mod tests;
 
-pub use ignore::{ignore_patterns, ignore_patterns_with_unreal, is_ignored, retain_unignored};
+pub use ignore::{
+    ignore_patterns, ignore_patterns_with_unreal, is_ignored, is_under_top_level_dot_dir,
+    retain_unignored, retain_without_top_level_dot_dirs,
+};
 pub use parse::parse_group_def;
 
 use std::collections::BTreeSet;
@@ -90,9 +93,17 @@ pub fn is_group_file(path: &str) -> bool {
 /// `configError` diagnostics. Duplicate ids and ignored paths are dropped with
 /// a diagnostic. Defs are returned sorted by id for determinism.
 pub fn discover_group_defs(source: &dyn ProjectSource) -> (Vec<GroupDef>, Vec<Diagnostic>) {
+    discover_group_defs_from(source, source.list_files().unwrap_or_default())
+}
+
+/// Like [`discover_group_defs`], but only considers the provided paths (already
+/// filtered by the caller — e.g. top-level dot-directory hiding).
+pub fn discover_group_defs_from(
+    source: &dyn ProjectSource,
+    mut paths: Vec<String>,
+) -> (Vec<GroupDef>, Vec<Diagnostic>) {
     let mut candidates = Vec::new();
     let mut diagnostics = Vec::new();
-    let mut paths = source.list_files().unwrap_or_default();
     paths.sort();
     for path in paths.iter().filter(|p| is_group_file(p)) {
         match source.read_file(path) {

@@ -16,6 +16,7 @@ export interface GitSnapshotInput {
   path: string;
   gitRef: string;
   modulePaths: string[];
+  hideTopLevelDotDirs: boolean;
 }
 
 export interface GitClient {

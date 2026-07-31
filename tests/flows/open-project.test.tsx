@@ -68,7 +68,10 @@ describe("flow: open-project", () => {
       fireEvent.click(screen.getByRole("button", { name: "Reload" }));
     });
     await waitFor(() => expect(analyzeProject).toHaveBeenCalledTimes(2));
-    expect(analyzeProject).toHaveBeenLastCalledWith("/my/project", 90);
+    expect(analyzeProject).toHaveBeenLastCalledWith("/my/project", {
+      metricsWindowDays: 90,
+      hideTopLevelDotDirs: true,
+    });
   });
 
   it("clicking Copy list copies the facade bypass list", async () => {

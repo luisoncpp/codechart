@@ -20,6 +20,7 @@ export function createTauriGitClient(): GitClient {
         path: input.path,
         gitRef: input.gitRef,
         modulePaths: input.modulePaths,
+        hideTopLevelDotDirs: input.hideTopLevelDotDirs,
       });
     },
     async diffRefs(path: string, baseRef: string, headRef: string): Promise<string> {

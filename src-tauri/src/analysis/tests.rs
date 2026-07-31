@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::contract::{DiagnosticKind, ProjectGraph};
 use crate::project_source::{FsProjectSource, MemoryProjectSource};
 
-use super::analyze_project;
+use super::{analyze_project, analyze_project_with_options, AnalyzeOptions};
 
 fn memory(files: &[(&str, &str)]) -> MemoryProjectSource {
     let map: HashMap<String, String> = files
@@ -316,4 +316,31 @@ fn unreal_cpp_module_displays_exports_from_its_paired_header() {
         .find(|m| m.id == "Source/MiniGame/Private/MiniPlayer.cpp")
         .expect("implementation module exists");
     assert_eq!(module.exported_symbols, vec!["MiniPlayer"]);
+}
+
+#[test]
+fn hide_top_level_dot_dirs_excludes_modules_under_dot_folders() {
+    let source = memory(&[
+        ("src/visible.ts", "export const v = 1;"),
+        (".agents/hidden.ts", "export const h = 1;"),
+        (".eslintrc.js", "module.exports = {};"),
+        ("src/.nested/still-visible.ts", "export const n = 1;"),
+    ]);
+    let hidden = analyze_project(&source, "mem").expect("builds");
+    let ids: Vec<_> = hidden.modules.iter().map(|m| m.id.as_str()).collect();
+    assert!(ids.contains(&"src/visible.ts"));
+    assert!(ids.contains(&".eslintrc.js"));
+    assert!(ids.contains(&"src/.nested/still-visible.ts"));
+    assert!(!ids.iter().any(|id| id.starts_with(".agents/")));
+
+    let shown = analyze_project_with_options(
+        &source,
+        "mem",
+        AnalyzeOptions {
+            metrics_window_days: crate::git::DEFAULT_METRICS_WINDOW_DAYS,
+            hide_top_level_dot_dirs: false,
+        },
+    )
+    .expect("builds");
+    assert!(shown.modules.iter().any(|m| m.id == ".agents/hidden.ts"));
 }

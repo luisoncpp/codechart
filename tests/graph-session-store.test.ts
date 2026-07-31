@@ -58,11 +58,17 @@ describe("GraphSessionStore (no DOM)", () => {
       searchModuleSources: noSearchResults,
     });
     await store.loadProject("/x");
-    expect(analyzeProject).toHaveBeenLastCalledWith("/x", 90);
+    expect(analyzeProject).toHaveBeenLastCalledWith("/x", {
+      metricsWindowDays: 90,
+      hideTopLevelDotDirs: true,
+    });
 
     await store.setMetricsWindowDays(14);
 
-    expect(analyzeProject).toHaveBeenLastCalledWith("/x", 14);
+    expect(analyzeProject).toHaveBeenLastCalledWith("/x", {
+      metricsWindowDays: 14,
+      hideTopLevelDotDirs: true,
+    });
     expect(store.getMetricsWindowDays()).toBe(14);
   });
 
@@ -549,11 +555,13 @@ describe("GraphSessionStore diff source snapshot", () => {
       path: "/repo",
       gitRef: "A",
       modulePaths: ["src/core/store.ts"],
+      hideTopLevelDotDirs: true,
     });
     expect(loadProjectSnapshot).toHaveBeenNthCalledWith(2, {
       path: "/repo",
       gitRef: "B",
       modulePaths: ["src/core/store.ts"],
+      hideTopLevelDotDirs: true,
     });
   });
 

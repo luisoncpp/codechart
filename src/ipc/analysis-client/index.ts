@@ -1,5 +1,6 @@
 export type {
   AnalysisClient,
+  AnalyzeProjectOptions,
   ProjectSearchMatch,
   ProjectSearchResult,
 } from "./Private/analysis-client";

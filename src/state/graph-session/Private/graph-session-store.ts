@@ -51,6 +51,8 @@ export class GraphSessionStore extends EventEmitter {
   private disconnectedGroupIds = new Set<string>();
   private disconnectedModuleIds = new Set<string>();
   private hideTests = false;
+  /** Session-only: exclude top-level `.*` dirs from analysis (default on). */
+  private hideDotDirectories = true;
   private sourceCache = new Map<string, string>();
   private sourceCacheVersion = 0;
   private groupDocCache = new Map<string, string>();
@@ -97,6 +99,7 @@ export class GraphSessionStore extends EventEmitter {
   getDisconnectedGroupIds = () => this.disconnectedGroupIds;
   getDisconnectedModuleIds = () => this.disconnectedModuleIds;
   getHideTests = () => this.hideTests;
+  getHideDotDirectories = () => this.hideDotDirectories;
   getSourceCache = () => this.sourceCache;
   getSourceCacheVersion = () => this.sourceCacheVersion;
   getGroupDocCache = () => this.groupDocCache;
@@ -196,7 +199,7 @@ export class GraphSessionStore extends EventEmitter {
     if (days === this.metricsWindowDays) return;
     if (!this.root) throw new Error("Open a project before changing the timeframe.");
     const previousGraph = this.graph;
-    const graph = await this.client.analyzeProject(this.root, days);
+    const graph = await this.client.analyzeProject(this.root, this.analyzeOptions(days));
     this.graph = graph;
     this.syncReduced();
     try {
@@ -220,6 +223,7 @@ export class GraphSessionStore extends EventEmitter {
         root: this.root,
         baseRef,
         headRef,
+        hideTopLevelDotDirs: this.hideDotDirectories,
       });
       this.applyDiffSources(this.diffOverlay);
       await this.activateDiffReview(commitDiffId(baseRef, headRef));
@@ -243,6 +247,7 @@ export class GraphSessionStore extends EventEmitter {
         root: this.root,
         baseRef,
         current: this.graph,
+        hideTopLevelDotDirs: this.hideDotDirectories,
       });
       this.applyDiffSources(this.diffOverlay);
       await this.activateDiffReview(workingTreeDiffId(baseRef));
@@ -388,6 +393,14 @@ export class GraphSessionStore extends EventEmitter {
     void this.recomputeLayout();
   }
 
+  /** Re-analyze with/without top-level `.*` directories (session-only; default on). */
+  async setHideDotDirectories(hide: boolean) {
+    if (hide === this.hideDotDirectories) return;
+    this.hideDotDirectories = hide;
+    this.emit("view-changed");
+    if (this.root) await this.loadProject(this.root);
+  }
+
   /** Per-group override layered on top of the level's default (TDD §8).
    *  Expanding also expands the ancestor chain, otherwise a nested group's
    *  contents stay hidden under a still-collapsed parent (the L0 default). */
@@ -456,7 +469,7 @@ export class GraphSessionStore extends EventEmitter {
 
     try {
       this.isGitRepo = await this.git.isGitRepo(path);
-      this.graph = await this.client.analyzeProject(path, this.metricsWindowDays);
+      this.graph = await this.client.analyzeProject(path, this.analyzeOptions(this.metricsWindowDays));
       if (this.graph.modules.length === 0) this.phase = "empty";
       else {
         const defaults = defaultDisconnectedSets(this.graph);
@@ -530,6 +543,13 @@ export class GraphSessionStore extends EventEmitter {
   private syncReduced() {
     if (!this.graph) return;
     this.reduced = this.reduceForView(this.graph);
+  }
+
+  private analyzeOptions(metricsWindowDays: number) {
+    return {
+      metricsWindowDays,
+      hideTopLevelDotDirs: this.hideDotDirectories,
+    };
   }
 
   private reduceForView(graph: ProjectGraph): ProjectGraph {

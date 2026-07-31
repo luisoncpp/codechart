@@ -59,3 +59,43 @@ pub fn retain_unignored(paths: Vec<String>, patterns: &[Pattern]) -> Vec<String>
         .filter(|p| !is_ignored(p, patterns))
         .collect()
 }
+
+/// True when the path sits under a **top-level** directory whose name starts with `.`
+/// (e.g. `.agents/foo.ts`). Top-level dotfiles (`.eslintrc.js`) and nested
+/// `src/.hidden/…` paths are not matched.
+pub fn is_under_top_level_dot_dir(path: &str) -> bool {
+    path.split_once('/')
+        .map(|(first, _)| first.starts_with('.'))
+        .unwrap_or(/*top-level file=*/false)
+}
+
+pub fn retain_without_top_level_dot_dirs(paths: Vec<String>) -> Vec<String> {
+    paths
+        .into_iter()
+        .filter(|p| !is_under_top_level_dot_dir(p))
+        .collect()
+}
+
+#[cfg(test)]
+mod top_level_dot_dir_tests {
+    use super::{is_under_top_level_dot_dir, retain_without_top_level_dot_dirs};
+
+    #[test]
+    fn matches_only_top_level_dot_directories() {
+        assert!(is_under_top_level_dot_dir(".agents/skills/x.js"));
+        assert!(is_under_top_level_dot_dir(".claude/foo.ts"));
+        assert!(!is_under_top_level_dot_dir(".eslintrc.js"));
+        assert!(!is_under_top_level_dot_dir("src/.hidden/x.ts"));
+        assert!(!is_under_top_level_dot_dir("src/core/store.ts"));
+    }
+
+    #[test]
+    fn retain_drops_dot_dir_paths() {
+        let kept = retain_without_top_level_dot_dirs(vec![
+            ".agents/a.ts".into(),
+            "src/a.ts".into(),
+            ".env".into(),
+        ]);
+        assert_eq!(kept, vec!["src/a.ts".to_string(), ".env".to_string()]);
+    }
+}

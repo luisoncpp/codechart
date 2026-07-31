@@ -7,9 +7,12 @@
 // `parseError` diagnostic and is dropped from the graph — the rest still builds.
 
 mod nodes;
+mod options;
 
 #[cfg(test)]
 mod tests;
+
+pub use options::AnalyzeOptions;
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -20,7 +23,8 @@ use crate::diagnostics::{merge, parse_error};
 use crate::grouping::{resolve_groups, ResolvedGroups};
 use crate::language_adapter::{registry_for_path, ParsedModule};
 use crate::project_config::{
-    discover_group_defs, ignore_patterns_with_unreal, is_group_file, retain_unignored,
+    discover_group_defs_from, ignore_patterns_with_unreal, is_group_file, retain_unignored,
+    retain_without_top_level_dot_dirs,
 };
 use crate::project_source::ProjectSource;
 use crate::references::{
@@ -44,7 +48,7 @@ struct GraphParts {
 /// assemble the validated `ProjectGraph`. `root` is recorded verbatim onto the
 /// graph (callers own the project path → id relationship).
 pub fn analyze_project(source: &dyn ProjectSource, root: &str) -> Result<ProjectGraph, BuildError> {
-    analyze_project_with_metrics_window(source, root, crate::git::DEFAULT_METRICS_WINDOW_DAYS)
+    analyze_project_with_options(source, root, AnalyzeOptions::default())
 }
 
 /// Analyze a project using the requested lookback window for git-derived metrics.
@@ -53,10 +57,30 @@ pub fn analyze_project_with_metrics_window(
     root: &str,
     metrics_window_days: u32,
 ) -> Result<ProjectGraph, BuildError> {
+    analyze_project_with_options(
+        source,
+        root,
+        AnalyzeOptions {
+            metrics_window_days,
+            hide_top_level_dot_dirs: true,
+        },
+    )
+}
+
+/// Analyze a project with the full set of analysis options.
+pub fn analyze_project_with_options(
+    source: &dyn ProjectSource,
+    root: &str,
+    options: AnalyzeOptions,
+) -> Result<ProjectGraph, BuildError> {
     let unreal = unreal_options_from_source(source);
-    let (defs, config_diags) = discover_group_defs(source);
+    let mut files = source.list_files().unwrap_or_default();
+    if options.hide_top_level_dot_dirs {
+        files = retain_without_top_level_dot_dirs(files);
+    }
+    let (defs, config_diags) = discover_group_defs_from(source, files.clone());
     let patterns = ignore_patterns_with_unreal(&defs, &unreal);
-    let files = retain_unignored(source.list_files().unwrap_or_default(), &patterns);
+    let files = retain_unignored(files, &patterns);
     let meta_index = index_meta_files(source, &files);
     let (parsed, parse_diags) = parse_sources(source, &files);
 
@@ -67,7 +91,7 @@ pub fn analyze_project_with_metrics_window(
 
     let mut modules = build_modules(&parsed, &groups, &edges);
     if crate::git::is_git_repo(root) {
-        crate::git::enrich_module_metrics(root, &mut modules, metrics_window_days);
+        crate::git::enrich_module_metrics(root, &mut modules, options.metrics_window_days);
     }
     let parts = GraphParts {
         modules,

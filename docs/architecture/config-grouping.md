@@ -24,6 +24,11 @@ Public surface (`project_config::`):
 - `parse_group_def(path, content) -> Result<GroupDef, ConfigError>` — one file.
 - `discover_group_defs(source) -> (Vec<GroupDef>, Vec<Diagnostic>)` — walk a
   `ProjectSource`, parse every `*.group.md`, parse failures → `configError`s.
+- `discover_group_defs_from(source, paths)` — same over a caller-filtered path list
+  (analysis uses this after optional top-level dot-directory hiding).
+- `retain_without_top_level_dot_dirs` / `is_under_top_level_dot_dir` — drop files
+  under top-level directories whose names start with `.` (View ▾ **Hide dot directories**,
+  default on, session-only; not the same as built-in ignore globs).
 - `is_group_file(path)`, `config_error(path, msg)` helpers.
 
 A `*.group.md` is **YAML frontmatter + markdown body**. Frontmatter parsing
