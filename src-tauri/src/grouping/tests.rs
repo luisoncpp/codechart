@@ -164,6 +164,47 @@ fn nested_group_md_sets_parent_via_directory() {
 }
 
 #[test]
+fn nested_group_claims_a_sibling_facade_with_parent_relative_globs() {
+    let domain = def("domain", "domain");
+    let mut widget = def("widget", "domain/Widget");
+    widget.facades = Some(vec!["../Widget.ts".into()]);
+    widget.match_globs = vec!["../Widget.ts".into(), "**".into()];
+    let fs = files(&[
+        "domain/Widget.ts",
+        "domain/Widget/HelperA.ts",
+        "domain/OtherThing.ts",
+        "domain/models/Model.ts",
+    ]);
+
+    let r = resolve_groups(&fs, &[domain, widget]);
+
+    assert!(r.diagnostics.is_empty());
+    assert_eq!(group(&r, "widget").parent_id.as_deref(), Some("domain"));
+    assert_eq!(
+        group(&r, "widget").facade_module_ids,
+        vec!["domain/Widget.ts".to_string()]
+    );
+    assert_eq!(
+        r.module_group
+            .get("domain/Widget/HelperA.ts")
+            .map(String::as_str),
+        Some("widget")
+    );
+    assert_eq!(
+        r.module_group
+            .get("domain/OtherThing.ts")
+            .map(String::as_str),
+        Some("domain")
+    );
+    assert_eq!(
+        r.module_group
+            .get("domain/models/Model.ts")
+            .map(String::as_str),
+        Some("domain")
+    );
+}
+
+#[test]
 fn composition_group_does_not_fold_adopt_folder_descendants() {
     // A root-level composition group must not become the implicit parent of an
     // unrelated group just because its dir ("") is an ancestor of everything.

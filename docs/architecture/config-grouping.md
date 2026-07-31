@@ -41,14 +41,16 @@ facades, diagnostics }`). Pure; deterministic (sorted iteration, `BTree*`).
 **Membership (TDD §7), resolved in `claim.rs`:**
 - A group with **no source** (`match`/`files`/`groups` all empty) defaults to
   **folder ownership** — files under its `dir`; innermost folder group wins.
-- `match` — globs (joined onto `dir`) or `/regex/` (verbatim repo-relative path),
-  `matcher.rs`.
-- `files` — explicit paths joined onto `dir`.
+- `match` — globs joined onto and normalized against `dir` (so they may use `..`)
+  or `/regex/` over the verbatim repo-relative path, `matcher.rs`.
+- `files` — explicit paths joined onto `dir` and normalized, so they may use `..`.
 - `exclude` — a **filter** (not a source) subtracted from the claim, so a group
   may fold-own *and* carve out (e.g. cede a file to a cross-cutting group).
-- **Overlap is an error, never resolved:** a module claimed by ≥2 groups →
-  `configError:overlap:<module>` and the module is left unassigned. No precedence;
-  the owner must cede via `exclude`.
+- **Overlap is an error between competing explicit claims:** a module claimed by
+  multiple explicit groups → `configError:overlap:<module>` and the module is
+  left unassigned. A nested explicit group supersedes an ancestor's implicit
+  folder-ownership claim; unrelated cross-cutting claims still require the
+  folder owner to cede via `exclude`.
 
 **Nesting / parentId (`nesting.rs`):** an explicit `groups` ref wins; otherwise
 the nearest ancestor folder with a `*.group.md`. A `groups` ref sets the child's
@@ -62,7 +64,8 @@ parent. `exclude` is a *membership* filter only — it does not affect nesting.
 
 **Facades:** explicit `facades` (must name group members, else
 `configError:facade:…`), else default to `index.ts`/`index.tsx` in `dir` when
-present. A facade-less group is public (§10 drift never flags imports into it).
+present. Facade paths are normalized like `files`, so they may use `..`. A
+facade-less group is public (§10 drift never flags imports into it).
 
 **Disconnect defaults:** `disconnected: true` marks the whole group disconnected
 by default (canvas hides its edges on load). `disconnectedModules` lists module
@@ -73,6 +76,16 @@ unknown paths → `configError:disconnect:…`. Resolved ids land on
 **Folder inference (`infer.rs`):** with **no** `*.group.md` at all, infer one
 `folder:<dir>` group per directory containing source files, `index.ts/tsx` facade,
 directory nesting for parentId.
+
+### Sibling-facade deep modules
+
+A group file in `domain/Widget/` can own both `domain/Widget.ts` and
+`domain/Widget/**` with `facades: ["../Widget.ts"]` and
+`match: ["../Widget.ts", "**"]`; `/regex/` is unnecessary. Relative globs,
+explicit files, excludes, and facades are normalized after joining to the group
+directory, so they may use `..`. The nested explicit claim supersedes the
+ancestor's folder ownership automatically. Directory nesting then makes the
+deep module a child of `domain` without `groups:`.
 
 ## Determinism
 

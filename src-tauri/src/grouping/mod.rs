@@ -4,8 +4,8 @@
 // per-module group assignment, the facade set, and configError diagnostics.
 //
 // Membership sources (`match`/`files`/`groups`) and folder ownership are resolved
-// in `claim`; parentId in `nesting`; the no-config fallback in `infer`. Overlaps
-// (a module claimed by two groups) and bad facade/`groups` refs become
+// in `claim`; parentId in `nesting`; the no-config fallback in `infer`. Competing
+// explicit overlaps and bad facade/`groups` refs become
 // configErrors — the rest of the tree still builds (partial-results discipline).
 
 mod claim;

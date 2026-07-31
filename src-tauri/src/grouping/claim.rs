@@ -24,11 +24,32 @@ pub fn assign_modules(files: &[String], defs: &[GroupDef]) -> Assignment {
     for file in files {
         if let Some(def) = best_folder_owner(file, defs) {
             if !is_excluded(def, file) {
+                // A nested explicit group owns its selected files over an
+                // ancestor's implicit folder claim; unrelated claims overlap.
+                if has_nested_explicit_claim(claims.get(file).map(Vec::as_slice), &def.dir, defs) {
+                    continue;
+                }
                 record(&mut claims, file.clone(), &def.id);
             }
         }
     }
     resolve_claims(claims)
+}
+
+fn has_nested_explicit_claim(
+    owners: Option<&[String]>,
+    owner_dir: &str,
+    defs: &[GroupDef],
+) -> bool {
+    owners.is_some_and(|owners| {
+        owners.iter().any(|group_id| {
+            defs.iter().any(|candidate| {
+                candidate.id == *group_id
+                    && !candidate.uses_folder_ownership()
+                    && is_ancestor_dir(owner_dir, &candidate.dir)
+            })
+        })
+    })
 }
 
 fn record(claims: &mut BTreeMap<String, Vec<String>>, module: String, group_id: &str) {

@@ -30,7 +30,7 @@ Unsupported extensions are skipped during analysis. Package / external imports (
 ### Groups & configuration
 
 - Declare logical groups with co-located **`*.group.md`** files (YAML frontmatter + Markdown body) — no need to mirror folder structure strictly.
-- Membership via folder ownership, `match_globs`, explicit `files`, and nested `group_refs`; overlap between groups is a **config error**, never silently resolved.
+- Membership via folder ownership, `match`, explicit `files`, and nested `groups`; competing explicit claims are a **config error**, never silently resolved.
 - **Facades** (`index.ts`, etc.) mark a group's public API; deep imports into private groups can trigger drift warnings.
 - **Disconnect defaults** per group or module (`disconnected`, `disconnectedModules`) to hide noisy edges on load.
 - **Folder inference** when no group files exist: one group per directory with source files.
@@ -113,7 +113,7 @@ id: "core-services"
 label: "Core Services"
 color: "#64748b"
 icon: "cube"
-match_globs: ["**/*.service.ts"]
+match: ["**/*.service.ts"]
 exclude: ["**/test/**"]
 facades: ["index.ts"]
 disconnected: false
@@ -127,15 +127,19 @@ Further documentation goes here and is parsed as `description_long`.
 
 ### Group capabilities & membership
 
+Configuration uses `match` and `groups` (the `match_globs` and `group_refs`
+names are internal Rust fields). Relative `facades`, `files`, `exclude`, and
+glob-form `match` entries may contain `..` to claim a sibling facade or module.
+
 Groups use a claim resolution system to determine which modules belong to them.
 
-- **Folder ownership (no membership defined)**: if a group omits `match_globs`, `files`, and `groups`, it defaults to **folder ownership** — every source file in its directory. Nested folder-ownership groups: the **innermost** group wins the module.
-- **Overlap (multiple memberships)**: overlap is an error, never silently resolved. Two groups claiming the same module → `configError:overlap:<module>` and the module is left unassigned. Fix by adding `exclude` on the losing group.
+- **Folder ownership (no membership defined)**: if a group omits `match`, `files`, and `groups`, it defaults to **folder ownership** — every source file in its directory. Nested folder-ownership groups: the **innermost** group wins the module.
+- **Overlap (multiple memberships)**: multiple explicit groups claiming the same module is an error, never silently resolved. A nested explicit group supersedes an ancestor's implicit folder ownership; unrelated cross-cutting claims still require `exclude` on the folder owner. Competing explicit claims produce `configError:overlap:<module>` and leave the module unassigned.
 - **Flexible rules**:
-  - `match_globs: ["**/*.ts"]` — claims files matching globs relative to the `*.group.md` directory.
-  - `files: ["api.ts"]` — explicit paths relative to the group directory.
+  - `match: ["**/*.ts"]` — claims files matching globs relative to the `*.group.md` directory.
+  - `files: ["api.ts"]` — explicit paths relative to the group directory. Both support `..` to reach a sibling facade or module.
   - `exclude: ["tests/**"]` — subtracts matches from the group's claim.
-- **Nesting**: reference other groups via `group_refs` to build a tree of arbitrary depth.
+- **Nesting**: reference other groups via `groups` to build a tree of arbitrary depth.
 - **Facades**: `facades` (e.g. `index.ts`) specify the public API; imports hitting the facade are clean, deep imports may trigger drift warnings.
 
 ## Annotations (`@Architecture`)

@@ -161,6 +161,49 @@ When multiple group files share a folder, name each file after its module (e.g. 
 
 ## Format reference — `*.group.md`
 
+### Sibling facade beside a private folder
+
+When a facade sits beside its private implementation folder, place the group file
+inside the implementation folder so directory nesting remains intact. Plain
+relative paths can reach the facade; `/regex/` is not needed.
+
+```
+domain/
+  domain.group.md
+  Widget.ts
+  Widget/
+    widget.group.md
+    HelperA.ts
+  OtherThing.ts
+```
+
+`domain/domain.group.md` keeps its default folder ownership; no `exclude` is
+needed because the nested explicit claim takes precedence:
+
+```md
+---
+id: domain
+---
+```
+
+`domain/Widget/widget.group.md` claims its sibling facade and its own folder:
+
+```md
+---
+id: widget
+facades:
+  - ../Widget.ts
+match:
+  - ../Widget.ts
+  - "**"
+---
+```
+
+`widget` is nested under `domain` automatically. Do not add `groups: [widget]`
+to `domain`: composition groups do not retain implicit folder ownership.
+
+---
+
 ### Placement and naming
 
 - One `*.group.md` per group, **in the folder it describes**.
@@ -208,10 +251,15 @@ Data access for Stripe and internal billing tables. Callers import through index
 | `ignore` | **Root group only.** Extra ignore globs merged with built-in defaults. |
 | `descriptionShort` | One-line summary (see length rules below). |
 
+Paths in `facades`, `files`, `exclude`, and glob-form `match` entries are joined
+to the group directory and normalized. They may therefore contain `..` to reach
+a sibling file or folder. Regex-form `match` entries instead operate on the full
+repo-relative path.
+
 ### Membership rules (critical)
 
 1. **Folder ownership (default):** If `match`, `files`, and `groups` are all absent/empty, the group claims every parsed source file **anywhere under its directory** (recursive). When nested folders also have folder-ownership groups, the **innermost** (deepest) group wins for files in that subtree.
-2. **No overlap:** Each module belongs to **at most one** group. If two groups claim the same file → overlap error and the module stays ungrouped. Fix by adding `exclude` on the group that should cede the file.
+2. **No overlap:** Each module belongs to **at most one** group. If multiple explicit groups claim the same file → overlap error and the module stays ungrouped. A nested explicit group supersedes an ancestor's implicit folder ownership; unrelated cross-cutting claims still need `exclude` on the folder owner.
 3. **Composition:** `groups: [core, services]` nests those groups under this one for display. The parent claims **no leaf modules** unless it also has `match`/`files`/folder ownership.
 4. **Cross-cutting modules:** Pull shared files with `match` or `files`, and add matching `exclude` on every folder-ownership group that would otherwise claim them.
 5. **Facades:** When a deep module exists, list its facade explicitly. A group with **no** facade is fully public — imports into any member are allowed (no facade-bypass warnings).
