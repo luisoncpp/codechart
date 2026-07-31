@@ -10,5 +10,8 @@ export function createMemoryDiffReviewClient(initial?: Record<string, string[]>)
     async saveDiffReview(_root, diffId, reviewedPaths) {
       reviews.set(diffId, [...reviewedPaths]);
     },
+    async clearDiffReviews() {
+      reviews.clear();
+    },
   };
 }

@@ -103,6 +103,44 @@ describe("ReviewNotesStore", () => {
     expect(store.getNavigationRequest()).toMatchObject({ path: "src/core/store.ts", startLine: 2 });
   });
 
+  it("clears every note immediately with no Undo", async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const document = { version: 1 as const, notes: [
+      { id: "a", path: "src/main.ts", startLine: 1, endLine: 1, anchorLines: ["a"], body: "one" },
+      { id: "b", path: "src/main.ts", startLine: 2, endLine: 2, anchorLines: ["b"], body: "two" },
+    ] };
+    const store = new ReviewNotesStore(client({ loadReviewNotes: async () => document, saveReviewNotes: save }));
+    await ready(store);
+
+    store.clearAll();
+    expect(store.getDocument().notes).toEqual([]);
+    expect(store.canUndo()).toBe(false);
+    expect(save).toHaveBeenCalledWith("/project", { version: 1, notes: [] });
+  });
+
+  it("clearAll with no notes and no draft is a no-op", async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    const store = new ReviewNotesStore(client({ saveReviewNotes: save }));
+    await ready(store);
+    store.clearAll();
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it("clearAll drops a pending draft and navigation request", async () => {
+    const document = { version: 1 as const, notes: [
+      { id: "a", path: "src/main.ts", startLine: 1, endLine: 1, anchorLines: ["a"], body: "one" },
+    ] };
+    const store = new ReviewNotesStore(client({ loadReviewNotes: async () => document }));
+    await ready(store);
+    store.beginDraft({ path: "src/main.ts", startLine: 3, endLine: 3, anchorLines: ["c"] });
+    store.navigate(document.notes[0]!);
+
+    store.clearAll();
+    expect(store.getDraft()).toBeNull();
+    expect(store.getNavigationRequest()).toBeNull();
+    expect(store.getDocument().notes).toEqual([]);
+  });
+
   it("consumes navigation once and clears stale requests on project load", async () => {
     const note = { id: "a", path: "src/main.ts", startLine: 1, endLine: 1, anchorLines: ["x"], body: "a" };
     const store = new ReviewNotesStore(client());

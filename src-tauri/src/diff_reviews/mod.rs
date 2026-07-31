@@ -54,6 +54,11 @@ pub fn save_diff_review(root: &str, diff_id: &str, reviewed_paths: Vec<String>) 
     write_document(root, &document)
 }
 
+/// Wipe every persisted diff review entry (settings "clear review info").
+pub fn clear_diff_reviews(root: &str) -> Result<(), String> {
+    write_document(root, &DiffReviewsDocument::empty())
+}
+
 fn upsert(document: &mut DiffReviewsDocument, diff_id: &str, reviewed_paths: Vec<String>) {
     document.reviews.retain(|review| review.diff_id != diff_id);
     if !reviewed_paths.is_empty() {

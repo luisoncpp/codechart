@@ -12,11 +12,22 @@
    1. When the graph contains a C++ module, choose **C++ include paths...**.
    2. The existing `UnrealConfigModal` edits include paths and Unreal toggles.
    3. Saving preserves `editor`, writes the config, and reloads project analysis.
-5. **Reads/Writes** — `.codechart/config.json` through the Tauri project-config
-   commands. `code` is used when the file or editor field is missing.
-6. **Files** — `features/project_settings/`, `features/project_config/`,
-   `ipc/project-config-client/`, `app/Private/App.tsx`, and
-   `src-tauri/src/unreal_config/`.
-7. **Common failure modes** — C++ settings are intentionally absent for graphs
+5. **Clear review info sequence**
+   1. Choose **Clear review info...** and confirm in the modal.
+   2. `ReviewNotesStore.clearAll` wipes every note (immediate save, no Undo).
+   3. `GraphSessionStore.clearAllDiffReviews` wipes every persisted diff
+      review entry (all diffs) via the `clear_diff_reviews` command and
+      unmarks the active diff.
+6. **Reads/Writes** — `.codechart/config.json` through the Tauri project-config
+   commands (`code` is used when the file or editor field is missing);
+   `.codechart/review-notes.json` and `.codechart/diff-reviews.json` through
+   their own commands.
+7. **Files** — `features/project_settings/`, `features/project_config/`,
+   `ipc/project-config-client/`, `state/review-notes/`,
+   `state/graph-session/Private/diff-review-tracker.ts`,
+   `app/Private/App.tsx`, `src-tauri/src/unreal_config/`, and
+   `src-tauri/src/diff_reviews/`.
+8. **Common failure modes** — C++ settings are intentionally absent for graphs
    without C++ modules; blank editor values cannot be saved; read/write errors
-   remain visible in the active modal.
+   remain visible in the active modal; a failed clear keeps the dialog open
+   with the error (diff marks stay untouched).

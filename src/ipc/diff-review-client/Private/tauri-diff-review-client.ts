@@ -9,5 +9,8 @@ export function createTauriDiffReviewClient(): DiffReviewClient {
     async saveDiffReview(root, diffId, reviewedPaths) {
       await invoke("save_diff_review", { root, diffId, reviewedPaths });
     },
+    async clearDiffReviews(root) {
+      await invoke("clear_diff_reviews", { root });
+    },
   };
 }

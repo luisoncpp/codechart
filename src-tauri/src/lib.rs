@@ -43,6 +43,7 @@ pub fn run() {
             tauri_api::save_review_notes,
             tauri_api::load_diff_review,
             tauri_api::save_diff_review,
+            tauri_api::clear_diff_reviews,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -58,6 +58,27 @@ describe("Review Notes sidebar integration", () => {
     await waitFor(() => expect(saveReviewNotes).toHaveBeenCalled());
   });
 
+  it("copies every active Review Note and confirms it", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    const notes = new ReviewNotesStore({
+      loadReviewNotes: async () => ({ version: 1, notes: [
+        { id: "a", path: "src/main.ts", startLine: 1, endLine: 1, anchorLines: ["a"], body: "Review entry point" },
+        { id: "b", path: "src/main.ts", startLine: 2, endLine: 3, anchorLines: ["b", "c"], body: "Review initialization" },
+      ] }),
+      saveReviewNotes: async () => undefined,
+    });
+    await notes.loadProject({ root: "/sample", graph });
+    render(<ReviewNotesSidebar store={notes} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy all comments" }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(
+      "src/main.ts:1\nReview entry point\n\nsrc/main.ts:2-3\nReview initialization",
+    ));
+    expect(screen.getByRole("button", { name: "Copied" })).toBeInTheDocument();
+  });
+
   it("focuses the note's module when opening its preview", async () => {
     const session = testGraphSessionStore();
     await session.loadProject("/sample");

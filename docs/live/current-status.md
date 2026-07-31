@@ -115,7 +115,7 @@
 **MVP Milestone 1 + all planned fast-follows (Phases 0–10) are complete.** Remaining work is the
 post-M1 roadmap (TDD §11), each mapping to an existing seam — no rework on the contract:
 
-- ~~Narrative diff visualizer~~ — **done**: paste or git-commit diff → green/red module borders, green added edges, red removed edges with X head; see [visualize-diff.md](../flows/visualize-diff.md). Review tracking added: checkmark diffed files as reviewed, persisted per project+diff — see [diff-reviews.md](../architecture/diff-reviews.md) + [mark-file-reviewed.md](../flows/mark-file-reviewed.md).
+- ~~Narrative diff visualizer~~ — **done**: paste or git-commit diff → green/red module borders, green added edges, red removed edges with X head; see [visualize-diff.md](../flows/visualize-diff.md). Review tracking added: checkmark diffed files as reviewed, persisted per project+diff — see [diff-reviews.md](../architecture/diff-reviews.md) + [mark-file-reviewed.md](../flows/mark-file-reviewed.md). Settings → **Clear review info...** wipes all Review Notes + all persisted diff checkmarks behind a confirmation.
 - Git time-travel (new `ProjectSource` over revisions).
 - Activity heatmaps (`ModuleNode.metrics` + render layer).
 - Global symbol resolution / LSP / stack-graphs (upgrade inside `references`).

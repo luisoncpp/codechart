@@ -7,4 +7,6 @@ export interface DiffReviewClient {
   /** Reviewed paths reconciled against the diff's current paths (stale dropped). */
   loadDiffReview(root: string, diffId: string, diffPaths: string[]): Promise<string[]>;
   saveDiffReview(root: string, diffId: string, reviewedPaths: string[]): Promise<void>;
+  /** Wipe every persisted diff review entry (settings "clear review info"). */
+  clearDiffReviews(root: string): Promise<void>;
 }

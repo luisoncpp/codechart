@@ -49,7 +49,7 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [navigate-selection-history.md](./navigate-selection-history.md) | Back/forward buttons or shortcuts → move through inspector selection history |
 | [resize-inspector.md](./resize-inspector.md) | Drag the inspection panel's left edge to resize; hide/show preserves width for the session |
 | [reveal-in-explorer.md](./reveal-in-explorer.md) | Right-click a module/symbol → preview, open in editor, copy its path, or reveal it in the OS explorer |
-| [configure-project-settings.md](./configure-project-settings.md) | Settings menu → choose the project editor or open C++ include-path configuration |
+| [configure-project-settings.md](./configure-project-settings.md) | Settings menu → choose the project editor, open C++ include-path configuration, or clear all review info |
 | [preview-symbol.md](./preview-symbol.md) | Click a symbol in L1.5 zoom → selection + resizable preview code widget next to it |
 | [visualize-diff.md](./visualize-diff.md) | Visualize diff modal → overlay green/red modules and green/red edges on the canvas |
 | [mark-file-reviewed.md](./mark-file-reviewed.md) | Checkmark a diffed file on a card or the bar checklist (or unmark them all) → persisted per-diff review progress |

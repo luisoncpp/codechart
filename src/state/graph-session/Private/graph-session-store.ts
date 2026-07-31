@@ -118,6 +118,12 @@ export class GraphSessionStore extends EventEmitter {
     if (this.diffReview.unmarkAll() === null) return;
     this.emit("diff-changed");
   }
+
+  /** Wipe every persisted diff review entry (all diffs) and the active marks. Throws on save failure. */
+  async clearAllDiffReviews() {
+    if (!(await this.diffReview.clearAll())) return;
+    this.emit("diff-changed");
+  }
   getHeatmapEnabled = () => this.heatmapEnabled;
   getHeatmapMode = () => this.heatmapMode;
   getMetricsWindowDays = () => this.metricsWindowDays;

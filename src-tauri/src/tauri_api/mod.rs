@@ -7,7 +7,10 @@ use crate::analysis::{
 use crate::contract::ProjectGraph;
 use crate::git::{self, GitCommit};
 use crate::project_source::{FsProjectSource, ProjectSource};
-use crate::diff_reviews::{load_diff_review as load_review, save_diff_review as save_review};
+use crate::diff_reviews::{
+    clear_diff_reviews as clear_reviews, load_diff_review as load_review,
+    save_diff_review as save_review,
+};
 use crate::review_notes::{
     load_review_notes as load_notes, save_review_notes as save_notes, ReviewNotesDocument,
 };
@@ -141,6 +144,12 @@ pub fn load_diff_review(root: String, diff_id: String, diff_paths: Vec<String>) 
 #[tauri::command]
 pub fn save_diff_review(root: String, diff_id: String, reviewed_paths: Vec<String>) -> Result<(), String> {
     save_review(&root, &diff_id, reviewed_paths)
+}
+
+/// Wipe every persisted diff review entry (settings "clear review info").
+#[tauri::command]
+pub fn clear_diff_reviews(root: String) -> Result<(), String> {
+    clear_reviews(&root)
 }
 
 #[cfg(test)]

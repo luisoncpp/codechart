@@ -65,6 +65,19 @@ fn malformed_file_errors_unchanged() {
 }
 
 #[test]
+fn clear_wipes_every_persisted_entry() {
+    let root = tempdir().unwrap();
+    save(&root, "commits:a..b", &["src/a.ts"]);
+    save(&root, "working-tree:c", &["src/c.ts"]);
+    clear_diff_reviews(root_str(&root)).unwrap();
+    assert!(load(&root, "commits:a..b", &["src/a.ts"]).is_empty());
+    assert!(load(&root, "working-tree:c", &["src/c.ts"]).is_empty());
+    let bytes = std::fs::read(root.path().join(".codechart/diff-reviews.json")).unwrap();
+    let document: DiffReviewsDocument = serde_json::from_slice(&bytes).unwrap();
+    assert!(document.reviews.is_empty());
+}
+
+#[test]
 fn rejects_paths_escaping_the_project() {
     let root = tempdir().unwrap();
     let error = save_diff_review(root_str(&root), "d", vec!["../outside.ts".to_string()]).unwrap_err();

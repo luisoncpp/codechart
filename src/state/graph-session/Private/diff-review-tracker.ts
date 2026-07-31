@@ -4,6 +4,7 @@ import type { DiffReviewClient } from "../../../ipc/diff-review-client";
 const NO_REVIEW: DiffReviewClient = {
   loadDiffReview: async () => [],
   saveDiffReview: async () => {},
+  clearDiffReviews: async () => {},
 };
 
 /**
@@ -18,6 +19,7 @@ export class DiffReviewTracker {
   private root: string | null = null;
   private error: string | null = null;
   private saveInFlight = false;
+  private inFlightSave: Promise<void> | null = null;
   private pending: ReadonlySet<string> | null = null;
 
   constructor(private client: DiffReviewClient = NO_REVIEW) {}
@@ -55,7 +57,7 @@ export class DiffReviewTracker {
     else next.add(moduleId);
     this.reviewed = next;
     this.pending = next;
-    void this.flushSave();
+    this.persist();
     return this.reviewed;
   }
 
@@ -64,8 +66,34 @@ export class DiffReviewTracker {
     if (!this.reviewId || this.reviewed.size === 0) return null;
     this.reviewed = new Set();
     this.pending = this.reviewed;
-    void this.flushSave();
+    this.persist();
     return this.reviewed;
+  }
+
+  /**
+   * Wipe every persisted entry (all diffs) plus the active set; the diff id
+   * stays active so later toggles save fresh entries. Throws on save failure.
+   */
+  async clearAll(): Promise<boolean> {
+    if (!this.root) return false;
+    // A queued save finishing after the wipe would resurrect an entry.
+    await this.inFlightSave;
+    this.pending = null;
+    try {
+      await this.client.clearDiffReviews(this.root);
+    } catch (e) {
+      this.error = e instanceof Error ? e.message : String(e);
+      throw e;
+    }
+    this.error = null;
+    this.reviewed = new Set();
+    return true;
+  }
+
+  private persist() {
+    this.inFlightSave = this.flushSave().finally(() => {
+      this.inFlightSave = null;
+    });
   }
 
   private async flushSave() {

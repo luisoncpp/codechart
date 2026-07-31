@@ -11,14 +11,18 @@ const PASTE = "diff --git a/src/core/store.ts b/src/core/store.ts\n";
 
 function stubReviewClient(seed: string[] = []) {
   const saved: string[][] = [];
+  const cleared: string[] = [];
   const client: DiffReviewClient = {
     loadDiffReview: async (_root, _diffId, diffPaths) =>
       seed.filter((path) => diffPaths.includes(path)),
     saveDiffReview: async (_root, _diffId, reviewedPaths) => {
       saved.push(reviewedPaths);
     },
+    clearDiffReviews: async (root) => {
+      cleared.push(root);
+    },
   };
-  return { client, saved };
+  return { client, saved, cleared };
 }
 
 function storeWith(client: DiffReviewClient): GraphSessionStore {
@@ -124,12 +128,61 @@ describe("GraphSessionStore diff review", () => {
         throw new Error("corrupt");
       },
       saveDiffReview: async () => {},
+      clearDiffReviews: async () => {},
     };
     const store = storeWith(client);
     await store.loadProject("/repo");
     await store.applyDiffFromPaste(PASTE);
     expect(store.getDiffOverlay()).not.toBeNull();
     expect(store.getDiffReviewError()).toBe("corrupt");
+    expect(store.getDiffReviewedIds().size).toBe(0);
+  });
+
+  it("clears every persisted entry and the active marks", async () => {
+    const { client, cleared } = stubReviewClient(["src/core/store.ts"]);
+    const store = storeWith(client);
+    await store.loadProject("/repo");
+    await store.applyDiffFromPaste(PASTE);
+    expect(store.getDiffReviewedIds().size).toBe(1);
+
+    await store.clearAllDiffReviews();
+    expect(store.getDiffReviewedIds().size).toBe(0);
+    expect(cleared).toEqual(["/repo"]);
+    expect(store.getDiffReviewError()).toBeNull();
+  });
+
+  it("keeps the marks and surfaces the error when clearing fails", async () => {
+    const { client } = stubReviewClient(["src/core/store.ts"]);
+    client.clearDiffReviews = async () => {
+      throw new Error("disk full");
+    };
+    const store = storeWith(client);
+    await store.loadProject("/repo");
+    await store.applyDiffFromPaste(PASTE);
+
+    await expect(store.clearAllDiffReviews()).rejects.toThrow("disk full");
+    expect(store.getDiffReviewedIds().size).toBe(1);
+    expect(store.getDiffReviewError()).toBe("disk full");
+  });
+
+  it("a queued toggle save finishing before the clear cannot resurrect an entry", async () => {
+    const { client, saved, cleared } = stubReviewClient();
+    let release!: () => void;
+    client.saveDiffReview = async (_root, _diffId, reviewedPaths) => {
+      saved.push(reviewedPaths);
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+    };
+    const store = storeWith(client);
+    await store.loadProject("/repo");
+    await store.applyDiffFromPaste(PASTE);
+
+    store.toggleDiffReviewed("src/core/store.ts");
+    const clearing = store.clearAllDiffReviews();
+    release();
+    await clearing;
+    expect(cleared).toEqual(["/repo"]);
     expect(store.getDiffReviewedIds().size).toBe(0);
   });
 });
