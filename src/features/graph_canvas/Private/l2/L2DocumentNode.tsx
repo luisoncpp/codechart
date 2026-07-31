@@ -7,6 +7,7 @@ import { L2ScrollableBody } from "./L2ScrollableBody";
 import { layoutKeyFromStyles, useL2ClampedLayout } from "./use-l2-clamped-layout";
 import { moduleDiffBorder, moduleDiffBorderWidth, moduleDiffOpacity } from "../nodes/module-diff-style";
 import { ConnectionToggle } from "../nodes/ConnectionToggle";
+import { DiffReviewToggle } from "../nodes/DiffReviewToggle";
 import { l2HeatBorder, l2HeatHeaderBar } from "../nodes/heat-node-styles";
 
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
@@ -16,12 +17,16 @@ interface L2DocumentNodeProps {
   selected: boolean;
   color: string;
   textColor: string;
+  boxWidth?: number;
+  boxHeight?: number;
 }
 
 export function L2DocumentNode({
   data,
   selected,
   color,
+  boxWidth,
+  boxHeight,
 }: L2DocumentNodeProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { styles: clampedStyles, inFov } = useL2ClampedLayout(containerRef);
@@ -31,7 +36,7 @@ export function L2DocumentNode({
   const bodyPadding = `${Math.max(2, 8 / zoom)}px`;
   const gapSize = `${8 / zoom}px`;
   const diffState = data.diffState;
-  const shellOpacity = moduleDiffOpacity(diffState);
+  const shellOpacity = moduleDiffOpacity(diffState, /*reviewed=*/data.diffReviewed);
   const scrollbarInsetPx = moduleDiffBorderWidth(diffState, /*fallbackPx=*/0);
   const border = moduleDiffBorder(diffState, l2HeatBorder(data, `2px solid ${color}`));
   const heatBar = l2HeatHeaderBar(data);
@@ -56,6 +61,9 @@ export function L2DocumentNode({
     >
       <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <ConnectionToggle disconnected={!!data.disconnected} scale={1 / zoom} />
+      {(diffState === "affected" || diffState === "deleted") && (
+        <DiffReviewToggle reviewed={!!data.diffReviewed} scale={1 / zoom} boxWidth={boxWidth} boxHeight={boxHeight} />
+      )}
       {inFov && (
         <div style={clampedStyles}>
           <L2Header label={data.label} color={color} zoom={zoom} />

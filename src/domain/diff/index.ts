@@ -9,6 +9,7 @@ export { countLineDiffStats, diffStatsSuffixLength } from "./Private/line-diff-s
 export type { LineDiffStats } from "./Private/line-diff-stats";
 export { overlayFromPastedDiff } from "./Private/overlay-from-paths";
 export { applyDiffOverlay } from "./Private/apply-diff-overlay";
+export { withDiffReview } from "./Private/apply-diff-review";
 export { attachLineDiff } from "./Private/attach-line-diff";
 export { mergeCommitOverlay } from "./Private/merge-commit-overlay";
 export { classifySymbolChanges } from "./Private/symbol-diff";

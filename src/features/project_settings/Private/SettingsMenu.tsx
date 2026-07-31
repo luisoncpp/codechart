@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Toolbar entry for project-local editor and C++ settings")
+// @Architecture(descriptionShort="Toolbar entry for project-local editor, C++ settings, and review-info clearing")
 import { useState } from "react";
 import type { ProjectConfigClient } from "../../../ipc/project-config-client";
 import { UnrealConfigModal } from "../../project_config";
@@ -7,6 +7,7 @@ import {
   MenuActionItem,
   MenuSeparator,
 } from "../../../ui/dropdown_menu";
+import { ClearReviewInfoModal } from "./ClearReviewInfoModal";
 import { EditorConfigModal } from "./EditorConfigModal";
 
 interface SettingsMenuProps {
@@ -16,6 +17,7 @@ interface SettingsMenuProps {
   client: ProjectConfigClient;
   onEditorSaved: (editor: string) => void;
   onCppConfigSaved: () => void;
+  onClearReviewInfo: () => Promise<void>;
 }
 
 export function SettingsMenu({
@@ -25,9 +27,11 @@ export function SettingsMenu({
   client,
   onEditorSaved,
   onCppConfigSaved,
+  onClearReviewInfo,
 }: SettingsMenuProps) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [cppOpen, setCppOpen] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
 
   return (
     <>
@@ -42,6 +46,11 @@ export function SettingsMenu({
             />
           </>
         )}
+        <MenuSeparator />
+        <MenuActionItem
+          label="Clear review info..."
+          onSelect={() => setClearOpen(true)}
+        />
       </DropdownMenu>
       <EditorConfigModal
         open={editorOpen}
@@ -57,6 +66,11 @@ export function SettingsMenu({
         client={client}
         onClose={() => setCppOpen(false)}
         onSaved={onCppConfigSaved}
+      />
+      <ClearReviewInfoModal
+        open={clearOpen}
+        onClose={() => setClearOpen(false)}
+        onConfirm={onClearReviewInfo}
       />
     </>
   );

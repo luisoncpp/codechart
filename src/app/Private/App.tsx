@@ -7,6 +7,7 @@ import {
 } from "../../ipc/project-config-client";
 import { createTauriGitClient } from "../../ipc/git-client";
 import { createTauriShellClient } from "../../ipc/shell-client";
+import { createTauriDiffReviewClient } from "../../ipc/diff-review-client";
 import { ElkLayoutEngine } from "../../domain/layout";
 import { GraphSessionStore, useGraphSession } from "../../state/graph-session";
 import { ReviewNotesStore, useReviewNotes } from "../../state/review-notes";
@@ -29,7 +30,7 @@ export function App() {
   const shell = useMemo(/*build shell client*/ () => createTauriShellClient(), []);
   const store = useMemo(
     /*build session store*/ () =>
-      new GraphSessionStore(createTauriAnalysisClient(), git, new ElkLayoutEngine()),
+      new GraphSessionStore(createTauriAnalysisClient(), git, new ElkLayoutEngine(), createTauriDiffReviewClient()),
     [git],
   );
   const session = useGraphSession(store);
@@ -93,6 +94,10 @@ export function App() {
                 client={config}
                 onEditorSaved={setEditor}
                 onCppConfigSaved={() => store.loadProject(projectRoot)}
+                onClearReviewInfo={/*clear notes and checkmarks*/ async () => {
+                  reviewNotes.clearAll();
+                  await store.clearAllDiffReviews();
+                }}
               />
             </>
           ) : null

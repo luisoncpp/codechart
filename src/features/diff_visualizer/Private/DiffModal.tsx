@@ -52,7 +52,7 @@ export function DiffModal({ store, git, open, onClose }: DiffModalProps) {
           setError("Paste a unified diff first.");
           return;
         }
-        store.applyDiffFromPaste(pasteText);
+        await store.applyDiffFromPaste(pasteText);
       } else {
         if (!baseRef || !headRef) {
           setError("Pick a before and after revision.");

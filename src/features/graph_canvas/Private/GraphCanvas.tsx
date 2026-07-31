@@ -4,7 +4,7 @@ import { ReactFlow, ReactFlowProvider, Background, Controls } from "@xyflow/reac
 import "@xyflow/react/dist/style.css";
 import "./graph-canvas.css";
 import { projectGraph } from "../../../domain/graph";
-import { applyDiffOverlay } from "../../../domain/diff";
+import { applyDiffOverlay, withDiffReview } from "../../../domain/diff";
 import type { RFNode, RenderOptions } from "../../../domain/graph";
 import {
   edgeFocusForSelection,
@@ -66,6 +66,7 @@ export function GraphCanvas({
     [graph, selectedId],
   );
   const diffOverlay = session.getDiffOverlay();
+  const diffReviewedIds = session.getDiffReviewedIds();
   const hideTests = session.getHideTests();
   const heatmapEnabled = session.getHeatmapEnabled();
   const heatmapMode = session.getHeatmapMode();
@@ -144,11 +145,13 @@ export function GraphCanvas({
 
   const displayProjected = useMemo(() => {
     if (!projected) return null;
-    const diffed = diffOverlay ? applyDiffOverlay(projected, diffOverlay) : projected;
+    const diffed = diffOverlay
+      ? withDiffReview(applyDiffOverlay(projected, diffOverlay), diffReviewedIds)
+      : projected;
     // The store identity is stable; its immutable document invalidates badge counts.
     void reviewNotesDocument;
     return reviewNotes ? withReviewCounts(diffed, heatGraph, reviewNotes) : diffed;
-  }, [projected, diffOverlay, reviewNotes, reviewNotesDocument, heatGraph]);
+  }, [projected, diffOverlay, diffReviewedIds, reviewNotes, reviewNotesDocument, heatGraph]);
 
   const styledEdges = useStyledEdges(displayProjected, edgeFocus);
 
@@ -208,7 +211,7 @@ export function GraphCanvas({
         <LevelBadge level={level} />
         <SelectionNavigation store={store} />
         {diffOverlay && (
-          <DiffOverlayBar onStop={() => store.clearDiffOverlay()} />
+          <DiffOverlayBar store={store} onStop={() => store.clearDiffOverlay()} />
         )}
         {heatmapEnabled && heatmapGitAvailable && !heatmapLoading && !diffOverlay && (
           <HeatmapLegend

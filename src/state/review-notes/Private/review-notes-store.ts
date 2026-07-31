@@ -140,6 +140,17 @@ export class ReviewNotesStore {
     this.mutate(notes, /*immediate=*/true);
   }
   canUndo = () => this.undo !== null;
+  /** Wipe every note (settings "clear review info"): immediate save, no Undo. */
+  clearAll() {
+    if (!this.root) return;
+    if (this.document.notes.length === 0 && !this.draft) return;
+    this.draft = null;
+    this.validation = null;
+    this.navigation = null;
+    this.undo = null;
+    if (this.undoTimer) clearTimeout(this.undoTimer);
+    this.mutate([], /*immediate=*/true);
+  }
   retrySave() { if (!this.pending) this.pending = this.document; void this.flushSave(); }
   navigate(note: ReviewNote) {
     this.navigation = { id: note.id, path: note.path, startLine: note.startLine, endLine: note.endLine, seq: ++this.navigationSeq };

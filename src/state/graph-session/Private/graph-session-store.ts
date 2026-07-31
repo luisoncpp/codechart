@@ -5,6 +5,7 @@ import {
   ProjectSearchResult,
 } from "../../../ipc/analysis-client";
 import { GitClient } from "../../../ipc/git-client";
+import type { DiffReviewClient } from "../../../ipc/diff-review-client";
 import type { GraphDiffOverlay } from "../../../domain/diff";
 import {
   ProjectGraph,
@@ -32,6 +33,8 @@ import {
   expandCollapsedGroupAncestors,
 } from "./ensure-node-visible";
 import { SelectionHistory } from "./selection-history";
+import { DiffReviewTracker } from "./diff-review-tracker";
+import { commitDiffId, pasteDiffId, workingTreeDiffId } from "./diff-review-id";
 
 export type SessionPhase = "idle" | "loading" | "ready" | "failed" | "empty";
 
@@ -68,13 +71,17 @@ export class GraphSessionStore extends EventEmitter {
   private focusRequestId: string | null = null;
   private focusSeq = 0;
   private selectionHistory = new SelectionHistory();
+  /** Reviewed-file marks for the active diff (persisted per project+diff). */
+  private diffReview: DiffReviewTracker;
 
   constructor(
     private client: AnalysisClient,
     private git: GitClient,
     private layoutEngine: LayoutEngine,
+    diffReviewClient?: DiffReviewClient,
   ) {
     super();
+    this.diffReview = new DiffReviewTracker(diffReviewClient);
   }
 
   getPhase = () => this.phase;
@@ -97,6 +104,26 @@ export class GraphSessionStore extends EventEmitter {
   getProjectRoot = () => this.root;
   getDiffOverlay = () => this.diffOverlay;
   getDiffError = () => this.diffError;
+  getDiffReviewedIds = () => this.diffReview.getReviewed();
+  getDiffReviewError = () => this.diffReview.getError();
+
+  /** Flip a module's reviewed mark for the active diff (persisted). */
+  toggleDiffReviewed(moduleId: string) {
+    if (this.diffReview.toggle(moduleId) === null) return;
+    this.emit("diff-changed");
+  }
+
+  /** Unmark every reviewed file of the active diff (persisted; useful to restart a review). */
+  unmarkAllDiffReviewed() {
+    if (this.diffReview.unmarkAll() === null) return;
+    this.emit("diff-changed");
+  }
+
+  /** Wipe every persisted diff review entry (all diffs) and the active marks. Throws on save failure. */
+  async clearAllDiffReviews() {
+    if (!(await this.diffReview.clearAll())) return;
+    this.emit("diff-changed");
+  }
   getHeatmapEnabled = () => this.heatmapEnabled;
   getHeatmapMode = () => this.heatmapMode;
   getMetricsWindowDays = () => this.metricsWindowDays;
@@ -110,9 +137,18 @@ export class GraphSessionStore extends EventEmitter {
     if (!this.diffOverlay && !this.diffError) return;
     this.diffOverlay = null;
     this.diffError = null;
+    this.diffReview.clear();
     this.restoreDiffSources();
     this.restoreHeatAfterDiff();
     this.emit("diff-changed");
+  }
+
+  /** Load persisted review marks for the freshly applied diff overlay. */
+  private async activateDiffReview(reviewId: string) {
+    const overlay = this.diffOverlay;
+    if (!overlay || !this.root) return;
+    const paths = new Set([...overlay.affectedModuleIds, ...overlay.deletedModuleIds]);
+    await this.diffReview.activate(this.root, reviewId, paths);
   }
 
   /**
@@ -186,6 +222,7 @@ export class GraphSessionStore extends EventEmitter {
         headRef,
       });
       this.applyDiffSources(this.diffOverlay);
+      await this.activateDiffReview(commitDiffId(baseRef, headRef));
       this.pauseHeatForDiff();
       this.ensureDiffZoomFloor();
       this.emit("diff-changed");
@@ -208,6 +245,7 @@ export class GraphSessionStore extends EventEmitter {
         current: this.graph,
       });
       this.applyDiffSources(this.diffOverlay);
+      await this.activateDiffReview(workingTreeDiffId(baseRef));
       this.pauseHeatForDiff();
       this.ensureDiffZoomFloor();
       this.emit("diff-changed");
@@ -217,10 +255,11 @@ export class GraphSessionStore extends EventEmitter {
     }
   }
 
-  applyDiffFromPaste(text: string) {
+  async applyDiffFromPaste(text: string) {
     if (!this.graph) return;
     this.diffError = null;
     this.diffOverlay = buildPasteDiffOverlay(text, this.graph);
+    await this.activateDiffReview(pasteDiffId(text));
     this.pauseHeatForDiff();
     this.ensureDiffZoomFloor();
     this.emit("diff-changed");
@@ -408,6 +447,7 @@ export class GraphSessionStore extends EventEmitter {
     this.diffOverlay = null;
     this.diffError = null;
     this.diffSourceIds.clear();
+    this.diffReview.clear();
     this.heatmapSaved = null;
     this.isGitRepo = null;
     this.heatmapEnabled = false;

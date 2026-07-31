@@ -348,7 +348,7 @@ describe("GraphSessionStore semantic zoom", () => {
     await store.loadProject("/x");
     store.setZoomLevel(0);
     expect(store.getZoomLevel()).toBe(0);
-    store.applyDiffFromPaste("diff --git a/src/core/store.ts b/src/core/store.ts\n");
+    await store.applyDiffFromPaste("diff --git a/src/core/store.ts b/src/core/store.ts\n");
     expect(store.getZoomLevel()).toBe(1);
     expect(store.getReducedGraph()?.modules.length).toBe(graph.modules.length);
   });
@@ -475,7 +475,7 @@ describe("GraphSessionStore heatmap", () => {
     await store.loadProject("/x");
     store.setHeatmapEnabled(true);
     store.setHeatmapMode("risk");
-    store.applyDiffFromPaste("diff --git a/src/core/store.ts b/src/core/store.ts\n");
+    await store.applyDiffFromPaste("diff --git a/src/core/store.ts b/src/core/store.ts\n");
     expect(store.getHeatmapEnabled()).toBe(false);
     store.clearDiffOverlay();
     expect(store.getHeatmapEnabled()).toBe(true);

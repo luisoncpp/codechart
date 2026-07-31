@@ -24,6 +24,10 @@ export class GraphCanvasNodeHandlers {
       this.onReviewNoteClick?.(node);
       return;
     }
+    if (clickedIn(event, "[data-diff-review-toggle]")) {
+      if (node.type === "module") this.store.toggleDiffReviewed(node.id);
+      return;
+    }
     if (clickedIn(event, "[data-connection-toggle]")) {
       this.toggleConnection(node);
       return;

@@ -16,4 +16,5 @@ Covers only what's already implemented. For architecture docs of not implemented
 | [shell-client.md](./shell-client.md) | `ipc/shell-client` | Open a module in the configured editor or reveal it in the OS explorer via Tauri opener plugin |
 | [unity-prefabs.md](./unity-prefabs.md) | `unity_assets` + `unity_prefab` adapter + `references::unity` | `.prefab` YAML → script/nested-prefab soft edges; serialized fields as `exportedSymbols` |
 | [review-notes.md](./review-notes.md) | project-local Review Notes | Versioned persistence, reconciliation, inline notes, badges, and sidebar navigation |
+| [diff-reviews.md](./diff-reviews.md) | project-local Diff Reviews | Per-diff reviewed-file checkmarks: identity, reconciliation, canvas toggles, and progress checklist |
 | [project-search.md](./project-search.md) | `search` (Rust) + `project_search` find bar | Ctrl+Shift+F content search, Ctrl+P file search, and Search ▾ exported-symbol search; match navigation via `focusOn` |
