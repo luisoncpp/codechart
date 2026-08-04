@@ -17,11 +17,17 @@ const commits: GitCommit[] = [
   },
 ];
 
+const defaultPanelProps = {
+  commits,
+  ignoreSubmodules: true,
+  onIgnoreSubmodulesChange: vi.fn(),
+};
+
 describe("local changes commit picker", () => {
   it("shows each selected commit date beside its snapshot label", () => {
     const { rerender } = render(
       <CommitPanel
-        commits={commits}
+        {...defaultPanelProps}
         baseRef={commits[1].hash}
         headRef={commits[0].hash}
         onBaseChange={vi.fn()}
@@ -34,7 +40,7 @@ describe("local changes commit picker", () => {
 
     rerender(
       <CommitPanel
-        commits={commits}
+        {...defaultPanelProps}
         baseRef={commits[0].hash}
         headRef={LOCAL_CHANGES_REF}
         onBaseChange={vi.fn()}
@@ -51,7 +57,7 @@ describe("local changes commit picker", () => {
     const onHeadChange = vi.fn();
     render(
       <CommitPanel
-        commits={commits}
+        {...defaultPanelProps}
         baseRef=""
         headRef=""
         onBaseChange={onBaseChange}
@@ -64,5 +70,35 @@ describe("local changes commit picker", () => {
 
     expect(onHeadChange).toHaveBeenCalledWith(LOCAL_CHANGES_REF);
     expect(onBaseChange).toHaveBeenCalledWith(commits[0].hash);
+  });
+
+  it("shows Exclude submodules only when After is Local changes", () => {
+    const { rerender } = render(
+      <CommitPanel
+        {...defaultPanelProps}
+        baseRef={commits[0].hash}
+        headRef={commits[0].hash}
+        onBaseChange={vi.fn()}
+        onHeadChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByLabelText("Exclude submodules")).toBeNull();
+
+    rerender(
+      <CommitPanel
+        {...defaultPanelProps}
+        baseRef={commits[0].hash}
+        headRef={LOCAL_CHANGES_REF}
+        onBaseChange={vi.fn()}
+        onHeadChange={vi.fn()}
+      />,
+    );
+
+    const checkbox = screen.getByLabelText("Exclude submodules");
+    expect(checkbox).toBeChecked();
+
+    fireEvent.click(checkbox);
+    expect(defaultPanelProps.onIgnoreSubmodulesChange).toHaveBeenCalledWith(false);
   });
 });

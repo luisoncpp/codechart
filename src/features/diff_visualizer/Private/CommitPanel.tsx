@@ -10,16 +10,20 @@ interface CommitPanelProps {
   commits: GitCommit[];
   baseRef: string;
   headRef: string;
+  ignoreSubmodules: boolean;
   onBaseChange: (value: string) => void;
   onHeadChange: (value: string) => void;
+  onIgnoreSubmodulesChange: (value: boolean) => void;
 }
 
 export function CommitPanel({
   commits,
   baseRef,
   headRef,
+  ignoreSubmodules,
   onBaseChange,
   onHeadChange,
+  onIgnoreSubmodulesChange,
 }: CommitPanelProps) {
   const handleHeadChange = (hash: string) => {
     onHeadChange(hash);
@@ -38,22 +42,34 @@ export function CommitPanel({
   ];
 
   return (
-    <div style={rowStyle}>
-      <CommitSearchSelect
-        label="Before"
-        value={baseRef}
-        commits={commits}
-        onChange={onBaseChange}
-        placeholder="Pick older commit…"
-      />
-      <span aria-hidden style={arrowStyle}>→</span>
-      <CommitSearchSelect
-        label="After"
-        value={headRef}
-        commits={afterCommits}
-        onChange={handleHeadChange}
-        placeholder="Pick newer commit…"
-      />
+    <div>
+      <div style={rowStyle}>
+        <CommitSearchSelect
+          label="Before"
+          value={baseRef}
+          commits={commits}
+          onChange={onBaseChange}
+          placeholder="Pick older commit…"
+        />
+        <span aria-hidden style={arrowStyle}>→</span>
+        <CommitSearchSelect
+          label="After"
+          value={headRef}
+          commits={afterCommits}
+          onChange={handleHeadChange}
+          placeholder="Pick newer commit…"
+        />
+      </div>
+      {headRef === LOCAL_CHANGES_REF && (
+        <label style={checkboxStyle}>
+          <input
+            type="checkbox"
+            checked={ignoreSubmodules}
+            onChange={(e) => onIgnoreSubmodulesChange(e.target.checked)}
+          />
+          Exclude submodules
+        </label>
+      )}
     </div>
   );
 }
@@ -69,4 +85,13 @@ const arrowStyle: React.CSSProperties = {
   paddingBottom: 10,
   fontSize: 16,
   color: "#94a3b8",
+};
+
+const checkboxStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  marginTop: 10,
+  fontSize: 13,
+  color: "#475569",
 };

@@ -12,6 +12,10 @@ export { applyDiffOverlay } from "./Private/apply-diff-overlay";
 export { withDiffReview } from "./Private/apply-diff-review";
 export { attachLineDiff } from "./Private/attach-line-diff";
 export { mergeCommitOverlay } from "./Private/merge-commit-overlay";
+export {
+  excludeSubmoduleModules,
+  underSubmoduleRoot,
+} from "./Private/exclude-submodule-modules";
 export { classifySymbolChanges } from "./Private/symbol-diff";
 export type { SymbolChangeSets, SymbolDiffInput } from "./Private/symbol-diff";
 export { attachSymbolDiff } from "./Private/attach-symbol-diff";

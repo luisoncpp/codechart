@@ -20,5 +20,8 @@ export function createMockGitClient(): GitClient {
     async diffWorkingTree(): Promise<string> {
       return "";
     },
+    async listSubmodulePaths(): Promise<string[]> {
+      return [];
+    },
   };
 }

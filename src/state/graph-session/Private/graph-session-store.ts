@@ -236,7 +236,7 @@ export class GraphSessionStore extends EventEmitter {
     }
   }
 
-  async applyDiffFromWorkingTree(baseRef: string) {
+  async applyDiffFromWorkingTree(baseRef: string, ignoreSubmodules = true) {
     if (!this.root || !this.graph) return;
     this.diffError = null;
     try {
@@ -248,6 +248,7 @@ export class GraphSessionStore extends EventEmitter {
         baseRef,
         current: this.graph,
         hideTopLevelDotDirs: this.hideDotDirectories,
+        ignoreSubmodules,
       });
       this.applyDiffSources(this.diffOverlay);
       await this.activateDiffReview(workingTreeDiffId(baseRef));

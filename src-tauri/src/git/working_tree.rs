@@ -5,23 +5,48 @@ use std::path::Path;
 
 use super::git_command;
 
-pub fn working_tree_diff(
-    path: &str,
-    base_ref: &str,
-    eligible_paths: &[String],
-) -> Result<String, String> {
-    let mut diff = git_text(path, &["diff", "--no-ext-diff", base_ref, "--"])?;
-    let eligible: HashSet<&str> = eligible_paths.iter().map(String::as_str).collect();
-    for untracked in untracked_paths(path)? {
+pub struct WorkingTreeDiffInput<'a> {
+    pub path: &'a str,
+    pub base_ref: &'a str,
+    pub eligible_paths: &'a [String],
+    pub ignore_submodules: bool,
+}
+
+pub fn working_tree_diff(input: WorkingTreeDiffInput<'_>) -> Result<String, String> {
+    let mut diff = tracked_diff(input.path, input.base_ref, input.ignore_submodules)?;
+    let eligible: HashSet<&str> = input.eligible_paths.iter().map(String::as_str).collect();
+    let submodule_roots = if input.ignore_submodules {
+        super::list_submodule_paths(input.path)?
+    } else {
+        Vec::new()
+    };
+    for untracked in untracked_paths(input.path)? {
         let normalized = untracked.replace('\\', "/");
         if !eligible.contains(normalized.as_str()) {
             continue;
         }
-        let content = fs::read_to_string(Path::new(path).join(&untracked))
+        if under_submodule(&normalized, &submodule_roots) {
+            continue;
+        }
+        let content = fs::read_to_string(Path::new(input.path).join(&untracked))
             .map_err(|error| format!("failed to read untracked file {untracked}: {error}"))?;
         append_added_file(&mut diff, &normalized, &content);
     }
     Ok(diff)
+}
+
+fn under_submodule(path: &str, roots: &[String]) -> bool {
+    roots.iter().any(|root| path == root || path.starts_with(&format!("{root}/")))
+}
+
+fn tracked_diff(path: &str, base_ref: &str, ignore_submodules: bool) -> Result<String, String> {
+    let mut args = vec!["diff", "--no-ext-diff"];
+    if ignore_submodules {
+        args.push("--ignore-submodules=all");
+    }
+    args.push(base_ref);
+    args.push("--");
+    git_text(path, &args)
 }
 
 fn untracked_paths(path: &str) -> Result<Vec<String>, String> {
@@ -94,11 +119,12 @@ mod tests {
         fs::create_dir(root.join("node_modules")).unwrap();
         fs::write(root.join("node_modules").join("noise.ts"), "ignored\n").unwrap();
 
-        let diff = working_tree_diff(
-            root.to_str().unwrap(),
-            "HEAD",
-            &["tracked.ts".into(), "new.ts".into()],
-        )
+        let diff = working_tree_diff(WorkingTreeDiffInput {
+            path: root.to_str().unwrap(),
+            base_ref: "HEAD",
+            eligible_paths: &["tracked.ts".into(), "new.ts".into()],
+            ignore_submodules: false,
+        })
         .unwrap();
 
         assert!(diff.contains("tracked.ts"));
@@ -106,6 +132,53 @@ mod tests {
         assert!(diff.contains("+export const fresh = true;"));
         assert!(!diff.contains("notes.txt"));
         assert!(!diff.contains("node_modules"));
+    }
+
+    #[test]
+    fn ignore_submodules_skips_dirty_submodule_gitlinks() {
+        let dir = tempdir().unwrap();
+        let root = dir.path();
+        let child = root.join("child");
+        run_git(root, &["init"]);
+        run_git(root, &["config", "user.email", "test@example.com"]);
+        run_git(root, &["config", "user.name", "Test"]);
+        fs::write(root.join("tracked.ts"), "export const value = 1;\n").unwrap();
+        run_git(root, &["add", "."]);
+        run_git(root, &["commit", "-m", "base"]);
+
+        fs::create_dir(&child).unwrap();
+        run_git(&child, &["init"]);
+        run_git(&child, &["config", "user.email", "test@example.com"]);
+        run_git(&child, &["config", "user.name", "Test"]);
+        fs::write(child.join("lib.ts"), "export const child = 1;\n").unwrap();
+        run_git(&child, &["add", "."]);
+        run_git(&child, &["commit", "-m", "child init"]);
+        run_git(root, &["submodule", "add", child.to_str().unwrap(), "child"]);
+        run_git(root, &["commit", "-m", "add submodule"]);
+
+        fs::write(child.join("lib.ts"), "export const child = 2;\n").unwrap();
+        run_git(&child, &["add", "."]);
+        run_git(&child, &["commit", "-m", "child change"]);
+
+        let path = root.to_str().unwrap();
+        let eligible = vec!["tracked.ts".into(), "child/lib.ts".into()];
+        let with_submodule = working_tree_diff(WorkingTreeDiffInput {
+            path,
+            base_ref: "HEAD",
+            eligible_paths: &eligible,
+            ignore_submodules: false,
+        })
+        .unwrap();
+        let without_submodule = working_tree_diff(WorkingTreeDiffInput {
+            path,
+            base_ref: "HEAD",
+            eligible_paths: &eligible,
+            ignore_submodules: true,
+        })
+        .unwrap();
+
+        assert!(with_submodule.contains("child"));
+        assert!(!without_submodule.contains("child"));
     }
 
     fn run_git(root: &Path, args: &[&str]) {

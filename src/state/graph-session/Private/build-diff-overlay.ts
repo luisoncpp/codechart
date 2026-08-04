@@ -5,6 +5,7 @@ import {
   attachSymbolDiff,
   mergeCommitOverlay,
   pathsFromUnifiedDiff,
+  excludeSubmoduleModules,
   type GraphDiffOverlay,
 } from "../../../domain/diff";
 import type { ProjectGraph } from "../../../domain/graph";
@@ -64,15 +65,21 @@ interface WorkingTreeDiffInput {
   baseRef: string;
   current: ProjectGraph;
   hideTopLevelDotDirs: boolean;
+  ignoreSubmodules: boolean;
 }
 
 export async function buildWorkingTreeDiffOverlay(input: WorkingTreeDiffInput): Promise<GraphDiffOverlay> {
-  const { git, layoutEngine, root, baseRef, current, hideTopLevelDotDirs } = input;
-  const unifiedDiff = await git.diffWorkingTree(
-    root,
-    baseRef,
-    current.modules.map((module) => module.path),
-  );
+  const { git, layoutEngine, root, baseRef, current, hideTopLevelDotDirs, ignoreSubmodules } = input;
+  const [unifiedDiff, submoduleRoots] = await Promise.all([
+    git.diffWorkingTree({
+      path: root,
+      baseRef,
+      eligiblePaths: current.modules.map((module) => module.path),
+      ignoreSubmodules,
+    }),
+    ignoreSubmodules ? git.listSubmodulePaths(root) : Promise.resolve([]),
+  ]);
+  const after = excludeSubmoduleModules(current, submoduleRoots);
   const modulePaths = changedPaths(unifiedDiff);
   const snapshot = await git.loadProjectSnapshot({
     path: root,
@@ -80,22 +87,22 @@ export async function buildWorkingTreeDiffOverlay(input: WorkingTreeDiffInput): 
     modulePaths,
     hideTopLevelDotDirs,
   });
-  const { graph: before, sources: beforeSources } = snapshot;
-  const pathOverlay = overlayFromPastedDiff(unifiedDiff, current);
-  const graphOverlay = compareGraphs({ before, after: current });
+  const before = excludeSubmoduleModules(snapshot.graph, submoduleRoots);
+  const pathOverlay = overlayFromPastedDiff(unifiedDiff, after);
+  const graphOverlay = compareGraphs({ before, after });
   const partial = mergeCommitOverlay(pathOverlay, graphOverlay, before);
   const beforeLayout = await layoutEngine.layout(before);
   const overlay = attachLineDiff({ ...partial, beforeLayout }, unifiedDiff);
   const afterSources = await readWorkingSources({
-    graph: current,
+    graph: after,
     client: input.client,
     root,
     paths: [...overlay.lineDiffByPath.keys()],
   });
   return attachSymbolDiff({ ...overlay, afterSourceByPath: afterSources }, {
     before,
-    after: current,
-    beforeSources: new Map(Object.entries(beforeSources)),
+    after,
+    beforeSources: new Map(Object.entries(snapshot.sources)),
     afterSources,
     lineDiffByPath: overlay.lineDiffByPath,
   });

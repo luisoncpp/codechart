@@ -8,7 +8,9 @@ Before trying to implement any feature or fix any bug, add the following to your
 
 * Run tests and lint to make sure it's still passing.
 
-* Add tests for the new feature or 
+* Add tests for the new feature or bug fix
+
+* Run `npx fallow audit` after implementing each new feature or doing each bug fix.
 
 # Implementing new features
 

@@ -19,10 +19,18 @@ export interface GitSnapshotInput {
   hideTopLevelDotDirs: boolean;
 }
 
+export interface WorkingTreeDiffInput {
+  path: string;
+  baseRef: string;
+  eligiblePaths: string[];
+  ignoreSubmodules: boolean;
+}
+
 export interface GitClient {
   isGitRepo(path: string): Promise<boolean>;
   listCommits(path: string, limit: number): Promise<GitCommit[]>;
   loadProjectSnapshot(input: GitSnapshotInput): Promise<GitProjectSnapshot>;
   diffRefs(path: string, baseRef: string, headRef: string): Promise<string>;
-  diffWorkingTree(path: string, baseRef: string, eligiblePaths: string[]): Promise<string>;
+  diffWorkingTree(input: WorkingTreeDiffInput): Promise<string>;
+  listSubmodulePaths(path: string): Promise<string[]>;
 }

@@ -23,6 +23,7 @@ export function DiffModal({ store, git, open, onClose }: DiffModalProps) {
   const [gitAvailable, setGitAvailable] = useState(false);
   const [baseRef, setBaseRef] = useState("");
   const [headRef, setHeadRef] = useState("");
+  const [ignoreSubmodules, setIgnoreSubmodules] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +60,7 @@ export function DiffModal({ store, git, open, onClose }: DiffModalProps) {
           return;
         }
         if (headRef === LOCAL_CHANGES_REF) {
-          await store.applyDiffFromWorkingTree(baseRef);
+          await store.applyDiffFromWorkingTree(baseRef, ignoreSubmodules);
         } else {
           await store.applyDiffFromCommits(baseRef, headRef);
         }
@@ -93,8 +94,10 @@ export function DiffModal({ store, git, open, onClose }: DiffModalProps) {
             commits={commits}
             baseRef={baseRef}
             headRef={headRef}
+            ignoreSubmodules={ignoreSubmodules}
             onBaseChange={setBaseRef}
             onHeadChange={setHeadRef}
+            onIgnoreSubmodulesChange={setIgnoreSubmodules}
           />
         )}
         {error && <p style={errorStyle}>{error}</p>}

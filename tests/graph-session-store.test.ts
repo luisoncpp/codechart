@@ -491,6 +491,18 @@ describe("GraphSessionStore heatmap", () => {
 
 describe("GraphSessionStore local changes diff", () => {
   it("uses the loaded graph as after and allowlists its module paths", async () => {
+    const submoduleModule = {
+      ...graph.modules[0],
+      id: "vendor/lib.ts",
+      path: "vendor/lib.ts",
+      label: "lib.ts",
+    };
+    const beforeGraph = { ...graph, edges: [] };
+    const currentGraph = {
+      ...graph,
+      modules: [...graph.modules, submoduleModule],
+      edges: [],
+    };
     const diffWorkingTree = vi.fn(async () =>
       [
         "diff --git a/src/core/store.ts b/src/core/store.ts",
@@ -501,28 +513,66 @@ describe("GraphSessionStore local changes diff", () => {
         "+new",
       ].join("\n"),
     );
+    const listSubmodulePaths = vi.fn(async () => ["vendor"]);
     const git: GitClient = {
       isGitRepo: async () => true,
       listCommits: async () => [],
-      loadProjectSnapshot: async () => ({ graph, sources: {} }),
+      loadProjectSnapshot: async () => ({ graph: beforeGraph, sources: {} }),
       diffRefs: async () => "",
       diffWorkingTree,
+      listSubmodulePaths,
     };
     const store = new GraphSessionStore(
-      clientReturning(graph),
+      clientReturning(currentGraph),
       git,
       new ElkLayoutEngine(),
     );
     await store.loadProject("/repo");
 
-    await store.applyDiffFromWorkingTree("HEAD");
+    await store.applyDiffFromWorkingTree("HEAD", /*ignoreSubmodules=*/true);
 
-    expect(diffWorkingTree).toHaveBeenCalledWith(
-      "/repo",
-      "HEAD",
-      graph.modules.map((module) => module.path),
-    );
+    expect(diffWorkingTree).toHaveBeenCalledWith({
+      path: "/repo",
+      baseRef: "HEAD",
+      eligiblePaths: currentGraph.modules.map((module) => module.path),
+      ignoreSubmodules: true,
+    });
+    expect(listSubmodulePaths).toHaveBeenCalledWith("/repo");
     expect(store.getDiffOverlay()?.affectedModuleIds.has("src/core/store.ts")).toBe(true);
+    expect(store.getDiffOverlay()?.affectedModuleIds.has("vendor/lib.ts")).toBe(false);
+  });
+
+  it("keeps submodule modules when exclude submodules is off", async () => {
+    const submoduleModule = {
+      ...graph.modules[0],
+      id: "vendor/lib.ts",
+      path: "vendor/lib.ts",
+      label: "lib.ts",
+    };
+    const beforeGraph = { ...graph, modules: graph.modules.slice(0, 1), edges: [] };
+    const currentGraph = {
+      ...graph,
+      modules: [...beforeGraph.modules, submoduleModule],
+      edges: [],
+    };
+    const git: GitClient = {
+      isGitRepo: async () => true,
+      listCommits: async () => [],
+      loadProjectSnapshot: async () => ({ graph: beforeGraph, sources: {} }),
+      diffRefs: async () => "",
+      diffWorkingTree: async () => "",
+      listSubmodulePaths: async () => ["vendor"],
+    };
+    const store = new GraphSessionStore(
+      clientReturning(currentGraph),
+      git,
+      new ElkLayoutEngine(),
+    );
+    await store.loadProject("/repo");
+
+    await store.applyDiffFromWorkingTree("HEAD", /*ignoreSubmodules=*/false);
+
+    expect(store.getDiffOverlay()?.affectedModuleIds.has("vendor/lib.ts")).toBe(true);
   });
 });
 
@@ -539,6 +589,7 @@ describe("GraphSessionStore diff source snapshot", () => {
       listCommits: async () => [],
       diffRefs: async () => diff,
       diffWorkingTree: async () => "",
+      listSubmodulePaths: async () => [],
       loadProjectSnapshot,
     };
     const store = new GraphSessionStore(
@@ -588,6 +639,7 @@ describe("GraphSessionStore diff source snapshot", () => {
       }),
       diffRefs: async () => diff,
       diffWorkingTree: async () => diff,
+      listSubmodulePaths: async () => [],
     };
     const client: AnalysisClient = {
       analyzeProject: async () => graph,

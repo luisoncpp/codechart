@@ -5,6 +5,7 @@ import type {
   GitCommit,
   GitProjectSnapshot,
   GitSnapshotInput,
+  WorkingTreeDiffInput,
 } from "./git-client";
 
 export function createTauriGitClient(): GitClient {
@@ -26,12 +27,16 @@ export function createTauriGitClient(): GitClient {
     async diffRefs(path: string, baseRef: string, headRef: string): Promise<string> {
       return invoke<string>("git_diff_refs", { path, baseRef, headRef });
     },
-    async diffWorkingTree(
-      path: string,
-      baseRef: string,
-      eligiblePaths: string[],
-    ): Promise<string> {
-      return invoke<string>("git_diff_working_tree", { path, baseRef, eligiblePaths });
+    async diffWorkingTree(input: WorkingTreeDiffInput): Promise<string> {
+      return invoke<string>("git_diff_working_tree", {
+        path: input.path,
+        baseRef: input.baseRef,
+        eligiblePaths: input.eligiblePaths,
+        ignoreSubmodules: input.ignoreSubmodules,
+      });
+    },
+    async listSubmodulePaths(path: string): Promise<string[]> {
+      return invoke<string[]>("git_list_submodule_paths", { path });
     },
   };
 }

@@ -97,8 +97,19 @@ pub fn git_diff_working_tree(
     path: String,
     base_ref: String,
     eligible_paths: Vec<String>,
+    ignore_submodules: bool,
 ) -> Result<String, String> {
-    git::working_tree_diff(&path, &base_ref, &eligible_paths)
+    git::working_tree_diff(git::WorkingTreeDiffInput {
+        path: &path,
+        base_ref: &base_ref,
+        eligible_paths: &eligible_paths,
+        ignore_submodules,
+    })
+}
+
+#[tauri::command]
+pub fn git_list_submodule_paths(path: String) -> Result<Vec<String>, String> {
+    git::list_submodule_paths(&path)
 }
 
 #[tauri::command]

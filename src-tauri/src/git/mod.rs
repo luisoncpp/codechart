@@ -1,10 +1,12 @@
 // @Architecture(descriptionShort="Git helpers for listing commits and reading tree snapshots")
 mod metrics;
 mod metrics_log;
+mod submodules;
 mod working_tree;
 
 pub use metrics::{enrich_module_metrics, DEFAULT_METRICS_WINDOW_DAYS};
-pub use working_tree::working_tree_diff;
+pub use submodules::list_submodule_paths;
+pub use working_tree::{working_tree_diff, WorkingTreeDiffInput};
 
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read, Write};

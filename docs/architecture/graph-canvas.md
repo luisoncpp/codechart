@@ -103,7 +103,8 @@ Both deep modules organize their implementation into subfolders, each a config s
 - **Diff overlay (narrative diff visualizer):** optional session overlay from `GraphSessionStore.getDiffOverlay()`.
   Enter via toolbar **View ▾ → Visualize diff…** (`DiffModal`: paste unified diff or pick two git revisions when the
   project root is a repo). The **after** list includes **Local changes**: tracked staged/unstaged
-  changes come from `git diff <before>`, while untracked files are full-add patches only when they
+  changes come from `git diff <before>` (with optional `--ignore-submodules=all` via **Exclude submodules**,
+  default on; also drops modules under gitlink paths from the graph compare), while untracked files are full-add patches only when they
   survive Git ignore rules and have a module in the loaded graph. `domain/diff` compares before/after graphs (git mode) or parses diff paths
   (paste mode); **unchanged modules render at ~40% opacity** so affected/deleted modules pop;
   **group titles and descriptions dim to the same level** so module diff highlights read first.

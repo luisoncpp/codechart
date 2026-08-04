@@ -39,6 +39,7 @@ pub fn run() {
             tauri_api::git_list_commits,
             tauri_api::git_diff_refs,
             tauri_api::git_diff_working_tree,
+            tauri_api::git_list_submodule_paths,
             tauri_api::load_review_notes,
             tauri_api::save_review_notes,
             tauri_api::load_diff_review,

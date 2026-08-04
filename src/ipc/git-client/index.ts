@@ -3,6 +3,7 @@ export type {
   GitCommit,
   GitProjectSnapshot,
   GitSnapshotInput,
+  WorkingTreeDiffInput,
 } from "./Private/git-client";
 export { LOCAL_CHANGES_REF } from "./Private/git-client";
 export { createTauriGitClient } from "./Private/tauri-git-client";
