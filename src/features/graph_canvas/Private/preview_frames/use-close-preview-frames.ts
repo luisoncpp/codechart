@@ -1,7 +1,26 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
-/** Any click landing outside every open frame closes only unpinned frames. */
+/**
+ * Outside clicks / canvas moves close unpinned frames. Opening a frame arms a
+ * one-tick grace period so the same gesture that opened it (menu click-through
+ * onto the pane, or React Flow `onMoveStart`) cannot dismiss it immediately —
+ * needed when a pinned frame already kept this listener attached.
+ */
 export function useClosePreviewFrames(active: boolean, closeUnpinned: () => void) {
+  const suppressRef = useRef(false);
+
+  const armOpenGrace = useCallback(() => {
+    suppressRef.current = true;
+    setTimeout(/*endOpenGrace*/ () => {
+      suppressRef.current = false;
+    }, /*delayInMs=*/0);
+  }, []);
+
+  const closeIfAllowed = useCallback(() => {
+    if (suppressRef.current) return;
+    closeUnpinned();
+  }, [closeUnpinned]);
+
   useEffect(() => {
     if (!active) return;
     const handler = (e: MouseEvent) => {
@@ -11,7 +30,7 @@ export function useClosePreviewFrames(active: boolean, closeUnpinned: () => void
       for (const widget of widgets) {
         if (widget.contains(e.target as globalThis.Node)) return;
       }
-      closeUnpinned();
+      closeIfAllowed();
     };
     const timer = setTimeout(/*attachAfterOpeningClick*/ () => {
       document.addEventListener("click", handler);
@@ -20,5 +39,7 @@ export function useClosePreviewFrames(active: boolean, closeUnpinned: () => void
       clearTimeout(timer);
       document.removeEventListener("click", handler);
     };
-  }, [active, closeUnpinned]);
+  }, [active, closeIfAllowed]);
+
+  return { armOpenGrace, closeIfAllowed };
 }

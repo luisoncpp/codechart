@@ -200,6 +200,21 @@ fn implements_clause_names_are_extracted() {
 // ---- Tauri IPC invoke extraction ----------------------------------------
 
 #[test]
+fn scoped_package_import_is_parsed() {
+    let m = parse(
+        "src/ipc/client.ts",
+        r#"import { invoke } from "@tauri-apps/api/core";"#,
+    );
+    assert_eq!(specifiers(&m), vec!["@tauri-apps/api/core"]);
+}
+
+#[test]
+fn path_alias_import_is_parsed() {
+    let m = parse("src/a.ts", r#"import { store } from "@/core/store";"#);
+    assert_eq!(specifiers(&m), vec!["@/core/store"]);
+}
+
+#[test]
 fn invoke_call_with_tauri_import_is_recorded() {
     let src = r#"
 import { invoke } from "@tauri-apps/api/core";

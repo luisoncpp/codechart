@@ -29,8 +29,9 @@ use crate::project_config::{
 use crate::project_source::ProjectSource;
 use crate::references::{
     classify_interface_seams, classify_soft, classify_tauri_ipc, classify_unity_assets, flag_drift,
-    resolve_references_with_options, GroupBoundaries,
+    resolve_imports, GroupBoundaries,
 };
+use crate::tsconfig_paths::load_from_source;
 use crate::unity_assets::index_meta_files;
 use crate::{unreal_options_from_source, UnrealOptions};
 
@@ -87,7 +88,8 @@ pub fn analyze_project_with_options(
     let module_paths: Vec<String> = parsed.iter().map(|f| f.module.path.clone()).collect();
     let groups = resolve_groups(&module_paths, &defs);
     let parsed_modules: Vec<ParsedModule> = parsed.iter().map(|f| f.module.clone()).collect();
-    let (edges, ref_diags) = resolve_edges(&parsed_modules, &groups, &meta_index, &unreal);
+    let ts_paths = load_from_source(source);
+    let (edges, ref_diags) = resolve_edges(&parsed_modules, &groups, &meta_index, &unreal, &ts_paths);
 
     let mut modules = build_modules(&parsed, &groups, &edges);
     if crate::git::is_git_repo(root) {
@@ -115,8 +117,14 @@ fn resolve_edges(
     groups: &ResolvedGroups,
     meta_index: &std::collections::BTreeMap<String, String>,
     unreal: &UnrealOptions,
+    ts_paths: &crate::tsconfig_paths::PathAliases,
 ) -> (Vec<Edge>, Vec<Diagnostic>) {
-    let mut refs = resolve_references_with_options(parsed, unreal);
+    let aliases = if ts_paths.mappings.is_empty() {
+        None
+    } else {
+        Some(ts_paths)
+    };
+    let mut refs = resolve_imports(parsed, unreal, aliases);
     let bounds = group_boundaries(groups);
     let violations = flag_drift(&mut refs.edges, &bounds);
     let import_pairs = collect_import_pairs(&refs.edges);

@@ -34,9 +34,10 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contract::{Diagnostic, DiagnosticKind, Edge, EdgeKind, Severity};
 use crate::language_adapter::{ParsedImport, ParsedModule};
+use crate::tsconfig_paths::{mapped_path, PathAliases};
 use crate::UnrealOptions;
 
-use resolve::{is_asset_import, is_relative, resolve_relative};
+use resolve::{is_asset_import, is_relative, resolve_path, resolve_relative};
 
 use cpp::{is_cpp_path, resolve_cpp_import, CppResolution};
 use csharp::{
@@ -54,12 +55,21 @@ pub struct ResolvedReferences {
 /// Resolve every import/re-export in `parsed` into edges and diagnostics. Known
 /// module ids are the parsed paths themselves (caller owns id = path).
 pub fn resolve_references(parsed: &[ParsedModule]) -> ResolvedReferences {
-    resolve_references_with_options(parsed, &UnrealOptions::default())
+    resolve_imports(parsed, &UnrealOptions::default(), None)
 }
 
 pub fn resolve_references_with_options(
     parsed: &[ParsedModule],
     options: &UnrealOptions,
+) -> ResolvedReferences {
+    resolve_imports(parsed, options, None)
+}
+
+/// Like [`resolve_references_with_options`], but resolves tsconfig `paths` aliases.
+pub fn resolve_imports(
+    parsed: &[ParsedModule],
+    options: &UnrealOptions,
+    ts_paths: Option<&PathAliases>,
 ) -> ResolvedReferences {
     let known: BTreeSet<&str> = parsed.iter().map(|m| m.path.as_str()).collect();
     let exports = index_exports(parsed);
@@ -72,6 +82,7 @@ pub fn resolve_references_with_options(
             known: &known,
             exports: &exports,
             options,
+            ts_paths,
         };
         resolve_module(module, &ctx, &mut targets, &mut diagnostics);
     }
@@ -85,6 +96,7 @@ struct ResolveContext<'a> {
     known: &'a BTreeSet<&'a str>,
     exports: &'a BTreeMap<(String, String), Vec<String>>,
     options: &'a UnrealOptions,
+    ts_paths: Option<&'a PathAliases>,
 }
 
 /// Resolve one module's imports + re-exports, appending edge targets / diagnostics.
@@ -102,20 +114,72 @@ fn resolve_module(
         resolve_cpp_module(module, ctx, targets, diagnostics);
         return;
     }
+    if uses_ts_path_aliases(&module.path) {
+        resolve_ts_module(module, ctx, targets, diagnostics);
+        return;
+    }
     for import in module.imports.iter().chain(module.reexports.iter()) {
         if !is_relative(&import.specifier) || is_asset_import(&import.specifier) {
             continue;
         }
-        match resolve_relative(
-            &module.path,
-            &import.specifier,
-            ctx.known,
-            /*item_fallback=*/ module.path.ends_with(".rs"),
-        ) {
+        resolve_relative_import(module, import, ctx, targets, diagnostics);
+    }
+}
+
+fn resolve_ts_module(
+    module: &ParsedModule,
+    ctx: &ResolveContext,
+    targets: &mut Vec<(String, String)>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    for import in module.imports.iter().chain(module.reexports.iter()) {
+        if is_asset_import(&import.specifier) {
+            continue;
+        }
+        if is_relative(&import.specifier) {
+            resolve_relative_import(module, import, ctx, targets, diagnostics);
+            continue;
+        }
+        let Some(aliases) = ctx.ts_paths else {
+            continue;
+        };
+        let Some(base) = mapped_path(aliases, &import.specifier) else {
+            continue;
+        };
+        match resolve_path(&base, ctx.known) {
             Some(target) => targets.push((module.path.clone(), target)),
             None => diagnostics.push(unresolved(&module.path, import)),
         }
     }
+}
+
+fn resolve_relative_import(
+    module: &ParsedModule,
+    import: &ParsedImport,
+    ctx: &ResolveContext,
+    targets: &mut Vec<(String, String)>,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    match resolve_relative(
+        &module.path,
+        &import.specifier,
+        ctx.known,
+        /*item_fallback=*/ module.path.ends_with(".rs"),
+    ) {
+        Some(target) => targets.push((module.path.clone(), target)),
+        None => diagnostics.push(unresolved(&module.path, import)),
+    }
+}
+
+fn uses_ts_path_aliases(path: &str) -> bool {
+    path.ends_with(".ts")
+        || path.ends_with(".tsx")
+        || path.ends_with(".mts")
+        || path.ends_with(".cts")
+        || path.ends_with(".js")
+        || path.ends_with(".jsx")
+        || path.ends_with(".mjs")
+        || path.ends_with(".cjs")
 }
 
 fn resolve_cpp_module(
