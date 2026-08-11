@@ -79,8 +79,9 @@ unknown paths → `configError:disconnect:…`. Resolved ids land on
 `GroupNode.disconnectedByDefault` / `disconnectedModuleIds` in the contract.
 
 **Folder inference (`infer.rs`):** with **no** `*.group.md` at all, infer one
-`folder:<dir>` group per directory containing source files, `index.ts/tsx` facade,
-directory nesting for parentId.
+`folder:<dir>` group per directory on the path from root to each file's parent
+(including intermediate folders that only contain subdirectories), `index.ts/tsx`
+facade, directory nesting for parentId.
 
 ### Sibling-facade deep modules
 

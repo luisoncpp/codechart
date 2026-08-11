@@ -283,6 +283,33 @@ fn folder_inference_when_no_group_files() {
 }
 
 #[test]
+fn folder_inference_includes_intermediate_directories() {
+    let fs = files(&[
+        "crates/planning-app/src/lib.rs",
+        "crates/planning-app/src/private/mod.rs",
+        "crates/planning-core/src/lib.rs",
+    ]);
+    let r = resolve_groups(&fs, &[]);
+    assert_eq!(
+        group(&r, "folder:crates/planning-app/src").parent_id.as_deref(),
+        Some("folder:crates/planning-app")
+    );
+    assert_eq!(
+        group(&r, "folder:crates/planning-app").parent_id.as_deref(),
+        Some("folder:crates")
+    );
+    assert_eq!(
+        group(&r, "folder:crates/planning-core/src").parent_id.as_deref(),
+        Some("folder:crates/planning-core")
+    );
+    assert_ne!(
+        group(&r, "folder:crates/planning-app/src").parent_id,
+        None,
+        "src should nest under its crate, not at root"
+    );
+}
+
+#[test]
 fn disconnected_defaults_map_to_group_node_fields() {
     let mut shared = def("shared", "");
     shared.disconnected = true;

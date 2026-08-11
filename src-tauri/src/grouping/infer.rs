@@ -9,7 +9,11 @@ use super::ResolvedGroups;
 
 /// Infer groups purely from the directory tree of `files`.
 pub fn infer_groups(files: &[String]) -> ResolvedGroups {
-    let dirs: BTreeSet<String> = files.iter().filter_map(|f| parent_dir(f)).collect();
+    let dirs: BTreeSet<String> = files
+        .iter()
+        .filter_map(|f| parent_dir(f))
+        .flat_map(|dir| dir_prefixes(&dir))
+        .collect();
     let mut module_group = BTreeMap::new();
     let mut facades = BTreeSet::new();
     for file in files {
@@ -67,6 +71,17 @@ fn nearest_dir_group(dir: &str, dirs: &BTreeSet<String>) -> Option<String> {
 
 fn parent_dir(path: &str) -> Option<String> {
     path.rsplit_once('/').map(|(dir, _)| dir.to_string())
+}
+
+/// Every prefix of `dir`, e.g. `crates/app/src` → `crates`, `crates/app`, `crates/app/src`.
+fn dir_prefixes(dir: &str) -> Vec<String> {
+    if dir.is_empty() {
+        return Vec::new();
+    }
+    let parts: Vec<&str> = dir.split('/').collect();
+    (1..=parts.len())
+        .map(|n| parts[..n].join("/"))
+        .collect()
 }
 
 fn group_id(dir: &str) -> String {
