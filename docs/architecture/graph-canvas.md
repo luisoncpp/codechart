@@ -339,12 +339,16 @@ hidden by zoom collapse.
   (`placeAdjacentFrame`, pure; live DOM rects honor user resize/drag). Same module+symbol dedupes to a
   bring-to-front. Each frame exposes a pin toggle in its header; an outside click closes only unpinned
   frames, while pinned frames remain open. Clicks inside any frame (scrollbars included) close nothing;
-  direct close closes that frame, and canvas move-start events close only unpinned frames. Review Note navigation preserves its
+  direct close closes that frame, and canvas move-start events close only unpinned frames. Opening a
+  frame arms a one-tick close grace (`armOpenGrace` in `use-close-preview-frames`) so the opening
+  gesture cannot immediately dismiss the new unpinned frame — required when a pinned frame already
+  kept the outside-click listener attached. Review Note navigation preserves its
   preview during the programmatic move that centers the owning module. **Open file preview** in a module or symbol
-  context menu opens the parent module at the cursor without entering L2. The document frame starts
-  at the top and composes the same preferred module description plus complete highlighted source as
-  the L2 document. It retains clickable cross-module identifiers and diff rows; like a canvas symbol
-  click, opening it replaces existing frames.
+  context menu opens the parent module at the cursor without entering L2 (menu marked
+  `data-preview-keep`; close is deferred one tick so the click cannot fall through onto the canvas).
+  The document frame starts at the top and composes the same preferred module description plus complete
+  highlighted source as the L2 document. It retains clickable cross-module identifiers and diff rows;
+  like a canvas symbol click, opening it closes other unpinned frames while preserving pinned ones.
 - **Find in frame (Ctrl/Cmd+F):** each frame has its own find bar (header `⌕` icon, or Ctrl/Cmd+F
   targeting the focused frame first, else the hovered one; unclaimed presses fall through to the
   browser — the global project search stays on Ctrl+Shift+F). All find state is component-local in

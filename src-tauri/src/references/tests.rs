@@ -417,6 +417,41 @@ fn package_import_is_external_metadata() {
 }
 
 #[test]
+fn resolves_tsconfig_path_alias_import() {
+    use crate::tsconfig_paths::PathAliases;
+    let parsed = vec![
+        module("src/ui/App.tsx", &["@/core/store"]),
+        module("src/core/store.ts", &[]),
+    ];
+    let aliases = PathAliases {
+        config_dir: String::new(),
+        base_url: ".".to_string(),
+        mappings: vec![("@/*".to_string(), "./src/*".to_string())],
+    };
+    let refs = resolve_imports(&parsed, &Default::default(), Some(&aliases));
+    assert_eq!(
+        refs.edges[0].source,
+        "src/ui/App.tsx"
+    );
+    assert_eq!(refs.edges[0].target, "src/core/store.ts");
+    assert!(refs.diagnostics.is_empty());
+}
+
+#[test]
+fn scoped_package_import_stays_external_with_path_aliases() {
+    use crate::tsconfig_paths::PathAliases;
+    let parsed = vec![module("src/a.ts", &["@tauri-apps/api/core"])];
+    let aliases = PathAliases {
+        config_dir: String::new(),
+        base_url: ".".to_string(),
+        mappings: vec![("@/*".to_string(), "./src/*".to_string())],
+    };
+    let refs = resolve_imports(&parsed, &Default::default(), Some(&aliases));
+    assert!(refs.edges.is_empty());
+    assert!(refs.diagnostics.is_empty());
+}
+
+#[test]
 fn json_asset_import_is_external_metadata() {
     let parsed = vec![module(
         "src/ipc/analysis-client/Private/mock-analysis-client.ts",

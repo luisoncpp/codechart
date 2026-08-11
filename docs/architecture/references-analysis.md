@@ -26,6 +26,11 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
   `../analysis/analyze_project` where `analyze_project` is a fn in `analysis/mod.rs`,
   not a submodule file).   Still no hit → `unresolvedImport` diagnostic (severity
   `warning`, no ghost edge in M1).
+- **TypeScript path alias** specifier (`@/…` and other `compilerOptions.paths`
+  entries from root `tsconfig.json` / `jsconfig.json`) → mapped to a repo-relative
+  path via `tsconfig_paths`, then resolved like an extensionless import. Miss →
+  `unresolvedImport`. Scoped npm packages (`@scope/pkg` without a matching paths
+  entry) stay external metadata.
 - **Relative asset** specifier (`.json`, images, fonts, media, … — see
   `resolve::is_asset_import`) → external metadata: neither edge nor diagnostic.
   Bundled fixtures and static assets are not parsed modules.

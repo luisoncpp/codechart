@@ -74,13 +74,16 @@ export function ModuleContextMenu({
 
   const openPreview = () => {
     onOpenPreview(menu);
-    closeMenu();
+    // Defer unmount so this click cannot fall through onto the canvas and
+    // dismiss the frame that openPreview just requested (pinned-frame case).
+    setTimeout(/*closeAfterClickSettles*/ () => closeMenu(), /*delayInMs=*/0);
   };
 
   return (
     <>
       <div
         role="presentation"
+        data-preview-keep
         style={{ position: "fixed", inset: 0, zIndex: 1000 }}
         onClick={closeMenu}
         onContextMenu={(e) => {
@@ -90,6 +93,7 @@ export function ModuleContextMenu({
       />
       <div
         role="menu"
+        data-preview-keep
         style={{
           position: "fixed",
           top: menu.y,

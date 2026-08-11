@@ -14,6 +14,7 @@ pub mod review_notes;
 pub mod search;
 pub mod semantic_comments;
 pub mod tauri_api;
+pub mod tsconfig_paths;
 pub mod unity_assets;
 pub mod unreal_config;
 

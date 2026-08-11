@@ -69,12 +69,23 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     [graph, store],
   );
 
+  const closeTransient = useCallback(
+    () => setFrames((previous) => closeUnpinned(previous)),
+    [],
+  );
+
+  const { armOpenGrace, closeIfAllowed } = useClosePreviewFrames(
+    frames.length > 0,
+    closeTransient,
+  );
+
   const open = useCallback(
     (
       mode: "close-unpinned" | "keep-all",
       frame: Omit<PreviewFrame, "id" | "zIndex" | "pinned">,
     ) => {
       const initialFindQuery = getFindQuery() || undefined;
+      armOpenGrace();
       setFrames((prev) => {
         const base = mode === "close-unpinned" ? closeUnpinned(prev) : prev;
         return openFrame(base, {
@@ -85,7 +96,7 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
         });
       });
     },
-    [getFindQuery],
+    [armOpenGrace, getFindQuery],
   );
 
   /** Symbol node clicked on the canvas: replace all frames with one next to it. */
@@ -177,13 +188,6 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     [graph, store, containerRef, open, moduleSources, prefetchSources],
   );
 
-  const closeTransient = useCallback(
-    () => setFrames((previous) => closeUnpinned(previous)),
-    [],
-  );
-
-  useClosePreviewFrames(frames.length > 0, closeTransient);
-
   const handlers = useMemo<FrameHandlers>(
     () => ({
       onClose: (id) => setFrames((prev) => prev.filter((f) => f.id !== id)),
@@ -213,7 +217,7 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     openFromSymbolNode,
     openDocumentPreview,
     openReviewNotePreview,
-    closeTransient,
+    closeTransient: closeIfAllowed,
     framesView: <PreviewFramesView frames={frames} clickableByModule={clickableByModule} diffOverlay={diffOverlay} handlers={handlers} />,
   };
 }

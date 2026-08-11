@@ -5,7 +5,7 @@
 3. **Sequence**
    1. `GraphCanvasController.moduleForContextMenu(node)` — resolves the module id, graph-relative path, and display color (symbols use their parent module).
    2. `ModuleContextMenu` opens at the cursor with **Open file preview**, **Open in editor**, **Copy relative path**, and **Reveal in file explorer**.
-   3. **Open file preview** passes the resolved module id, color, and cursor position to `usePreviewFrames.openDocumentPreview`; it lazy-loads the source and opens the full L2 document composition in a frame.
+   3. **Open file preview** passes the resolved module id, color, and cursor position to `usePreviewFrames.openDocumentPreview`; it lazy-loads the source and opens the full L2 document composition in a frame. The menu carries `data-preview-keep` and closes on a deferred tick so the click cannot fall through onto the canvas and dismiss the new preview.
    4. **Open in editor** joins `projectRoot` and `modulePath`, then calls `ShellClient.openInEditor(absolutePath, editor)` with the project setting.
    5. **Copy relative path** writes the graph-relative `modulePath` directly to `navigator.clipboard`.
    6. **Reveal in file explorer** joins `projectRoot` and `modulePath`, then calls `ShellClient.revealInExplorer(absolutePath)`.

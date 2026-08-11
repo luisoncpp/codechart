@@ -214,6 +214,52 @@ describe("flow: preview-symbol", () => {
     });
   });
 
+  it("reopens a document preview after closing it while a pinned frame remains", async () => {
+    const store = await readyGraphStore();
+    store.setZoomLevel(/*level=*/1.5);
+    const symbolId = "src/core/store.ts::TodoStore";
+    const moduleId = "src/core/todo.ts";
+
+    const { container } = await clickSymbolOnCanvas(store, symbolId);
+    await waitFor(() =>
+      expect(document.querySelectorAll(".symbol-widget").length).toBe(1),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Pin frame" }));
+    // Flush the setTimeout(0) that attaches the outside-click listener while
+    // a pinned frame keeps `active` true across later open/close cycles.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    const moduleNode = await waitFor(() => {
+      const node = container.querySelector(`[data-id="${moduleId}"]`);
+      expect(node).toBeTruthy();
+      return node!;
+    });
+
+    const openTodoPreview = async () => {
+      fireEvent.contextMenu(moduleNode);
+      fireEvent.click(
+        await screen.findByRole("menuitem", { name: "Open file preview" }),
+      );
+    };
+
+    await openTodoPreview();
+    await waitFor(() => {
+      expect(document.querySelectorAll(".symbol-widget").length).toBe(2);
+    });
+
+    fireEvent.click(container.querySelector(".react-flow__pane")!);
+    await waitFor(() => {
+      expect(document.querySelectorAll(".symbol-widget").length).toBe(1);
+    });
+
+    // Source is cached from the first open — the reopen path is the fast one.
+    await openTodoPreview();
+    await waitFor(() => {
+      expect(document.querySelectorAll(".symbol-widget").length).toBe(2);
+    });
+  });
   it("allows navigating to another definition from inside a pinned frame", async () => {
     const store = await readyGraphStore();
     store.setZoomLevel(/*level=*/1.5);
