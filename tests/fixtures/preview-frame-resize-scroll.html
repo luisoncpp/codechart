@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Preview frame resize → horizontal scroll repro</title>
+  <style>
+    /*
+      Mirrors preview frame chrome from graph-canvas.css + DiffCodeLines inline styles.
+      DiffCodeLines sets white-space:pre inline (overrides .symbol-widget__line pre-wrap),
+      so long lines create a real horizontal scrollbar on .symbol-widget__body.
+    */
+    body {
+      margin: 24px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      background: #e2e8f0;
+    }
+    .hint {
+      max-width: 720px;
+      margin-bottom: 16px;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    .symbol-widget {
+      position: relative;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+      display: flex;
+      flex-direction: column;
+      min-width: 250px;
+      min-height: 180px;
+      /* Narrower than the app default (680) so the SE grip stays on-screen in small windows */
+      width: 420px;
+      height: 280px;
+      resize: both;
+      overflow: hidden;
+    }
+    .symbol-widget__header {
+      flex: 0 0 auto;
+      padding: 8px 12px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      cursor: move;
+      user-select: none;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .symbol-widget__body {
+      flex: 1 1 0%;
+      min-height: 0;
+      overflow: auto;
+      background: #fafafa;
+    }
+    .symbol-widget__code {
+      margin: 0;
+      padding: 8px 0;
+      font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+      font-size: 12.5px;
+      line-height: 1.4;
+      color: #334155;
+    }
+    .symbol-widget__line {
+      display: flex;
+      align-items: flex-start;
+      padding: 0 12px;
+      white-space: pre; /* DiffCodeLines inline style */
+    }
+    .symbol-widget__ln {
+      flex: 0 0 24px;
+      text-align: right;
+      padding-right: 8px;
+      color: #94a3b8;
+      user-select: none;
+      font-size: 10px;
+    }
+    .symbol-widget__text { flex: 1; }
+    .readout {
+      margin-top: 12px;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 12px;
+      color: #0f172a;
+      white-space: pre-wrap;
+    }
+    .fail { color: #b91c1c; font-weight: 700; }
+    code { font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="hint">
+    <strong>Goal:</strong> while <code>scrollLeft === 0</code>, drag the frame’s bottom-right
+    resize grip and watch whether <code>scrollLeft</code> becomes &gt; 0.
+    <br /><br />
+    <strong>In-app twin:</strong>
+    <code>src/features/graph_canvas/Private/highlight/highlighter-language-rules.ts</code>
+    (C++ keyword regex ≈ 708 chars) or
+    <code>tests/fixtures/preview-frame-hscroll/long-lines.ts</code>.
+    <br /><br />
+    Try combinations: shrink/grow width, shrink height until the vertical scrollbar
+    appears, grow height until it disappears, resize from the exact SE corner where
+    the H/V scrollbar junction meets the CSS resize grip.
+  </div>
+
+  <div class="symbol-widget" id="widget" tabindex="-1">
+    <div class="symbol-widget__header">highlighter-language-rules.ts (fixture mirror)</div>
+    <div class="symbol-widget__body" id="body">
+      <pre class="symbol-widget__code" id="code"></pre>
+    </div>
+  </div>
+
+  <div class="readout" id="readout"></div>
+
+  <script>
+    const LONG =
+      '  { type: "keyword", regex: /^\\b(alignas|alignof|and|and_eq|asm|auto|bitand|bitor|bool|break|case|catch|char|char8_t|char16_t|char32_t|class|compl|concept|const|consteval|constexpr|constinit|const_cast|continue|co_await|co_return|co_yield|decltype|default|delete|do|double|dynamic_cast|else|enum|explicit|export|extern|false|float|for|friend|goto|if|inline|int|long|mutable|namespace|new|noexcept|not|not_eq|nullptr|operator|or|or_eq|private|protected|public|register|reinterpret_cast|requires|return|short|signed|sizeof|static|static_assert|static_cast|struct|switch|template|this|thread_local|throw|true|try|typedef|typeid|typename|union|unsigned|using|virtual|void|volatile|wchar_t|while|xor|xor_eq)\\b/ },';
+
+    const lines = [
+      "export const cppKeywords = [",
+      LONG,
+      "];",
+      ...Array.from({ length: 40 }, (_, i) => `function pad() { return ${i + 1}; }`),
+    ];
+
+    const code = document.getElementById("code");
+    lines.forEach((text, i) => {
+      const row = document.createElement("div");
+      row.className = "symbol-widget__line";
+      row.innerHTML =
+        `<span class="symbol-widget__ln">${i + 1}</span>` +
+        `<span class="symbol-widget__text"></span>`;
+      row.querySelector(".symbol-widget__text").textContent = text;
+      code.appendChild(row);
+    });
+
+    const body = document.getElementById("body");
+    const widget = document.getElementById("widget");
+    const readout = document.getElementById("readout");
+    let maxScrollLeft = 0;
+
+    function paint() {
+      const sl = body.scrollLeft;
+      if (sl > maxScrollLeft) maxScrollLeft = sl;
+      readout.innerHTML =
+        `scrollLeft=${sl}  scrollTop=${body.scrollTop}  ` +
+        `client=${body.clientWidth}x${body.clientHeight}  ` +
+        `scroll=${body.scrollWidth}x${body.scrollHeight}  ` +
+        `widget=${Math.round(widget.getBoundingClientRect().width)}x${Math.round(widget.getBoundingClientRect().height)}\n` +
+        `maxScrollLeftSeen=${maxScrollLeft}` +
+        (maxScrollLeft > 0
+          ? `  <span class="fail">BUG: horizontal scroll moved away from 0</span>`
+          : "");
+    }
+
+    body.addEventListener("scroll", paint);
+    new ResizeObserver(paint).observe(widget);
+    paint();
+  </script>
+</body>
+</html>
