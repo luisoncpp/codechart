@@ -249,6 +249,10 @@ describe("flow: preview-symbol", () => {
       expect(document.querySelectorAll(".symbol-widget").length).toBe(2);
     });
 
+    await act(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    });
     fireEvent.click(container.querySelector(".react-flow__pane")!);
     await waitFor(() => {
       expect(document.querySelectorAll(".symbol-widget").length).toBe(1);

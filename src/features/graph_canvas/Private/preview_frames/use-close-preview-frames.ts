@@ -2,19 +2,33 @@ import { useCallback, useEffect, useRef } from "react";
 
 /**
  * Outside clicks / canvas moves close unpinned frames. Opening a frame arms a
- * one-tick grace period so the same gesture that opened it (menu click-through
- * onto the pane, or React Flow `onMoveStart`) cannot dismiss it immediately —
- * needed when a pinned frame already kept this listener attached.
+ * short grace period (through the next paint) so the same gesture that opened
+ * it (menu click-through onto the pane, or React Flow `onMoveStart`) cannot
+ * dismiss it immediately — needed when a pinned frame already kept this
+ * listener attached.
  */
 export function useClosePreviewFrames(active: boolean, closeUnpinned: () => void) {
   const suppressRef = useRef(false);
+  const clearGraceHandleRef = useRef<number | null>(null);
+
+  const cancelPendingClear = useCallback(() => {
+    if (clearGraceHandleRef.current === null) return;
+    cancelAnimationFrame(clearGraceHandleRef.current);
+    clearGraceHandleRef.current = null;
+  }, []);
 
   const armOpenGrace = useCallback(() => {
     suppressRef.current = true;
-    setTimeout(/*endOpenGrace*/ () => {
-      suppressRef.current = false;
-    }, /*delayInMs=*/0);
-  }, []);
+    cancelPendingClear();
+    const firstFrame = requestAnimationFrame(() => {
+      const secondFrame = requestAnimationFrame(() => {
+        suppressRef.current = false;
+        clearGraceHandleRef.current = null;
+      });
+      clearGraceHandleRef.current = secondFrame;
+    });
+    clearGraceHandleRef.current = firstFrame;
+  }, [cancelPendingClear]);
 
   const closeIfAllowed = useCallback(() => {
     if (suppressRef.current) return;

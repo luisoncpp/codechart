@@ -22,6 +22,11 @@ Object.defineProperties(global.HTMLElement.prototype, {
   offsetWidth: { get() { return 800; } },
 });
 
+// Pump rAF with macrotasks so grace windows and layout hooks settle under waitFor/act.
+global.requestAnimationFrame = (callback) =>
+  setTimeout(() => callback(performance.now()), 0) as unknown as number;
+global.cancelAnimationFrame = (id) => clearTimeout(id);
+
 if (!global.HTMLElement.prototype.scrollIntoView) {
   global.HTMLElement.prototype.scrollIntoView = () => {};
 }

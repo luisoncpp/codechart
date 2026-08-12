@@ -48,16 +48,21 @@ describe("preview frame reopen while pinned", () => {
       expect(document.querySelectorAll(".symbol-widget").length).toBe(2);
     });
 
+    await act(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    });
     fireEvent.click(container.querySelector(".react-flow__pane")!);
     await waitFor(() => {
       expect(document.querySelectorAll(".symbol-widget").length).toBe(1);
     });
 
-    // Reopen with cached source (microtask-fast), then simulate the canvas
-    // move-start that follows when the menu unmounts under the click.
+    // Reopen with cached source (microtask-fast), let one macrotick pass (when the
+    // old single-timeout grace would have ended), then simulate the late canvas
+    // move-start that follows menu unmount — double-rAF grace must still cover it.
     await openTodoPreview();
     await act(async () => {
-      await Promise.resolve();
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
       const onMoveStart = recorded.props?.onMoveStart as (event: MouseEvent) => void;
       onMoveStart(new MouseEvent("pointerdown"));
     });
