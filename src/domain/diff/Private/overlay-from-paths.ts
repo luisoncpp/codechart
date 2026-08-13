@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Builds a module-only diff overlay from pasted unified diff text")
-import type { ModuleNode, ProjectGraph } from "../../graph";
+import type { Language, ModuleNode, ProjectGraph } from "../../graph";
 import { pathsFromUnifiedDiff } from "./parse-unified-diff";
 import type { GraphDiffCore } from "./types";
 
@@ -20,7 +20,7 @@ export function overlayFromPastedDiff(
   for (const path of paths.deleted) {
     deletedModuleIds.add(path);
     if (knownIds.has(path)) affectedModuleIds.add(path);
-    else ghostModules.push(minimalGhostModule(path));
+    else ghostModules.push(minimalGhostModule(path, graph));
   }
 
   return {
@@ -35,14 +35,43 @@ export function overlayFromPastedDiff(
   };
 }
 
-function minimalGhostModule(path: string): ModuleNode {
+function inferGroupIdForPath(path: string, graph: ProjectGraph): string | null {
+  const segments = path.split("/");
+  for (let i = segments.length - 1; i >= 1; i--) {
+    const dir = segments.slice(0, i).join("/");
+    const sibling = graph.modules.find(
+      (m) => m.path.startsWith(dir + "/") && m.groupId !== null,
+    );
+    if (sibling?.groupId) return sibling.groupId;
+
+    const group = graph.groups.find(
+      (g) => g.id === dir || g.id.endsWith("/" + dir) || dir.endsWith("/" + g.id) || g.id === segments[i - 1],
+    );
+    if (group) return group.id;
+  }
+  return null;
+}
+
+function inferLanguageForPath(path: string): Language {
+  const ext = path.slice(path.lastIndexOf(".")).toLowerCase();
+  if (ext === ".rs") return "rust";
+  if (ext === ".cpp" || ext === ".cc" || ext === ".cxx" || ext === ".c" || ext === ".hpp" || ext === ".h") return "cpp";
+  if (ext === ".cs") return "csharp";
+  if (ext === ".tsx") return "tsx";
+  if (ext === ".css") return "css";
+  if (ext === ".prefab") return "unityPrefab";
+  return "typescript";
+}
+
+function minimalGhostModule(path: string, graph?: ProjectGraph): ModuleNode {
   const label = path.split("/").pop() ?? path;
+  const groupId = graph ? inferGroupIdForPath(path, graph) : null;
   return {
     id: path,
     path,
     label,
-    language: "typescript",
-    groupId: null,
+    language: inferLanguageForPath(path),
+    groupId,
     isFacade: false,
     metrics: { loc: 0 },
     exportedSymbols: [],

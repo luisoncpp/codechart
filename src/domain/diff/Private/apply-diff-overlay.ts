@@ -1,8 +1,8 @@
 // @Architecture(descriptionShort="Stamps diff state onto projected React Flow nodes and edges")
 import type { Edge, ProjectedGraph, RFEdgeT, RFNode } from "../../graph";
-import type { LayoutBox } from "../../layout";
 import type { GraphDiffOverlay } from "./types";
 import { applySymbolDiffNodes } from "./apply-symbol-diff";
+import { placeGhostModules } from "./place-ghost-modules";
 
 /** Stamp diff overlay state onto projected nodes and edges. */
 export function applyDiffOverlay(
@@ -13,7 +13,7 @@ export function applyDiffOverlay(
   const showSymbols = stampedNodes.some(
     (node) => node.type === "module" && node.data.showSymbols,
   );
-  const ghostNodes = ghostModuleNodes(overlay, showSymbols);
+  const ghostNodes = placeGhostModules(overlay, showSymbols, stampedNodes);
   const nodes = applySymbolDiffNodes([...stampedNodes, ...ghostNodes], overlay);
   const edges = projected.edges.map(stampEdge(overlay));
   const removed = phantomRemovedEdges(overlay.removedEdges, projected.edges);
@@ -60,52 +60,6 @@ function stampEdge(overlay: GraphDiffOverlay) {
       data: { ...edge.data!, diffState: "added" },
     };
   };
-}
-
-function ghostModuleNodes(overlay: GraphDiffOverlay, showSymbols: boolean): RFNode[] {
-  if (!overlay.beforeLayout || overlay.ghostModules.length === 0) return [];
-  const boxes = [
-    ...overlay.beforeLayout.groups,
-    ...overlay.beforeLayout.modules,
-    ...overlay.beforeLayout.symbols,
-    ...overlay.beforeLayout.descriptions,
-  ];
-  const index = new Map(boxes.map((b) => [b.id, b]));
-  const layoutById = new Map(overlay.beforeLayout.modules.map((b) => [b.id, b]));
-  return overlay.ghostModules.flatMap((mod) => {
-    const box = layoutById.get(mod.id);
-    if (!box) return [];
-    return [
-      {
-        id: mod.id,
-        type: "module" as const,
-        position: relativePosition(box, index),
-        data: {
-          label: mod.label,
-          isFacade: mod.isFacade,
-          language: mod.language,
-          path: mod.path,
-          showSymbols,
-          color: "#64748b",
-          diffState: "deleted" as const,
-          ...(overlay.lineDiffByPath.get(mod.path)
-            ? { diffLineDiff: overlay.lineDiffByPath.get(mod.path) }
-            : {}),
-        },
-        style: { width: box.width, height: box.height },
-        width: box.width,
-        height: box.height,
-        ...(mod.groupId ? { parentId: mod.groupId } : {}),
-      },
-    ];
-  });
-}
-
-function relativePosition(box: LayoutBox, index: Map<string, LayoutBox>) {
-  if (!box.parentId) return { x: box.x, y: box.y };
-  const parent = index.get(box.parentId);
-  if (!parent) return { x: box.x, y: box.y };
-  return { x: box.x - parent.x, y: box.y - parent.y };
 }
 
 function phantomRemovedEdges(removed: Edge[], current: RFEdgeT[]): RFEdgeT[] {

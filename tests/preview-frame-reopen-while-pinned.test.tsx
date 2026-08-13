@@ -1,7 +1,7 @@
 /// <reference types="@testing-library/jest-dom" />
 import { describe, expect, it, vi } from "vitest";
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
-import { readyGraphStore, renderGraphCanvas } from "./helpers/flow-graph-canvas";
+import { readyGraphStore } from "./helpers/flow-graph-canvas";
 import { clickSymbolOnCanvas } from "./helpers/click-symbol-on-canvas";
 
 const recorded = vi.hoisted(() => ({ props: null as Record<string, unknown> | null }));

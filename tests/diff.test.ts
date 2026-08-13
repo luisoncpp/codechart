@@ -71,6 +71,32 @@ describe("pathsFromUnifiedDiff", () => {
     const text = "diff --git a/a.ts b/a.ts\r\n--- a/a.ts\r\n+++ b/a.ts\r\n";
     expect(pathsFromUnifiedDiff(text).modified).toEqual(["a.ts"]);
   });
+
+  it("handles deleted file mode without --- / +++ (e.g. binary patches)", () => {
+    const text = [
+      "diff --git a/public/assets/ui/lobby/old.png b/public/assets/ui/lobby/old.png",
+      "deleted file mode 100644",
+      "index e6d1822..0000000",
+      "GIT binary patch",
+      "literal 0",
+      "HcmV?d00001",
+    ].join("\n");
+    const paths = pathsFromUnifiedDiff(text);
+    expect(paths.deleted).toEqual(["public/assets/ui/lobby/old.png"]);
+    expect(paths.modified).toEqual([]);
+  });
+
+  it("handles new file mode without --- / +++ (e.g. binary patches)", () => {
+    const text = [
+      "diff --git a/public/assets/ui/lobby/new.png b/public/assets/ui/lobby/new.png",
+      "new file mode 100644",
+      "index 0000000..e6d1822",
+      "GIT binary patch",
+    ].join("\n");
+    const paths = pathsFromUnifiedDiff(text);
+    expect(paths.added).toEqual(["public/assets/ui/lobby/new.png"]);
+    expect(paths.modified).toEqual([]);
+  });
 });
 
 describe("compareGraphs", () => {
@@ -171,6 +197,217 @@ describe("applyDiffOverlay", () => {
     expect(stamped.nodes[0]?.data.diffVisualizing).toBe(true);
   });
 
+  it("renders deleted files as ghost nodes with diffState deleted (red border)", () => {
+    const text = [
+      "diff --git a/src/core/deleted-helper.ts b/src/core/deleted-helper.ts",
+      "deleted file mode 100644",
+      "--- a/src/core/deleted-helper.ts",
+      "+++ /dev/null",
+      "@@ -1,3 +0,0 @@",
+      "-const helper = 1;",
+    ].join("\n");
+    const partial = overlayFromPastedDiff(text, base);
+    expect(partial.deletedModuleIds.has("src/core/deleted-helper.ts")).toBe(true);
+    expect(partial.ghostModules.some((m) => m.id === "src/core/deleted-helper.ts")).toBe(true);
+
+    const projected = {
+      nodes: [
+        {
+          id: "core",
+          type: "group" as const,
+          position: { x: 0, y: 0 },
+          data: { label: "Core", color: "#2563eb" },
+        },
+      ],
+      edges: [],
+    };
+    const overlay = {
+      ...partial,
+      beforeLayout: null,
+      unifiedDiff: text,
+      lineDiffByPath: new Map(),
+      afterSourceByPath: new Map(),
+    };
+    const stamped = applyDiffOverlay(projected, overlay);
+    const deletedNode = stamped.nodes.find((n) => n.id === "src/core/deleted-helper.ts");
+    expect(deletedNode).toBeDefined();
+    expect(deletedNode?.data.diffState).toBe("deleted");
+  });
+
+  it("infers language on ghost modules for deleted files across supported extensions", () => {
+    const text = [
+      "diff --git a/src/lib.rs b/src/lib.rs\ndeleted file mode 100644\n--- a/src/lib.rs\n+++ /dev/null",
+      "diff --git a/src/util.cpp b/src/util.cpp\ndeleted file mode 100644\n--- a/src/util.cpp\n+++ /dev/null",
+      "diff --git a/src/app.tsx b/src/app.tsx\ndeleted file mode 100644\n--- a/src/app.tsx\n+++ /dev/null",
+      "diff --git a/src/styles.css b/src/styles.css\ndeleted file mode 100644\n--- a/src/styles.css\n+++ /dev/null",
+      "diff --git a/src/game.cs b/src/game.cs\ndeleted file mode 100644\n--- a/src/game.cs\n+++ /dev/null",
+      "diff --git a/src/Player.prefab b/src/Player.prefab\ndeleted file mode 100644\n--- a/src/Player.prefab\n+++ /dev/null",
+    ].join("\n");
+    const partial = overlayFromPastedDiff(text, base);
+    const ghostByPath = new Map(partial.ghostModules.map((m) => [m.path, m.language]));
+    expect(ghostByPath.get("src/lib.rs")).toBe("rust");
+    expect(ghostByPath.get("src/util.cpp")).toBe("cpp");
+    expect(ghostByPath.get("src/app.tsx")).toBe("tsx");
+    expect(ghostByPath.get("src/styles.css")).toBe("css");
+    expect(ghostByPath.get("src/game.cs")).toBe("csharp");
+    expect(ghostByPath.get("src/Player.prefab")).toBe("unityPrefab");
+  });
+
+  it("positions multiple deleted files without stacking them on top of each other", () => {
+    const text = [
+      "diff --git a/src/core/deleted-one.ts b/src/core/deleted-one.ts",
+      "deleted file mode 100644",
+      "--- a/src/core/deleted-one.ts",
+      "+++ /dev/null",
+      "diff --git a/src/core/deleted-two.ts b/src/core/deleted-two.ts",
+      "deleted file mode 100644",
+      "--- a/src/core/deleted-two.ts",
+      "+++ /dev/null",
+    ].join("\n");
+    const partial = overlayFromPastedDiff(text, base);
+    const projected = {
+      nodes: [
+        {
+          id: "core",
+          type: "group" as const,
+          position: { x: 0, y: 0 },
+          width: 500,
+          height: 400,
+          data: { label: "Core", color: "#2563eb" },
+        },
+        {
+          id: "src/core/store.ts",
+          type: "module" as const,
+          parentId: "core",
+          position: { x: 20, y: 40 },
+          width: 120,
+          height: 90,
+          data: { label: "store.ts", isFacade: false, language: "typescript" as const, diffState: "affected" as const },
+        },
+      ],
+      edges: [],
+    };
+    const overlay = {
+      ...partial,
+      beforeLayout: null,
+      unifiedDiff: text,
+      lineDiffByPath: new Map(),
+      afterSourceByPath: new Map(),
+    };
+    const stamped = applyDiffOverlay(projected, overlay);
+    const ghost1 = stamped.nodes.find((n) => n.id === "src/core/deleted-one.ts");
+    const ghost2 = stamped.nodes.find((n) => n.id === "src/core/deleted-two.ts");
+    expect(ghost1).toBeDefined();
+    expect(ghost2).toBeDefined();
+    expect(ghost1?.position).not.toEqual(ghost2?.position);
+
+    // Ensure ghost nodes do not overlap the affected module at (20, 40)
+    const overlap = (r1: { x: number; y: number; width?: number; height?: number }, r2: { x: number; y: number; width?: number; height?: number }) => {
+      const w1 = r1.width ?? 120;
+      const h1 = r1.height ?? 90;
+      const w2 = r2.width ?? 120;
+      const h2 = r2.height ?? 90;
+      return Math.max(0, Math.min(r1.x + w1, r2.x + w2) - Math.max(r1.x, r2.x)) *
+             Math.max(0, Math.min(r1.y + h1, r2.y + h2) - Math.max(r1.y, r2.y));
+    };
+
+    expect(overlap(ghost1!.position, ghost2!.position)).toBe(0);
+    expect(overlap(ghost1!.position, { x: 20, y: 40 })).toBe(0);
+    expect(overlap(ghost2!.position, { x: 20, y: 40 })).toBe(0);
+  });
+
+  it("prioritizes avoiding overlap with diff modules over unchanged modules in tight space", () => {
+    const text = [
+      "diff --git a/src/core/deleted-one.ts b/src/core/deleted-one.ts",
+      "deleted file mode 100644",
+      "--- a/src/core/deleted-one.ts",
+      "+++ /dev/null",
+    ].join("\n");
+    const partial = overlayFromPastedDiff(text, base);
+    const projected = {
+      nodes: [
+        {
+          id: "core",
+          type: "group" as const,
+          position: { x: 0, y: 0 },
+          width: 250,
+          height: 180,
+          data: { label: "Core", color: "#2563eb" },
+        },
+        {
+          id: "src/core/unchanged.ts",
+          type: "module" as const,
+          parentId: "core",
+          position: { x: 20, y: 40 },
+          width: 100,
+          height: 80,
+          data: { label: "unchanged.ts", isFacade: false, language: "typescript" as const, diffState: "unchanged" as const },
+        },
+        {
+          id: "src/core/affected.ts",
+          type: "module" as const,
+          parentId: "core",
+          position: { x: 130, y: 40 },
+          width: 100,
+          height: 80,
+          data: { label: "affected.ts", isFacade: false, language: "typescript" as const, diffState: "affected" as const },
+        },
+      ],
+      edges: [],
+    };
+    const overlay = {
+      ...partial,
+      beforeLayout: null,
+      unifiedDiff: text,
+      lineDiffByPath: new Map(),
+      afterSourceByPath: new Map(),
+    };
+    const stamped = applyDiffOverlay(projected, overlay);
+    const ghost = stamped.nodes.find((n) => n.id === "src/core/deleted-one.ts")!;
+    expect(ghost).toBeDefined();
+
+    const overlap = (r1: { x: number; y: number; width?: number; height?: number }, r2: { x: number; y: number; width?: number; height?: number }) => {
+      const w1 = r1.width ?? 120;
+      const h1 = r1.height ?? 90;
+      const w2 = r2.width ?? 100;
+      const h2 = r2.height ?? 80;
+      return Math.max(0, Math.min(r1.x + w1, r2.x + w2) - Math.max(r1.x, r2.x)) *
+             Math.max(0, Math.min(r1.y + h1, r2.y + h2) - Math.max(r1.y, r2.y));
+    };
+
+    const affectedOverlap = overlap(ghost.position, { x: 130, y: 40 });
+    const unchangedOverlap = overlap(ghost.position, { x: 20, y: 40 });
+    // Overlap with diff/affected module should be less than or equal to unchanged module (preferably 0)
+    expect(affectedOverlap).toBeLessThanOrEqual(unchangedOverlap);
+  });
+
+  it("places root-level ghost modules when no group exists without overlapping", () => {
+    const text = [
+      "diff --git a/standalone1.ts b/standalone1.ts",
+      "deleted file mode 100644",
+      "--- a/standalone1.ts",
+      "+++ /dev/null",
+      "diff --git a/standalone2.ts b/standalone2.ts",
+      "deleted file mode 100644",
+      "--- a/standalone2.ts",
+      "+++ /dev/null",
+    ].join("\n");
+    const partial = overlayFromPastedDiff(text, base);
+    const projected = { nodes: [], edges: [] };
+    const overlay = {
+      ...partial,
+      beforeLayout: null,
+      unifiedDiff: text,
+      lineDiffByPath: new Map(),
+      afterSourceByPath: new Map(),
+    };
+    const stamped = applyDiffOverlay(projected, overlay);
+    const ghost1 = stamped.nodes.find((n) => n.id === "standalone1.ts");
+    const ghost2 = stamped.nodes.find((n) => n.id === "standalone2.ts");
+    expect(ghost1).toBeDefined();
+    expect(ghost2).toBeDefined();
+    expect(ghost1?.position).not.toEqual(ghost2?.position);
+  });
 });
 
 describe("countLineDiffStats", () => {

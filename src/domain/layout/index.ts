@@ -12,6 +12,7 @@ export {
   MODULE_BOX,
   DESC_BOX,
   wrappedDescriptionHeight,
+  moduleBoxSize,
 } from "./Private/module-box-metrics";
 export { fitModuleHeaderFontSize } from "./Private/fit-module-header-font";
 export { expandedHeaderScale } from "./Private/group-header-metrics";
