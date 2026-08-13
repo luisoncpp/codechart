@@ -31,7 +31,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 - Current session `ProjectGraph` + `LayoutedGraph` (display base)
 - Git tree at two refs (`git ls-tree` + `git cat-file --batch`, via `MemoryProjectSource`), each reused for graph analysis and changed module bodies
 - Working tree tracked diff + Git's ignored-aware untracked list
-- Pasted unified diff text (path headers only)
+- Pasted unified diff text (path headers + import additions/removals for diff edges)
 
 ## Writes
 

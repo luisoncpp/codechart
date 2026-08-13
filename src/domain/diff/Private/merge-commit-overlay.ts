@@ -24,8 +24,9 @@ export function mergeCommitOverlay(
     addedSymbolIds: graphOverlay.addedSymbolIds,
     removedSymbolIds: graphOverlay.removedSymbolIds,
     modifiedSymbolIds: graphOverlay.modifiedSymbolIds,
-    addedEdgeIds: graphOverlay.addedEdgeIds,
-    removedEdges: graphOverlay.removedEdges,
+    addedEdgeIds: new Set([...pathOverlay.addedEdgeIds, ...graphOverlay.addedEdgeIds]),
+    addedEdges: [...(pathOverlay.addedEdges ?? []), ...(graphOverlay.addedEdges ?? [])],
+    removedEdges: [...pathOverlay.removedEdges, ...graphOverlay.removedEdges],
     ghostModules,
   };
 }

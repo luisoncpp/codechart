@@ -1,5 +1,6 @@
 // @Architecture(descriptionShort="Builds a module-only diff overlay from pasted unified diff text")
 import type { Language, ModuleNode, ProjectGraph } from "../../graph";
+import { parseDiffImportEdges } from "./parse-diff-imports";
 import { pathsFromUnifiedDiff } from "./parse-unified-diff";
 import type { GraphDiffCore } from "./types";
 
@@ -23,14 +24,28 @@ export function overlayFromPastedDiff(
     else ghostModules.push(minimalGhostModule(path, graph));
   }
 
+  const { addedEdges, removedEdges, addedEdgeIds } = parseDiffImportEdges(
+    text,
+    graph,
+    ghostModules,
+  );
+  const deletedEdges = graph.edges.filter(
+    (e) => deletedModuleIds.has(e.source) || deletedModuleIds.has(e.target),
+  );
+  const allRemoved = [
+    ...removedEdges,
+    ...deletedEdges.filter((de) => !removedEdges.some((re) => re.id === de.id)),
+  ];
+
   return {
     affectedModuleIds,
     deletedModuleIds,
     addedSymbolIds: new Set(),
     removedSymbolIds: new Set(),
     modifiedSymbolIds: new Set(),
-    addedEdgeIds: new Set(),
-    removedEdges: [],
+    addedEdgeIds,
+    addedEdges,
+    removedEdges: allRemoved,
     ghostModules,
   };
 }

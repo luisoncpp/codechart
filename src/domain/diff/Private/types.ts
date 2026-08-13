@@ -10,6 +10,7 @@ export interface GraphDiffOverlay {
   removedSymbolIds: ReadonlySet<string>;
   modifiedSymbolIds: ReadonlySet<string>;
   addedEdgeIds: ReadonlySet<string>;
+  addedEdges?: Edge[];
   removedEdges: Edge[];
   /** Deleted modules from the before graph, rendered as ghost boxes. */
   ghostModules: ModuleNode[];

@@ -408,6 +408,93 @@ describe("applyDiffOverlay", () => {
     expect(ghost2).toBeDefined();
     expect(ghost1?.position).not.toEqual(ghost2?.position);
   });
+
+  it("stamps added and removed diffState on edges and injects phantom edges", () => {
+    const projected = {
+      nodes: [
+        {
+          id: "src/core/store.ts",
+          type: "module" as const,
+          position: { x: 0, y: 0 },
+          data: { label: "store.ts", isFacade: false, language: "typescript" as const },
+        },
+        {
+          id: "src/core/validate.ts",
+          type: "module" as const,
+          position: { x: 100, y: 100 },
+          data: { label: "validate.ts", isFacade: false, language: "typescript" as const },
+        },
+      ],
+      edges: [
+        {
+          id: "src/core/store.ts->src/core/validate.ts:import:0",
+          source: "src/core/store.ts",
+          target: "src/core/validate.ts",
+          type: "default",
+          data: { isViolation: false, kind: "import" as const },
+        },
+      ],
+    };
+
+    const overlay = {
+      affectedModuleIds: new Set(["src/core/store.ts"]),
+      deletedModuleIds: new Set(["src/core/validate.ts"]),
+      addedSymbolIds: new Set<string>(),
+      removedSymbolIds: new Set<string>(),
+      modifiedSymbolIds: new Set<string>(),
+      addedEdgeIds: new Set(["src/core/store.ts->src/core/new.ts:import:diff"]),
+      addedEdges: [
+        {
+          id: "src/core/store.ts->src/core/new.ts:import:diff",
+          source: "src/core/store.ts",
+          target: "src/core/new.ts",
+          kind: "import" as const,
+          trigger: "import",
+          isViolation: false,
+        },
+      ],
+      removedEdges: [
+        {
+          id: "src/core/store.ts->src/core/validate.ts:import:0",
+          source: "src/core/store.ts",
+          target: "src/core/validate.ts",
+          kind: "import" as const,
+          trigger: "import",
+          isViolation: false,
+        },
+      ],
+      ghostModules: [],
+      beforeLayout: null,
+      unifiedDiff: "",
+      lineDiffByPath: new Map(),
+      afterSourceByPath: new Map(),
+    };
+
+    const stamped = applyDiffOverlay(projected, overlay);
+    const existingEdge = stamped.edges.find(
+      (e) => e.source === "src/core/store.ts" && e.target === "src/core/validate.ts",
+    );
+    expect(existingEdge?.data?.diffState).toBe("removed");
+
+    const addedEdge = stamped.edges.find((e) => e.target === "src/core/new.ts");
+    expect(addedEdge).toBeDefined();
+    expect(addedEdge?.data?.diffState).toBe("added");
+  });
+
+  it("extracts added and removed import edges in overlayFromPastedDiff", () => {
+    const text = [
+      "diff --git a/src/core/store.ts b/src/core/store.ts",
+      "--- a/src/core/store.ts",
+      "+++ b/src/core/store.ts",
+      "@@ -1,4 +1,5 @@",
+      "-import { validate } from './validate';",
+      "+import { api } from '../services/api';",
+    ].join("\n");
+
+    const overlay = overlayFromPastedDiff(text, base);
+    expect(overlay.removedEdges.some((e) => e.target.includes("validate"))).toBe(true);
+    expect(overlay.addedEdges?.some((e) => e.target.includes("api"))).toBe(true);
+  });
 });
 
 describe("countLineDiffStats", () => {

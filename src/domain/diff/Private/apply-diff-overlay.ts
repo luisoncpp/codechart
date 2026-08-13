@@ -16,17 +16,15 @@ export function applyDiffOverlay(
   const ghostNodes = placeGhostModules(overlay, showSymbols, stampedNodes);
   const nodes = applySymbolDiffNodes([...stampedNodes, ...ghostNodes], overlay);
   const edges = projected.edges.map(stampEdge(overlay));
-  const removed = phantomRemovedEdges(overlay.removedEdges, projected.edges);
-  return { nodes, edges: [...edges, ...removed] };
+  const removed = phantomDiffEdges(overlay.removedEdges, edges, /*diffState=*/ "removed");
+  const added = phantomDiffEdges(overlay.addedEdges ?? [], edges, /*diffState=*/ "added");
+  return { nodes, edges: [...edges, ...removed, ...added] };
 }
 
 function stampNode(overlay: GraphDiffOverlay) {
   return (node: RFNode): RFNode => {
     if (node.type === "group") {
-      return {
-        ...node,
-        data: { ...node.data, diffVisualizing: true },
-      };
+      return { ...node, data: { ...node.data, diffVisualizing: true } };
     }
     if (node.type !== "module") return node;
     const diffState = moduleDiffState(node.id, overlay);
@@ -53,32 +51,48 @@ function moduleDiffState(
 }
 
 function stampEdge(overlay: GraphDiffOverlay) {
+  const removedEdgeIds = new Set(overlay.removedEdges.map((e) => e.id));
+  const removedPairs = new Set(
+    overlay.removedEdges.map((e) => `${e.source}->${e.target}`),
+  );
+  const addedPairs = new Set(
+    (overlay.addedEdges ?? []).map((e) => `${e.source}->${e.target}`),
+  );
   return (edge: RFEdgeT): RFEdgeT => {
-    if (!overlay.addedEdgeIds.has(edge.id)) return edge;
-    return {
-      ...edge,
-      data: { ...edge.data!, diffState: "added" },
-    };
+    const pair = `${edge.source}->${edge.target}`;
+    if (overlay.addedEdgeIds.has(edge.id) || addedPairs.has(pair)) {
+      return { ...edge, data: { ...edge.data!, diffState: "added" } };
+    }
+    if (
+      removedEdgeIds.has(edge.id) ||
+      removedPairs.has(pair) ||
+      overlay.deletedModuleIds.has(edge.source) ||
+      overlay.deletedModuleIds.has(edge.target)
+    ) {
+      return { ...edge, data: { ...edge.data!, diffState: "removed" } };
+    }
+    return edge;
   };
 }
 
-function phantomRemovedEdges(removed: Edge[], current: RFEdgeT[]): RFEdgeT[] {
-  const existing = new Set(current.map((e) => e.id));
-  return removed
-    .filter((e) => !existing.has(e.id))
-    .map((e) => removedEdge(e));
-}
-
-function removedEdge(edge: Edge): RFEdgeT {
-  return {
-    id: `diff-removed:${edge.id}`,
-    source: edge.source,
-    target: edge.target,
-    type: "floating",
-    data: {
-      isViolation: edge.isViolation,
-      kind: edge.kind,
-      diffState: "removed",
-    },
-  };
+function phantomDiffEdges(
+  edges: readonly Edge[],
+  current: readonly RFEdgeT[],
+  diffState: "added" | "removed",
+): RFEdgeT[] {
+  const existingIds = new Set(current.map((e) => e.id));
+  const existingPairs = new Set(current.map((e) => `${e.source}->${e.target}`));
+  return edges
+    .filter((e) => !existingIds.has(e.id) && !existingPairs.has(`${e.source}->${e.target}`))
+    .map((e) => ({
+      id: `diff-${diffState}:${e.id}`,
+      source: e.source,
+      target: e.target,
+      type: "floating",
+      data: {
+        isViolation: e.isViolation,
+        kind: e.kind,
+        diffState,
+      },
+    }));
 }
