@@ -22,10 +22,14 @@ export function compareGraphs(input: GraphDiffInput): Omit<GraphDiffCore, "befor
   const beforeEdges = indexEdges(before.edges);
   const afterEdges = indexEdges(after.edges);
   const addedEdgeIds = new Set<string>();
+  const addedEdges: Edge[] = [];
   const removedEdges: Edge[] = [];
 
-  for (const [id, ] of afterEdges) {
-    if (!beforeEdges.has(id)) addedEdgeIds.add(id);
+  for (const [id, edge] of afterEdges) {
+    if (!beforeEdges.has(id)) {
+      addedEdgeIds.add(id);
+      addedEdges.push(edge);
+    }
   }
   for (const [id, edge] of beforeEdges) {
     if (!afterEdges.has(id)) removedEdges.push(edge);
@@ -44,6 +48,7 @@ export function compareGraphs(input: GraphDiffInput): Omit<GraphDiffCore, "befor
     deletedModuleIds,
     ...symbols,
     addedEdgeIds,
+    addedEdges,
     removedEdges,
     ghostModules,
   };

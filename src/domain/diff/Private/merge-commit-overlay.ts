@@ -13,15 +13,20 @@ export function mergeCommitOverlay(
     ...graphOverlay.affectedModuleIds,
   ]);
   const deletedModuleIds = mergeDeletedIds(pathOverlay, graphOverlay);
-  const ghostModules = ghostModulesForDeleted(before.modules, deletedModuleIds);
+  const ghostModules = ghostModulesForDeleted(
+    before.modules,
+    deletedModuleIds,
+    pathOverlay.ghostModules,
+  );
   return {
     affectedModuleIds,
     deletedModuleIds,
     addedSymbolIds: graphOverlay.addedSymbolIds,
     removedSymbolIds: graphOverlay.removedSymbolIds,
     modifiedSymbolIds: graphOverlay.modifiedSymbolIds,
-    addedEdgeIds: graphOverlay.addedEdgeIds,
-    removedEdges: graphOverlay.removedEdges,
+    addedEdgeIds: new Set([...pathOverlay.addedEdgeIds, ...graphOverlay.addedEdgeIds]),
+    addedEdges: [...(pathOverlay.addedEdges ?? []), ...(graphOverlay.addedEdges ?? [])],
+    removedEdges: [...pathOverlay.removedEdges, ...graphOverlay.removedEdges],
     ghostModules,
   };
 }
@@ -36,6 +41,12 @@ function mergeDeletedIds(
 function ghostModulesForDeleted(
   modules: ModuleNode[],
   deletedModuleIds: ReadonlySet<string>,
+  fallbackGhosts: readonly ModuleNode[] = [],
 ): ModuleNode[] {
-  return modules.filter((mod) => deletedModuleIds.has(mod.id));
+  const fromBefore = modules.filter((mod) => deletedModuleIds.has(mod.id));
+  const beforeIds = new Set(fromBefore.map((m) => m.id));
+  const missing = fallbackGhosts.filter(
+    (g) => deletedModuleIds.has(g.id) && !beforeIds.has(g.id),
+  );
+  return [...fromBefore, ...missing];
 }

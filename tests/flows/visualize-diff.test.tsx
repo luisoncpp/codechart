@@ -39,9 +39,23 @@ describe("flow: visualize-diff", () => {
     expect(store.getDiffOverlay()?.affectedModuleIds.has("src/core/store.ts")).toBe(true);
   });
 
+  it("pasting a diff with a deleted file renders the deleted file with diffState deleted", async () => {
+    const store = await readyGraphStore();
+    const deletedDiff = [
+      "diff --git a/src/core/validate.ts b/src/core/validate.ts",
+      "deleted file mode 100644",
+      "--- a/src/core/validate.ts",
+      "+++ /dev/null",
+      "@@ -1,5 +0,0 @@",
+      "-export function validate() {}",
+    ].join("\n");
+    await store.applyDiffFromPaste(deletedDiff);
+    expect(store.getDiffOverlay()?.deletedModuleIds.has("src/core/validate.ts")).toBe(true);
+  });
+
   it("clicking Stop visualizing diff clears the overlay", async () => {
     const store = await readyGraphStore();
-    store.applyDiffFromPaste(PASTED_DIFF);
+    await store.applyDiffFromPaste(PASTED_DIFF);
     renderGraphCanvas(store);
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Stop visualizing diff" })).toBeInTheDocument(),

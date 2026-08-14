@@ -53,6 +53,14 @@ function processDiffLine(line: string, state: DiffPathState, buckets: PathBucket
     }
     return;
   }
+  if (line.startsWith("deleted file mode ")) {
+    state.newPath = "/dev/null";
+    return;
+  }
+  if (line.startsWith("new file mode ")) {
+    state.oldPath = "/dev/null";
+    return;
+  }
   if (line.startsWith("--- ")) {
     const updated = headerPathUpdate(line.slice(4));
     if (updated !== undefined) state.oldPath = updated;
@@ -93,12 +101,12 @@ function applyFilePaths(
   buckets: PathBuckets,
 ): void {
   if (!oldPath && !newPath) return;
-  if (oldPath === "/dev/null" && newPath) {
-    buckets.added.add(newPath);
+  if (oldPath === "/dev/null") {
+    if (newPath) buckets.added.add(newPath);
     return;
   }
-  if (newPath === "/dev/null" && oldPath) {
-    buckets.deleted.add(oldPath);
+  if (newPath === "/dev/null") {
+    if (oldPath) buckets.deleted.add(oldPath);
     return;
   }
   if (oldPath && newPath && oldPath !== newPath) {
