@@ -1,15 +1,24 @@
-# Flow — Open a project (UI → live graph)
+# Flow — Open a project (UI or CLI → live graph)
 
 The user-facing front of [analyze-project](./analyze-project.md): picking a folder
-in the running app until the canvas renders.
+in the running app or launching with a CLI path until the canvas renders.
 
-1. **Trigger** — user clicks **Open folder…** in the top bar.
-2. **Entry point** — `ProjectLoaderPanel.open()` (`src/features/project_loader/Private/ProjectLoaderPanel.tsx`).
+## Triggers
+
+1. **UI** — user clicks **Open folder…** in the top bar (`ProjectLoaderPanel.open()`).
+2. **CLI** — desktop app launched with a project path:
+   - `codechart C:\repos\my-app`
+   - `codechart --project C:\repos\my-app`
+   - `codechart --project=C:\repos\my-app`
+   - Dev: `npm run tauri dev -- C:\path` or `npm run tauri dev -- --project C:\path`
+   - `--project` wins when both a flag and a positional path are present.
 
 ## Step-by-step
 
 | # | Step | Function | File |
 |---|------|----------|------|
+| 0 | (CLI only) Parse argv on Tauri setup; expose path to frontend | `parse_startup_project_path`, `get_startup_project_path` | `src-tauri/src/startup_args/mod.rs`, `src-tauri/src/tauri_api/mod.rs` |
+| 0b | (CLI only) On mount, fetch startup path and load it | `useOpenStartupProject` | `app/Private/use-open-startup-project.ts`, `ipc/startup-client` |
 | 1 | Native directory dialog → absolute path (or null on cancel) | `pickFolder` | `project_loader/Private/pick-folder.ts` |
 | 2 | Remember path; kick off load | `session.loadProject(path)` | `state/graph-session/Private/graph-session-store.ts` |
 | 3 | IPC `analyze_project { path, metricsWindowDays, hideTopLevelDotDirs }` → Rust (90 days + hide dot dirs by default) | `createTauriAnalysisClient` | `ipc/analysis-client/Private/tauri-analysis-client.ts` |
@@ -26,19 +35,19 @@ phase; the ↻ **Reload** icon button re-runs `session.getProjectRoot()` (the pa
 `BuildError` message (now `Display`-formatted).
 
 ## Reads / Writes / Side effects
-- Reads: chosen folder via the backend `FsProjectSource`. Native file dialog.
+- Reads: chosen folder via the backend `FsProjectSource`. Native file dialog or CLI argv.
 - Writes: none on disk. Only in-memory session state.
 
 ## Notes
 - The command uses its `path` argument as **both** the filesystem root and the
   graph's recorded `root` — see [lessons-learned](../lessons-learned/analyze-command-root-equals-path.md).
-- Tests inject `pickFolder` into `ProjectLoaderPanel` and a `MockAnalysisClient`
-  into the store, so the whole flow runs under jsdom with no Tauri runtime.
+- Tests inject `pickFolder` into `ProjectLoaderPanel`, a `MockAnalysisClient`
+  into the store, and `createMockStartupClient` for CLI startup — all under jsdom with no Tauri runtime.
 
 ## Common failure modes
 - **Nothing happens on click** → dialog cancelled (returns null) or `dialog`
   capability missing from `src-tauri/capabilities/default.json`.
-- **`failed` immediately** → IPC error (command not registered in `lib.rs`) or a
-  builder invariant broke; the message is shown in the bar.
+- **`failed` immediately** → IPC error (command not registered in `lib.rs`), a
+  builder invariant broke, or an invalid CLI path; the message is shown in the bar.
 
 Review Notes reconcile after a ready graph load. Their source UI stays disabled until that operation succeeds; a note-load error is retryable and does not hide the graph.

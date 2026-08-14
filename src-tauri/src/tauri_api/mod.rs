@@ -13,9 +13,16 @@ use crate::review_notes::{
 };
 use crate::{
     ensure_unreal_defaults, read_project_config as load_project_config, search_sources,
-    write_project_config as save_project_config, ProjectConfig, SearchResult,
+    startup_args::StartupProjectPath, write_project_config as save_project_config, ProjectConfig,
+    SearchResult,
 };
 use std::collections::{HashMap, HashSet};
+
+/// Return the optional project path parsed from argv at app startup.
+#[tauri::command]
+pub fn get_startup_project_path(state: tauri::State<'_, StartupProjectPath>) -> Option<String> {
+    state.0.clone()
+}
 
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]

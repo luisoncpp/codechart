@@ -8,6 +8,7 @@ import {
 import { createTauriGitClient } from "../../ipc/git-client";
 import { createTauriShellClient } from "../../ipc/shell-client";
 import { createTauriDiffReviewClient } from "../../ipc/diff-review-client";
+import { createTauriStartupClient } from "../../ipc/startup-client";
 import { ElkLayoutEngine } from "../../domain/layout";
 import { GraphSessionStore, useGraphSession } from "../../state/graph-session";
 import { ReviewNotesStore, useReviewNotes } from "../../state/review-notes";
@@ -20,6 +21,7 @@ import {
   DEFAULT_INSPECTOR_WIDTH,
   InspectionPanel,
 } from "../../features/inspection_panel";
+import { useOpenStartupProject } from "./use-open-startup-project";
 
 export function App() {
   const git = useMemo(/*build git client*/ () => createTauriGitClient(), []);
@@ -28,12 +30,14 @@ export function App() {
     [],
   );
   const shell = useMemo(/*build shell client*/ () => createTauriShellClient(), []);
+  const startup = useMemo(/*build startup client*/ () => createTauriStartupClient(), []);
   const store = useMemo(
     /*build session store*/ () =>
       new GraphSessionStore(createTauriAnalysisClient(), git, new ElkLayoutEngine(), createTauriDiffReviewClient()),
     [git],
   );
   const session = useGraphSession(store);
+  useOpenStartupProject(store, startup);
   const projectRoot = session.getProjectRoot();
   const graph = session.getGraph();
   const reviewNotes = useMemo(/*build review notes store*/ () => new ReviewNotesStore(createTauriReviewNotesClient()), []);

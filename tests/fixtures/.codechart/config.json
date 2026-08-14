@@ -1,0 +1,13 @@
+{
+  "editor": "code",
+  "unreal": {
+    "knownPaths": [
+      "unreal-mini-project/Source/MiniGame",
+      "unreal-mini-project/Source/MiniGame/Classes",
+      "unreal-mini-project/Source/MiniGame/Private",
+      "unreal-mini-project/Source/MiniGame/Public"
+    ],
+    "hideGeneratedFiles": true,
+    "excludeEngineReferences": true
+  }
+}

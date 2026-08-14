@@ -13,6 +13,7 @@ pub mod references;
 pub mod review_notes;
 pub mod search;
 pub mod semantic_comments;
+pub mod startup_args;
 pub mod tauri_api;
 pub mod tsconfig_paths;
 pub mod unity_assets;
@@ -26,10 +27,14 @@ pub use unreal_config::{
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let startup_path =
+        startup_args::parse_startup_project_path(&std::env::args().collect::<Vec<String>>());
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .manage(startup_args::StartupProjectPath(startup_path))
         .invoke_handler(tauri::generate_handler![
+            tauri_api::get_startup_project_path,
             tauri_api::analyze_project,
             tauri_api::load_project_snapshot,
             tauri_api::read_module_source,
