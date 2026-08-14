@@ -59,6 +59,7 @@ describe("pathsFromUnifiedDiff", () => {
     expect(paths.modified).toEqual([]);
     expect(paths.deleted).toEqual(["src/old-name.ts"]);
     expect(paths.added).toEqual(["src/new-name.ts"]);
+    expect(paths.renames).toEqual([{ from: "src/old-name.ts", to: "src/new-name.ts" }]);
   });
 
   it("ignores malformed diff --git lines without a/ b/ paths", () => {

@@ -104,8 +104,8 @@ export interface EdgeData extends Record<string, unknown> {
    * anchors its arrow on this group's border instead of the facade box (Idea 2).
    */
   groupTargetId?: string;
-  /** Diff overlay — green added edge or red removed edge (X head). */
-  diffState?: "added" | "removed";
+  /** Diff overlay — green added, red removed (X head), or yellow rename arrow. */
+  diffState?: "added" | "removed" | "renamed";
 }
 
 export type GroupRFNode = Node<GroupNodeData, "group">;

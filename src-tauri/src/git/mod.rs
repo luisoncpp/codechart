@@ -38,7 +38,7 @@ pub fn list_commits(path: &str, limit: u32) -> Result<Vec<GitCommit>, String> {
 }
 
 pub fn diff_refs(path: &str, base_ref: &str, head_ref: &str) -> Result<String, String> {
-    git_output(path, &["diff", base_ref, head_ref])
+    git_output(path, &["diff", "-M", base_ref, head_ref])
 }
 
 pub fn source_at_ref(path: &str, git_ref: &str) -> Result<MemoryProjectSource, String> {

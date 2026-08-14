@@ -13,6 +13,22 @@ const PASTED_DIFF = [
   "+added",
 ].join("\n");
 
+const DELETED_DIFF = [
+  "diff --git a/src/core/validate.ts b/src/core/validate.ts",
+  "deleted file mode 100644",
+  "--- a/src/core/validate.ts",
+  "+++ /dev/null",
+  "@@ -1,5 +0,0 @@",
+  "-export function validate() {}",
+].join("\n");
+
+const RENAME_DIFF = [
+  "diff --git a/src/core/gone.ts b/src/core/validate.ts",
+  "similarity index 88%",
+  "rename from src/core/gone.ts",
+  "rename to src/core/validate.ts",
+].join("\n");
+
 describe("flow: visualize-diff", () => {
   it("clicking Visualize diff opens the diff modal", async () => {
     const store = await readyGraphStore();
@@ -41,15 +57,7 @@ describe("flow: visualize-diff", () => {
 
   it("pasting a diff with a deleted file renders the deleted file with diffState deleted", async () => {
     const store = await readyGraphStore();
-    const deletedDiff = [
-      "diff --git a/src/core/validate.ts b/src/core/validate.ts",
-      "deleted file mode 100644",
-      "--- a/src/core/validate.ts",
-      "+++ /dev/null",
-      "@@ -1,5 +0,0 @@",
-      "-export function validate() {}",
-    ].join("\n");
-    await store.applyDiffFromPaste(deletedDiff);
+    await store.applyDiffFromPaste(DELETED_DIFF);
     expect(store.getDiffOverlay()?.deletedModuleIds.has("src/core/validate.ts")).toBe(true);
   });
 
@@ -63,5 +71,18 @@ describe("flow: visualize-diff", () => {
     fireEvent.click(screen.getByRole("button", { name: "Stop visualizing diff" }));
     expect(store.getDiffOverlay()).toBeNull();
     expect(screen.queryByRole("button", { name: "Stop visualizing diff" })).not.toBeInTheDocument();
+  });
+});
+
+describe("flow: visualize-diff rename", () => {
+  it("pasting a git rename records a 1:1 pair from the deleted path to the created path", async () => {
+    const store = await readyGraphStore();
+    await store.applyDiffFromPaste(RENAME_DIFF);
+    const overlay = store.getDiffOverlay();
+    expect(overlay?.deletedModuleIds.has("src/core/gone.ts")).toBe(true);
+    expect(overlay?.affectedModuleIds.has("src/core/validate.ts")).toBe(true);
+    expect(overlay?.renamePairs).toEqual([
+      { from: "src/core/gone.ts", to: "src/core/validate.ts" },
+    ]);
   });
 });

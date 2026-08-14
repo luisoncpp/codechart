@@ -2,7 +2,14 @@
 import { MarkerType } from "@xyflow/react";
 import type { EdgeFocus, RFEdgeT } from "../../../../domain/graph";
 
-export type EdgeRole = "import" | "export" | "violation" | "neutral" | "diff-added" | "diff-removed";
+export type EdgeRole =
+  | "import"
+  | "export"
+  | "violation"
+  | "neutral"
+  | "diff-added"
+  | "diff-removed"
+  | "diff-renamed";
 
 const COLOR: Record<EdgeRole, string> = {
   import: "#ea580c",
@@ -11,12 +18,14 @@ const COLOR: Record<EdgeRole, string> = {
   neutral: "#94a3b8",
   "diff-added": "#16a34a",
   "diff-removed": "#dc2626",
+  "diff-renamed": "#d97706",
 };
 
 /** An edge's role relative to the selected node (module or group). */
 export function edgeRole(edge: RFEdgeT, focus: EdgeFocus | null): EdgeRole {
   if (edge.data?.diffState === "added") return "diff-added";
   if (edge.data?.diffState === "removed") return "diff-removed";
+  if (edge.data?.diffState === "renamed") return "diff-renamed";
   const role = roleForFocus(edge, focus);
   if (role) return role;
   if (edge.data?.isViolation) return "violation";
@@ -43,7 +52,7 @@ function roleForFocus(edge: RFEdgeT, focus: EdgeFocus | null): EdgeRole | null {
  * context stays legible instead of nearly disappearing.
  */
 export function edgeOpacity(role: EdgeRole): number {
-  if (role === "diff-added" || role === "diff-removed") return 1;
+  if (role === "diff-added" || role === "diff-removed" || role === "diff-renamed") return 1;
   return role === "neutral" ? 0.45 : 1;
 }
 
@@ -55,6 +64,7 @@ export function styleEdge(edge: RFEdgeT, focus: EdgeFocus | null): RFEdgeT {
   const focused = role !== "neutral";
   const dashed = edge.data?.kind === "soft";
   const isRemoved = role === "diff-removed";
+  const isDiff = role === "diff-added" || isRemoved || role === "diff-renamed";
   return {
     ...edge,
     type: "floating",
@@ -63,7 +73,7 @@ export function styleEdge(edge: RFEdgeT, focus: EdgeFocus | null): RFEdgeT {
       : { type: MarkerType.ArrowClosed, color, width: 14, height: 14 },
     style: {
       stroke: color,
-      strokeWidth: focused || isRemoved ? 2 : 1.2,
+      strokeWidth: focused || isDiff ? 2 : 1.2,
       opacity: edgeOpacity(role),
       ...(dashed ? { strokeDasharray: "6 4" } : {}),
     },

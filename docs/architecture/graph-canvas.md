@@ -76,6 +76,9 @@ Both deep modules organize their implementation into subfolders, each a config s
   ~36px perpendicular to its straight line) instead of the straight bezier used by imports, so its dash
   arcs clear of any import/violation edge sharing the same corridor (e.g. `store.ts → App.tsx` soft vs.
   the `TodoList.tsx → store.ts` violation) instead of overlapping it.
+  While a **diff overlay** is active, added edges are green, removed edges are red with an **X** head,
+  and rename edges are yellow (`#d97706`, arrow head) from the deleted module to the created one;
+  the module cards themselves stay red/green.
   Edges are **display-only** (no `onEdgeClick`/hover handlers), so `graph-canvas.css` sets
   `pointer-events: none` on `.react-flow__edge` — React Flow's invisible edge interaction path would
   otherwise swallow a `pointerdown` and break pan-by-drag that starts on an edge.

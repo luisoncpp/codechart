@@ -40,7 +40,7 @@ fn under_submodule(path: &str, roots: &[String]) -> bool {
 }
 
 fn tracked_diff(path: &str, base_ref: &str, ignore_submodules: bool) -> Result<String, String> {
-    let mut args = vec!["diff", "--no-ext-diff"];
+    let mut args = vec!["diff", "-M", "--no-ext-diff"];
     if ignore_submodules {
         args.push("--ignore-submodules=all");
     }

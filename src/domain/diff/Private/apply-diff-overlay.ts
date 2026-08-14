@@ -18,7 +18,8 @@ export function applyDiffOverlay(
   const edges = projected.edges.map(stampEdge(overlay));
   const removed = phantomDiffEdges(overlay.removedEdges, edges, /*diffState=*/ "removed");
   const added = phantomDiffEdges(overlay.addedEdges ?? [], edges, /*diffState=*/ "added");
-  return { nodes, edges: [...edges, ...removed, ...added] };
+  const renamed = phantomRenameEdges(overlay.renamePairs ?? [], edges);
+  return { nodes, edges: [...edges, ...removed, ...added, ...renamed] };
 }
 
 function stampNode(overlay: GraphDiffOverlay) {
@@ -93,6 +94,26 @@ function phantomDiffEdges(
         isViolation: e.isViolation,
         kind: e.kind,
         diffState,
+      },
+    }));
+}
+
+function phantomRenameEdges(
+  pairs: readonly { from: string; to: string }[],
+  current: readonly RFEdgeT[],
+): RFEdgeT[] {
+  const existingIds = new Set(current.map((e) => e.id));
+  return pairs
+    .filter((pair) => !existingIds.has(`diff-renamed:${pair.from}->${pair.to}`))
+    .map((pair) => ({
+      id: `diff-renamed:${pair.from}->${pair.to}`,
+      source: pair.from,
+      target: pair.to,
+      type: "floating",
+      data: {
+        isViolation: false,
+        kind: "rename",
+        diffState: "renamed" as const,
       },
     }));
 }

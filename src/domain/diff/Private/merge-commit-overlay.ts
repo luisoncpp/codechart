@@ -28,6 +28,7 @@ export function mergeCommitOverlay(
     addedEdges: [...(pathOverlay.addedEdges ?? []), ...(graphOverlay.addedEdges ?? [])],
     removedEdges: [...pathOverlay.removedEdges, ...graphOverlay.removedEdges],
     ghostModules,
+    renamePairs: pathOverlay.renamePairs ?? [],
   };
 }
 

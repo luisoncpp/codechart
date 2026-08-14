@@ -21,6 +21,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [working-tree-untracked-adds-need-rename-fallback.md](./working-tree-untracked-adds-need-rename-fallback.md) | `git diff -M` never sees untracked adds appended after the tracked diff, so local-change renames need a fingerprint fallback | 2026-08-14 |
 | [deleted-files-in-diff-need-group-inference-and-synthetic-layout.md](./deleted-files-in-diff-need-group-inference-and-synthetic-layout.md) | Pasted diffs lack historical Git trees; infer owning group from directory/siblings and lay out a synthetic before-graph so deleted files get coordinates and red borders | 2026-08-13 |
 | [folder-inference-needs-path-prefixes.md](./folder-inference-needs-path-prefixes.md) | Folder inference must expand parent paths to every prefix, not only dirs with direct files | 2026-08-10 |
 | [pinned-frames-keep-close-listener-armed.md](./pinned-frames-keep-close-listener-armed.md) | A pinned preview keeps the outside-click listener attached, so reopen needs an open-gesture grace (menu fall-through / move-start) | 2026-08-05 |

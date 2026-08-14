@@ -47,6 +47,7 @@ export function overlayFromPastedDiff(
     addedEdges,
     removedEdges: allRemoved,
     ghostModules,
+    renamePairs: paths.renames,
   };
 }
 

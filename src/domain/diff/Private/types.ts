@@ -2,10 +2,18 @@
 import type { Edge, ModuleNode, ProjectGraph } from "../../graph";
 import type { FileLineDiff } from "./line-diff-types";
 
+/** 1:1 rename: ghost/deleted path → created path. */
+export interface RenamePair {
+  from: string;
+  to: string;
+}
+
 /** Overlay derived from comparing a before/after graph or parsing a unified diff. */
 export interface GraphDiffOverlay {
   affectedModuleIds: ReadonlySet<string>;
   deletedModuleIds: ReadonlySet<string>;
+  /** Detected file renames; cards stay red/green, a yellow arrow links the pair. */
+  renamePairs?: ReadonlyArray<RenamePair>;
   addedSymbolIds: ReadonlySet<string>;
   removedSymbolIds: ReadonlySet<string>;
   modifiedSymbolIds: ReadonlySet<string>;
@@ -32,6 +40,7 @@ export interface ParsedDiffPaths {
   modified: string[];
   deleted: string[];
   added: string[];
+  renames: RenamePair[];
 }
 
 export interface GraphDiffInput {
