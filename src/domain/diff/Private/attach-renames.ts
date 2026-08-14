@@ -3,6 +3,8 @@ import type { ModuleNode } from "../../graph";
 import { bodiesFromUnifiedDiff, type DiffBodies } from "./rename-bodies";
 import { fingerprintModule, matchRenamePairs } from "./rename-match";
 import { pathsFromUnifiedDiff } from "./parse-unified-diff";
+import { computeLineDiff } from "./compute-line-diff";
+import type { FileLineDiff } from "./line-diff-types";
 import type { GraphDiffOverlay, RenamePair } from "./types";
 
 export interface RenameAttachInput {
@@ -22,16 +24,17 @@ interface FingerprintCtx {
 export function attachRenames(input: RenameAttachInput): GraphDiffOverlay {
   const header = headerPairs(input.overlay);
   const leftover = unpairedIds(input, header);
-  if (leftover.deleted.length === 0 || leftover.added.length === 0) {
-    return { ...input.overlay, renamePairs: header };
-  }
   const bodies = bodiesFromUnifiedDiff(input.overlay.unifiedDiff ?? "");
   const ctx = { bodies, input };
-  const extra = matchRenamePairs(
-    fingerprintsFor(leftover.deleted, /*side=*/"old", ctx),
-    fingerprintsFor(leftover.added, /*side=*/"new", ctx),
-  );
-  return { ...input.overlay, renamePairs: [...header, ...extra] };
+  const extra = leftover.deleted.length === 0 || leftover.added.length === 0
+    ? []
+    : matchRenamePairs(
+        fingerprintsFor(leftover.deleted, /*side=*/"old", ctx),
+        fingerprintsFor(leftover.added, /*side=*/"new", ctx),
+      );
+  const pairs = [...header, ...extra];
+  const lineDiffByPath = computeRenameLineDiffs(pairs, ctx);
+  return { ...input.overlay, renamePairs: pairs, lineDiffByPath };
 }
 
 function headerPairs(overlay: GraphDiffOverlay): RenamePair[] {
@@ -109,4 +112,19 @@ function symbolsFor(
 ): string[] {
   const modules = side === "old" ? input.beforeModules : input.afterModules;
   return modules?.find((mod) => mod.id === id)?.exportedSymbols ?? [];
+}
+
+function computeRenameLineDiffs(
+  pairs: readonly RenamePair[],
+  ctx: FingerprintCtx,
+): Map<string, FileLineDiff> {
+  const lineDiffs = new Map(ctx.input.overlay.lineDiffByPath);
+  for (const pair of pairs) {
+    const oldSource = sourceFor(pair.from, "old", ctx);
+    const newSource = sourceFor(pair.to, "new", ctx);
+    if (!oldSource && !newSource) continue;
+    const diff = computeLineDiff(oldSource, newSource);
+    lineDiffs.set(pair.to, diff);
+  }
+  return lineDiffs;
 }

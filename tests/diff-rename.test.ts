@@ -180,6 +180,31 @@ describe("attachRenames fingerprint fallback", () => {
     });
     expect(overlay.renamePairs).toEqual([]);
   });
+
+  it("updates lineDiffByPath for renamed file with delta vs original file", () => {
+    const overlay = attachRenames({ overlay: overlayFromDiff(SIMILAR_BODY_DIFF) });
+    const diff = overlay.lineDiffByPath.get("src/new-util.ts");
+    expect(diff).toBeDefined();
+    // Helper function was preserved; only the extra line was added!
+    expect(diff?.addedLineNumbers).toEqual(new Set([4]));
+    expect(diff?.removeBeforeLine.size).toBe(0);
+  });
+
+  it("produces 0 added lines for identical renamed file", () => {
+    const overlay = attachRenames({
+      overlay: overlayFromDiff("", {
+        affectedModuleIds: new Set(["src/b.ts"]),
+        deletedModuleIds: new Set(["src/a.ts"]),
+        renamePairs: [{ from: "src/a.ts", to: "src/b.ts" }],
+      }),
+      beforeSources: new Map([["src/a.ts", "export const x = 1;\n"]]),
+      afterSources: new Map([["src/b.ts", "export const x = 1;\n"]]),
+    });
+    const diff = overlay.lineDiffByPath.get("src/b.ts");
+    expect(diff).toBeDefined();
+    expect(diff?.addedLineNumbers.size).toBe(0);
+    expect(diff?.removeBeforeLine.size).toBe(0);
+  });
 });
 
 describe("applyDiffOverlay rename arrows", () => {
