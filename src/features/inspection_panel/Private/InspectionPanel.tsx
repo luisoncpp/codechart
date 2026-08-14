@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Side panel displaying detailed metadata of the selected node")
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { findModule, findGroup, type ProjectGraph } from "../../../domain/graph";
+import type { GraphDiffOverlay } from "../../../domain/diff";
 import { ModuleInspection } from "./ModuleInspection";
 import { GroupInspection } from "./GroupInspection";
 import { InspectorLayoutProvider } from "./InspectorLayoutContext";
@@ -30,12 +31,14 @@ export function InspectionPanel({
   const session = useGraphSession(store);
   const graph = session.getGraph();
   const selectedId = session.getSelectedId();
+  const diffOverlay = session.getDiffOverlay();
 
   return (
     <InspectorLayoutProvider width={width} setWidth={onWidthChange}>
       <InspectionPanelBody
         graph={graph}
         selectedId={selectedId}
+        diffOverlay={diffOverlay}
         hideTests={session.getHideTests()}
         metricsWindowDays={session.getMetricsWindowDays()}
         onHide={onHide}
@@ -51,6 +54,7 @@ export function InspectionPanel({
 function InspectionPanelBody({
   graph,
   selectedId,
+  diffOverlay,
   hideTests,
   metricsWindowDays,
   onHide,
@@ -61,6 +65,7 @@ function InspectionPanelBody({
 }: {
   graph: ProjectGraph | null;
   selectedId: string | null;
+  diffOverlay?: GraphDiffOverlay | null;
   hideTests: boolean;
   metricsWindowDays: number;
   onHide?: () => void;
@@ -75,19 +80,19 @@ function InspectionPanelBody({
   if (!graph || !selectedId) {
     return (
       <PanelChrome onHide={onHide} activeTab={activeTab} onTabChange={onTabChange}>
-        <p style={{ color: "#64748b", margin: 0 }}>
-          Select a module or group to inspect it.
-        </p>
+        <p style={{ color: "#64748b", margin: 0 }}>Select a module or group to inspect it.</p>
       </PanelChrome>
     );
   }
 
-  const module = findModule(graph, selectedId);
+  const ghostModule = diffOverlay?.ghostModules.find((m) => m.id === selectedId);
+  const module = findModule(graph, selectedId) ?? ghostModule;
   if (module) {
     return (
       <ModuleInspection
         graph={graph}
         module={module}
+        diffOverlay={diffOverlay}
         hideTests={hideTests}
         metricsWindowDays={metricsWindowDays}
         onHide={onHide}

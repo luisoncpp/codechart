@@ -71,7 +71,7 @@ pub fn load_project_snapshot(
         &source,
         &path,
         AnalyzeOptions {
-            metrics_window_days: crate::git::DEFAULT_METRICS_WINDOW_DAYS,
+            metrics_window_days: 0,
             hide_top_level_dot_dirs: hide_top_level_dot_dirs.unwrap_or(true),
         },
     )

@@ -12,7 +12,7 @@
       (out of selected) red, exports (into selected) blue, while **every unrelated edge stays at the
       one quiet dim level** (`edgeOpacity`, 0.45). Group selection matches both aggregated group-box
       endpoints (L0) and any module in the group's subtree (L1+).
-   5. `InspectionPanel` reads `selectedId` + `graph`, routes to `ModuleInspection` or
+   5. `InspectionPanel` reads `selectedId` + `graph` (and `diffOverlay.ghostModules` when in diff mode), routes to `ModuleInspection` or
       `GroupInspection`, and runs the appropriate selectors.
 4. **Reads** — store `graph`, `selectedId`.
 5. **Writes** — store `selectedId` and selection history.

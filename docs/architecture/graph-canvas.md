@@ -112,12 +112,13 @@ Both deep modules organize their implementation into subfolders, each a config s
   (paste mode); **unchanged modules render at ~40% opacity** so affected/deleted modules pop;
   **group titles and descriptions dim to the same level** so module diff highlights read first.
   `applyDiffOverlay` stamps `ModuleNodeData.diffState` (`affected` → **green** 3px border,
-  `deleted` → **red** 3px border, `unchanged` → dimmed, ghost modules positioned from the before
-  snapshot layout) and `EdgeData.diffState` (`added` → **green** full-opacity arrow, `removed` → **red**
+  `deleted` → **red** 3px border, `unchanged` → dimmed, ghost modules placed by greedy collision
+  avoidance — commit-to-commit also seeds positions from a before-graph layout) and `EdgeData.diffState`
+  (`added` → **green** full-opacity arrow, `removed` → **red**
   line with **X** head). At **L1.5**, `classifySymbolChanges` compares export membership and intersects
   changed old/new line numbers with symbol declaration/implementation ranges. Symbol boxes render
-  added as **green/solid**, removed as **red/dashed** ghosts from the before layout, and modified as
-  **yellow/dotted**; the border styles preserve meaning without color alone. Exact symbol states are
+  added as **green/solid**, modified as **yellow/dotted**, and commit-to-commit restores removed symbols
+  as **red/dashed** ghosts from the before layout; local changes skip that extra layout. Exact symbol states are
   available for commit/local comparisons, which can read both snapshots; pasted diffs remain module-level.
   Historical comparisons load each Git tree once and reuse its in-memory source for both graph analysis
   and changed-source extraction; Git child processes do not create console windows on Windows.

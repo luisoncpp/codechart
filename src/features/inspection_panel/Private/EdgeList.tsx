@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Lists incoming/outgoing imports in the inspection panel")
 import type React from "react";
 import type { Edge } from "../../../domain/graph";
+import { linkButtonStyle } from "./PanelParts";
 
 interface EdgeListProps {
   title: string;
@@ -81,17 +82,4 @@ const itemStyle: React.CSSProperties = {
 const bulletStyle: React.CSSProperties = {
   flex: "0 0 8px",
   textAlign: "center",
-};
-
-const linkButtonStyle: React.CSSProperties = {
-  display: "block",
-  minWidth: 0,
-  overflowWrap: "anywhere",
-  border: "none",
-  background: "none",
-  padding: 0,
-  font: "inherit",
-  color: "#2563eb",
-  cursor: "pointer",
-  textAlign: "left",
 };

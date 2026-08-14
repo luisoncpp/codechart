@@ -574,6 +574,52 @@ describe("GraphSessionStore local changes diff", () => {
 
     expect(store.getDiffOverlay()?.affectedModuleIds.has("vendor/lib.ts")).toBe(true);
   });
+
+  it("does not re-layout the before graph when local changes include deletions", async () => {
+    const deleted = {
+      ...graph.modules[0],
+      id: "src/gone.ts",
+      path: "src/gone.ts",
+      label: "gone.ts",
+    };
+    const currentGraph = { ...graph, edges: [] };
+    const beforeGraph = {
+      ...graph,
+      modules: [...graph.modules, deleted],
+      edges: [],
+    };
+    const git: GitClient = {
+      isGitRepo: async () => true,
+      listCommits: async () => [],
+      loadProjectSnapshot: async () => ({ graph: beforeGraph, sources: {} }),
+      diffRefs: async () => "",
+      diffWorkingTree: async () =>
+        [
+          "diff --git a/src/gone.ts b/src/gone.ts",
+          "deleted file mode 100644",
+          "--- a/src/gone.ts",
+          "+++ /dev/null",
+        ].join("\n"),
+      listSubmodulePaths: async () => [],
+    };
+    const layoutEngine = new ElkLayoutEngine();
+    const layout = vi.spyOn(layoutEngine, "layout");
+    const store = new GraphSessionStore(
+      clientReturning(currentGraph),
+      git,
+      layoutEngine,
+    );
+    await store.loadProject("/repo");
+    const layoutsAfterLoad = layout.mock.calls.length;
+
+    await store.applyDiffFromWorkingTree("HEAD", /*ignoreSubmodules=*/true);
+
+    expect(store.getDiffOverlay()?.ghostModules.some((m) => m.id === "src/gone.ts")).toBe(
+      true,
+    );
+    expect(store.getDiffOverlay()?.beforeLayout).toBeNull();
+    expect(layout.mock.calls.length).toBe(layoutsAfterLoad);
+  });
 });
 
 describe("GraphSessionStore diff source snapshot", () => {

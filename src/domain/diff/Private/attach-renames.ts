@@ -20,9 +20,12 @@ interface FingerprintCtx {
 
 /** Keep git header pairs; match leftover deleted×added files 1:1. */
 export function attachRenames(input: RenameAttachInput): GraphDiffOverlay {
-  const bodies = bodiesFromUnifiedDiff(input.overlay.unifiedDiff ?? "");
   const header = headerPairs(input.overlay);
   const leftover = unpairedIds(input, header);
+  if (leftover.deleted.length === 0 || leftover.added.length === 0) {
+    return { ...input.overlay, renamePairs: header };
+  }
+  const bodies = bodiesFromUnifiedDiff(input.overlay.unifiedDiff ?? "");
   const ctx = { bodies, input };
   const extra = matchRenamePairs(
     fingerprintsFor(leftover.deleted, /*side=*/"old", ctx),

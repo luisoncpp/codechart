@@ -57,7 +57,6 @@ export function buildPasteDiffOverlay(
 interface WorkingTreeDiffInput {
   client: AnalysisClient;
   git: GitClient;
-  layoutEngine: LayoutEngine;
   root: string;
   baseRef: string;
   current: ProjectGraph;
@@ -69,12 +68,7 @@ export async function buildWorkingTreeDiffOverlay(
   input: WorkingTreeDiffInput,
 ): Promise<GraphDiffOverlay> {
   const { unifiedDiff, before, after, snapshot } = await workingTreeGraphs(input);
-  const overlay = await coreOverlay({
-    unifiedDiff,
-    before,
-    after,
-    layoutEngine: input.layoutEngine,
-  });
+  const overlay = await coreOverlay({ unifiedDiff, before, after });
   const afterSources = await readWorkingSources({
     graph: after,
     client: input.client,
@@ -116,14 +110,17 @@ interface CoreOverlayInput {
   unifiedDiff: string;
   before: ProjectGraph;
   after: ProjectGraph;
-  layoutEngine: LayoutEngine;
+  layoutEngine?: LayoutEngine;
 }
 
 async function coreOverlay(input: CoreOverlayInput): Promise<GraphDiffOverlay> {
   const pathOverlay = overlayFromPastedDiff(input.unifiedDiff, input.after);
   const graphOverlay = compareGraphs({ before: input.before, after: input.after });
   const partial = mergeCommitOverlay(pathOverlay, graphOverlay, input.before);
-  const beforeLayout = await input.layoutEngine.layout(input.before);
+  const beforeLayout =
+    input.layoutEngine && partial.ghostModules.length > 0
+      ? await input.layoutEngine.layout(input.before)
+      : null;
   return attachLineDiff({ ...partial, beforeLayout }, input.unifiedDiff);
 }
 

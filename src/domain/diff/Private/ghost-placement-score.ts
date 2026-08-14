@@ -19,15 +19,22 @@ export function pickBestPosition(
   bounds: ContainerBounds,
   initialPos?: { x: number; y: number },
 ): { x: number; y: number } {
+  if (initialPos) {
+    const initialScore = scoreCandidate({ ...initialPos, ...box }, obstacles, bounds);
+    if (initialScore === 0) return initialPos;
+  }
   const candidates = generateCandidates(box, obstacles, bounds, initialPos);
   let bestPos = initialPos ?? { x: 20, y: 40 };
-  let bestScore = Infinity;
+  let bestScore = initialPos
+    ? scoreCandidate({ ...initialPos, ...box }, obstacles, bounds)
+    : Infinity;
 
   for (const cand of candidates) {
     const score = scoreCandidate({ ...cand, ...box }, obstacles, bounds);
     if (score < bestScore) {
       bestScore = score;
       bestPos = cand;
+      if (score === 0) break;
     }
   }
   return bestPos;
@@ -42,22 +49,17 @@ function generateCandidates(
   const candidates: Array<{ x: number; y: number }> = [];
   if (initialPos) candidates.push(initialPos);
 
-  const maxX = Math.max(bounds.width - box.width, 20);
-  const maxY = Math.max(bounds.height - box.height, 40);
-
-  for (let x = 20; x <= maxX; x += 30) {
-    for (let y = 40; y <= maxY; y += 30) {
-      candidates.push({ x, y });
-    }
-  }
   for (const obs of obstacles) {
     candidates.push({ x: obs.x + obs.width + 15, y: obs.y });
     candidates.push({ x: obs.x - box.width - 15, y: obs.y });
     candidates.push({ x: obs.x, y: obs.y + obs.height + 15 });
     candidates.push({ x: obs.x, y: obs.y - box.height - 15 });
   }
-  for (let x = 20; x <= bounds.width + 120; x += 60) {
-    for (let y = 40; y <= bounds.height + 90; y += 45) {
+
+  const maxX = Math.max(bounds.width - box.width, 20);
+  const maxY = Math.max(bounds.height - box.height, 40);
+  for (let x = 20; x <= maxX; x += 60) {
+    for (let y = 40; y <= maxY; y += 60) {
       candidates.push({ x, y });
     }
   }

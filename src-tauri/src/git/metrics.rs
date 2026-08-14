@@ -15,6 +15,9 @@ struct RawMetrics {
 
 /// Stamp git metrics from the requested window onto analyzed modules.
 pub fn enrich_module_metrics(repo: &str, modules: &mut [ModuleNode], window_days: u32) {
+    if window_days == 0 {
+        return;
+    }
     let Ok(commits) = load_commit_stats(repo, window_days) else {
         return;
     };

@@ -243,7 +243,6 @@ export class GraphSessionStore extends EventEmitter {
       this.diffOverlay = await buildWorkingTreeDiffOverlay({
         client: this.client,
         git: this.git,
-        layoutEngine: this.layoutEngine,
         root: this.root,
         baseRef,
         current: this.graph,
@@ -283,16 +282,20 @@ export class GraphSessionStore extends EventEmitter {
 
   /** Select a module and ask the canvas to center on it (inspector import navigation). */
   async focusOn(moduleId: string) {
-    if (!this.graph || !this.graph.modules.some((m) => m.id === moduleId)) return;
-    const expanded = expandCollapsedAncestors(
-      this.graph,
-      moduleId,
-      this.collapsedGroupIds,
-    );
-    if (expanded) {
-      this.syncReduced();
-      this.emit("zoom-changed");
-      await this.recomputeLayout();
+    const isLive = Boolean(this.graph?.modules.some((m) => m.id === moduleId));
+    const isDeleted = Boolean(this.diffOverlay?.deletedModuleIds.has(moduleId));
+    if (!isLive && !isDeleted) return;
+    if (this.graph && isLive) {
+      const expanded = expandCollapsedAncestors(
+        this.graph,
+        moduleId,
+        this.collapsedGroupIds,
+      );
+      if (expanded) {
+        this.syncReduced();
+        this.emit("zoom-changed");
+        await this.recomputeLayout();
+      }
     }
     const selChanged = this.selectedId !== moduleId;
     this.selectedId = moduleId;

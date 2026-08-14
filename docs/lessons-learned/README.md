@@ -21,6 +21,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [live-canvas-overlays-should-not-relayout-history.md](./live-canvas-overlays-should-not-relayout-history.md) | A second ELK of the before graph does not fit the live canvas; local-changes ghosts should use current boxes, not a historical layout | 2026-08-14 |
 | [working-tree-untracked-adds-need-rename-fallback.md](./working-tree-untracked-adds-need-rename-fallback.md) | `git diff -M` never sees untracked adds appended after the tracked diff, so local-change renames need a fingerprint fallback | 2026-08-14 |
 | [deleted-files-in-diff-need-group-inference-and-synthetic-layout.md](./deleted-files-in-diff-need-group-inference-and-synthetic-layout.md) | Pasted diffs lack historical Git trees; infer owning group from directory/siblings and lay out a synthetic before-graph so deleted files get coordinates and red borders | 2026-08-13 |
 | [folder-inference-needs-path-prefixes.md](./folder-inference-needs-path-prefixes.md) | Folder inference must expand parent paths to every prefix, not only dirs with direct files | 2026-08-10 |

@@ -1,7 +1,7 @@
 # Flow: navigate to a module from the inspector
 
-1. **Trigger** — user clicks a module path in the **Imports** or **Imported by** list.
-2. **Entry point** — `EdgeList` button in `features/inspection_panel/Private/EdgeList.tsx`.
+1. **Trigger** — user clicks a module path in the **Imports**, **Imported by**, or diff **Renamed to** list.
+2. **Entry point** — `EdgeList` button or `DiffRenameRows` button in `features/inspection_panel`.
 3. **Sequence**
    1. `InspectionPanel` passes `store.focusOn(moduleId)` into `ModuleInspection` / `GroupInspection`.
    2. `GraphSessionStore.focusOn(moduleId)` — expands collapsed ancestor groups when needed

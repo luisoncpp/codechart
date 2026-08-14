@@ -41,7 +41,7 @@ export function PanelChrome({
   );
 }
 
-export function Row({ label, value }: { label: string; value: string }) {
+export function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={{ display: "flex", gap: 8 }}>
       <dt style={{ fontWeight: 600, minWidth: 70 }}>{label}</dt>
@@ -49,6 +49,19 @@ export function Row({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+export const linkButtonStyle: React.CSSProperties = {
+  display: "block",
+  minWidth: 0,
+  overflowWrap: "anywhere",
+  border: "none",
+  background: "none",
+  padding: 0,
+  font: "inherit",
+  color: "#2563eb",
+  cursor: "pointer",
+  textAlign: "left",
+};
 
 const panelStyle = {
   position: "relative",

@@ -1,17 +1,18 @@
 // @Architecture(descriptionShort="Inspection details for a selected module node")
-import type { ProjectGraph } from "../../../domain/graph";
+import type { Edge, ModuleNode, ProjectGraph } from "../../../domain/graph";
 import {
+  findGroup,
   groupOf,
   importsOf,
   importedBy,
   softEdgesOf,
   diagnosticsFor,
 } from "../../../domain/graph";
-import type { ModuleNode } from "../../../domain/graph";
+import type { GraphDiffOverlay } from "../../../domain/diff";
 import { EdgeList } from "./EdgeList";
 import { SoftEdgeSections } from "./SoftEdgeSections";
 import { MetadataSection } from "./MetadataSection";
-import { PanelChrome, Row } from "./PanelParts";
+import { PanelChrome, Row, linkButtonStyle } from "./PanelParts";
 import { DiagnosticsList } from "./DiagnosticsList";
 import { SymbolList } from "./SymbolList";
 import { ModuleHeatRows } from "./ModuleHeatRows";
@@ -19,6 +20,7 @@ import { ModuleHeatRows } from "./ModuleHeatRows";
 interface ModuleInspectionProps {
   graph: ProjectGraph;
   module: ModuleNode;
+  diffOverlay?: GraphDiffOverlay | null;
   hideTests: boolean;
   metricsWindowDays: number;
   onHide?: () => void;
@@ -29,13 +31,27 @@ interface ModuleInspectionProps {
 export function ModuleInspection({
   graph,
   module,
+  diffOverlay,
   hideTests,
   metricsWindowDays,
   onHide,
   onNavigateToModule,
   onReviewNotes,
 }: ModuleInspectionProps) {
-  const group = groupOf(graph, module.id);
+  const group = groupOf(graph, module.id) ?? (module.groupId ? findGroup(graph, module.groupId) : undefined);
+  const isDeleted = Boolean(diffOverlay?.deletedModuleIds.has(module.id));
+  const renamedTo = diffOverlay?.renamePairs?.find((p) => p.from === module.id)?.to;
+  const renamedFrom = diffOverlay?.renamePairs?.find((p) => p.to === module.id)?.from;
+  const removedEdges = diffOverlay?.removedEdges ?? [];
+  const imports = dedupeEdges([
+    ...importsOf(graph, module.id),
+    ...removedEdges.filter((e) => e.kind === "import" && e.source === module.id),
+  ]);
+  const imported = dedupeEdges([
+    ...importedBy(graph, module.id),
+    ...removedEdges.filter((e) => e.kind === "import" && e.target === module.id),
+  ]);
+
   return (
     <PanelChrome onHide={onHide} onTabChange={(tab) => { if (tab === "review-notes") onReviewNotes?.(); }}>
       <h2 style={{ fontSize: 14, margin: "0 0 4px" }}>{module.label}</h2>
@@ -45,6 +61,12 @@ export function ModuleInspection({
         <Row label="Facade" value={module.isFacade ? "Yes" : "No"} />
         <Row label="Language" value={module.language} />
         <Row label="LOC" value={String(module.metrics.loc)} />
+        <DiffRenameRows
+          isDeleted={isDeleted}
+          renamedTo={renamedTo}
+          renamedFrom={renamedFrom}
+          onNavigateToModule={onNavigateToModule}
+        />
         <ModuleHeatRows
           graph={graph}
           module={module}
@@ -56,13 +78,13 @@ export function ModuleInspection({
       <SymbolList symbols={module.exportedSymbols} language={module.language} />
       <EdgeList
         title="Imports"
-        edges={importsOf(graph, module.id)}
+        edges={imports}
         field="target"
         onItemClick={onNavigateToModule}
       />
       <EdgeList
         title="Imported by"
-        edges={importedBy(graph, module.id)}
+        edges={imported}
         field="source"
         onItemClick={onNavigateToModule}
       />
@@ -71,3 +93,55 @@ export function ModuleInspection({
     </PanelChrome>
   );
 }
+
+function DiffRenameRows({
+  isDeleted,
+  renamedTo,
+  renamedFrom,
+  onNavigateToModule,
+}: {
+  isDeleted: boolean;
+  renamedTo?: string;
+  renamedFrom?: string;
+  onNavigateToModule: (moduleId: string) => void;
+}) {
+  if (isDeleted) {
+    return (
+      <>
+        <Row label="Status" value="Deleted" />
+        {renamedTo ? (
+          <Row
+            label="Renamed to"
+            value={
+              <button
+                type="button"
+                onClick={() => onNavigateToModule(renamedTo)}
+                style={linkButtonStyle}
+              >
+                {renamedTo}
+              </button>
+            }
+          />
+        ) : (
+          <Row label="Renamed" value="No" />
+        )}
+      </>
+    );
+  }
+  if (renamedFrom) {
+    return <Row label="Renamed from" value={renamedFrom} />;
+  }
+  return null;
+}
+
+function dedupeEdges(edges: Edge[]): Edge[] {
+  const seen = new Set<string>();
+  const out: Edge[] = [];
+  for (const e of edges) {
+    if (seen.has(e.id)) continue;
+    seen.add(e.id);
+    out.push(e);
+  }
+  return out;
+}
+
