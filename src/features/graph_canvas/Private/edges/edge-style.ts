@@ -46,13 +46,25 @@ function roleForFocus(edge: RFEdgeT, focus: EdgeFocus | null): EdgeRole | null {
   return null;
 }
 
+function isDiffRole(role: EdgeRole): boolean {
+  return role === "diff-added" || role === "diff-removed" || role === "diff-renamed";
+}
+
 /**
  * Single-level focus dimming: the selected module's own edges stay opaque; every
- * other edge sits at one quiet level — whether or not a selection is active — so
- * context stays legible instead of nearly disappearing.
+ * other edge sits at one quiet level. For diff edges: all diff edges stay opaque
+ * when no selection is active; when a module is selected, diff edges not connected
+ * to that module dim to 0.45 like other context edges.
  */
-export function edgeOpacity(role: EdgeRole): number {
-  if (role === "diff-added" || role === "diff-removed" || role === "diff-renamed") return 1;
+function edgeOpacity(
+  role: EdgeRole,
+  connectedToFocus = true,
+  hasFocus = false,
+): number {
+  if (isDiffRole(role)) {
+    if (!hasFocus) return 1;
+    return connectedToFocus ? 1 : 0.45;
+  }
   return role === "neutral" ? 0.45 : 1;
 }
 
@@ -62,9 +74,11 @@ export function styleEdge(edge: RFEdgeT, focus: EdgeFocus | null): RFEdgeT {
   const role = edgeRole(edge, focus);
   const color = COLOR[role];
   const focused = role !== "neutral";
+  const isDiff = isDiffRole(role);
+  const connected = roleForFocus(edge, focus) !== null;
   const dashed = edge.data?.kind === "soft";
   const isRemoved = role === "diff-removed";
-  const isDiff = role === "diff-added" || isRemoved || role === "diff-renamed";
+  const strokeWidth = isDiff ? 2.8 : (focused ? 2 : 1.2);
   return {
     ...edge,
     type: "floating",
@@ -73,9 +87,10 @@ export function styleEdge(edge: RFEdgeT, focus: EdgeFocus | null): RFEdgeT {
       : { type: MarkerType.ArrowClosed, color, width: 14, height: 14 },
     style: {
       stroke: color,
-      strokeWidth: focused || isDiff ? 2 : 1.2,
-      opacity: edgeOpacity(role),
+      strokeWidth,
+      opacity: edgeOpacity(role, connected, focus !== null),
       ...(dashed ? { strokeDasharray: "6 4" } : {}),
     },
   };
 }
+

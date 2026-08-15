@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { useReactFlow, useStore, useStoreApi } from "@xyflow/react";
 import { GraphSessionStore, useGraphSession } from "../../../../state/graph-session";
-import { nodeCenterFromLayout, viewportCanPan } from "./focus-viewport";
+import { findNodeCenter, viewportCanPan } from "./focus-viewport";
 
 interface FocusNodeProps {
   store: GraphSessionStore;
@@ -25,13 +25,13 @@ export function FocusNode({ store }: FocusNodeProps) {
 
   useEffect(() => {
     const id = focus?.id;
-    if (!id || !layout || !panReady) return;
+    if (!id || !panReady) return;
 
     let cancelled = false;
 
     const run = async () => {
       for (let attempt = 0; attempt < MAX_ATTEMPTS && !cancelled; attempt++) {
-        const center = nodeCenterFromLayout(layout, id);
+        const center = findNodeCenter(layout, storeApi.getState().nodeLookup, id);
         if (
           !center ||
           !Number.isFinite(center.x) ||

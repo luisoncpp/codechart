@@ -26,6 +26,7 @@
 }
 
 /* Matches React Flow's per-edge svg chrome; paths use absolute flow coordinates. */
+.react-flow .react-flow__edges,
 .codechart-edge-layer {
   overflow: visible;
   position: absolute;

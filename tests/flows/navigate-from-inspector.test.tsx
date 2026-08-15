@@ -81,4 +81,81 @@ describe("flow: navigate-from-inspector", () => {
       { timeout: /*timeoutMs=*/3000 },
     );
   });
+
+  it("clicking a Renamed from entry focuses the source module", async () => {
+    const store = await readyStore();
+    const existingMod = store.getGraph()!.modules[0];
+    (store as unknown as { diffOverlay: unknown }).diffOverlay = {
+      affectedModuleIds: new Set(),
+      deletedModuleIds: new Set(["src/old-source.ts"]),
+      renamePairs: [{ from: "src/old-source.ts", to: existingMod.id }],
+      ghostModules: [],
+      addedSymbolIds: new Set(),
+      removedSymbolIds: new Set(),
+      modifiedSymbolIds: new Set(),
+      addedEdgeIds: new Set(),
+      addedEdges: [],
+      removedEdges: [],
+      beforeLayout: null,
+      unifiedDiff: null,
+      lineDiffByPath: new Map(),
+      afterSourceByPath: new Map(),
+    };
+    store.select(existingMod.id);
+    const focusOn = vi.spyOn(store, "focusOn");
+
+    renderInspectionPanel(store);
+    const link = screen.getByRole("button", { name: "src/old-source.ts" });
+    fireEvent.click(link);
+
+    expect(focusOn).toHaveBeenCalledWith("src/old-source.ts");
+  });
+
+  it("focusOn pans the canvas viewport toward a renamed ghost module in diff mode", async () => {
+    const store = await readyStore();
+    (store as unknown as { diffOverlay: unknown }).diffOverlay = {
+      affectedModuleIds: new Set(),
+      deletedModuleIds: new Set(["src/old-ghost.ts"]),
+      renamePairs: [{ from: "src/old-ghost.ts", to: "src/core/todo.ts" }],
+      ghostModules: [
+        {
+          id: "src/old-ghost.ts",
+          path: "src/old-ghost.ts",
+          label: "old-ghost.ts",
+          language: "typescript",
+          groupId: "core",
+          isFacade: false,
+          metrics: { loc: 10 },
+          exportedSymbols: [],
+        },
+      ],
+      addedSymbolIds: new Set(),
+      removedSymbolIds: new Set(),
+      modifiedSymbolIds: new Set(),
+      addedEdgeIds: new Set(),
+      addedEdges: [],
+      removedEdges: [],
+      beforeLayout: null,
+      unifiedDiff: null,
+      lineDiffByPath: new Map(),
+      afterSourceByPath: new Map(),
+    };
+
+    const { container } = renderGraphCanvas(store);
+    await waitFor(() =>
+      expect(container.querySelector(".react-flow__pane")).toBeTruthy(),
+    );
+
+    const before = viewportTransform(container);
+    await store.focusOn("src/old-ghost.ts");
+
+    await waitFor(
+      () => {
+        const after = viewportTransform(container);
+        expect(after).toBeTruthy();
+        expect(after).not.toBe(before);
+      },
+      { timeout: /*timeoutMs=*/3000 },
+    );
+  });
 });

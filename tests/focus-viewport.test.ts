@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  findNodeCenter,
   nodeCenterFromLayout,
+  nodeCenterFromNodeLookup,
   viewportCanPan,
 } from "../src/features/graph_canvas/Private/navigation/focus-viewport";
 import type { LayoutedGraph } from "../src/domain/layout";
@@ -29,6 +31,60 @@ describe("nodeCenterFromLayout", () => {
 
   it("returns null for an unknown node", () => {
     expect(nodeCenterFromLayout(layout, "missing")).toBeNull();
+  });
+});
+
+describe("findNodeCenter & nodeCenterFromNodeLookup", () => {
+  it("falls back to nodeLookup when a module is not in the static layout", () => {
+    const nodeLookup = new Map<string, any>([
+      [
+        "src/ghost.ts",
+        {
+          id: "src/ghost.ts",
+          position: { x: 500, y: 300 },
+          width: 100,
+          height: 60,
+          measured: { width: 100, height: 60 },
+          internals: { positionAbsolute: { x: 500, y: 300 } },
+        },
+      ],
+    ]);
+
+    expect(nodeCenterFromNodeLookup(nodeLookup, "src/ghost.ts")).toEqual({
+      x: 550,
+      y: 330,
+    });
+    expect(findNodeCenter(layout, nodeLookup, "src/ghost.ts")).toEqual({
+      x: 550,
+      y: 330,
+    });
+  });
+
+  it("calculates absolute position from parent nodes in nodeLookup when positionAbsolute is missing", () => {
+    const nodeLookup = new Map<string, any>([
+      [
+        "core",
+        {
+          id: "core",
+          position: { x: 100, y: 50 },
+        },
+      ],
+      [
+        "src/ghost-child.ts",
+        {
+          id: "src/ghost-child.ts",
+          parentId: "core",
+          position: { x: 40, y: 20 },
+          width: 80,
+          height: 40,
+        },
+      ],
+    ]);
+
+    expect(findNodeCenter(null, nodeLookup, "src/ghost-child.ts")).toEqual({
+      x: 180,
+      y: 90,
+    });
   });
 });
 

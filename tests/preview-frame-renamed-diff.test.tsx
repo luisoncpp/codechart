@@ -107,7 +107,7 @@ describe("Preview frame for renamed file in diff view", () => {
     expect(rendered.removeCount).toBe(1);
     expect(rendered.contextCount).toBe(2);
     expect(rendered.text).toContain("-  return 1;");
-    expect(rendered.text).toContain("+  return 2;");
+    expect(rendered.text).toContain("+2  return 2;");
   });
 
   it("shows zero green lines for identically renamed file", () => {

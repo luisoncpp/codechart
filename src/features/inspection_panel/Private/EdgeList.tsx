@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="Lists incoming/outgoing imports in the inspection panel")
 import type React from "react";
 import type { Edge } from "../../../domain/graph";
-import { linkButtonStyle } from "./PanelParts";
+import { ModuleLink } from "./PanelParts";
 
 interface EdgeListProps {
   title: string;
@@ -43,17 +43,7 @@ function EdgeItem({ edge, field, onItemClick }: Omit<EdgeListProps, "title" | "e
   return (
     <li style={itemStyle}>
       <Bullet />
-      {onItemClick ? (
-        <button
-          type="button"
-          onClick={() => onItemClick(moduleId)}
-          style={linkButtonStyle}
-        >
-          {moduleId}
-        </button>
-      ) : (
-        <span>{moduleId}</span>
-      )}
+      <ModuleLink moduleId={moduleId} onClick={onItemClick} />
     </li>
   );
 }

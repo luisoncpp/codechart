@@ -111,7 +111,7 @@ describe("deleted module inspection in diff mode", () => {
     expect(within(importsSection).getByText("src/target.ts")).toBeInTheDocument();
   });
 
-  it("renders Renamed from row when inspecting the destination module", async () => {
+  it("renders Renamed from button when inspecting the destination module and clicking it focuses on the source module", async () => {
     const store = await readyGraphStore();
     const overlay = buildSampleDiffOverlay();
     (store as unknown as { diffOverlay: GraphDiffOverlay }).diffOverlay = overlay;
@@ -121,9 +121,14 @@ describe("deleted module inspection in diff mode", () => {
     overlay.renamePairs = [{ from: "src/old-file.ts", to: existingMod.id }];
 
     store.select(existingMod.id);
+    const focusOn = vi.spyOn(store, "focusOn");
     renderInspectionPanel(store);
 
     expect(screen.getByText("Renamed from")).toBeInTheDocument();
-    expect(screen.getByText("src/old-file.ts")).toBeInTheDocument();
+    const link = screen.getByRole("button", { name: "src/old-file.ts" });
+    expect(link).toBeInTheDocument();
+
+    fireEvent.click(link);
+    expect(focusOn).toHaveBeenCalledWith("src/old-file.ts");
   });
 });

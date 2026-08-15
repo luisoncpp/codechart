@@ -12,7 +12,7 @@ import type { GraphDiffOverlay } from "../../../domain/diff";
 import { EdgeList } from "./EdgeList";
 import { SoftEdgeSections } from "./SoftEdgeSections";
 import { MetadataSection } from "./MetadataSection";
-import { PanelChrome, Row, linkButtonStyle } from "./PanelParts";
+import { ModuleLink, PanelChrome, Row } from "./PanelParts";
 import { DiagnosticsList } from "./DiagnosticsList";
 import { SymbolList } from "./SymbolList";
 import { ModuleHeatRows } from "./ModuleHeatRows";
@@ -112,15 +112,7 @@ function DiffRenameRows({
         {renamedTo ? (
           <Row
             label="Renamed to"
-            value={
-              <button
-                type="button"
-                onClick={() => onNavigateToModule(renamedTo)}
-                style={linkButtonStyle}
-              >
-                {renamedTo}
-              </button>
-            }
+            value={<ModuleLink moduleId={renamedTo} onClick={onNavigateToModule} />}
           />
         ) : (
           <Row label="Renamed" value="No" />
@@ -129,7 +121,12 @@ function DiffRenameRows({
     );
   }
   if (renamedFrom) {
-    return <Row label="Renamed from" value={renamedFrom} />;
+    return (
+      <Row
+        label="Renamed from"
+        value={<ModuleLink moduleId={renamedFrom} onClick={onNavigateToModule} />}
+      />
+    );
   }
   return null;
 }

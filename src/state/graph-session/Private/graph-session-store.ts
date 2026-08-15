@@ -31,6 +31,7 @@ import {
 import {
   expandCollapsedAncestors,
   expandCollapsedGroupAncestors,
+  uncollapseGroupAndAncestors,
 } from "./ensure-node-visible";
 import { SelectionHistory } from "./selection-history";
 import { DiffReviewTracker } from "./diff-review-tracker";
@@ -283,14 +284,15 @@ export class GraphSessionStore extends EventEmitter {
   /** Select a module and ask the canvas to center on it (inspector import navigation). */
   async focusOn(moduleId: string) {
     const isLive = Boolean(this.graph?.modules.some((m) => m.id === moduleId));
-    const isDeleted = Boolean(this.diffOverlay?.deletedModuleIds.has(moduleId));
+    const ghostMod = this.diffOverlay?.ghostModules.find((m) => m.id === moduleId);
+    const isDeleted = Boolean(this.diffOverlay?.deletedModuleIds.has(moduleId) || ghostMod);
     if (!isLive && !isDeleted) return;
-    if (this.graph && isLive) {
-      const expanded = expandCollapsedAncestors(
-        this.graph,
-        moduleId,
-        this.collapsedGroupIds,
-      );
+    if (this.graph) {
+      const expanded = isLive
+        ? expandCollapsedAncestors(this.graph, moduleId, this.collapsedGroupIds)
+        : ghostMod?.groupId
+          ? uncollapseGroupAndAncestors(this.graph, ghostMod.groupId, this.collapsedGroupIds)
+          : false;
       if (expanded) {
         this.syncReduced();
         this.emit("zoom-changed");

@@ -44,13 +44,36 @@ export function PanelChrome({
 export function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={{ display: "flex", gap: 8 }}>
-      <dt style={{ fontWeight: 600, minWidth: 70 }}>{label}</dt>
-      <dd style={{ margin: 0 }}>{value}</dd>
+      <dt style={{ fontWeight: 600, minWidth: 70, flexShrink: 0 }}>{label}</dt>
+      <dd style={{ margin: 0, minWidth: 0, overflowWrap: "anywhere" }}>{value}</dd>
     </div>
   );
 }
 
-export const linkButtonStyle: React.CSSProperties = {
+export function ModuleLink({
+  moduleId,
+  label,
+  onClick,
+}: {
+  moduleId: string;
+  label?: React.ReactNode;
+  onClick?: (moduleId: string) => void;
+}) {
+  if (!onClick) {
+    return <span>{label ?? moduleId}</span>;
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(moduleId)}
+      style={linkButtonStyle}
+    >
+      {label ?? moduleId}
+    </button>
+  );
+}
+
+const linkButtonStyle: React.CSSProperties = {
   display: "block",
   minWidth: 0,
   overflowWrap: "anywhere",

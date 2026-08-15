@@ -64,7 +64,7 @@ function CrossHead({
   const x4 = tip.x + dx + px;
   const y4 = tip.y + dy + py;
   return (
-    <g stroke={color} strokeWidth={2} strokeLinecap="round">
+    <g stroke={color} strokeWidth={2.4} strokeLinecap="round">
       <line x1={x1} y1={y1} x2={x2} y2={y2} />
       <line x1={x3} y1={y3} x2={x4} y2={y4} />
     </g>

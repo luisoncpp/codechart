@@ -4,6 +4,22 @@ import {
   type ProjectGraph,
 } from "../../../domain/graph";
 
+/** Uncollapse a group and all of its ancestor groups. */
+export function uncollapseGroupAndAncestors(
+  graph: ProjectGraph,
+  groupId: string,
+  collapsed: Set<string>,
+): boolean {
+  const parentOf = groupParentMap(graph);
+  let changed = false;
+  let curr: string | null = groupId;
+  while (curr) {
+    if (collapsed.delete(curr)) changed = true;
+    curr = parentOf.get(curr) ?? null;
+  }
+  return changed;
+}
+
 /** Expand collapsed ancestor groups so a module node can render on the canvas. */
 export function expandCollapsedAncestors(
   graph: ProjectGraph,
@@ -12,18 +28,7 @@ export function expandCollapsedAncestors(
 ): boolean {
   const mod = findModule(graph, moduleId);
   if (!mod?.groupId) return false;
-
-  const parentOf = groupParentMap(graph);
-  let changed = false;
-  let groupId: string | null = mod.groupId;
-  while (groupId) {
-    if (collapsed.has(groupId)) {
-      collapsed.delete(groupId);
-      changed = true;
-    }
-    groupId = parentOf.get(groupId) ?? null;
-  }
-  return changed;
+  return uncollapseGroupAndAncestors(graph, mod.groupId, collapsed);
 }
 
 /** Expand a group's collapsed ancestor chain (the group itself is the caller's

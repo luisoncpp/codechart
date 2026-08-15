@@ -76,9 +76,10 @@ Both deep modules organize their implementation into subfolders, each a config s
   ~36px perpendicular to its straight line) instead of the straight bezier used by imports, so its dash
   arcs clear of any import/violation edge sharing the same corridor (e.g. `store.ts → App.tsx` soft vs.
   the `TodoList.tsx → store.ts` violation) instead of overlapping it.
-  While a **diff overlay** is active, added edges are green, removed edges are red with an **X** head,
-  and rename edges are yellow (`#d97706`, arrow head) from the deleted module to the created one;
-  the module cards themselves stay red/green.
+  While a **diff overlay** is active, added edges are green (`#16a34a`), removed edges are red (`#dc2626`) with an **X** head,
+  and rename edges are yellow (`#d97706`, arrow head) from the deleted module to the created one. All diff edges
+  render thicker (`2.8px`) than normal focused edges (`2.0px`) and sit in the edge layer (`z-index: 0`) behind opaque
+  module cards (`z-index: 1`); the module cards themselves stay red/green.
   Edges are **display-only** (no `onEdgeClick`/hover handlers), so `graph-canvas.css` sets
   `pointer-events: none` on `.react-flow__edge` — React Flow's invisible edge interaction path would
   otherwise swallow a `pointerdown` and break pan-by-drag that starts on an edge.
@@ -98,11 +99,12 @@ Both deep modules organize their implementation into subfolders, each a config s
   relative to it — edges leaving the focus (`source` in scope) render **orange**, edges entering it
   (`target` in scope) render **blue**. Selection wins over `isViolation` (so a selected module's
   import is orange, not red); unselected violation edges stay **red**, keeping a wrong import
-  visually distinct from a selected import. `edgeOpacity(role)` then applies **single-level** focus
-  dimming: a node's own edges stay opaque (1.0); every other edge sits at one quiet level (0.45),
-  arrowheads kept, whether or not a selection is active — context stays legible instead of nearly
-  vanishing. Both live in `edge-style.ts` (`GraphCanvas` passes `edgeFocusForSelection` per render);
-  pure `edgeRole`/`edgeOpacity`/`borderAnchor` are the testable seams (edges don't render under jsdom).
+  visually distinct from a selected import. `edgeOpacity(role, connected, hasFocus)` applies focus
+  dimming: a node's own edges stay opaque (1.0); other context edges sit at 0.45 opacity. When visualizing
+  diffs with no selection, all diff edges stay fully opaque (1.0); when a module is selected, diff edges
+  not connected to that module dim to 0.45 while connected diff edges stay fully opaque. Both live in
+  `edge-style.ts` (`GraphCanvas` passes `edgeFocusForSelection` per render); pure `edgeRole`/`styleEdge`/`borderAnchor`
+  are the testable seams (edges don't render under jsdom).
 - **Diff overlay (narrative diff visualizer):** optional session overlay from `GraphSessionStore.getDiffOverlay()`.
   Enter via toolbar **View ▾ → Visualize diff…** (`DiffModal`: paste unified diff or pick two git revisions when the
   project root is a repo). The **after** list includes **Local changes**: tracked staged/unstaged
