@@ -79,9 +79,9 @@ function edgeFromLine(
 
 function extractImportSpecifier(line: string): string | null {
   const trimmed = line.trim();
-  const js = trimmed.match(
-    /^(?:import|export)\s+(?:(?:{[^}]+}|\*\s+as\s+[^,]+|[a-zA-Z0-9_$]+)\s*,?\s*)*(?:from\s+)?["']([^"']+)["']/,
-  ) ?? trimmed.match(/^(?:const|let|var)\s+.*?=\s*require\(["']([^"']+)["']\)/);
+  const js = trimmed.match(/^(?:import|export)\b[^"']*\bfrom\s*["']([^"']+)["']/)
+    ?? trimmed.match(/^import\s*["']([^"']+)["']/)
+    ?? trimmed.match(/^(?:const|let|var)\s+.*?=\s*require\(["']([^"']+)["']\)/);
   if (js) return js[1] ?? null;
 
   const rust = trimmed.match(/^use\s+(?:crate::|super::)?([a-zA-Z0-9_:]+);/);
