@@ -45,6 +45,25 @@ struct GraphParts {
     diagnostics: Vec<Diagnostic>,
 }
 
+/// Whether analysis ever opens this file, as opposed to merely seeing its path.
+///
+/// Exists for callers that pay per byte to *materialize* a source tree — the git
+/// snapshot reads blobs out of the object database, where a repo's images, fonts and
+/// lock files are usually most of the bytes and none of the graph. Everything else
+/// (ignore patterns, the unreal/unity project sniffing) works off the file list, so a
+/// skipped file still has to be listed; see `MemoryProjectSource::with_listing`.
+///
+/// Deliberately lives here rather than in the caller: the four things below are read by
+/// four different submodules of this one, and a copy elsewhere would silently rot the
+/// day a fifth is added.
+pub fn opens_file(path: &str) -> bool {
+    registry_for_path(path).is_some()
+        || is_group_file(path)
+        || path.ends_with(".meta")
+        || crate::tsconfig_paths::is_config_path(path)
+        || path == crate::unreal_config::CONFIG_PATH
+}
+
 /// Analyze a project: parse its source files, resolve groups + import edges, and
 /// assemble the validated `ProjectGraph`. `root` is recorded verbatim onto the
 /// graph (callers own the project path → id relationship).

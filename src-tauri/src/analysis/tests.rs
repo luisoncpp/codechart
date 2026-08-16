@@ -344,3 +344,40 @@ fn hide_top_level_dot_dirs_excludes_modules_under_dot_folders() {
     .expect("builds");
     assert!(shown.modules.iter().any(|m| m.id == ".agents/hidden.ts"));
 }
+
+/// `opens_file` is the contract a caller materializing a tree pays for: anything it
+/// answers `false` to will not be readable, so every file one of this module's
+/// submodules opens has to be listed here. The expensive half — a repo's art, fonts
+/// and lock files — is exactly what must stay out.
+#[test]
+fn opens_file_covers_everything_analysis_reads() {
+    for path in [
+        "src/app.ts",
+        "src/App.tsx",
+        "src/legacy.js",
+        "src-tauri/src/lib.rs",
+        "Assets/Player.cs",
+        "Assets/Player.prefab",
+        "Assets/Player.prefab.meta",
+        "src/styles.css",
+        "Source/Game/Actor.cpp",
+        "Source/Game/Actor.h",
+        "src/ui/ui.group.md",
+        "tsconfig.json",
+        "jsconfig.json",
+        ".codechart/config.json",
+    ] {
+        assert!(super::opens_file(path), "{path} must stay readable");
+    }
+
+    for path in [
+        "public/assets/ui/lobby/row-idle.png",
+        "public/assets/fonts/inter.woff2",
+        "package-lock.json",
+        "docs/architecture/README.md",
+        "Game.uproject",
+        "LICENSE",
+    ] {
+        assert!(!super::opens_file(path), "{path} must not be read");
+    }
+}

@@ -496,6 +496,55 @@ describe("applyDiffOverlay", () => {
     expect(overlay.removedEdges.some((e) => e.target.includes("validate"))).toBe(true);
     expect(overlay.addedEdges?.some((e) => e.target.includes("api"))).toBe(true);
   });
+
+  // Regression: the import matcher used one pattern whose repeated group could split a run of
+  // identifier characters in 2^n ways, so an `export`/`import` line with no specifier to find —
+  // i.e. every exported declaration — backtracked exponentially. Cost grew 4x per 2 characters
+  // of declaration name, and the matcher runs once per +/- line, so a normal-sized pasted diff
+  // took minutes before the overlay appeared.
+  //
+  // Asserted as elapsed time because the defect IS a timing blow-up, and a vitest `timeout` would
+  // not help: the stall is synchronous, so a broken matcher hangs the worker instead of failing.
+  // The 20-character name below costs ~3s with the old pattern and ~0.1ms without it, so the
+  // budget has a ~10x margin over the failing case and a ~1000x margin over the passing one.
+  it("does not backtrack exponentially on exported declarations", () => {
+    const declaration = "export function buildOverlayForStore(input: Input) {";
+    const text = [
+      "diff --git a/src/core/store.ts b/src/core/store.ts",
+      "--- a/src/core/store.ts",
+      "+++ b/src/core/store.ts",
+      "@@ -1,4 +1,6 @@",
+      `+${declaration}`,
+      "+import { api } from '../services/api';",
+    ].join("\n");
+
+    const startedAt = performance.now();
+    const overlay = overlayFromPastedDiff(text, base);
+    expect(performance.now() - startedAt).toBeLessThan(300);
+    // The declaration carries no specifier; only the real import becomes an edge.
+    expect(overlay.addedEdges?.length).toBe(1);
+    expect(overlay.addedEdges?.[0]?.target).toContain("api");
+  });
+
+  it("reads a specifier off every import and re-export form", () => {
+    const line = (source: string) =>
+      [
+        "diff --git a/src/core/store.ts b/src/core/store.ts",
+        "--- a/src/core/store.ts",
+        "+++ b/src/core/store.ts",
+        "@@ -1,2 +1,3 @@",
+        `+${source}`,
+      ].join("\n");
+    const targetOf = (source: string) =>
+      overlayFromPastedDiff(line(source), base).addedEdges?.[0]?.target;
+
+    expect(targetOf("import { api } from '../services/api';")).toContain("api");
+    expect(targetOf("import type { Api } from '../services/api';")).toContain("api");
+    expect(targetOf("import * as api from '../services/api';")).toContain("api");
+    expect(targetOf("export { api } from '../services/api';")).toContain("api");
+    // `export * from` was missed by the old pattern: `*` matched none of its alternatives.
+    expect(targetOf("export * from '../services/api';")).toContain("api");
+  });
 });
 
 describe("countLineDiffStats", () => {

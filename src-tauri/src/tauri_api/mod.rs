@@ -1,4 +1,15 @@
 // @Architecture(descriptionShort="Tauri IPC commands bridging frontend to analysis")
+//
+// **Every command that touches the disk, git, or the parser is `#[tauri::command(async)]`.**
+// A bare `#[tauri::command]` on a synchronous function is `ExecutionContext::Blocking` in
+// `tauri-macros`, which calls the body inline on the main thread: the window stops
+// rendering for the duration, and two commands the frontend fires with `Promise.all`
+// cannot overlap — they queue. `(async)` hands the same synchronous body to the async
+// runtime instead, so the UI keeps painting and concurrent calls genuinely run at once
+// (the diff visualizer loads two project snapshots this way). The body still blocks a
+// runtime worker while it runs, so this buys concurrency, not unlimited concurrency.
+//
+// Only a command that returns a value already in memory should stay synchronous.
 
 use crate::analysis::{analyze_project_with_options as run_analysis_with_options, AnalyzeOptions};
 use crate::contract::ProjectGraph;
@@ -19,6 +30,7 @@ use crate::{
 use std::collections::{HashMap, HashSet};
 
 /// Return the optional project path parsed from argv at app startup.
+/// Synchronous by design — it clones a `String` that was parsed before the window opened.
 #[tauri::command]
 pub fn get_startup_project_path(state: tauri::State<'_, StartupProjectPath>) -> Option<String> {
     state.0.clone()
@@ -35,7 +47,7 @@ pub struct GitProjectSnapshot {
 /// `ProjectGraph`. The path is used both as the filesystem root and as the
 /// graph's recorded `root`. Build failures surface as a string error so the
 /// frontend's `failed` session phase can show them.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn analyze_project(
     path: String,
     metrics_window_days: Option<u32>,
@@ -59,14 +71,14 @@ pub fn analyze_project(
 }
 
 /// Load one git tree for both analysis and selected source extraction.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn load_project_snapshot(
     path: String,
     git_ref: String,
     module_paths: Vec<String>,
     hide_top_level_dot_dirs: Option<bool>,
 ) -> Result<GitProjectSnapshot, String> {
-    let source = git::source_at_ref(&path, &git_ref)?;
+    let source = git::source_at_ref(&path, &git_ref, &crate::analysis::opens_file)?;
     let graph = run_analysis_with_options(
         &source,
         &path,
@@ -94,12 +106,12 @@ pub fn load_project_snapshot(
     Ok(GitProjectSnapshot { graph, sources })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_diff_refs(path: String, base_ref: String, head_ref: String) -> Result<String, String> {
     git::diff_refs(&path, &base_ref, &head_ref)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_diff_working_tree(
     path: String,
     base_ref: String,
@@ -114,22 +126,22 @@ pub fn git_diff_working_tree(
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_list_submodule_paths(path: String) -> Result<Vec<String>, String> {
     git::list_submodule_paths(&path)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_is_repo(path: String) -> bool {
     git::is_git_repo(&path)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn git_list_commits(path: String, limit: u32) -> Result<Vec<GitCommit>, String> {
     git::list_commits(&path, limit)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn read_module_source(root: String, path: String) -> Result<String, String> {
     let source = FsProjectSource::new(&root);
     source.read_file(&path).map_err(|e| e.to_string())
@@ -137,7 +149,7 @@ pub fn read_module_source(root: String, path: String) -> Result<String, String> 
 
 /// Case-insensitive substring search over the given modules' working-tree
 /// sources. Unreadable files are skipped, so there is no failure mode.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn search_module_sources(
     root: String,
     query: String,
@@ -147,40 +159,40 @@ pub fn search_module_sources(
     search_sources(&source, &query, &module_paths)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn read_project_config(path: String) -> Result<ProjectConfig, String> {
     load_project_config(&path)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn write_project_config(path: String, config: ProjectConfig) -> Result<(), String> {
     save_project_config(&path, config)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn load_review_notes(root: String, module_paths: Vec<String>) -> Result<ReviewNotesDocument, String> {
     load_notes(&root, module_paths)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn save_review_notes(root: String, document: ReviewNotesDocument) -> Result<(), String> {
     save_notes(&root, document)
 }
 
 /// Reviewed file paths for one diff, reconciled against the diff's current
 /// paths (stale entries are dropped and the result persisted).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn load_diff_review(root: String, diff_id: String, diff_paths: Vec<String>) -> Result<Vec<String>, String> {
     load_review(&root, &diff_id, diff_paths)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn save_diff_review(root: String, diff_id: String, reviewed_paths: Vec<String>) -> Result<(), String> {
     save_review(&root, &diff_id, reviewed_paths)
 }
 
 /// Wipe every persisted diff review entry (settings "clear review info").
-#[tauri::command]
+#[tauri::command(async)]
 pub fn clear_diff_reviews(root: String) -> Result<(), String> {
     clear_reviews(&root)
 }

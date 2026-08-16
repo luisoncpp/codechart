@@ -30,7 +30,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 ## Reads
 
 - Current session `ProjectGraph` + `LayoutedGraph` (display base)
-- Git tree at two refs (`git ls-tree` + `git cat-file --batch`, via `MemoryProjectSource`), each reused for graph analysis and changed module bodies
+- Git tree at two refs (`git ls-tree` + `git cat-file --batch`, via `MemoryProjectSource`), each reused for graph analysis and changed module bodies. **Every path is listed; only the blobs `analysis::opens_file` accepts are read** — source files, `*.group.md`, `*.meta`, `tsconfig`/`jsconfig`, `.codechart/config.json`. A repo's art, fonts and lock files are usually most of its bytes and none of its graph (79% of the bytes in this repo), and two snapshots load per commit-to-commit diff. A skipped path reads back as `NotFound`, never as empty content.
 - Working tree tracked diff + Git's ignored-aware untracked list
 - Pasted unified diff text (path headers + import additions/removals for diff edges)
 
@@ -42,6 +42,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 ## Side effects
 
 - Git commit mode runs two full analyses + one layout of the before graph when anything was deleted. Local changes load one snapshot and never re-layout the before graph. Each historical tree is loaded once, and Git child processes are created without console windows on Windows.
+- The two snapshot loads run **concurrently**: `load_project_snapshot` is `#[tauri::command(async)]`, so the `Promise.all` in `build-diff-overlay.ts` actually overlaps them and the window keeps painting. A bare `#[tauri::command]` would queue them on the main thread — see [lesson](../lessons-learned/sync-tauri-commands-run-on-the-main-thread.md).
 
 ## Files to inspect
 

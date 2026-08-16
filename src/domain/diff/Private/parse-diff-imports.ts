@@ -77,21 +77,34 @@ function edgeFromLine(
   };
 }
 
+/**
+ * First pattern to match wins; capture group 1 is the specifier. Order matters only
+ * between the two JS import forms, which cannot overlap anyway.
+ *
+ * **Every pattern here must be linear.** This runs once per `+`/`-` line of the diff, and
+ * most of those lines match nothing — so the cost that matters is the cost of *failing*.
+ * The JS clause form and the bare `import "x"` form are two entries rather than one for
+ * exactly that reason: covering both at once needs a repeated clause group, and a repeated
+ * group whose body can match a run of identifier characters backtracks exponentially on
+ * every `export`/`import` line that is not an import. See tests/diff.test.ts and
+ * `lessons-learned/one-regex-for-two-import-forms-is-a-redos.md`.
+ */
+const SpecifierPatterns = [
+  /^(?:import|export)\b[^"']*\bfrom\s*["']([^"']+)["']/,        // import/export … from "x"
+  /^import\s*["']([^"']+)["']/,                                  // side-effect import "x"
+  /^(?:const|let|var)\s+.*?=\s*require\(["']([^"']+)["']\)/,     // CommonJS
+  /^use\s+(?:crate::|super::)?([a-zA-Z0-9_:]+);/,                // Rust
+  /^#include\s*["<]([^">]+)[">]/,                                // C / C++
+  /^using\s+([a-zA-Z0-9_.]+);/,                                  // C#
+] as const;
+
 function extractImportSpecifier(line: string): string | null {
   const trimmed = line.trim();
-  const js = trimmed.match(/^(?:import|export)\b[^"']*\bfrom\s*["']([^"']+)["']/)
-    ?? trimmed.match(/^import\s*["']([^"']+)["']/)
-    ?? trimmed.match(/^(?:const|let|var)\s+.*?=\s*require\(["']([^"']+)["']\)/);
-  if (js) return js[1] ?? null;
-
-  const rust = trimmed.match(/^use\s+(?:crate::|super::)?([a-zA-Z0-9_:]+);/);
-  if (rust) return rust[1] ?? null;
-
-  const cpp = trimmed.match(/^#include\s*["<]([^">]+)[">]/);
-  if (cpp) return cpp[1] ?? null;
-
-  const cs = trimmed.match(/^using\s+([a-zA-Z0-9_.]+);/);
-  return cs ? cs[1] ?? null : null;
+  for (const pattern of SpecifierPatterns) {
+    const match = trimmed.match(pattern);
+    if (match) return match[1] ?? null;
+  }
+  return null;
 }
 
 function resolveImportSpecifier(

@@ -27,6 +27,12 @@ pub struct PathAliases {
     pub mappings: Vec<(String, String)>,
 }
 
+/// Whether `load_from_source` would open this path. Kept beside the two names it
+/// checks so a caller that pre-filters readable files cannot drift from them.
+pub fn is_config_path(path: &str) -> bool {
+    path == TSCONFIG || path == JSCONFIG
+}
+
 /// Load path aliases from `tsconfig.json` or `jsconfig.json` at the project root.
 pub fn load_from_source(source: &dyn ProjectSource) -> PathAliases {
     for path in [TSCONFIG, JSCONFIG] {

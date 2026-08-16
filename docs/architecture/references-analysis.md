@@ -192,6 +192,21 @@ sort by id, dedup by id — for deterministic final output.
 path→id relationship). Modules sorted by id; groups/edges/diagnostics already
 deterministic.
 
+### `analysis::opens_file(path)` — what a source actually has to contain
+
+Second public function of the module, for callers that pay per byte to *materialize* a
+tree (today: `git::source_at_ref`, which pulls blobs out of the object database). True
+for the five things the steps above open: adapter-supported files, `*.group.md`,
+`*.meta`, `tsconfig.json`/`jsconfig.json`, and `.codechart/config.json`.
+
+It lives here rather than in the caller because those five are read by five *different*
+submodules of this one, and a copy elsewhere rots the day a sixth is added. Everything
+else — ignore patterns, `is_unreal_project`, `deduce_known_paths`, the meta-index
+candidate scan — works off the file **list**, so a caller that skips content must still
+list the path. `MemoryProjectSource::with_listing` models exactly that split, and a
+skipped path reads back as `NotFound` rather than as empty content, so a wrongly-skipped
+file becomes a visible `parseError` instead of a silent zero-import module.
+
 ## Determinism
 
 Files parsed in sorted order; edges sorted by `(source, target)` + ordinal;

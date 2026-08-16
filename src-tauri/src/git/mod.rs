@@ -8,7 +8,7 @@ pub use metrics::{enrich_module_metrics, DEFAULT_METRICS_WINDOW_DAYS};
 pub use submodules::list_submodule_paths;
 pub use working_tree::{working_tree_diff, WorkingTreeDiffInput};
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -41,17 +41,49 @@ pub fn diff_refs(path: &str, base_ref: &str, head_ref: &str) -> Result<String, S
     git_output(path, &["diff", "-M", base_ref, head_ref])
 }
 
-pub fn source_at_ref(path: &str, git_ref: &str) -> Result<MemoryProjectSource, String> {
+/// Materialize the tree at `git_ref` as a `ProjectSource`.
+///
+/// `wanted` decides which blobs are actually read out of the object database. Every
+/// path is still listed — callers derive project-shape facts from the listing — but a
+/// repo's bytes are mostly images, fonts and lock files that no consumer opens, and
+/// reading those costs a `cat-file` round trip plus a lossy UTF-8 copy each. Two of
+/// these snapshots are loaded per commit-to-commit diff, so the filter is the
+/// difference between reading the source and reading the repo.
+pub fn source_at_ref(
+    path: &str,
+    git_ref: &str,
+    wanted: &dyn Fn(&str) -> bool,
+) -> Result<MemoryProjectSource, String> {
     let entries = ls_tree_blobs(path, git_ref)?;
     if entries.is_empty() {
         return Ok(MemoryProjectSource::new(HashMap::new()));
     }
-    let blobs = batch_read_blobs(path, &entries)?;
+    let (readable, listing_only): (Vec<_>, BTreeSet<_>) = split_by_want(entries, wanted);
+    let blobs = batch_read_blobs(path, &readable)?;
     let mut map = HashMap::with_capacity(blobs.len());
     for (rel_path, content) in blobs {
-        map.insert(rel_path.replace('\\', "/"), content);
+        map.insert(rel_path, content);
     }
-    Ok(MemoryProjectSource::new(map))
+    Ok(MemoryProjectSource::with_listing(map, listing_only))
+}
+
+/// Blobs to read, paired with the paths that stay listing-only. Path separators are
+/// normalized here so `wanted` and the resulting source agree on one spelling.
+fn split_by_want(
+    entries: Vec<(String, String)>,
+    wanted: &dyn Fn(&str) -> bool,
+) -> (Vec<(String, String)>, BTreeSet<String>) {
+    let mut readable = Vec::new();
+    let mut listing_only = BTreeSet::new();
+    for (rel_path, sha) in entries {
+        let rel_path = rel_path.replace('\\', "/");
+        if wanted(&rel_path) {
+            readable.push((rel_path, sha));
+        } else {
+            listing_only.insert(rel_path);
+        }
+    }
+    (readable, listing_only)
 }
 
 fn ls_tree_blobs(path: &str, git_ref: &str) -> Result<Vec<(String, String)>, String> {
@@ -215,5 +247,41 @@ mod tests {
             source.read_file("missing.ts"),
             Err(ProjectSourceError::NotFound(_))
         ));
+    }
+
+    /// A snapshot must stay a faithful *listing* of the tree while reading only the
+    /// blobs the caller asked for: the unreal/unity project sniffing and the ignore
+    /// rules all run off the file list, so dropping a skipped path outright would
+    /// quietly change which files the analysis then considers.
+    #[test]
+    fn split_by_want_lists_every_path_but_reads_only_wanted_blobs() {
+        let entries = vec![
+            ("src/a.ts".to_string(), "sha_a".to_string()),
+            ("art/logo.png".to_string(), "sha_png".to_string()),
+            ("Game.uproject".to_string(), "sha_up".to_string()),
+        ];
+
+        let (readable, listing_only) =
+            split_by_want(entries, &|path: &str| path.ends_with(".ts"));
+
+        assert_eq!(readable, vec![("src/a.ts".to_string(), "sha_a".to_string())]);
+        assert_eq!(
+            listing_only.into_iter().collect::<Vec<_>>(),
+            vec!["Game.uproject".to_string(), "art/logo.png".to_string()]
+        );
+    }
+
+    /// `ls-tree` can hand back backslashes on Windows; normalizing after the filter ran
+    /// would test one spelling and store another.
+    #[test]
+    fn split_by_want_normalizes_separators_before_asking() {
+        let entries = vec![("src\\deep\\a.ts".to_string(), "sha".to_string())];
+
+        let (readable, listing_only) =
+            split_by_want(entries, &|path: &str| path == "src/deep/a.ts");
+
+        assert_eq!(readable.len(), 1);
+        assert_eq!(readable[0].0, "src/deep/a.ts");
+        assert!(listing_only.is_empty());
     }
 }
