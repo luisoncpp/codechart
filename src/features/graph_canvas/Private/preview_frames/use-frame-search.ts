@@ -10,6 +10,8 @@ interface UseFrameSearchArgs {
   sourceText: string;
   /** Opens the bar pre-filled on mount (e.g. carried over from project search). */
   initialQuery?: string;
+  /** False while the frame shows rendered markdown, which cannot host match spans. */
+  enabled?: boolean;
 }
 
 /** The frame the Ctrl+F press targets: focused frame first, hovered frame else. */
@@ -20,8 +22,13 @@ function targetFrame(): Element | null {
   );
 }
 
-function useOpenShortcut(frameRef: React.RefObject<HTMLDivElement | null>, open: () => void) {
+function useOpenShortcut(
+  frameRef: React.RefObject<HTMLDivElement | null>,
+  open: () => void,
+  enabled: boolean,
+) {
   useEffect(() => {
+    if (!enabled) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
       if (e.key.toLowerCase() !== "f") return;
@@ -31,10 +38,10 @@ function useOpenShortcut(frameRef: React.RefObject<HTMLDivElement | null>, open:
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [frameRef, open]);
+  }, [frameRef, open, enabled]);
 }
 
-export function useFrameSearch({ frameRef, description, sourceText, initialQuery }: UseFrameSearchArgs) {
+export function useFrameSearch({ frameRef, description, sourceText, initialQuery, enabled = true }: UseFrameSearchArgs) {
   const [barOpen, setBarOpen] = useState(!!initialQuery);
   const [query, setQueryState] = useState(initialQuery ?? "");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -69,7 +76,7 @@ export function useFrameSearch({ frameRef, description, sourceText, initialQuery
     setActiveIndex((current) => stepIndex(current, delta, matches.length));
   };
 
-  useOpenShortcut(frameRef, openBar);
+  useOpenShortcut(frameRef, openBar, enabled);
   useCenterActiveMatch(activeMatchRef, matches, activeIndex);
 
   return { barOpen, openBar, closeBar, query, setQuery, matches, activeIndex, navigate, inputRef, activeMatchRef };

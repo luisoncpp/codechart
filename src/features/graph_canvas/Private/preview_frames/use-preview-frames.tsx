@@ -20,15 +20,9 @@ import { useClosePreviewFrames } from "./use-close-preview-frames";
 import { PreviewFramesView } from "./PreviewFramesView";
 import { withNewSources } from "./source-cache";
 import { createReviewNotePreview } from "./review-note-preview";
-
-interface PreviewFramesDeps {
-  store: GraphSessionStore;
-  graph: ProjectGraph | null;
-  diffOverlay: GraphDiffOverlay | null;
-  containerRef: React.RefObject<HTMLDivElement | null>;
-  /** The live project-search query; a new frame seeds its find bar with it. */
-  getFindQuery: () => string;
-}
+import { createWikiLinkPreview } from "./wiki-link-preview";
+import { useClickableSymbols } from "./use-clickable-symbols";
+import type { WikiLinkClick } from "../wiki_links/wiki-link-dom";
 
 interface PreviewFramesDeps {
   store: GraphSessionStore;
@@ -158,6 +152,12 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     [containerRef, store],
   );
 
+  /** Both link entry points: inside a frame, and on the canvas itself. */
+  const wikiLink = useMemo(
+    () => createWikiLinkPreview({ containerRef, store, open, armGrace: armOpenGrace }),
+    [containerRef, store, open, armOpenGrace],
+  );
+
   /** Clickable symbol (import, function, or method) clicked inside a frame. */
   const openFromSymbolClick = useCallback(
     async (sourceFrameId: number, symbolName: string) => {
@@ -195,28 +195,19 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
       onActivate: (id) => setFrames((prev) => bringToFront(prev, id)),
       onTogglePin: (id) => setFrames((prev) => togglePin(prev, id)),
       onNavigate: openFromSymbolClick,
+      onOpenWikiLink: (frameId: number, link: WikiLinkClick) =>
+        void wikiLink.openLink({ link, anchor: { frameId } }),
     }),
-    [openFromSymbolClick],
+    [openFromSymbolClick, wikiLink],
   );
 
-  const clickableByModule = useMemo(
-    /*resolveClickableNamesPerFrameModule*/ () => {
-      const byModule = new Map<string, ReadonlySet<string>>();
-      if (!graph) return byModule;
-      for (const frame of frames) {
-        if (byModule.has(frame.moduleId)) continue;
-        const targets = combinedSymbolTargets(graph, frame.moduleId, moduleSources);
-        byModule.set(frame.moduleId, new Set(targets.keys()));
-      }
-      return byModule;
-    },
-    [graph, frames, moduleSources],
-  );
+  const clickableByModule = useClickableSymbols(graph, frames, moduleSources);
 
   return {
     openFromSymbolNode,
     openDocumentPreview,
     openReviewNotePreview,
+    openWikiLinkFromEvent: wikiLink.openFromEvent,
     closeTransient: closeIfAllowed,
     framesView: <PreviewFramesView frames={frames} clickableByModule={clickableByModule} diffOverlay={diffOverlay} handlers={handlers} />,
   };

@@ -58,7 +58,7 @@ export function GroupL2Description({ data, descColor, opacity }: GroupL2Descript
               layoutKey={`${layoutKeyFromStyles(clampedStyles)}|${content.length}`}
               flexChild
             >
-              <MarkdownBody source={content} zoom={zoom} />
+              <MarkdownBody source={content} zoom={zoom} sourcePath={data.architectureDoc} />
             </L2ScrollableBody>
           </div>
         )}

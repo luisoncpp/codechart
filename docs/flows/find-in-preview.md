@@ -46,4 +46,5 @@ None outside the widget: `barOpen`/`query`/`activeIndex` are local state in `use
 
 - Hover targeting needs a real pointer (`:hover`); in jsdom only the focused path works.
 - Matches are computed over the live source, so `remove` diff rows (which have no after-snapshot line number) never highlight — by design.
-- Sibling-splitting the token spans (instead of nesting) breaks `hl-clickable` navigation, which reads the token span's `textContent`.
+- Sibling-splitting the token spans (instead of nesting) breaks `hl-clickable` navigation, which reads the token span's `textContent`. A match inside a `[[wiki-link]]` nests one level deeper (`hl-wiki-link` > `hl-match`) for the same reason.
+- A frame showing **rendered markdown** has no find bar at all (`useFrameSearch({ enabled: false })`, `⌕` hidden): match ranges cannot be applied to `dangerouslySetInnerHTML` output. The header `</>` toggle switches to raw source, where find behaves normally.

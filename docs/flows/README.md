@@ -51,6 +51,7 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [reveal-in-explorer.md](./reveal-in-explorer.md) | Right-click a module/symbol → preview, open in editor, copy its path, or reveal it in the OS explorer |
 | [configure-project-settings.md](./configure-project-settings.md) | Settings menu → choose the project editor, open C++ include-path configuration, or clear all review info |
 | [preview-symbol.md](./preview-symbol.md) | Click a symbol in L1.5 zoom → selection + resizable preview code widget next to it |
+| [open-wiki-link.md](./open-wiki-link.md) | Click a `[[path]]` link in a comment or doc → resolve it → preview frame (rendered markdown for `.md`) |
 | [visualize-diff.md](./visualize-diff.md) | Visualize diff modal → overlay green/red modules and green/red edges on the canvas |
 | [mark-file-reviewed.md](./mark-file-reviewed.md) | Checkmark a diffed file on a card or the bar checklist (or unmark them all) → persisted per-diff review progress |
 | [create-manage-review-note.md](./create-manage-review-note.md) | Source range to persisted Review Note and preview navigation |

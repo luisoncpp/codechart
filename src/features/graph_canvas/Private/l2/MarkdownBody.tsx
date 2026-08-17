@@ -1,4 +1,11 @@
-import { marked } from "marked";
+import { Marked } from "marked";
+import { wikiLinkExtension } from "../wiki_links/wiki-link-markdown";
+
+/**
+ * A private instance, never the shared `marked` default export: registering the
+ * extension globally would change markdown rendering process-wide.
+ */
+const markdown = new Marked({ async: false }).use({ extensions: [wikiLinkExtension] });
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const MONO =
@@ -18,16 +25,19 @@ export function stripMarkdownFrontmatter(source: string): string {
 interface MarkdownBodyProps {
   source: string;
   zoom: number;
+  /** The rendered file's own path — resolves relative `[[links]]` inside it. */
+  sourcePath?: string;
 }
 
 /** Render trusted project markdown as HTML inside the L2 scroll region. */
-export function MarkdownBody({ source, zoom }: MarkdownBodyProps) {
+export function MarkdownBody({ source, zoom, sourcePath }: MarkdownBodyProps) {
   const body = stripMarkdownFrontmatter(source);
-  const html = marked.parse(body, { async: false }) as string;
+  const html = markdown.parse(body, { async: false }) as string;
 
   return (
     <div
       className="group-markdown-body"
+      data-wiki-from={sourcePath}
       style={{
         width: "100%",
         fontFamily: SANS,

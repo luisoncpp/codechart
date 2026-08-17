@@ -34,6 +34,7 @@ import {
   uncollapseGroupAndAncestors,
 } from "./ensure-node-visible";
 import { SelectionHistory } from "./selection-history";
+import { FileSourceCache } from "./file-source-cache";
 import { DiffReviewTracker } from "./diff-review-tracker";
 import { commitDiffId, pasteDiffId, workingTreeDiffId } from "./diff-review-id";
 
@@ -58,6 +59,10 @@ export class GraphSessionStore extends EventEmitter {
   private sourceCacheVersion = 0;
   private groupDocCache = new Map<string, string>();
   private groupDocCacheVersion = 0;
+  /** Non-module project files opened by path (wiki-link destinations). */
+  private fileSources = new FileSourceCache(
+    /*read=*/ (path) => this.client.readModuleSource(this.root ?? "", path),
+  );
   /** Each group's footprint from the full (uncollapsed) layout, so a collapsed
    *  group keeps its own expanded size instead of shrinking. */
   private expandedGroupSizes = new Map<string, { width: number; height: number }>();
@@ -328,6 +333,15 @@ export class GraphSessionStore extends EventEmitter {
   }
 
   /**
+   * Read any project-relative file, module or not (a wiki-link destination).
+   * Null means the file could not be read.
+   */
+  async fetchFileSource(path: string): Promise<string | null> {
+    if (!this.root) return null;
+    return this.fileSources.get(path);
+  }
+
+  /**
    * Search the visible modules' sources (test modules excluded while hidden,
    * so every result is navigable). Results are returned, never stored: the
    * find bar keeps them locally so searching never re-renders the canvas.
@@ -506,6 +520,7 @@ export class GraphSessionStore extends EventEmitter {
     this.sourceCacheVersion = 0;
     this.groupDocCache = new Map();
     this.groupDocCacheVersion = 0;
+    this.fileSources.clear();
     this.expandedGroupSizes = new Map();
     this.reduced = null;
     this.layout = null;

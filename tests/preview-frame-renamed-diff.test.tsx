@@ -75,6 +75,7 @@ function renderFrame(frame: PreviewFrame, overlay: GraphDiffOverlay) {
     onActivate: vi.fn(),
     onTogglePin: vi.fn(),
     onNavigate: vi.fn(),
+    onOpenWikiLink: vi.fn(),
   };
   const { container } = render(
     <PreviewFramesView

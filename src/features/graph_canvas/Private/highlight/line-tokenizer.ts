@@ -4,8 +4,9 @@ import type { Rule, Token } from "./highlighter";
 
 /**
  * Tokenizes one line at a time, remembering whether an unterminated block
- * comment is still open. Callers that render rows independently (diff rows,
- * preview frames) must reuse one instance per document, in line order.
+ * comment is still open. Callers that render rows independently ([[./DiffCodeLines.tsx]],
+ * which feeds both L2 documents and preview frames) must reuse one instance
+ * per document, in line order.
  */
 export class LineTokenizer {
   private readonly rules: Rule[];

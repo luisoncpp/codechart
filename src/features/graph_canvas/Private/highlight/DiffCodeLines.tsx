@@ -6,7 +6,10 @@ import {
 } from "../../../../domain/diff";
 import type { Token } from "./highlighter";
 import { LineTokenizer } from "./line-tokenizer";
-import { segmentTokenText, type LineMatchRange } from "./match-highlight";
+import type { LineMatchRange } from "./match-highlight";
+import { DiffCodeLine } from "./DiffCodeLine";
+import { findWikiLinks, type WikiLinkSpan } from "../wiki_links/wiki-link-parser";
+import { isMarkdownPath } from "../wiki_links/wiki-link-target";
 import { InlineReviewNotes, useReviewNotesStore } from "../../../review_notes";
 
 interface DiffCodeLinesProps {
@@ -46,6 +49,10 @@ export function DiffCodeLines({
     [source, fileDiff],
   );
   const tokenized = useMemo(() => tokenizeRows(rows, path), [rows, path]);
+  const wikiLinks = useMemo(() => wikiLinksPerRow(rows), [rows]);
+  // Code only links inside comments (a literal `[[a,b]]` in source is not a
+  // link); markdown has no comment syntax, so every token can hold one.
+  const linkEveryToken = isMarkdownPath(path);
 
   return (
     <>
@@ -62,6 +69,9 @@ export function DiffCodeLines({
             active={showNotes && row.lineNumber === activeLine}
             lineRef={showNotes && row.lineNumber === activeLine ? activeLineRef : undefined}
             clickableNames={clickableNames}
+            path={path}
+            links={wikiLinks[idx]!}
+            linkEveryToken={linkEveryToken}
             matchRanges={showNotes ? matchesByLine?.get(row.lineNumber) : undefined}
             activeMatchRef={activeMatchRef}
             anchored={showNotes && notes.some((note) => row.lineNumber >= note.startLine && row.lineNumber <= note.endLine)}
@@ -84,112 +94,9 @@ function tokenizeRows(rows: readonly DiffDisplayRow[], path: string): Token[][] 
   );
 }
 
-interface DiffCodeLineProps {
-  row: DiffDisplayRow;
-  tokens: Token[];
-  zoom: number;
-  prefix: string;
-  active?: boolean;
-  lineRef?: React.RefObject<HTMLDivElement | null>;
-  clickableNames?: ReadonlySet<string>;
-  anchored?: boolean;
-  onLineClick?: (line: number, extend: boolean) => void;
-  matchRanges?: readonly LineMatchRange[];
-  activeMatchRef?: React.RefObject<HTMLElement | null>;
-}
-
-/** Token types whose text can never be a navigable identifier. */
-const NON_CLICKABLE_TYPES = new Set(["string", "comment", "keyword", "number"]);
-
-function tokenClass(token: Token, clickableNames?: ReadonlySet<string>): string {
-  const clickable =
-    clickableNames?.has(token.text) && !NON_CLICKABLE_TYPES.has(token.type);
-  return `hl-${token.type}${clickable ? " hl-clickable" : ""}`;
-}
-
-function DiffCodeLine({ row, tokens, zoom, prefix, active, lineRef, clickableNames, anchored, onLineClick, matchRanges, activeMatchRef }: DiffCodeLineProps) {
-  let tokenStart = 0;
-  const fontSize = 12.5 / zoom;
-  const gutter = row.kind === "add" ? "+" : row.kind === "remove" ? "-" : " ";
-  const lineNumber = row.kind === "remove" ? "" : String(row.lineNumber);
-
-  return (
-    <div
-      ref={lineRef}
-      className={`${prefix}__line ${prefix}__line--${row.kind}${active ? ` ${prefix}__line--active` : ""}`}
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        padding: `0 ${8 / zoom}px`,
-        whiteSpace: "pre",
-        fontSize,
-        lineHeight: 1.4,
-      }}
-    >
-      <span
-        className={`${prefix}__gutter ${prefix}__gutter--${row.kind}`}
-        style={{
-          flex: `0 0 ${22 / zoom}px`,
-          textAlign: "right",
-          paddingRight: 6 / zoom,
-          userSelect: "none",
-          fontSize: fontSize * 0.9,
-        }}
-      >
-        {gutter}
-      </span>
-      {row.kind === "remove" ? <span
-        className={`${prefix}__ln`}
-        style={{
-          flex: `0 0 ${18 / zoom}px`,
-          textAlign: "right",
-          paddingRight: 6 / zoom,
-          color: "#94a3b8",
-          userSelect: "none",
-          fontSize: fontSize * 0.9,
-        }}
-      >
-        {lineNumber}
-      </span> : <button type="button" className={`${prefix}__ln`} onClick={(event) => onLineClick?.(row.lineNumber, event.shiftKey)} style={{ flex: `0 0 ${18 / zoom}px`, textAlign: "right", paddingRight: 6 / zoom, color: "#94a3b8", border: 0, background: "transparent", cursor: "pointer", fontSize: fontSize * 0.9 }}>{lineNumber}</button>}
-      <span className={`${prefix}__text${anchored ? ` ${prefix}__text--review-note` : ""}`} style={{ flex: 1, background: anchored ? "#f3e8ff" : undefined }}>
-        {tokens.length === 0 ? " " : tokens.map((token, i) => {
-          const start = tokenStart;
-          tokenStart += token.text.length;
-          return (
-            <span key={i} className={tokenClass(token, clickableNames)}>
-              {matchRanges?.length
-                ? renderTokenSegments(token.text, start, { matchRanges, activeMatchRef })
-                : token.text}
-            </span>
-          );
-        })}
-      </span>
-    </div>
-  );
-}
-
-interface SegmentOptions {
-  matchRanges: readonly LineMatchRange[];
-  activeMatchRef?: React.RefObject<HTMLElement | null>;
-}
-
-/** Nested match spans keep the token span's full textContent intact. */
-function renderTokenSegments(text: string, tokenStart: number, options: SegmentOptions) {
-  const segments = segmentTokenText(text, tokenStart, options.matchRanges);
-  if (segments.length === 1 && !segments[0]!.match) return text;
-  return segments.map((segment, i) =>
-    segment.match ? (
-      <span
-        key={i}
-        ref={segment.match === "active" ? (options.activeMatchRef as React.Ref<HTMLSpanElement>) : undefined}
-        className={`hl-match${segment.match === "active" ? " hl-match--active" : ""}`}
-      >
-        {segment.text}
-      </span>
-    ) : (
-      segment.text
-    ),
-  );
+/** `remove` rows come from the before-snapshot; their links are not navigable. */
+function wikiLinksPerRow(rows: readonly DiffDisplayRow[]): WikiLinkSpan[][] {
+  return rows.map((row) => (row.kind === "remove" ? [] : findWikiLinks(row.text)));
 }
 
 function selectReviewLine(store: NonNullable<ReturnType<typeof useReviewNotesStore>>, source: string, path: string, line: number, extend: boolean) {

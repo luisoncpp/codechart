@@ -1,15 +1,17 @@
 // @Architecture(descriptionShort="Displays a draggable, resizable panel with the source code of a symbol")
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FileLineDiff } from "../../../../domain/diff";
 import { findSymbolLine } from "./symbol-source-utils";
 import type { PreviewFrame } from "./frame-list";
 import type { Position } from "./frame-placement";
 import { startFrameDrag } from "./frame-drag";
 import { centerElementInBody } from "./center-in-body";
-import { DocumentContent, SymbolCode } from "./FrameBody";
+import { FrameContent } from "./FrameBody";
+import { FrameHeader } from "./FrameHeader";
 import { FrameFindBar } from "./FrameFindBar";
 import { useFrameSearch } from "./use-frame-search";
 import { codeMatchesByLine, descriptionRanges, matchCounter } from "./frame-search";
+import { wikiLinkFromEvent, type WikiLinkClick } from "../wiki_links/wiki-link-dom";
 
 export interface FrameHandlers {
   onClose: (id: number) => void;
@@ -17,6 +19,7 @@ export interface FrameHandlers {
   onActivate: (id: number) => void;
   onTogglePin: (id: number) => void;
   onNavigate: (id: number, symbolName: string) => void;
+  onOpenWikiLink: (id: number, link: WikiLinkClick) => void;
 }
 
 interface SymbolSourceWidgetProps {
@@ -47,11 +50,16 @@ export function SymbolSourceWidget({
     [frame.sourceText, frame.symbolName],
   );
   const reviewLine = frame.activeRange?.startLine;
+  const [rawSource, setRawSource] = useState(false);
+  // Match ranges cannot be applied to rendered markdown HTML, so find stays off
+  // until the reader switches to raw source.
+  const renderMarkdown = !!frame.isMarkdown && !rawSource;
   const search = useFrameSearch({
     frameRef,
     description: frame.symbolName ? undefined : frame.description,
     sourceText: frame.sourceText,
     initialQuery: frame.initialFindQuery,
+    enabled: !renderMarkdown,
   });
 
   useEffect(() => {
@@ -71,6 +79,11 @@ export function SymbolSourceWidget({
   };
 
   const onCodeClick = (e: React.MouseEvent) => {
+    const link = wikiLinkFromEvent(e.target);
+    if (link) {
+      handlers.onOpenWikiLink(frame.id, link);
+      return;
+    }
     const symbolEl = (e.target as HTMLElement).closest(".hl-clickable");
     if (symbolEl?.textContent) handlers.onNavigate(frame.id, symbolEl.textContent);
   };
@@ -107,49 +120,23 @@ export function SymbolSourceWidget({
       onPointerDown={onFramePointerDown}
       onKeyDown={onFrameKeyDown}
     >
-      <div className="symbol-widget__header" onPointerDown={onHeaderPointerDown}>
-        <div className="symbol-widget__info">
-          <div className="symbol-widget__title">
-            {frame.symbolName ?? frame.moduleLabel}
-          </div>
-          <div className="symbol-widget__path">{frame.modulePath}</div>
-        </div>
-        <div className="symbol-widget__actions">
-          <button
-            className={
-              frame.pinned
-                ? "symbol-widget__pin symbol-widget__pin--active"
-                : "symbol-widget__pin"
-            }
-            onClick={() => handlers.onTogglePin(frame.id)}
-            aria-label={frame.pinned ? "Unpin frame" : "Pin frame"}
-            aria-pressed={frame.pinned}
-            title={frame.pinned ? "Unpin frame" : "Pin frame"}
-          >
-            📌
-          </button>
-          <button
-            className={
-              search.barOpen
-                ? "symbol-widget__find-toggle symbol-widget__find-toggle--active"
-                : "symbol-widget__find-toggle"
-            }
-            onClick={search.barOpen ? closeBarAndRefocusFrame : search.openBar}
-            aria-label="Find in file"
-            aria-pressed={search.barOpen}
-            title="Find in file (Ctrl+F)"
-          >
-            ⌕
-          </button>
-          <button
-            className="symbol-widget__close"
-            onClick={() => handlers.onClose(frame.id)}
-            aria-label="Close widget"
-          >
-            &times;
-          </button>
-        </div>
-      </div>
+      <FrameHeader
+        frame={frame}
+        rawSource={frame.isMarkdown ? { on: rawSource, toggle: () => setRawSource(!rawSource) } : null}
+        find={
+          renderMarkdown
+            ? null
+            : {
+                open: search.barOpen,
+                toggle: search.barOpen ? closeBarAndRefocusFrame : search.openBar,
+              }
+        }
+        actions={{
+          onTogglePin: () => handlers.onTogglePin(frame.id),
+          onClose: () => handlers.onClose(frame.id),
+          onPointerDown: onHeaderPointerDown,
+        }}
+      />
       {search.barOpen && (
         <FrameFindBar
           query={search.query}
@@ -162,30 +149,19 @@ export function SymbolSourceWidget({
         />
       )}
       <div className="symbol-widget__body" onClick={onCodeClick}>
-        {frame.symbolName ? (
-          <SymbolCode
-            frame={frame}
-            fileDiff={fileDiff}
-            targetLine={targetLine!}
-            lineRef={lineRef}
-            clickableSymbols={clickableSymbols}
-            matchProps={{
-              matchesByLine: codeMatchesByLine(search.matches, search.activeIndex),
-              activeMatchRef: search.activeMatchRef,
-            }}
-          />
-        ) : (
-          <DocumentContent
-            frame={frame}
-            fileDiff={fileDiff}
-            clickableSymbols={clickableSymbols}
-            matchProps={{
-              matchesByLine: codeMatchesByLine(search.matches, search.activeIndex),
-              descriptionRanges: descriptionRanges(search.matches, search.activeIndex),
-              activeMatchRef: search.activeMatchRef,
-            }}
-          />
-        )}
+        <FrameContent
+          frame={frame}
+          fileDiff={fileDiff}
+          clickableSymbols={clickableSymbols}
+          renderMarkdown={renderMarkdown}
+          targetLine={targetLine}
+          lineRef={lineRef}
+          matchProps={{
+            matchesByLine: codeMatchesByLine(search.matches, search.activeIndex),
+            descriptionRanges: descriptionRanges(search.matches, search.activeIndex),
+            activeMatchRef: search.activeMatchRef,
+          }}
+        />
       </div>
     </div>
   );

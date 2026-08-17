@@ -30,6 +30,7 @@ function makeHandlers(): FrameHandlers {
     onActivate: vi.fn(),
     onTogglePin: vi.fn(),
     onNavigate: vi.fn(),
+    onOpenWikiLink: vi.fn(),
   };
 }
 
@@ -123,6 +124,17 @@ describe("find-in-frame", () => {
     typeQuery(container, "o");
     const clickable = container.querySelector(".hl-clickable");
     expect(clickable).toHaveTextContent("foo");
+  });
+
+  it("nests a match inside a wiki link instead of splitting it apart", () => {
+    const frame = makeFrame({ sourceText: "// see [[docs/x.md]]\nconst foo = 1;" });
+    const { container, widget } = renderWidget(frame);
+    openBarViaCtrlF(widget);
+    typeQuery(container, "docs");
+    const link = container.querySelector(".hl-wiki-link")!;
+    expect(link).toHaveTextContent("[[docs/x.md]]");
+    expect(link.querySelector(".hl-match")).toHaveTextContent("docs");
+    expect(link.getAttribute("data-wiki-target")).toBe("docs/x.md");
   });
 
   it("escalates Escape: closes the bar first, then the frame", () => {

@@ -27,9 +27,12 @@ Both deep modules organize their implementation into subfolders, each a config s
   `Private/heat/` (heat scores/colors). Flat: `index.ts`, `symbol-id.ts`, `selectors.ts`,
   `symbol-kind*.ts`.
 - `features/graph_canvas/Private`: `edges/`, `nodes/`, `descriptions/`, `l2/`, `highlight/`,
-  `navigation/`, `controller/`, `toolbar/`, plus the nested deep modules `preview_frames/`
-  and `project_search/` (those two keep `index.ts` facades). Flat: `GraphCanvas.tsx`,
-  `graph-canvas.css`, `review-note-canvas.ts`.
+  `wiki_links/`, `navigation/`, `controller/`, `toolbar/`, plus the nested deep modules
+  `preview_frames/` and `project_search/` (those two keep `index.ts` facades). Flat:
+  `GraphCanvas.tsx`, `graph-canvas.css`, `review-note-canvas.ts`. `wiki_links/` holds only pure
+  link knowledge (syntax scan, path resolution, candidate order, the `marked` extension, the DOM
+  read); `highlight/` renders links and `preview_frames/` opens them — dependencies point that
+  one way.
 
 ## Responsibilities
 
@@ -47,6 +50,7 @@ Both deep modules organize their implementation into subfolders, each a config s
 | `CanvasUiState` | `features/graph_canvas/Private/controller/canvas-ui-state.ts` (facade export) | Transient UI flags (`findBarOpen`, `findBarMode`, `diffModalOpen`, `lineCountsVisible`) shared between the toolbar menus and `GraphCanvas`; kept out of `GraphSessionStore`. `App` instantiates it and resets on `phase-changed`. |
 | `HeatmapLegend` | `features/graph_canvas` | Top-right gradient chip, shown only while the heatmap is on (below `LevelBadge`). Its timeframe label opens `MetricsWindowModal`; the heatmap toggles themselves live in the View menu. |
 | `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, opens the absolute path in the project-configured editor, copies the graph-relative path, or reveals the file via `ShellClient`. |
+| `TokenText` | `features/graph_canvas/Private/highlight/TokenText.tsx` | Renders one syntax token's text with **nested** sub-spans: wiki links (`hl-wiki-link`) outside, find matches (`hl-match`) inside. Nesting — never sibling-splitting — is what keeps `hl-clickable` navigation reading a whole identifier from `textContent`. `DiffCodeLine` renders the row; `DiffCodeLines` owns rows, tokenizing, and the per-row link scan. |
 | `LineTokenizer` / `tokenizeCode` | `features/graph_canvas/Private/highlight/line-tokenizer.ts`, `highlighter.ts` | Lexical highlighter. `LineTokenizer` tokenizes **one line at a time** and is the only stateful piece: it remembers an open block comment (`getLanguageForFile().blockComment`, `/* */` for every language except Python/`.prefab`) so `/* … */` spanning lines stays `hl-comment`. Renderers that emit rows independently (`DiffCodeLines`) **must reuse one instance per document, in line order**; `remove` diff rows come from the before-snapshot and are rendered plain, so they never touch the state. `tokenizeCode(code, path)` is the stateless whole-text wrapper. Consequence: multi-line **strings** (template literals, Python docstrings) are still tokenized per line and do not carry. |
 | `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, LOC (module-tree total), child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
 
@@ -271,6 +275,10 @@ hidden by zoom collapse.
     while L1's short blurb still reads large. The two fonts are independent on purpose.
   - **L2 (`architectureDoc`):** when a group declares `architectureDoc` in its `*.group.md`
     frontmatter, the description box becomes a scrollable **rendered markdown** panel (not source).
+    `MarkdownBody` parses with a **private `Marked` instance** carrying the wiki-link inline
+    extension — never `marked.use` on the shared default export, which would change markdown
+    rendering process-wide — and stamps `data-wiki-from` (its own path) on the rendered wrapper so
+    relative `[[links]]` inside a doc resolve against that doc's directory.
     Content is lazy-fetched via `read_module_source` and cached in `GraphSessionStore.groupDocCache`;
     `GroupL2Description` + `MarkdownBody` (`marked`) render headings, lists, code, and tables with
     custom scrollbars (`L2ScrollableBody`). The scroll region is **viewport-clamped** via the shared
@@ -355,6 +363,22 @@ hidden by zoom collapse.
   The document frame starts at the top and composes the same preferred module description plus complete
   highlighted source as the L2 document. It retains clickable cross-module identifiers and diff rows;
   like a canvas symbol click, opening it closes other unpinned frames while preserving pinned ones.
+- **Wiki links (`[[path]]` → a frame for any file):** a `[[target]]` or `[[target|label]]` written
+  in a **comment** (or anywhere in a markdown file) renders as an `hl-wiki-link` span and opens the
+  destination in a preview frame — inside frames and in **L2 canvas documents**, where the click is
+  intercepted in `GraphCanvas.onNodeClick` **before** `GraphCanvasController`, so a link never
+  changes selection. The destination need not be a module: `wiki_links/` resolves `./`/`../`
+  against the linking file, everything else against the project root (rejecting absolute paths and
+  root escapes), and falls back to a **module path suffix match** so a bare `[[store.ts]]` finds
+  `src/core/store.ts`. `GraphSessionStore.fetchFileSource(path)` reads it through
+  `FileSourceCache` (`read_module_source`, cached by path, failures cached as `null`; **no** Rust
+  change — the command already accepts any project-relative path). A `.md` destination renders as
+  **markdown** (`PreviewFrame.isMarkdown`) with a header `</>` toggle to raw source; find stays
+  disabled while prose shows because match ranges cannot be applied to rendered HTML. Links inside
+  rendered markdown are clickable too, so docs chain. An unreadable destination opens a frame
+  carrying `loadError` instead of a body. Non-module frames key `moduleId` by path, which keeps
+  `openFrame` dedupe and the clickable-symbol lookup working (the lookup resolves to nothing).
+  Full sequence: `docs/flows/open-wiki-link.md`.
 - **Find in frame (Ctrl/Cmd+F):** each frame has its own find bar (header `⌕` icon, or Ctrl/Cmd+F
   targeting the focused frame first, else the hovered one; unclaimed presses fall through to the
   browser — the global project search stays on Ctrl+Shift+F). All find state is component-local in

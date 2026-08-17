@@ -171,7 +171,10 @@ export function GraphCanvas({
           edges={[]}
           nodeTypes={nodeTypes}
           colorMode="light"
-          onNodeClick={(e, node) => controller.onNodeClick(node, e)}
+          onNodeClick={/*wikiLinkWinsOverSelection*/ (e, node) => {
+            if (previews.openWikiLinkFromEvent(e)) return;
+            controller.onNodeClick(node, e);
+          }}
           onNodeDoubleClick={(_e, node) => controller.onNodeDoubleClick(node)}
           onNodeContextMenu={(e, node) => {
             e.preventDefault();

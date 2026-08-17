@@ -3,6 +3,7 @@
 /** One open source-preview frame on the canvas overlay. */
 export interface PreviewFrame {
   id: number;
+  /** A module id, or — for a wiki-link destination that is not a module — its path. */
   moduleId: string;
   moduleLabel: string;
   /** Null means the frame shows the complete L2 document from its beginning. */
@@ -18,7 +19,19 @@ export interface PreviewFrame {
   activeRange?: { startLine: number; endLine: number };
   /** Seeds the in-frame find bar (open + pre-filled) when set, e.g. from project search. */
   initialFindQuery?: string;
+  /** Render `sourceText` as markdown (with a raw-source toggle) instead of code rows. */
+  isMarkdown?: boolean;
+  /** Set when the destination could not be read; shown instead of a body. */
+  loadError?: string;
 }
+
+/** A frame before the hook stamps its identity and pin state. */
+export type NewPreviewFrame = Omit<PreviewFrame, "id" | "zIndex" | "pinned">;
+
+/** Whether opening this frame dismisses the other transient frames. */
+export type OpenFrameMode = "close-unpinned" | "keep-all";
+
+export type OpenPreviewFrame = (mode: OpenFrameMode, frame: NewPreviewFrame) => void;
 
 /** Default frame size — must match the `.symbol-widget` CSS box. */
 export const FRAME_WIDTH = 680;

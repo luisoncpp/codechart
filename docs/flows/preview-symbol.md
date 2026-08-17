@@ -1,6 +1,6 @@
 # Flow: preview a module document or symbol definition (multi-frame)
 
-1. **Trigger** — user chooses **Open file preview** from a module/symbol context menu, clicks an exported symbol node in L1.5, or clicks a clickable identifier inside an open preview frame.
+1. **Trigger** — user chooses **Open file preview** from a module/symbol context menu, clicks an exported symbol node in L1.5, clicks a clickable identifier inside an open preview frame, or clicks a `[[wiki-link]]` in a comment or doc (`docs/flows/open-wiki-link.md` — that path can target any project file, module or not).
 2. **Entry point** — `ModuleContextMenu` (document), `ReactFlow onNodeClick` in `features/graph_canvas/Private/GraphCanvas.tsx` (symbol node), or the frame body click handler in `preview_frames/SymbolSourceWidget.tsx` (identifier).
 3. **Sequence**
    1. All preview-frame state lives in the nested deep module `features/graph_canvas/Private/preview_frames/` (`usePreviewFrames` hook; `GraphCanvas` only renders `framesView` and forwards its commands).
