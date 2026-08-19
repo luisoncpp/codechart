@@ -11,7 +11,7 @@ import { FrameHeader } from "./FrameHeader";
 import { FrameFindBar } from "./FrameFindBar";
 import { useFrameSearch } from "./use-frame-search";
 import { codeMatchesByLine, descriptionRanges, matchCounter } from "./frame-search";
-import { wikiLinkFromEvent, type WikiLinkClick } from "../wiki_links/wiki-link-dom";
+import { wikiLinkFromEvent, type WikiLinkClick } from "../wiki_links";
 
 export interface FrameHandlers {
   onClose: (id: number) => void;
@@ -70,6 +70,18 @@ export function SymbolSourceWidget({
     }, /*delayInMs=*/50);
     return () => clearTimeout(timer);
   }, [targetLine, reviewLine, frame.sourceText]);
+
+  useEffect(() => {
+    if (!renderMarkdown || !frame.sectionAnchor) return;
+    const timer = setTimeout(/*centerMarkdownHeading*/ () => {
+      const body = frameRef.current?.querySelector(".group-markdown-body");
+      const heading = body?.querySelector(`#${CSS.escape(frame.sectionAnchor!)}`);
+      if (!(heading instanceof HTMLElement)) return;
+      heading.classList.add("hl-section-target");
+      centerElementInBody(heading);
+    }, /*delayInMs=*/50);
+    return () => clearTimeout(timer);
+  }, [renderMarkdown, frame.sectionAnchor, frame.sourceText]);
 
   const onHeaderPointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("button")) return;

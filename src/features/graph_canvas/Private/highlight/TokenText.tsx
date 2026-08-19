@@ -1,7 +1,6 @@
 // @Architecture(descriptionShort="Renders one syntax token's text with nested wiki-link and find-match spans")
 import { segmentTokenText, type LineMatchRange } from "./match-highlight";
-import { segmentByLinks } from "../wiki_links/wiki-link-segments";
-import type { WikiLinkSpan } from "../wiki_links/wiki-link-parser";
+import { segmentByLinks, type WikiLinkSpan } from "../wiki_links";
 
 interface TokenTextProps {
   text: string;
@@ -23,7 +22,7 @@ interface MatchOptions {
 /**
  * Link spans wrap match spans, and both stay **nested inside** the token span
  * so `hl-clickable` navigation still reads a whole identifier from
- * `textContent` — see [[docs/flows/find-in-preview.md|the find-in-preview flow]].
+ * `textContent`. Destinations: [[docs/architecture/wiki-links.md#Opening a destination]].
  */
 export function TokenText({ text, tokenStart, path, links, matchRanges, activeMatchRef }: TokenTextProps) {
   const options = { matchRanges, activeMatchRef };

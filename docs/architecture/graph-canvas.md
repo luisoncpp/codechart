@@ -378,7 +378,13 @@ hidden by zoom collapse.
   rendered markdown are clickable too, so docs chain. An unreadable destination opens a frame
   carrying `loadError` instead of a body. Non-module frames key `moduleId` by path, which keeps
   `openFrame` dedupe and the clickable-symbol lookup working (the lookup resolves to nothing).
-  Full sequence: `docs/flows/open-wiki-link.md`.
+  **Section fragments** (`[[path#Section]]`, `[[#Section]]`, `[[path#Section|label]]`): split on the
+  first `#` before resolution; code files mark sections with `@Section(Name)` in comments, markdown
+  with ATX headings; match is case-insensitive with whitespace/hyphen normalization, first in file
+  order; scroll/highlight via `PreviewFrame.activeRange` (not `symbolName`); rendered markdown also
+  sets `sectionAnchor` and assigns heading `id`s for prose scroll; missing section opens at top;
+  dedupe merges `activeRange`/`sectionAnchor` only when provided.
+  Full sequence: `docs/flows/open-wiki-link.md`. Group L2 panel: `docs/architecture/wiki-links.md`.
 - **Find in frame (Ctrl/Cmd+F):** each frame has its own find bar (header `⌕` icon, or Ctrl/Cmd+F
   targeting the focused frame first, else the hovered one; unclaimed presses fall through to the
   browser — the global project search stays on Ctrl+Shift+F). All find state is component-local in

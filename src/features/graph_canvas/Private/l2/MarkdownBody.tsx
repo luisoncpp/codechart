@@ -1,11 +1,29 @@
-import { Marked } from "marked";
-import { wikiLinkExtension } from "../wiki_links/wiki-link-markdown";
+import { Marked, type Tokens } from "marked";
+import { normalizeSectionKey, wikiLinkExtension } from "../wiki_links";
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 /**
  * A private instance, never the shared `marked` default export: registering the
  * extension globally would change markdown rendering process-wide.
  */
-const markdown = new Marked({ async: false }).use({ extensions: [wikiLinkExtension] });
+const markdown = new Marked({ async: false })
+  .use({ extensions: [wikiLinkExtension] })
+  .use({
+    renderer: {
+      heading({ tokens, depth, text }: Tokens.Heading) {
+        const inner = this.parser.parseInline(tokens);
+        const id = escapeHtml(normalizeSectionKey(text));
+        return `<h${depth} id="${id}">${inner}</h${depth}>\n`;
+      },
+    },
+  });
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const MONO =
@@ -64,6 +82,11 @@ export function markdownBodyStyles(accentColor: string, zoom: number): string {
       font-weight: 700;
       margin: ${gap(2)} 0 ${gap(1)} 0;
       line-height: 1.25;
+    }
+    .group-markdown-body .hl-section-target {
+      background: #fef3c7;
+      box-shadow: inset ${sx(3, zoom)} 0 0 #d97706;
+      padding-left: ${sx(8, zoom)};
     }
     .group-markdown-body h1 { font-size: ${sx(22, zoom)}; }
     .group-markdown-body h2 {

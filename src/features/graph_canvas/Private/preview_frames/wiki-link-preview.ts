@@ -2,9 +2,15 @@
 import type { RefObject } from "react";
 import type { ModuleNode } from "../../../../domain/graph";
 import type { GraphSessionStore } from "../../../../state/graph-session";
-import { wikiLinkFromEvent, type WikiLinkClick } from "../wiki_links/wiki-link-dom";
-import { wikiLinkCandidates } from "../wiki_links/wiki-link-candidates";
-import { baseNameOf, isMarkdownPath } from "../wiki_links/wiki-link-target";
+import {
+  baseNameOf,
+  findSectionInSource,
+  isMarkdownPath,
+  splitWikiTarget,
+  wikiLinkCandidates,
+  wikiLinkFromEvent,
+  type WikiLinkClick,
+} from "../wiki_links";
 import { computePointWidgetPosition, type ClientPoint, type Position } from "./frame-placement";
 import { placeNextToFrame } from "./live-frame-placement";
 import type { NewPreviewFrame, OpenPreviewFrame } from "./frame-list";
@@ -34,6 +40,7 @@ interface LinkClickEvent {
   clientY: number;
 }
 
+// @Section(Open destination)
 export function createWikiLinkPreview(deps: WikiPreviewDeps) {
   const { containerRef, store, open, armGrace } = deps;
 
@@ -44,8 +51,21 @@ export function createWikiLinkPreview(deps: WikiPreviewDeps) {
     if (!container || candidates.length === 0) return;
     armGrace();
     const found = await firstReadable(store, candidates);
+    const file = found ?? { path: candidates[0]!, source: null };
+    // Fragment lookup: [[wiki-link-section.ts#Section matching]].
+    const { section } = splitWikiTarget(request.link.target);
+    const sectionHit =
+      section && file.source !== null
+        ? findSectionInSource(file.source, file.path, section)
+        : null;
     open("keep-all", {
-      ...frameContent(store, found ?? { path: candidates[0]!, source: null }),
+      ...frameContent(store, file),
+      ...(sectionHit
+        ? {
+            activeRange: { startLine: sectionHit.line, endLine: sectionHit.line },
+            ...(isMarkdownPath(file.path) ? { sectionAnchor: sectionHit.anchorId } : {}),
+          }
+        : {}),
       ...anchorPosition(request.anchor, container),
     });
   };

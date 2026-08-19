@@ -3,7 +3,7 @@ import type { DiffDisplayRow } from "../../../../domain/diff";
 import type { Token } from "./highlighter";
 import type { LineMatchRange } from "./match-highlight";
 import { TokenText } from "./TokenText";
-import type { WikiLinkSpan } from "../wiki_links/wiki-link-parser";
+import type { WikiLinkSpan } from "../wiki_links";
 
 export interface DiffCodeLineProps {
   row: DiffDisplayRow;

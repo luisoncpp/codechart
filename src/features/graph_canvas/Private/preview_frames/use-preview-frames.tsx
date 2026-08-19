@@ -22,7 +22,7 @@ import { withNewSources } from "./source-cache";
 import { createReviewNotePreview } from "./review-note-preview";
 import { createWikiLinkPreview } from "./wiki-link-preview";
 import { useClickableSymbols } from "./use-clickable-symbols";
-import type { WikiLinkClick } from "../wiki_links/wiki-link-dom";
+import type { WikiLinkClick } from "../wiki_links";
 
 interface PreviewFramesDeps {
   store: GraphSessionStore;

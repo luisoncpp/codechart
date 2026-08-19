@@ -21,6 +21,12 @@ describe("findWikiLinks", () => {
     expect(link?.label).toBe("the diff flow");
   });
 
+  it("keeps section fragments in the target", () => {
+    const [link] = findWikiLinks("// [[docs/x.md#Open project|jump]]");
+    expect(link?.target).toBe("docs/x.md#Open project");
+    expect(link?.label).toBe("jump");
+  });
+
   it("returns several links per line in column order", () => {
     const links = findWikiLinks("// [[a.md]] and [[b.md]]");
     expect(links.map((l) => l.target)).toEqual(["a.md", "b.md"]);

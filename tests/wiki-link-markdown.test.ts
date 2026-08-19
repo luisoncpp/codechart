@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { Marked } from "marked";
-import { wikiLinkExtension } from "../src/features/graph_canvas/Private/wiki_links/wiki-link-markdown";
+import { normalizeSectionKey, wikiLinkExtension } from "../src/features/graph_canvas/Private/wiki_links";
 
-const markdown = new Marked({ async: false }).use({ extensions: [wikiLinkExtension] });
+const markdown = new Marked({ async: false })
+  .use({ extensions: [wikiLinkExtension] })
+  .use({
+    renderer: {
+      heading({ tokens, depth, text }) {
+        const inner = this.parser.parseInline(tokens);
+        return `<h${depth} id="${normalizeSectionKey(text)}">${inner}</h${depth}>\n`;
+      },
+    },
+  });
 
 function render(source: string): string {
   return markdown.parse(source, { async: false }) as string;
@@ -36,5 +45,10 @@ describe("wikiLinkExtension", () => {
     const html = render("[label](docs/x.md)");
     expect(html).toContain('href="docs/x.md"');
     expect(html).not.toContain("data-wiki-target");
+  });
+
+  it("adds normalized ids to ATX headings", () => {
+    const html = render("## Open project\n\nBody.");
+    expect(html).toContain('id="open-project"');
   });
 });

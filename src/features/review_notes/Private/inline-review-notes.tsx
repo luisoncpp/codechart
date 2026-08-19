@@ -70,7 +70,17 @@ function DraftCard() {
 
   return (
     <article className="review-note-inline__card review-note-inline__card--draft">
-      <div className="review-note-inline__draft-title">New Review Note</div>
+      <div className="review-note-inline__draft-title">
+        <span>New Review Note</span>
+        <button
+          type="button"
+          className="review-note-inline__close"
+          aria-label="Close New Review Note"
+          onClick={() => store.cancelDraft()}
+        >
+          ✕
+        </button>
+      </div>
       <div className="review-note-inline__body">
         <textarea
           aria-label="New Review Note"

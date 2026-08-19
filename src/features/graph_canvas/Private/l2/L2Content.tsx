@@ -94,6 +94,8 @@ interface CodeBlockProps {
   lineClassPrefix?: string;
   matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
   activeMatchRef?: React.RefObject<HTMLElement | null>;
+  activeLine?: number;
+  activeLineRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export function L2CodeBlock({
@@ -105,6 +107,8 @@ export function L2CodeBlock({
   lineClassPrefix,
   matchesByLine,
   activeMatchRef,
+  activeLine,
+  activeLineRef,
 }: CodeBlockProps) {
   const codePadding = `${6 / zoom}px 0`;
 
@@ -150,6 +154,8 @@ export function L2CodeBlock({
             clickableNames={clickableNames}
             matchesByLine={matchesByLine}
             activeMatchRef={activeMatchRef}
+            activeLine={activeLine}
+            activeLineRef={activeLineRef}
           />
         ) : null}
       </pre></div>

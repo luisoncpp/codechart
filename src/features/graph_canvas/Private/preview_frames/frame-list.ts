@@ -23,6 +23,8 @@ export interface PreviewFrame {
   isMarkdown?: boolean;
   /** Set when the destination could not be read; shown instead of a body. */
   loadError?: string;
+  /** Normalized heading id for rendered-markdown section scroll. */
+  sectionAnchor?: string;
 }
 
 /** A frame before the hook stamps its identity and pin state. */
@@ -41,9 +43,24 @@ function topZIndex(frames: readonly PreviewFrame[]): number {
   return frames.reduce((max, f) => Math.max(max, f.zIndex), 0);
 }
 
+function mergeOnDedupe(
+  existing: PreviewFrame,
+  incoming: Omit<PreviewFrame, "zIndex">,
+): PreviewFrame {
+  const merged: PreviewFrame = {
+    ...existing,
+    sourceText: incoming.sourceText,
+    isMarkdown: incoming.isMarkdown,
+    loadError: incoming.loadError,
+  };
+  if (incoming.activeRange !== undefined) merged.activeRange = incoming.activeRange;
+  if (incoming.sectionAnchor !== undefined) merged.sectionAnchor = incoming.sectionAnchor;
+  return merged;
+}
+
 /**
  * Append a new frame on top. If a frame for the same module + symbol is
- * already open, bring that one to the front instead of duplicating it.
+ * already open, merge scroll state and bring that one to the front.
  */
 export function openFrame(
   frames: readonly PreviewFrame[],
@@ -52,7 +69,13 @@ export function openFrame(
   const existing = frames.find(
     (f) => f.moduleId === frame.moduleId && f.symbolName === frame.symbolName,
   );
-  if (existing) return bringToFront(frames, existing.id);
+  if (existing) {
+    const merged = mergeOnDedupe(existing, frame);
+    return bringToFront(
+      frames.map((f) => (f.id === existing.id ? merged : f)),
+      existing.id,
+    );
+  }
   return [...frames, { ...frame, zIndex: topZIndex(frames) + 1 }];
 }
 

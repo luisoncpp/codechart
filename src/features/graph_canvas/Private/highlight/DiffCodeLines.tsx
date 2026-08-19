@@ -8,8 +8,7 @@ import type { Token } from "./highlighter";
 import { LineTokenizer } from "./line-tokenizer";
 import type { LineMatchRange } from "./match-highlight";
 import { DiffCodeLine } from "./DiffCodeLine";
-import { findWikiLinks, type WikiLinkSpan } from "../wiki_links/wiki-link-parser";
-import { isMarkdownPath } from "../wiki_links/wiki-link-target";
+import { findWikiLinks, isMarkdownPath, type WikiLinkSpan } from "../wiki_links";
 import { InlineReviewNotes, useReviewNotesStore } from "../../../review_notes";
 
 interface DiffCodeLinesProps {

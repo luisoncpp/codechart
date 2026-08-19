@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Pure ordering of the paths a wiki link could mean")
 import type { WikiLinkClick } from "./wiki-link-dom";
 import { modulePathSuffixMatch, resolveWikiPath } from "./wiki-link-target";
+import { splitWikiTarget } from "./wiki-link-target-split";
 
 /**
  * Paths to try, best guess first. A bare name (`[[store.ts]]`) is far more
@@ -11,9 +12,11 @@ export function wikiLinkCandidates(
   link: WikiLinkClick,
   modulePaths: readonly string[],
 ): string[] {
-  const direct = resolveWikiPath(link.target, link.fromPath);
-  const module = modulePathSuffixMatch(modulePaths, link.target);
-  const bareName = !link.target.includes("/") && !link.target.includes("\\");
+  const { pathPart } = splitWikiTarget(link.target);
+  if (pathPart === "") return link.fromPath ? [link.fromPath] : [];
+  const direct = resolveWikiPath(pathPart, link.fromPath);
+  const module = modulePathSuffixMatch(modulePaths, pathPart);
+  const bareName = !pathPart.includes("/") && !pathPart.includes("\\");
   const ordered = bareName ? [module, direct] : [direct, module];
   return [...new Set(ordered.filter((path): path is string => path !== null))];
 }

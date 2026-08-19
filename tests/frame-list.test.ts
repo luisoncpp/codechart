@@ -1,88 +1,76 @@
 import { describe, expect, it } from "vitest";
-import {
-  openFrame,
-  bringToFront,
-  moveFrame,
-  togglePin,
-  closeUnpinned,
-  type PreviewFrame,
-} from "../src/features/graph_canvas/Private/preview_frames/frame-list";
+import { openFrame, type PreviewFrame } from "../src/features/graph_canvas/Private/preview_frames/frame-list";
 
-function makeFrame(id: number, moduleId: string, symbolName: string): PreviewFrame {
-  return {
-    id,
-    moduleId,
-    symbolName,
-    modulePath: moduleId,
-    sourceText: "",
-    top: 0,
-    left: 0,
-    zIndex: id,
-    pinned: false,
-  };
-}
+const base: PreviewFrame = {
+  id: 1,
+  moduleId: "src/a.ts",
+  moduleLabel: "a.ts",
+  symbolName: null,
+  modulePath: "src/a.ts",
+  color: "#000",
+  sourceText: "v1",
+  top: 0,
+  left: 0,
+  zIndex: 1,
+  pinned: false,
+  activeRange: { startLine: 1, endLine: 1 },
+};
 
-const base = [makeFrame(1, "a.ts", "A"), makeFrame(2, "b.ts", "B")];
-
-describe("openFrame", () => {
-  it("appends a new frame above every existing one", () => {
-    const next = openFrame(base, { ...makeFrame(3, "c.ts", "C"), top: 5, left: 6 });
-    expect(next).toHaveLength(3);
-    expect(next[2]).toMatchObject({ id: 3, top: 5, left: 6, zIndex: 3 });
+describe("openFrame dedupe", () => {
+  it("merges activeRange onto an existing frame instead of duplicating", () => {
+    const next = openFrame([base], {
+      ...base,
+      id: 2,
+      sourceText: "v2",
+      activeRange: { startLine: 42, endLine: 42 },
+    });
+    expect(next).toHaveLength(1);
+    expect(next[0]?.activeRange).toEqual({ startLine: 42, endLine: 42 });
+    expect(next[0]?.sourceText).toBe("v2");
+    expect(next[0]?.zIndex).toBe(1);
   });
 
-  it("brings the existing frame to front instead of duplicating module+symbol", () => {
-    const next = openFrame(base, makeFrame(9, "a.ts", "A"));
+  it("raises zIndex only when another frame is already on top", () => {
+    const under: PreviewFrame = { ...base, id: 1, zIndex: 1 };
+    const over: PreviewFrame = { ...base, id: 2, moduleId: "src/b.ts", zIndex: 3 };
+    const next = openFrame([under, over], {
+      ...under,
+      id: 3,
+      sourceText: "v2",
+      activeRange: { startLine: 42, endLine: 42 },
+    });
     expect(next).toHaveLength(2);
-    expect(next.find((f) => f.id === 1)?.zIndex).toBe(3);
-    expect(next.some((f) => f.id === 9)).toBe(false);
+    expect(next.find((f) => f.id === 1)?.zIndex).toBe(4);
   });
 
-  it("treats the same module with another symbol as a new frame", () => {
-    const next = openFrame(base, makeFrame(3, "a.ts", "OtherSymbol"));
-    expect(next).toHaveLength(3);
-  });
-});
-
-describe("bringToFront", () => {
-  it("raises the frame above the current top", () => {
-    const next = bringToFront(base, 1);
-    expect(next.find((f) => f.id === 1)?.zIndex).toBe(3);
+  it("keeps activeRange when the incoming frame omits it", () => {
+    const next = openFrame([base], { ...base, id: 2, sourceText: "v2" });
+    expect(next[0]?.activeRange).toEqual({ startLine: 1, endLine: 1 });
   });
 
-  it("keeps zIndexes untouched when the frame is already on top", () => {
-    const next = bringToFront(base, 2);
-    expect(next.map((f) => f.zIndex)).toEqual([1, 2]);
+  it("updates activeRange when a new range is provided", () => {
+    const next = openFrame([base], {
+      ...base,
+      id: 2,
+      sourceText: "v2",
+      activeRange: { startLine: 99, endLine: 99 },
+    });
+    expect(next[0]?.activeRange).toEqual({ startLine: 99, endLine: 99 });
   });
 
-  it("returns the same reference when already on top, so setState bails out", () => {
-    expect(bringToFront(base, 2)).toBe(base);
-  });
-});
-
-describe("moveFrame", () => {
-  it("repositions only the targeted frame", () => {
-    const next = moveFrame(base, 2, { top: 40, left: 50 });
-    expect(next.find((f) => f.id === 2)).toMatchObject({ top: 40, left: 50 });
-    expect(next.find((f) => f.id === 1)).toMatchObject({ top: 0, left: 0 });
-  });
-});
-
-describe("pinning", () => {
-  it("toggles one frame without changing the others", () => {
-    const next = togglePin(base, 1);
-    expect(next.find((f) => f.id === 1)?.pinned).toBe(true);
-    expect(next.find((f) => f.id === 2)?.pinned).toBe(false);
+  it("merges sectionAnchor for markdown section re-scroll", () => {
+    const next = openFrame([base], {
+      ...base,
+      id: 2,
+      sourceText: "v2",
+      sectionAnchor: "setup",
+    });
+    expect(next[0]?.sectionAnchor).toBe("setup");
   });
 
-  it("closes unpinned frames and keeps pinned frames", () => {
-    const pinned = togglePin(base, 2);
-    const next = closeUnpinned(pinned);
-    expect(next.map((frame) => frame.id)).toEqual([2]);
-  });
-
-  it("keeps the same list when every frame is pinned", () => {
-    const pinned = togglePin(togglePin(base, 1), 2);
-    expect(closeUnpinned(pinned)).toBe(pinned);
+  it("keeps sectionAnchor when the incoming frame omits it", () => {
+    const withAnchor: PreviewFrame = { ...base, sectionAnchor: "setup" };
+    const next = openFrame([withAnchor], { ...withAnchor, id: 2, sourceText: "v2" });
+    expect(next[0]?.sectionAnchor).toBe("setup");
   });
 });

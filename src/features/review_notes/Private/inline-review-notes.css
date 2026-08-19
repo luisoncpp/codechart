@@ -42,6 +42,31 @@
   text-align: left;
 }
 
+.review-note-inline__draft-title {
+  gap: calc(8px * var(--review-note-scale));
+  justify-content: space-between;
+}
+
+.review-note-inline__close {
+  flex: 0 0 auto;
+  padding: 0 calc(4px * var(--review-note-scale));
+  color: #64748b;
+  background: transparent;
+  border: 0;
+  font-size: calc(11px * var(--review-note-scale));
+  line-height: 1;
+  cursor: pointer;
+}
+
+.review-note-inline__close:hover {
+  color: #0f172a;
+}
+
+.review-note-inline__close:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
 .review-note-inline__toggle {
   cursor: pointer;
 }

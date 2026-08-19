@@ -19,7 +19,7 @@ On each project load, reconciliation uses only supported modules: keep an exact 
 
 ## Presentation and navigation
 
-The shared L2/preview line renderer exposes buttons only for current or added rows and decorates every overlapping anchor. It renders each Review Note in normal flow directly after its final anchor row; same-row notes retain creation order, and expanded notes move later source rows downward. Existing notes start expanded but can collapse locally per source view. Draft text stays local until submission; existing body edits debounce, while create, Done, Undo, and reconciliation save immediately.
+The shared L2/preview line renderer exposes buttons only for current or added rows and decorates every overlapping anchor. It renders each Review Note in normal flow directly after its final anchor row; same-row notes retain creation order, and expanded notes move later source rows downward. Existing notes start expanded but can collapse locally per source view. The draft card can be dismissed at any time by its close (✕) button or Escape, which discards the draft without creating a note. Draft text stays local until submission; existing body edits debounce, while create, Done, Undo, and reconciliation save immediately.
 
 The Review Notes tab exposes Resolve on every displayed note and Resolve all for the current panel filter. Both remove active notes in one immediate document mutation; a bulk action creates one five-second Undo opportunity that restores the batch in its original order.
 

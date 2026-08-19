@@ -8,6 +8,8 @@ import type { GraphSessionStore } from "../../src/state/graph-session";
 
 const LINKED_MODULE = "src/core/store.ts";
 const COMMENT = "// see [[README.md]] and [[./validate.ts|the validator]]\n";
+const SECTION_COMMENT =
+  "// @Section(Validation)\n// see [[./validate.ts#Validation]]\n";
 
 /**
  * The fixture sources are read through the mock client, so the wiki-link
@@ -21,6 +23,20 @@ function clientWithLinkComment(overrides: Partial<AnalysisClient> = {}): Analysi
     async readModuleSource(root: string, path: string) {
       const source = await mock.readModuleSource(root, path);
       return path === LINKED_MODULE ? COMMENT + source : source;
+    },
+    ...overrides,
+  };
+}
+
+function clientWithSectionLink(overrides: Partial<AnalysisClient> = {}): AnalysisClient {
+  const mock = createMockAnalysisClient();
+  return {
+    ...mock,
+    async readModuleSource(root: string, path: string) {
+      const source = await mock.readModuleSource(root, path);
+      if (path === LINKED_MODULE) return SECTION_COMMENT + source;
+      if (path === "src/core/validate.ts") return "// @Section(Validation)\n" + source;
+      return source;
     },
     ...overrides,
   };
@@ -138,6 +154,22 @@ describe("flow: open-wiki-link", () => {
     await waitFor(() =>
       expect(screen.getByRole("alert").textContent).toBe("Could not read README.md"),
     );
+  });
+
+  it("highlights the @Section line when the link includes a fragment", async () => {
+    const store = await readyStore(clientWithSectionLink());
+    await openLinkingFrame(store);
+    const sectionLink = [...document.querySelectorAll(".hl-wiki-link")].find(
+      (el) => el.getAttribute("data-wiki-target") === "./validate.ts#Validation",
+    )!;
+
+    await act(async () => {
+      fireEvent.click(sectionLink);
+    });
+
+    await waitFor(() => {
+      expect(document.querySelector(".symbol-widget__line--active")).toBeTruthy();
+    });
   });
 
   it("clicking a link in an L2 canvas document opens a frame without selecting the module", async () => {

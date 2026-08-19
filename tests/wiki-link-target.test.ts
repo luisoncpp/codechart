@@ -4,8 +4,8 @@ import {
   isMarkdownPath,
   modulePathSuffixMatch,
   resolveWikiPath,
-} from "../src/features/graph_canvas/Private/wiki_links/wiki-link-target";
-import { wikiLinkCandidates } from "../src/features/graph_canvas/Private/wiki_links/wiki-link-candidates";
+  wikiLinkCandidates,
+} from "../src/features/graph_canvas/Private/wiki_links";
 
 const FROM = "src/core/store.ts";
 
@@ -61,6 +61,20 @@ describe("wikiLinkCandidates", () => {
     expect(wikiLinkCandidates(inRoot, paths)).toEqual(["outside.md"]);
     const aboveRoot = { target: "../../../outside.md", fromPath: "src/ui/App.tsx" };
     expect(wikiLinkCandidates(aboveRoot, paths)).toEqual([]);
+  });
+
+  it("resolves path before the hash, not the fragment", () => {
+    const link = { target: "store.ts#Validation", fromPath: "src/ui/App.tsx" };
+    expect(wikiLinkCandidates(link, paths)).toEqual(["src/core/store.ts", "store.ts"]);
+  });
+
+  it("uses fromPath only for same-file fragment links", () => {
+    const link = { target: "#Validation", fromPath: "src/core/store.ts" };
+    expect(wikiLinkCandidates(link, paths)).toEqual(["src/core/store.ts"]);
+  });
+
+  it("returns no candidates for a same-file link without fromPath", () => {
+    expect(wikiLinkCandidates({ target: "#Section", fromPath: "" }, paths)).toEqual([]);
   });
 });
 

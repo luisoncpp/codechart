@@ -62,7 +62,14 @@ function SymbolCode(
   );
 }
 
-function DocumentContent({ frame, fileDiff, clickableSymbols, matchProps }: CodeContentProps) {
+function DocumentContent({
+  frame,
+  fileDiff,
+  clickableSymbols,
+  matchProps,
+  lineRef,
+}: FrameContentProps) {
+  const highlightLine = frame.activeRange?.startLine;
   return (
     <div className="symbol-widget__document">
       <L2Description
@@ -81,6 +88,8 @@ function DocumentContent({ frame, fileDiff, clickableSymbols, matchProps }: Code
         lineClassPrefix="symbol-widget"
         matchesByLine={matchProps.matchesByLine}
         activeMatchRef={matchProps.activeMatchRef}
+        activeLine={highlightLine}
+        activeLineRef={lineRef}
       />
     </div>
   );

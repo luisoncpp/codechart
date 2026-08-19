@@ -36,7 +36,7 @@ A `*.group.md` is **YAML frontmatter + markdown body**. Frontmatter parsing
 defaults derived from the folder path. `description_long` = body;
 `description_short` = frontmatter or first body paragraph. `architectureDoc` =
 repo-relative path to extended markdown (stored on `GroupNode`, fetched lazily at
-L2). Missing/invalid frontmatter → `ConfigError` (becomes a per-file `configError`, partial results).
+L2). Missing/invalid frontmatter → `ConfigError` (becomes a per-file `configError`, partial results). Quote YAML strings that contain `#` (`descriptionShort` with a wiki-link fragment): unquoted `#` is a comment and can make the whole group file fail to parse, so its modules fold into the parent.
 
 ## `grouping`
 
