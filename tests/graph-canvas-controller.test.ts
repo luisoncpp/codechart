@@ -91,3 +91,38 @@ describe("GraphCanvasController.onViewportZoom", () => {
     expect(store.setZoomLevel).toHaveBeenCalledWith(2);
   });
 });
+
+describe("GraphCanvasController.moduleForContextMenu", () => {
+  it("resolves a deleted ghost module and marks it deleted", () => {
+    const store = spyGraphCanvasStore();
+    store.getDiffOverlay.mockReturnValue({
+      deletedModuleIds: new Set(["src/gone.ts"]),
+      ghostModules: [
+        {
+          id: "src/gone.ts",
+          path: "src/gone.ts",
+          label: "gone.ts",
+          language: "typescript",
+          groupId: null,
+          isFacade: false,
+          metrics: { loc: 0 },
+          exportedSymbols: [],
+        },
+      ],
+    });
+    const node = {
+      id: "src/gone.ts",
+      type: "module",
+      data: { color: "#64748b" },
+    } as unknown as Node;
+    const target = new GraphCanvasController(
+      store as unknown as GraphSessionStore,
+    ).moduleForContextMenu(node);
+    expect(target).toEqual({
+      moduleId: "src/gone.ts",
+      modulePath: "src/gone.ts",
+      color: "#64748b",
+      deleted: true,
+    });
+  });
+});

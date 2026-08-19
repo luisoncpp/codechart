@@ -25,6 +25,11 @@ describe("computeLineDiff basic", () => {
     const diff = computeLineDiff(oldSource, "");
     expect(diff.addedLineNumbers.size).toBe(0);
     expect(diff.removeBeforeLine.get(1)).toEqual(["line 1", "line 2"]);
+    const rows = buildModuleDiffDisplay("", diff);
+    expect(rows).toEqual([
+      { kind: "remove", text: "line 1" },
+      { kind: "remove", text: "line 2" },
+    ]);
   });
 
   it("normalizes CRLF newlines identically to LF", () => {

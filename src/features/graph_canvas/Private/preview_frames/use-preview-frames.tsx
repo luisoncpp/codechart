@@ -21,6 +21,7 @@ import { PreviewFramesView } from "./PreviewFramesView";
 import { withNewSources } from "./source-cache";
 import { createReviewNotePreview } from "./review-note-preview";
 import { createWikiLinkPreview } from "./wiki-link-preview";
+import { createDocumentPreview } from "./document-preview";
 import { useClickableSymbols } from "./use-clickable-symbols";
 import type { WikiLinkClick } from "../wiki_links";
 
@@ -31,13 +32,6 @@ interface PreviewFramesDeps {
   containerRef: React.RefObject<HTMLDivElement | null>;
   /** The live project-search query; a new frame seeds its find bar with it. */
   getFindQuery: () => string;
-}
-
-interface DocumentPreviewRequest {
-  moduleId: string;
-  color: string;
-  x: number;
-  y: number;
 }
 
 export function usePreviewFrames(deps: PreviewFramesDeps) {
@@ -124,27 +118,17 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     [graph, store, containerRef, open, prefetchSources],
   );
 
-  /** Context-menu action: open the module's complete L2 document at its beginning. */
-  const openDocumentPreview = useCallback(
-    async (request: DocumentPreviewRequest) => {
-      const container = containerRef.current;
-      const module = graph?.modules.find((item) => item.id === request.moduleId);
-      if (!container || !module) return;
-      const sourceText = await store.fetchModuleSource(module.id);
-      const pos = computePointWidgetPosition(request, container.getBoundingClientRect());
-      void prefetchSources(module.id);
-      open("close-unpinned", {
-        moduleId: module.id,
-        moduleLabel: module.label,
-        symbolName: null,
-        modulePath: module.path,
-        description: module.annotation?.descriptionLong || module.annotation?.descriptionShort,
-        color: request.color,
-        sourceText,
-        ...pos,
-      });
-    },
-    [containerRef, graph, open, prefetchSources, store],
+  const openDocumentPreview = useMemo(
+    () =>
+      createDocumentPreview({
+        containerRef,
+        store,
+        graph,
+        diffOverlay,
+        open,
+        prefetchSources,
+      }),
+    [containerRef, store, graph, diffOverlay, open, prefetchSources],
   );
 
   const openReviewNotePreview = useMemo(

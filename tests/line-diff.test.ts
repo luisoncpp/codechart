@@ -34,4 +34,22 @@ describe("buildModuleDiffDisplay", () => {
     expect(rows[1]).toMatchObject({ kind: "remove", text: "old" });
     expect(rows[2]).toMatchObject({ kind: "add", lineNumber: 2, text: "new" });
   });
+
+  it("renders a fully deleted file as only red rows", () => {
+    const text = [
+      "diff --git a/src/gone.ts b/src/gone.ts",
+      "deleted file mode 100644",
+      "--- a/src/gone.ts",
+      "+++ /dev/null",
+      "@@ -1,2 +0,0 @@",
+      "-line 1",
+      "-line 2",
+    ].join("\n");
+    const file = lineDiffsFromUnified(text).get("src/gone.ts");
+    const rows = buildModuleDiffDisplay("", file);
+    expect(rows).toEqual([
+      { kind: "remove", text: "line 1" },
+      { kind: "remove", text: "line 2" },
+    ]);
+  });
 });

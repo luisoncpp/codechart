@@ -34,6 +34,11 @@ export interface GraphDiffOverlay {
    * which may have drifted since the diff was computed). Empty in paste mode.
    */
   afterSourceByPath: ReadonlyMap<string, string>;
+  /**
+   * Before-snapshot source for deleted paths (git snapshot, else reconstructed
+   * from unified-diff hunks). Preview frames render this as all-removed rows.
+   */
+  beforeSourceByPath: ReadonlyMap<string, string>;
 }
 
 export interface ParsedDiffPaths {
@@ -51,5 +56,5 @@ export interface GraphDiffInput {
 /** Graph diff without line-level parse (added by `attachLineDiff`). */
 export type GraphDiffCore = Omit<
   GraphDiffOverlay,
-  "unifiedDiff" | "lineDiffByPath" | "afterSourceByPath"
+  "unifiedDiff" | "lineDiffByPath" | "afterSourceByPath" | "beforeSourceByPath"
 >;

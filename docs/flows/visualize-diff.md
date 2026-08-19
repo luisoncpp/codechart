@@ -22,7 +22,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 8. `edge-style` / `EdgeLayer` render added edges **green** (`#16a34a`), removed edges **red** (`#dc2626`) with an **X** head instead of an arrow, and rename edges **yellow** (`#d97706`, arrow head) from the deleted module to the created one. All diff edges render thicker (`2.8px`) than normal focused edges (`2.0px`) and sit in the edge layer behind module cards. When no module is selected, all diff edges stay fully opaque (`1.0`); when a module is selected, diff edges not connected to that module dim to `0.45` opacity like other context edges while connected diff edges stay fully opaque.
 9. Unchanged modules render at **~40% opacity**; affected/deleted keep full opacity + colored borders. Group titles and descriptions dim to the same level.
 10. **L0 is disabled** while diff is active — scroll zoom floors at **L1** so module diff highlights stay visible; normal L0 returns when diff is cleared.
-11. **L2 code blocks** and the **symbol source widget** (preview frames) show `+` green / `-` red diff rows when line diff data exists for that file. Renamed files compute and render their line diff against the original pre-rename file instead of marking every line as added. Line highlights index the **after-snapshot** coordinates, so while a diff is active the store overrides `sourceCache` (per diffed path) with the overlay's `afterSourceByPath` — the panels render that exact snapshot, not the live file, which may have drifted since the diff was computed. `clearDiffOverlay` drops the overrides so the live file is re-read.
+11. **L2 code blocks** and the **symbol source widget** (preview frames) show `+` green / `-` red diff rows when line diff data exists for that file. Renamed files compute and render their line diff against the original pre-rename file instead of marking every line as added. Line highlights index the **after-snapshot** coordinates, so while a diff is active the store overrides `sourceCache` (per diffed path) with the overlay's `afterSourceByPath` — the panels render that exact snapshot, not the live file, which may have drifted since the diff was computed. `clearDiffOverlay` drops the overrides so the live file is re-read. **Deleted files** (ghost cards and still-present paths marked deleted) open a preview frame via **Open file preview**; the body is empty after-text plus the overlay's removed rows (or a synthesized all-removed diff from `beforeSourceByPath`), so every line is red. **Open in editor** and **Reveal in file explorer** are disabled for those cards.
 12. **Stop visualizing diff** (`DiffOverlayBar`) → `store.clearDiffOverlay()`.
 13. **Review tracking** — while active, diffed files can be checkmarked as reviewed (card checkbox or the bar's `Reviewed X/Y` checklist); marks persist per project+diff id and restore when the same diff is re-applied. See [mark-file-reviewed](./mark-file-reviewed.md).
 14. **Deleted module inspection & rename navigation** — selecting a deleted module (ghost card) opens its inspection details (`ModuleInspection`), showing its path, metadata, deleted status, and whether it was renamed. If renamed, a clickable button links to the target module ("Renamed to"), and inspecting the destination module similarly links back to the source module ("Renamed from"), centering the viewport on that module via `store.focusOn(moduleId)`.
@@ -38,6 +38,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 
 - `GraphSessionStore.diffOverlay` (session-only; cleared on project reload)
 - `GraphSessionStore.sourceCache` — diffed paths overridden with the after-snapshot while the overlay is active; restored on clear
+- `GraphSessionStore.diffOverlay.beforeSourceByPath` — deleted-file bodies from the git snapshot or reconstructed unified-diff hunks
 
 ## Side effects
 
@@ -49,6 +50,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 | Piece | File |
 |-------|------|
 | Path parse + graph compare | `domain/diff` |
+| Deleted-file before bodies | `domain/diff/Private/attach-deleted-sources.ts` |
 | Rename matching | `domain/diff/Private/attach-renames.ts` |
 | Overlay on RF models | `domain/diff/Private/apply-diff-overlay.ts` |
 | Session API | `state/graph-session/Private/graph-session-store.ts` |
@@ -60,6 +62,6 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 
 - **Git commits disabled** — folder is not a git repo (`git_is_repo` false).
 - **Analyze at ref fails** — invalid ref or git not on PATH.
-- **Pasted diff, deleted file** — deleted files are rendered as ghost module cards with red borders, matching git commit mode.
+- **Pasted diff, deleted file** — deleted files are rendered as ghost module cards with red borders, matching git commit mode. Right-click **Open file preview** shows the reconstructed body as all-red rows; editor/explorer actions stay disabled.
 - **Rename vs copy** — `copy from`/`copy to` is an add only (no yellow arrow, original stays). Untracked working-tree adds are paired by fingerprint fallback because `git diff -M` never sees them.
 - **Pasted diff, symbol states** — exact added/removed/modified symbol classification requires before/after snapshots, so paste mode remains module- and line-level only.

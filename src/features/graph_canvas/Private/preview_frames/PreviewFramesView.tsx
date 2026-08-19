@@ -2,6 +2,7 @@
 import type { GraphDiffOverlay } from "../../../../domain/diff";
 import { SymbolSourceWidget, type FrameHandlers } from "./SymbolSourceWidget";
 import type { PreviewFrame } from "./frame-list";
+import { fileDiffForPreview } from "./preview-file-diff";
 
 interface PreviewFramesViewProps {
   frames: readonly PreviewFrame[];
@@ -23,7 +24,7 @@ export function PreviewFramesView({
           key={frame.id}
           frame={frame}
           clickableSymbols={clickableByModule.get(frame.moduleId) ?? EMPTY_NAMES}
-          fileDiff={diffOverlay?.lineDiffByPath.get(frame.modulePath)}
+          fileDiff={fileDiffForPreview(frame.modulePath, diffOverlay)}
           handlers={handlers}
         />
       ))}

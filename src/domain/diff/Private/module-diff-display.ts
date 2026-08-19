@@ -7,7 +7,7 @@ export function buildModuleDiffDisplay(
   fileDiff: FileLineDiff | undefined,
 ): DiffDisplayRow[] {
   if (!fileDiff) return contextRows(source);
-  const lines = source.split("\n");
+  const lines = afterLines(source);
   const rows: DiffDisplayRow[] = [];
 
   for (let i = 0; i < lines.length; i++) {
@@ -21,13 +21,23 @@ export function buildModuleDiffDisplay(
   }
 
   for (const [lineNumber, removedLines] of fileDiff.removeBeforeLine) {
-    if (lineNumber <= lines.length) continue;
+    if (isAfterLine(lineNumber, lines.length)) continue;
     for (const removed of removedLines) {
       rows.push({ kind: "remove", text: removed });
     }
   }
 
   return rows;
+}
+
+/** `"".split("\n")` is `[""]`; a deleted after-file has no rows. */
+function afterLines(source: string): string[] {
+  return source.length === 0 ? [] : source.split("\n");
+}
+
+/** New-file line numbers are 1-based; hunk `+0,0` keys removals at 0. */
+function isAfterLine(lineNumber: number, afterCount: number): boolean {
+  return lineNumber >= 1 && lineNumber <= afterCount;
 }
 
 function contextRows(source: string): DiffDisplayRow[] {

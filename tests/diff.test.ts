@@ -228,6 +228,7 @@ describe("applyDiffOverlay", () => {
       unifiedDiff: text,
       lineDiffByPath: new Map(),
       afterSourceByPath: new Map(),
+      beforeSourceByPath: new Map(),
     };
     const stamped = applyDiffOverlay(projected, overlay);
     const deletedNode = stamped.nodes.find((n) => n.id === "src/core/deleted-helper.ts");
@@ -294,6 +295,7 @@ describe("applyDiffOverlay", () => {
       unifiedDiff: text,
       lineDiffByPath: new Map(),
       afterSourceByPath: new Map(),
+      beforeSourceByPath: new Map(),
     };
     const stamped = applyDiffOverlay(projected, overlay);
     const ghost1 = stamped.nodes.find((n) => n.id === "src/core/deleted-one.ts");
@@ -362,6 +364,7 @@ describe("applyDiffOverlay", () => {
       unifiedDiff: text,
       lineDiffByPath: new Map(),
       afterSourceByPath: new Map(),
+      beforeSourceByPath: new Map(),
     };
     const stamped = applyDiffOverlay(projected, overlay);
     const ghost = stamped.nodes.find((n) => n.id === "src/core/deleted-one.ts")!;
@@ -401,6 +404,7 @@ describe("applyDiffOverlay", () => {
       unifiedDiff: text,
       lineDiffByPath: new Map(),
       afterSourceByPath: new Map(),
+      beforeSourceByPath: new Map(),
     };
     const stamped = applyDiffOverlay(projected, overlay);
     const ghost1 = stamped.nodes.find((n) => n.id === "standalone1.ts");
@@ -469,6 +473,7 @@ describe("applyDiffOverlay", () => {
       unifiedDiff: "",
       lineDiffByPath: new Map(),
       afterSourceByPath: new Map(),
+      beforeSourceByPath: new Map(),
     };
 
     const stamped = applyDiffOverlay(projected, overlay);

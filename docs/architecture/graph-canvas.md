@@ -49,7 +49,7 @@ Both deep modules organize their implementation into subfolders, each a config s
 | `ViewMenu` / `SearchMenu` | `features/graph_canvas` (facade exports) | Toolbar dropdowns (rendered by `App` into `ProjectLoaderPanel`'s `menus` slot, built on the shared `src/ui/dropdown_menu` module). View ▾: Hide tests, **Hide dot directories** (default on; re-analyzes), Line counts, Heatmap + Activity/Risk, Visualize diff…; Search ▾: Search project (Ctrl+Shift+F), Go to file (Ctrl+P), Go to symbol. |
 | `CanvasUiState` | `features/graph_canvas/Private/controller/canvas-ui-state.ts` (facade export) | Transient UI flags (`findBarOpen`, `findBarMode`, `diffModalOpen`, `lineCountsVisible`) shared between the toolbar menus and `GraphCanvas`; kept out of `GraphSessionStore`. `App` instantiates it and resets on `phase-changed`. |
 | `HeatmapLegend` | `features/graph_canvas` | Top-right gradient chip, shown only while the heatmap is on (below `LevelBadge`). Its timeframe label opens `MetricsWindowModal`; the heatmap toggles themselves live in the View menu. |
-| `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, opens the absolute path in the project-configured editor, copies the graph-relative path, or reveals the file via `ShellClient`. |
+| `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, opens the absolute path in the project-configured editor, copies the graph-relative path, or reveals the file via `ShellClient`. Deleted diff files keep preview and copy; editor/explorer are disabled. |
 | `TokenText` | `features/graph_canvas/Private/highlight/TokenText.tsx` | Renders one syntax token's text with **nested** sub-spans: wiki links (`hl-wiki-link`) outside, find matches (`hl-match`) inside. Nesting — never sibling-splitting — is what keeps `hl-clickable` navigation reading a whole identifier from `textContent`. `DiffCodeLine` renders the row; `DiffCodeLines` owns rows, tokenizing, and the per-row link scan. |
 | `LineTokenizer` / `tokenizeCode` | `features/graph_canvas/Private/highlight/line-tokenizer.ts`, `highlighter.ts` | Lexical highlighter. `LineTokenizer` tokenizes **one line at a time** and is the only stateful piece: it remembers an open block comment (`getLanguageForFile().blockComment`, `/* */` for every language except Python/`.prefab`) so `/* … */` spanning lines stays `hl-comment`. Renderers that emit rows independently (`DiffCodeLines`) **must reuse one instance per document, in line order**; `remove` diff rows come from the before-snapshot and are rendered plain, so they never touch the state. `tokenizeCode(code, path)` is the stateless whole-text wrapper. Consequence: multi-line **strings** (template literals, Python docstrings) are still tokenized per line and do not carry. |
 | `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, LOC (module-tree total), child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` diagnostics render **red** (matching the bypass edge); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
@@ -131,7 +131,10 @@ Both deep modules organize their implementation into subfolders, each a config s
   **L0 bird's-eye is disabled** while diff is active — scroll zoom floors at L1
   so module-level highlights remain visible; clearing the overlay restores normal L0 behavior.
   **L2 source panels and the symbol preview widget** show unified-diff rows:
-  green `+` lines for additions, red `-` lines for deletions (`DiffCodeLines`). Diff styling wins over
+  green `+` lines for additions, red `-` lines for deletions (`DiffCodeLines`). A deleted file's
+  **Open file preview** uses empty after-text plus `lineDiffByPath` (or a synthesized all-removed
+  diff from `beforeSourceByPath`) so the frame is all red; editor/explorer menu items are disabled.
+  Diff styling wins over
   selection dimming for stamped edges. **Stop visualizing diff** clears overlay state; reload clears it too.
   **Mutually exclusive with the activity heatmap** — diff on pauses heat controls and restores prior heat state when cleared.
 - **Activity heatmap (git metrics overlay):** when the project root is a git repo, `analyze_project`
@@ -363,6 +366,9 @@ hidden by zoom collapse.
   The document frame starts at the top and composes the same preferred module description plus complete
   highlighted source as the L2 document. It retains clickable cross-module identifiers and diff rows;
   like a canvas symbol click, opening it closes other unpinned frames while preserving pinned ones.
+  During **Visualize diff**, deleted modules (ghost cards and live paths in `deletedModuleIds`) resolve
+  via `ghostModules` when missing from the graph; the frame body is the before-content rendered as
+  all-removed rows.
 - **Wiki links (`[[path]]` → a frame for any file):** a `[[target]]` or `[[target|label]]` written
   in a **comment** (or anywhere in a markdown file) renders as an `hl-wiki-link` span and opens the
   destination in a preview frame — inside frames and in **L2 canvas documents**, where the click is

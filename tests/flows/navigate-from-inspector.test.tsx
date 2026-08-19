@@ -100,6 +100,7 @@ describe("flow: navigate-from-inspector", () => {
       unifiedDiff: null,
       lineDiffByPath: new Map(),
       afterSourceByPath: new Map(),
+      beforeSourceByPath: new Map(),
     };
     store.select(existingMod.id);
     const focusOn = vi.spyOn(store, "focusOn");
@@ -139,6 +140,7 @@ describe("flow: navigate-from-inspector", () => {
       unifiedDiff: null,
       lineDiffByPath: new Map(),
       afterSourceByPath: new Map(),
+      beforeSourceByPath: new Map(),
     };
 
     const { container } = renderGraphCanvas(store);

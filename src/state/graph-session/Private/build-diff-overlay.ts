@@ -2,6 +2,7 @@ import {
   compareGraphs,
   overlayFromPastedDiff,
   attachLineDiff,
+  attachDeletedBeforeSources,
   attachSymbolDiff,
   attachRenames,
   mergeCommitOverlay,
@@ -51,7 +52,9 @@ export function buildPasteDiffOverlay(
 ): GraphDiffOverlay {
   const partial = overlayFromPastedDiff(text, graph);
   const overlay = attachLineDiff({ ...partial, beforeLayout: null }, text);
-  return attachRenames({ overlay, afterModules: graph.modules });
+  return attachDeletedBeforeSources(
+    attachRenames({ overlay, afterModules: graph.modules }),
+  );
 }
 
 interface WorkingTreeDiffInput {
@@ -143,13 +146,16 @@ function attachSymbolsAndRenames(input: SymbolsAndRenamesInput): GraphDiffOverla
       lineDiffByPath: input.overlay.lineDiffByPath,
     },
   );
-  return attachRenames({
-    overlay: withSymbols,
-    beforeModules: input.before.modules,
-    afterModules: input.after.modules,
-    beforeSources: input.beforeSources,
-    afterSources: input.afterSources,
-  });
+  return attachDeletedBeforeSources(
+    attachRenames({
+      overlay: withSymbols,
+      beforeModules: input.before.modules,
+      afterModules: input.after.modules,
+      beforeSources: input.beforeSources,
+      afterSources: input.afterSources,
+    }),
+    input.beforeSources,
+  );
 }
 
 function changedPaths(unifiedDiff: string): string[] {

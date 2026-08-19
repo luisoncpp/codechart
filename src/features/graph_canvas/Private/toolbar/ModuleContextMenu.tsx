@@ -9,6 +9,7 @@ export interface ModuleContextMenuState {
   moduleId: string;
   modulePath: string;
   color: string;
+  deleted: boolean;
 }
 
 interface ModuleContextMenuProps {
@@ -119,8 +120,8 @@ export function ModuleContextMenu({
           type="button"
           role="menuitem"
           onClick={openInEditor}
-          disabled={openingEditor}
-          style={menuItemStyle}
+          disabled={openingEditor || menu.deleted}
+          style={menu.deleted ? disabledMenuItemStyle : menuItemStyle}
         >
           {openingEditor ? "Opening editor..." : "Open in editor"}
         </button>
@@ -141,7 +142,8 @@ export function ModuleContextMenu({
           type="button"
           role="menuitem"
           onClick={reveal}
-          style={menuItemStyle}
+          disabled={menu.deleted}
+          style={menu.deleted ? disabledMenuItemStyle : menuItemStyle}
         >
           Reveal in file explorer
         </button>
@@ -160,6 +162,12 @@ const menuItemStyle = {
   fontSize: 12,
   color: "#0f172a",
   cursor: "pointer",
+} as const;
+
+const disabledMenuItemStyle = {
+  ...menuItemStyle,
+  opacity: 0.45,
+  cursor: "not-allowed",
 } as const;
 
 const errorStyle = {

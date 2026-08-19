@@ -144,9 +144,9 @@ export function L2CodeBlock({
           color: "#334155",
         }}
       >
-        {snippet ? (
+        {snippet || hasDiffRows(fileDiff) ? (
           <DiffCodeLines
-            source={snippet}
+            source={snippet ?? ""}
             path={path ?? ""}
             fileDiff={fileDiff}
             zoom={zoom}
@@ -161,4 +161,9 @@ export function L2CodeBlock({
       </pre></div>
     </div>
   );
+}
+
+function hasDiffRows(fileDiff?: FileLineDiff): boolean {
+  if (!fileDiff) return false;
+  return fileDiff.addedLineNumbers.size > 0 || fileDiff.removeBeforeLine.size > 0;
 }

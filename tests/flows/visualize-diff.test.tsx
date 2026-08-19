@@ -29,6 +29,17 @@ const RENAME_DIFF = [
   "rename to src/core/validate.ts",
 ].join("\n");
 
+const GHOST_DELETED_DIFF = [
+  "diff --git a/src/core/gone.ts b/src/core/gone.ts",
+  "deleted file mode 100644",
+  "--- a/src/core/gone.ts",
+  "+++ /dev/null",
+  "@@ -1,3 +0,0 @@",
+  "-export function gone() {",
+  "-  return true;",
+  "-}",
+].join("\n");
+
 describe("flow: visualize-diff", () => {
   it("clicking Visualize diff opens the diff modal", async () => {
     const store = await readyGraphStore();
@@ -84,5 +95,59 @@ describe("flow: visualize-diff rename", () => {
     expect(overlay?.renamePairs).toEqual([
       { from: "src/core/gone.ts", to: "src/core/validate.ts" },
     ]);
+  });
+});
+
+describe("flow: visualize-diff deleted file preview", () => {
+  it("opens an all-red preview from a ghost card context menu", async () => {
+    const store = await readyGraphStore();
+    await store.applyDiffFromPaste(GHOST_DELETED_DIFF);
+    expect(store.getDiffOverlay()?.beforeSourceByPath.get("src/core/gone.ts")).toContain(
+      "export function gone()",
+    );
+    const { container } = renderGraphCanvas(store);
+    const ghost = await waitFor(() => {
+      const node = container.querySelector('[data-id="src/core/gone.ts"]');
+      expect(node).toBeTruthy();
+      return node!;
+    });
+
+    fireEvent.contextMenu(ghost);
+    expect(screen.getByRole("menuitem", { name: "Open in editor" })).toBeDisabled();
+    expect(screen.getByRole("menuitem", { name: "Reveal in file explorer" })).toBeDisabled();
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Open file preview" }));
+
+    const widget = await waitFor(() => {
+      const frame = document.querySelector(".symbol-widget");
+      expect(frame).toBeTruthy();
+      return frame!;
+    });
+    expect(widget.querySelectorAll(".symbol-widget__line--remove").length).toBe(3);
+    expect(widget.querySelectorAll(".symbol-widget__line--add").length).toBe(0);
+    expect(widget.querySelectorAll(".symbol-widget__line--context").length).toBe(0);
+    expect(widget.textContent).toContain("export function gone()");
+  });
+
+  it("previews a deleted live-graph file as red rows, not the current disk body", async () => {
+    const store = await readyGraphStore();
+    await store.applyDiffFromPaste(DELETED_DIFF);
+    const { container } = renderGraphCanvas(store);
+    const card = await waitFor(() => {
+      const node = container.querySelector('[data-id="src/core/validate.ts"]');
+      expect(node).toBeTruthy();
+      return node!;
+    });
+
+    fireEvent.contextMenu(card);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Open file preview" }));
+
+    const widget = await waitFor(() => {
+      const frame = document.querySelector(".symbol-widget");
+      expect(frame).toBeTruthy();
+      return frame!;
+    });
+    expect(widget.querySelectorAll(".symbol-widget__line--remove").length).toBe(1);
+    expect(widget.querySelectorAll(".symbol-widget__line--context").length).toBe(0);
+    expect(widget.textContent).toContain("export function validate() {}");
   });
 });

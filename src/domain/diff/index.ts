@@ -12,6 +12,7 @@ export { overlayFromPastedDiff } from "./Private/overlay-from-paths";
 export { applyDiffOverlay } from "./Private/apply-diff-overlay";
 export { withDiffReview } from "./Private/apply-diff-review";
 export { attachLineDiff } from "./Private/attach-line-diff";
+export { attachDeletedBeforeSources } from "./Private/attach-deleted-sources";
 export { attachRenames } from "./Private/attach-renames";
 export { mergeCommitOverlay } from "./Private/merge-commit-overlay";
 export { excludeSubmoduleModules } from "./Private/exclude-submodule-modules";

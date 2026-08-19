@@ -6,6 +6,7 @@ export interface ModuleContextTarget {
   moduleId: string;
   modulePath: string;
   color: string;
+  deleted: boolean;
 }
 
 function clickedIn(event: React.MouseEvent, selector: string): boolean {
@@ -55,13 +56,20 @@ export class GraphCanvasNodeHandlers {
     if (node.type !== "module" && node.type !== "symbol") return null;
     const moduleId = node.type === "module" ? node.id : node.parentId;
     if (!moduleId) return null;
-    const module = this.store.getReducedGraph()?.modules.find((m) => m.id === moduleId);
+    const module = this.moduleForId(moduleId);
     if (!module) return null;
     return {
       moduleId,
       modulePath: module.path,
       color: typeof node.data?.color === "string" ? node.data.color : "#64748b",
+      deleted: Boolean(this.store.getDiffOverlay()?.deletedModuleIds.has(moduleId)),
     };
+  }
+
+  private moduleForId(moduleId: string) {
+    const live = this.store.getReducedGraph()?.modules.find((m) => m.id === moduleId);
+    if (live) return live;
+    return this.store.getDiffOverlay()?.ghostModules.find((m) => m.id === moduleId);
   }
 
   private toggleConnection(node: Node) {

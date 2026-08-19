@@ -50,6 +50,7 @@ function buildSampleDiffOverlay(): GraphDiffOverlay {
     unifiedDiff: null,
     lineDiffByPath: new Map(),
     afterSourceByPath: new Map(),
+    beforeSourceByPath: new Map(),
   };
 }
 
