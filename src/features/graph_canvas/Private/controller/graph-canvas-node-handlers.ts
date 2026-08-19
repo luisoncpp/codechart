@@ -33,8 +33,8 @@ export class GraphCanvasNodeHandlers {
       this.toggleConnection(node);
       return;
     }
-    if (node.type === "symbol") {
-      this.store.select(node.parentId ?? null);
+    if (node.type === "module" && clickedIn(event, "[data-symbol-id]")) {
+      this.store.select(node.id);
       this.onSymbolClick?.(node, event);
       return;
     }
@@ -51,11 +51,10 @@ export class GraphCanvasNodeHandlers {
     this.store.toggleGroup(node.id);
   }
 
-  /** Module or symbol right-click: resolve its parent module for context actions. */
+  /** Module right-click: resolve the module for context actions. */
   moduleForContextMenu(node: Node): ModuleContextTarget | null {
-    if (node.type !== "module" && node.type !== "symbol") return null;
-    const moduleId = node.type === "module" ? node.id : node.parentId;
-    if (!moduleId) return null;
+    if (node.type !== "module") return null;
+    const moduleId = node.id;
     const module = this.moduleForId(moduleId);
     if (!module) return null;
     return {

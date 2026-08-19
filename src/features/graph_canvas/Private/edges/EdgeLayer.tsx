@@ -3,78 +3,95 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useStoreApi } from "@xyflow/react";
 import type { RFEdgeT, RFNode } from "../../../../domain/graph";
-import type { EdgeLayerModel } from "./edge-layer-cache";
-import { ArrowMarker, EdgeBucketSvg } from "./EdgeBucketSvg";
-import { EdgeLayerRenderer } from "./edge-layer-renderer";
+import type { BucketDomRefs } from "./edge-layer-dom-writer";
+import {
+  EdgeLayerController,
+  type EdgeLayerControllerDeps,
+} from "./edge-layer-controller";
+import { subscribeEdgeLayer } from "./edge-layer-subscribe";
+import { EdgeBucketSvg } from "./EdgeBucketSvg";
+import { styleKeyFromDrawStyle } from "./edge-path";
+import type { ViewportEdgeModel } from "./viewport-edge-model";
 
 interface EdgeLayerProps {
   edges: RFEdgeT[];
   nodes: RFNode[];
 }
 
-function EdgeLayerSvg({ model }: { model: EdgeLayerModel }) {
+function EdgeLayerSvg({
+  model,
+  onRefs,
+}: {
+  model: ViewportEdgeModel;
+  onRefs: (key: string, refs: BucketDomRefs | null) => void;
+}) {
   return (
-    <svg
-      className="codechart-edge-layer"
-      aria-hidden
-    >
-      <defs>
-        {model.buckets.map((bucket, index) => (
-          <ArrowMarker
-            key={index}
-            id={`codechart-arrow-${index}`}
-            color={bucket.style.stroke}
-          />
-        ))}
-      </defs>
-      {model.buckets.map((bucket, index) => (
+    <svg className="codechart-edge-layer" aria-hidden>
+      {model.buckets.map((bucket) => (
         <EdgeBucketSvg
-          key={index}
+          key={styleKeyFromDrawStyle(bucket.style)}
           bucket={bucket}
-          markerId={`codechart-arrow-${index}`}
+          showArrows={model.showArrows}
+          onRefs={onRefs}
         />
       ))}
     </svg>
   );
 }
 
+function useEdgeLayerController(deps: EdgeLayerControllerDeps): EdgeLayerController {
+  const controllerRef = useRef<EdgeLayerController | null>(null);
+  if (!controllerRef.current) {
+    controllerRef.current = new EdgeLayerController(deps);
+  }
+  return controllerRef.current;
+}
+
+function bindEdgeLayer(
+  controller: EdgeLayerController,
+  storeApi: EdgeLayerControllerDeps["storeApi"],
+): () => void {
+  const rebuild = () => controller.rebuildFromGeometry();
+  rebuild();
+  const raf = requestAnimationFrame(/*rebuildAfterLayout*/ rebuild);
+  const unsub = subscribeEdgeLayer(storeApi, {
+    onGeometryDirty: rebuild,
+    onViewportDirty: (input) => controller.scheduleArrowLodCheck(input),
+  });
+  return () => {
+    cancelAnimationFrame(raf);
+    unsub();
+    controller.dispose();
+  };
+}
+
 export function EdgeLayer({ edges, nodes }: EdgeLayerProps) {
   const storeApi = useStoreApi();
-  const rendererRef = useRef(new EdgeLayerRenderer());
+  const edgesRef = useRef(edges);
+  const nodesRef = useRef(nodes);
+  edgesRef.current = edges;
+  nodesRef.current = nodes;
+
   const [edgesRoot, setEdgesRoot] = useState<Element | null>(null);
-  const [model, setModel] = useState<EdgeLayerModel | null>(null);
+  const [model, setModel] = useState<ViewportEdgeModel | null>(null);
+  const controller = useEdgeLayerController({
+    storeApi,
+    onViewportModel: setModel,
+    onEdgesRoot: setEdgesRoot,
+    getEdges: () => edgesRef.current,
+    getNodes: () => nodesRef.current,
+  });
 
-  const rebuild = useCallback(() => {
-    const root =
-      storeApi.getState().domNode?.querySelector(".react-flow__edges") ?? null;
-    setEdgesRoot(root);
-    if (!root) return;
+  const onRefs = useCallback((key: string, refs: BucketDomRefs | null) => {
+    controller.setBucketRefs(key, refs);
+  }, [controller]);
 
-    rendererRef.current.setEdges(edges);
-    setModel(
-      rendererRef.current.rebuild(nodes, storeApi.getState().nodeLookup),
-    );
-  }, [edges, nodes, storeApi]);
-
-  useEffect(() => {
-    rebuild();
-    const raf = requestAnimationFrame(rebuild);
-    const unsub = storeApi.subscribe((state, prev) => {
-      if (
-        state.domNode !== prev.domNode ||
-        state.nodes !== prev.nodes ||
-        state.nodesInitialized !== prev.nodesInitialized
-      ) {
-        rebuild();
-      }
-    });
-    return () => {
-      cancelAnimationFrame(raf);
-      unsub();
-    };
-  }, [rebuild, storeApi]);
+  useEffect(/*bindStore*/ () => bindEdgeLayer(controller, storeApi), [storeApi, controller]);
+  useEffect(/*rebuildOnGraphChange*/ () => {
+    controller.rebuildFromGeometry();
+  }, [edges, nodes, controller]);
 
   if (!edgesRoot || !model) return null;
 
-  return createPortal(<EdgeLayerSvg model={model} />, edgesRoot);
+  return createPortal(<EdgeLayerSvg model={model} onRefs={onRefs} />, edgesRoot);
 }

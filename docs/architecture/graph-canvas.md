@@ -38,12 +38,12 @@ Both deep modules organize their implementation into subfolders, each a config s
 
 | Piece | File | Role |
 |-------|------|------|
-| `projectGraph(graph, layout)` | `domain/graph/Private/projection/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
-| `EdgeLayer` + `segmentForEdge` | `features/graph_canvas/Private/edges/EdgeLayer.tsx`, `edge-path.ts` | Custom SVG edge layer (portal into RF's `.react-flow__edges`); React Flow receives `edges={[]}`. `segmentForEdge` computes both endpoints via `borderAnchor` from live node boxes (`boxesFromFlowNodes`). Honors `data.groupTargetId` by anchoring the arrow on the group box. |
+| `projectGraph(graph, layout)` | `domain/graph/Private/projection/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. At L1.5 (`showSymbols`), exported symbols are **not** RF nodes — geometry is on `ModuleNodeData.symbols` and painted inside the module card when `symbolsFitOnScreen` says the label and card are large enough on screen (render LOD; projection still attaches descriptors). Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
+| `EdgeLayer` + `segmentForEdge` | `features/graph_canvas/Private/edges/EdgeLayer.tsx`, `edge-path.ts`, `viewport-edge-model.ts`; `EdgeLayerRenderer` / `EdgeLayerController` | Custom SVG edge layer (portal into RF's `.react-flow__edges`); React Flow receives `edges={[]}`. Merges **all** segments per style bucket into one static world-space `<path>` (`mergePathD`); the camera is React Flow's CSS transform on `.react-flow__viewport` / `.react-flow__edges`, so pan does **not** rewrite `d`. Arrow LOD flips only when zoom crosses `showArrowHeadsAtZoom` (≥ 1.5); that discrete `setState` is coalesced per rAF — pan never calls it. `segmentForEdge` computes endpoints via `borderAnchor` from live node boxes (`boxesFromFlowNodes`); honors `data.groupTargetId`. Geometry rebuilds (`writeGeometry`) on graph/layout changes only. |
 | `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/edges/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
 | selectors | `domain/graph/Private/selectors.ts` | `findModule`, `findGroup`, `groupOf`, `modulesInGroup`, `childGroupsOf`, `groupImportsOf`, `groupImportedBy`, `diagnosticsForGroup`, `edgeFocusForSelection`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. |
 | `GraphSessionStore` | `state/graph-session` | Owns `LayoutedGraph`, `selectedId`, and browser-style selection history. New selections truncate the forward branch; back/forward only move its pointer. Emits `phase-changed` + `selection-changed` + `focus-requested`. `focusOn(moduleId)` selects a module, expands collapsed ancestor groups when needed, and asks the canvas to center on it. Session **Hide dot directories** (default on) is passed into every `analyze_project` / snapshot load; toggling reloads the project. |
-| `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. `FocusNode` centers the viewport for inspector and Review Note navigation. Sets `onlyRenderVisibleElements` so only viewport-intersecting nodes stay mounted — without it, the one-node-per-symbol swarm at L1.5 made panning composite-bound. Safe with `EdgeLayer`: culling is render-only, and the edge layer reads the projected `nodes` prop + store `nodeLookup`, which culling never filters, so edges to off-screen nodes keep drawing. |
+| `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. `FocusNode` centers the viewport for inspector and Review Note navigation. Sets `onlyRenderVisibleElements` so only viewport-intersecting **module/group** nodes stay mounted — L1.5 symbol boxes are in-module HTML inside those cards (painted only when `symbolsFitOnScreen`; see `docs/lessons-learned/l15-symbol-grid-screen-lod.md`), so culling is module-grain (see `docs/lessons-learned/l15-symbols-in-module-not-rf-nodes.md`). Safe with `EdgeLayer`: culling is render-only. Edge geometry still reads the full projected `nodes` prop + store `nodeLookup` (RF node culling never filters those). |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules + groups) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
 | `SelectionNavigation` | `features/graph_canvas` | Top-left back/forward controls plus `Alt+Left` / `Alt+Right`; disabled states come from the session history pointer. |
 | `ViewMenu` / `SearchMenu` | `features/graph_canvas` (facade exports) | Toolbar dropdowns (rendered by `App` into `ProjectLoaderPanel`'s `menus` slot, built on the shared `src/ui/dropdown_menu` module). View ▾: Hide tests, **Hide dot directories** (default on; re-analyzes), Line counts, Heatmap + Activity/Risk, Visualize diff…; Search ▾: Search project (Ctrl+Shift+F), Go to file (Ctrl+P), Go to symbol. |
@@ -87,6 +87,9 @@ Both deep modules organize their implementation into subfolders, each a config s
   Edges are **display-only** (no `onEdgeClick`/hover handlers), so `graph-canvas.css` sets
   `pointer-events: none` on `.react-flow__edge` — React Flow's invisible edge interaction path would
   otherwise swallow a `pointerdown` and break pan-by-drag that starts on an edge.
+  At overview (including L1.5 entry ~0.9), edges draw as merged static world-space bucket paths with no
+  arrowheads; zoom ≥ 1.5 adds arrow geometry for non-cross segments; removed-diff **X** heads render
+  from the full cross set in the static model (not viewport-filtered).
 - **Edge routing (floating, no ELK routing):** ELK never routes edges — `EdgeLayer` draws them via `segmentForEdge`.
   Each endpoint floats to the border **facing the other node** (`borderAnchor`) instead of a fixed
   handle, so a node's out-edges fan across its border rather than sharing one right-side point
@@ -121,9 +124,9 @@ Both deep modules organize their implementation into subfolders, each a config s
   `deleted` → **red** 3px border, `unchanged` → dimmed, ghost modules placed by greedy collision
   avoidance — commit-to-commit also seeds positions from a before-graph layout) and `EdgeData.diffState`
   (`added` → **green** full-opacity arrow, `removed` → **red**
-  line with **X** head). At **L1.5**, `classifySymbolChanges` compares export membership and intersects
-  changed old/new line numbers with symbol declaration/implementation ranges. Symbol boxes render
-  added as **green/solid**, modified as **yellow/dotted**, and commit-to-commit restores removed symbols
+  line with **X** head).   At **L1.5**, `classifySymbolChanges` compares export membership and intersects
+  changed old/new line numbers with symbol declaration/implementation ranges. Symbol boxes (in `module.data.symbols`)
+  render added as **green/solid**, modified as **yellow/dotted**, and commit-to-commit restores removed symbols
   as **red/dashed** ghosts from the before layout; local changes skip that extra layout. Exact symbol states are
   available for commit/local comparisons, which can read both snapshots; pasted diffs remain module-level.
   Historical comparisons load each Git tree once and reuse its in-memory source for both graph analysis
@@ -190,8 +193,8 @@ hidden by zoom collapse.
   box; drops self-loops, **group↔ancestor-group edges** (a group nested at any depth inside the
   other — not just the direct parent), and dedups (a violation among
   the merged edges survives). A collapsed group stays
-  as a visible empty container. `projectGraph` also filters module/symbol nodes under collapsed groups
-  so nothing flashes while async re-layout catches up. The store calls `syncReduced()` synchronously
+  as a visible empty container. `projectGraph` also drops modules under collapsed groups
+  (in-module `data.symbols` go with them) so nothing flashes while async re-layout catches up. The store calls `syncReduced()` synchronously
   on every collapse change before emitting `zoom-changed`. `allGroupIds` = the L0 default collapse set
   (every group); `topLevelGroupIds` remains for parentless roots. `levelFromZoom(factor)` maps the
   scroll zoom factor to 0/1/1.5/2 (`<0.45 / <0.9 / <3.5 / >=3.5`). L2 exits only below
@@ -320,7 +323,11 @@ hidden by zoom collapse.
   (`module-box-metrics.ts`, pure) picks the largest font (capped `LABEL_FIT.maxFont` 22px, floored at the
   11px base) at which the camelCase-aware wrapped filename fits the box — so a short name like `index.ts` fills a
   large box instead of floating tiny in it. `ModuleNodeView` reads the node's laid-out `width`/`height`
-  (`NodeProps`) to compute it; L2 detail labels stay at the compact 9px. Net L1 hierarchy: zoom out → group
+  (`NodeProps`) to compute it; L2 detail labels stay at the compact 9px. At **L1.5**, `ModuleSymbolBoxes`
+  paints the exported-symbol grid only when `symbolsFitOnScreen(boxW, boxH, cameraZoom)` (`domain/layout`,
+  pure): world-sized 9px labels need ≥12px on screen and the card's shorter side needs ≥140px — so the
+  semantic level still starts at camera zoom 0.9 (bold filename, group long text) but symbol DOM is skipped
+  until camera zoom makes the labels readable **and** the card's shorter side is ≥140px on screen. Net L1 hierarchy: zoom out → group
   headers grow and dominate, module labels shrink with their boxes and always fit. `InspectionPanel` gains a
   `MetadataSection` (`This module` + `Group` annotation: type / short / long), rendering nothing when
   neither side is annotated (graceful fallback, TDD §10). `icon-map` covers the fixture's icon names.
@@ -342,7 +349,7 @@ hidden by zoom collapse.
 - **Source preview frames (document or symbol, multi-frame):** owned by the nested deep module
   `features/graph_canvas/Private/preview_frames/` (public interface: `usePreviewFrames`, `findSymbolLine`;
   `GraphCanvas` renders `framesView` and wires `openFromSymbolNode`/`closeTransient`). Clicking an exported
-  symbol node selects its parent module and opens a resizable, scrollable, **draggable** (header bar)
+  symbol box inside a module card (L1.5) selects the parent module and opens a resizable, scrollable, **draggable** (header bar)
   frame next to the symbol, centered on the symbol's definition line (centering scrolls only the frame
   body — never `scrollIntoView`, which would scroll the window). Inside a frame, clickable identifiers
   (`hl-clickable`) come from `combinedSymbolTargets` (pure) — the union of own-module function/method

@@ -8,6 +8,7 @@ import {
   readyGraphStore,
   renderGraphCanvas,
 } from "../helpers/flow-graph-canvas";
+import { zoomCanvasUntilSymbolVisible } from "../helpers/zoom-canvas-for-symbols";
 
 describe("flow: reveal-in-explorer", () => {
   it("copies a module path relative to the project root", async () => {
@@ -99,6 +100,10 @@ describe("flow: reveal-in-explorer", () => {
     store.setZoomLevel(/*level=*/1.5);
     const { container } = renderGraphCanvas(store, shell);
     const symbolId = "src/core/store.ts::TodoStore";
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
+    );
+    await zoomCanvasUntilSymbolVisible(container, symbolId);
     await waitFor(() =>
       expect(container.querySelector(`[data-id="${symbolId}"]`)).toBeTruthy(),
     );

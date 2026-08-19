@@ -55,12 +55,7 @@ export function styleKeyFromDrawStyle(style: EdgeDrawStyle): string {
   return `${style.stroke}|${style.lineWidth}|${style.opacity}|${dash}|${style.marker}`;
 }
 
-/** Closed arrowhead polyline matching React Flow's ArrowClosed marker. */
-export function arrowHeadPoints(): string {
-  return "-5,-4 0,0 -5,4 -5,-4";
-}
-
-export function floatingPathBetween(from: Anchor, to: Anchor, isSoft: boolean): string {
+function floatingPathBetween(from: Anchor, to: Anchor, isSoft: boolean): string {
   if (isSoft) return bowedPath(from, to, /*bow=*/ SOFT_BOW);
   return getBezierPath({
     sourceX: from.x,
@@ -70,6 +65,37 @@ export function floatingPathBetween(from: Anchor, to: Anchor, isSoft: boolean): 
     targetY: to.y,
     targetPosition: POSITION[to.side],
   })[0];
+}
+
+export function segmentBounds(
+  from: Anchor,
+  to: Anchor,
+  isSoft: boolean,
+): Pick<EdgeSegment, "minX" | "minY" | "maxX" | "maxY"> {
+  let minX = Math.min(from.x, to.x);
+  let minY = Math.min(from.y, to.y);
+  let maxX = Math.max(from.x, to.x);
+  let maxY = Math.max(from.y, to.y);
+  if (isSoft) {
+    const mx = (from.x + to.x) / 2;
+    const my = (from.y + to.y) / 2;
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const cx = mx + (-dy / len) * SOFT_BOW;
+    const cy = my + (dx / len) * SOFT_BOW;
+    minX = Math.min(minX, cx);
+    minY = Math.min(minY, cy);
+    maxX = Math.max(maxX, cx);
+    maxY = Math.max(maxY, cy);
+  }
+  const pad = ARROW_LEN;
+  return {
+    minX: minX - pad,
+    minY: minY - pad,
+    maxX: maxX + pad,
+    maxY: maxY + pad,
+  };
 }
 
 export function segmentForEdge(
@@ -83,18 +109,11 @@ export function segmentForEdge(
 
   const from = borderAnchor(sourceBox, centerOf(targetBox));
   const to = borderAnchor(targetBox, centerOf(sourceBox));
-  const path = floatingPathBetween(from, to, edge.data?.kind === "soft");
+  const isSoft = edge.data?.kind === "soft";
+  const path = floatingPathBetween(from, to, isSoft);
   const arrowAngle = Math.atan2(to.y - from.y, to.x - from.x);
-  const pad = ARROW_LEN;
-  return {
-    path,
-    arrowTip: to,
-    arrowAngle,
-    minX: Math.min(from.x, to.x) - pad,
-    minY: Math.min(from.y, to.y) - pad,
-    maxX: Math.max(from.x, to.x) + pad,
-    maxY: Math.max(from.y, to.y) + pad,
-  };
+  const bounds = segmentBounds(from, to, isSoft);
+  return { path, arrowTip: to, arrowAngle, ...bounds };
 }
 
 function parseDash(value: unknown): number[] | null {

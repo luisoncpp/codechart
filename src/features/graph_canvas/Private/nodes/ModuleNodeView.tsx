@@ -6,7 +6,7 @@ import type { ModuleRFNode } from "../../../../domain/graph";
 
 import { diffStatsSuffixLength, countLineDiffStats } from "../../../../domain/diff";
 
-import { fitModuleHeaderFontSize, MODULE_BOX } from "../../../../domain/layout";
+import { fitModuleHeaderFontSize, MODULE_BOX, symbolsFitOnScreen } from "../../../../domain/layout";
 
 import { ConnectionToggle } from "./ConnectionToggle";
 
@@ -16,11 +16,13 @@ import { L2DocumentNode } from "../l2/L2DocumentNode";
 
 import { ModuleHeader } from "./ModuleHeader";
 
+import { ModuleSymbolBoxes } from "./ModuleSymbolBoxes";
+
 import { LocBadge } from "./LocBadge";
 
 import { moduleDiffBorder, moduleDiffOpacity } from "./module-diff-style";
 
-import { useZoomCounterScale } from "./use-zoom-counter-scale";
+import { counterScaleFromZoom, useCanvasZoom } from "./use-zoom-counter-scale";
 
 import {
   l15HeatBarStyle,
@@ -72,7 +74,8 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
 
   const textColor = darkenHex(color);
 
-  const zoomScale = useZoomCounterScale();
+  const zoom = useCanvasZoom();
+  const zoomScale = counterScaleFromZoom(zoom);
 
   const boxW = width ?? MODULE_BOX.minWidth;
 
@@ -144,6 +147,10 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
 
         </div>
 
+      )}
+
+      {data.showSymbols && data.symbols && symbolsFitOnScreen(boxW, boxH, zoom) && (
+        <ModuleSymbolBoxes symbols={data.symbols} moduleData={data} color={color} />
       )}
 
       <LocBadge loc={data.loc} scale={zoomScale} />

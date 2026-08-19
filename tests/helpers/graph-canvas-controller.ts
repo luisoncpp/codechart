@@ -20,13 +20,19 @@ export function spyGraphCanvasStore() {
 
 /** A click whose target is inside an optional affordance button. */
 export function mockNodeClickEvent(
-  opts: { onCollapse?: boolean; onConnection?: boolean; onDiffReview?: boolean } = {},
+  opts: {
+    onCollapse?: boolean;
+    onConnection?: boolean;
+    onDiffReview?: boolean;
+    onSymbol?: boolean;
+  } = {},
 ): React.MouseEvent {
   const target = {
     closest: (sel: string) => {
       if (opts.onCollapse && sel === "[data-group-toggle]") return {};
       if (opts.onConnection && sel === "[data-connection-toggle]") return {};
       if (opts.onDiffReview && sel === "[data-diff-review-toggle]") return {};
+      if (opts.onSymbol && sel === "[data-symbol-id]") return {};
       return null;
     },
   } as unknown as HTMLElement;

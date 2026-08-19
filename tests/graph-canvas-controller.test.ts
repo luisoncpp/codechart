@@ -24,19 +24,19 @@ describe("GraphCanvasController.onNodeClick", () => {
     expect(store.select).toHaveBeenCalledWith("g1");
   });
 
-  it("selects the parent module and triggers the callback when a symbol node is clicked", () => {
+  it("selects the module and triggers the callback when a symbol box is clicked", () => {
     const store = spyGraphCanvasStore();
     const onSymbolClick = vi.fn();
-    const symbolNode = { id: "s1", type: "symbol", parentId: "m1" } as unknown as Node;
-    const evt = mockNodeClickEvent();
+    const moduleNode = { id: "m1", type: "module", data: {} } as unknown as Node;
+    const evt = mockNodeClickEvent({ onSymbol: /*onSymbol=*/true });
 
     new GraphCanvasController(
       store as unknown as GraphSessionStore,
       onSymbolClick,
-    ).onNodeClick(symbolNode, evt);
+    ).onNodeClick(moduleNode, evt);
 
     expect(store.select).toHaveBeenCalledWith("m1");
-    expect(onSymbolClick).toHaveBeenCalledWith(symbolNode, evt);
+    expect(onSymbolClick).toHaveBeenCalledWith(moduleNode, evt);
   });
 
   it("toggles group connections when the plug button is clicked", () => {

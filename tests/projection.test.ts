@@ -240,24 +240,26 @@ describe("render options (Phase 10 metadata + zoom)", () => {
     expect(http?.data.path).toBe("src/services/http.ts");
     expect(http?.data.descriptionLong).toBeDefined();
 
-    // Verify symbols are hidden when snippets (L2 mode) is active
-    const symbols = nodes.filter((n) => n.type === "symbol");
-    expect(symbols.length).toBe(0);
+    expect(http?.data.symbols).toBeUndefined();
+    expect(nodes.every((n) => n.type === "group" || n.type === "module")).toBe(true);
   });
 
-  it("attaches exported symbols when showSymbols is set (L1.5)", () => {
+  it("emits no symbol React Flow nodes at L1.5", () => {
     const { nodes } = projectGraph(graph, layout, { showSymbols: true });
-    const symbols = nodes.filter((n) => n.type === "symbol");
-    expect(symbols.length).toBeGreaterThan(0);
-    const httpSymbol = nodes.find((n) => n.id === "src/services/http.ts::getJson");
-    expect(httpSymbol?.type).toBe("symbol");
-    expect(httpSymbol?.parentId).toBe("src/services/http.ts");
-    expect(httpSymbol?.data.label).toBe("getJson");
-    expect(httpSymbol?.data.kind).toBe("function");
-    const appSymbol = nodes.find((n) => n.id === "src/ui/App.tsx::App");
-    expect(appSymbol?.data.kind).toBe("component");
-    const coreSymbols = symbols.filter((n) => n.parentId === "src/core/index.ts");
-    expect(coreSymbols.map((n) => n.data.label).sort()).toEqual([
+    expect(nodes.filter((n) => n.type === "symbol")).toHaveLength(0);
+  });
+
+  it("attaches exported symbols to parent module data when showSymbols is set (L1.5)", () => {
+    const { nodes } = projectGraph(graph, layout, { showSymbols: true });
+    const http = nodes.find((n) => n.id === "src/services/http.ts");
+    const httpSymbol = http?.data.symbols?.find((s) => s.id === "src/services/http.ts::getJson");
+    expect(httpSymbol?.label).toBe("getJson");
+    expect(httpSymbol?.kind).toBe("function");
+    const app = nodes.find((n) => n.id === "src/ui/App.tsx");
+    const appSymbol = app?.data.symbols?.find((s) => s.id === "src/ui/App.tsx::App");
+    expect(appSymbol?.kind).toBe("component");
+    const core = nodes.find((n) => n.id === "src/core/index.ts");
+    expect(core?.data.symbols?.map((s) => s.label).sort()).toEqual([
       "Todo",
       "TodoStore",
       "isValid",

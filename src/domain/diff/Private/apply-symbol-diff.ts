@@ -1,10 +1,10 @@
-// @Architecture(descriptionShort="Stamps and restores L1.5 symbol nodes for diff rendering")
+// @Architecture(descriptionShort="Stamps and restores L1.5 symbol descriptors for diff rendering")
 import {
   inferSymbolKind,
   symbolNameFromId,
   type ModuleRFNode,
+  type ModuleSymbolDescriptor,
   type RFNode,
-  type SymbolNodeData,
 } from "../../graph";
 import type { LayoutBox } from "../../layout";
 import type { GraphDiffOverlay } from "./types";
@@ -13,71 +13,70 @@ export function applySymbolDiffNodes(
   nodes: RFNode[],
   overlay: GraphDiffOverlay,
 ): RFNode[] {
-  const stamped = nodes.map((node) => stampSymbol(node, overlay));
-  return [...stamped, ...removedSymbolNodes(stamped, overlay)];
+  return nodes.map((node) => stampModuleSymbols(node, overlay));
 }
 
-function stampSymbol(node: RFNode, overlay: GraphDiffOverlay): RFNode {
-  if (node.type !== "symbol") return node;
-  const diffState = symbolDiffState(node.id, overlay);
-  if (!diffState) return node;
-  return { ...node, data: { ...node.data, diffState } };
+function stampModuleSymbols(node: RFNode, overlay: GraphDiffOverlay): RFNode {
+  if (node.type !== "module" || !node.data.showSymbols) return node;
+  const symbols = node.data.symbols ?? [];
+  const stamped = symbols.map((symbol) => stampSymbolDescriptor(symbol, overlay));
+  const ghosts = removedSymbolDescriptors(node, overlay, stamped);
+  if (!stamped.length && !ghosts.length) return node;
+  return { ...node, data: { ...node.data, symbols: [...stamped, ...ghosts] } };
+}
+
+function stampSymbolDescriptor(
+  symbol: ModuleSymbolDescriptor,
+  overlay: GraphDiffOverlay,
+): ModuleSymbolDescriptor {
+  const diffState = symbolDiffState(symbol.id, overlay);
+  if (!diffState) return symbol;
+  return { ...symbol, diffState };
 }
 
 function symbolDiffState(
   id: string,
   overlay: GraphDiffOverlay,
-): SymbolNodeData["diffState"] {
+): ModuleSymbolDescriptor["diffState"] {
   if (overlay.addedSymbolIds.has(id)) return "added";
   if (overlay.removedSymbolIds.has(id)) return "removed";
   if (overlay.modifiedSymbolIds.has(id)) return "modified";
   return undefined;
 }
 
-function removedSymbolNodes(nodes: RFNode[], overlay: GraphDiffOverlay): RFNode[] {
+function removedSymbolDescriptors(
+  parent: ModuleRFNode,
+  overlay: GraphDiffOverlay,
+  stamped: ModuleSymbolDescriptor[],
+): ModuleSymbolDescriptor[] {
   const layout = overlay.beforeLayout;
   if (!layout || overlay.removedSymbolIds.size === 0) return [];
-  const showSymbols = nodes.some(
-    (node) => node.type === "module" && node.data.showSymbols,
-  );
-  if (!showSymbols) return [];
-  const existing = new Set(nodes.map((node) => node.id));
-  const modules = new Map(
-    nodes.filter((node): node is ModuleRFNode => node.type === "module")
-      .map((node) => [node.id, node]),
-  );
+  const existing = new Set(stamped.map((symbol) => symbol.id));
   const boxes = [...layout.groups, ...layout.modules, ...layout.symbols];
   const index = new Map(boxes.map((box) => [box.id, box]));
   return layout.symbols.flatMap((box) => {
     if (!overlay.removedSymbolIds.has(box.id) || existing.has(box.id)) return [];
-    const parent = box.parentId ? modules.get(box.parentId) : undefined;
-    if (!parent || !box.parentId) return [];
-    return [removedSymbolNode(box, parent, index)];
+    if (box.parentId !== parent.id) return [];
+    return [removedSymbolDescriptor(box, parent, index)];
   });
 }
 
-function removedSymbolNode(
+function removedSymbolDescriptor(
   box: LayoutBox,
   parent: ModuleRFNode,
   index: ReadonlyMap<string, LayoutBox>,
-): RFNode {
+): ModuleSymbolDescriptor {
   const label = symbolNameFromId(box.id);
   const position = fitInsideParent(relativePosition(box, index), box, parent);
   return {
     id: box.id,
-    type: "symbol",
-    position,
+    label,
+    kind: inferSymbolKind(label, parent.data.language),
+    x: position.x,
+    y: position.y,
     width: box.width,
     height: box.height,
-    style: { width: box.width, height: box.height },
-    parentId: parent.id,
-    extent: "parent",
-    data: {
-      label,
-      kind: inferSymbolKind(label, parent.data.language),
-      color: parent.data.color,
-      diffState: "removed",
-    },
+    diffState: "removed",
   };
 }
 

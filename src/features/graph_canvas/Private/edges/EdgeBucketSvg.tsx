@@ -1,16 +1,36 @@
 // @Architecture(descriptionShort="SVG paths for a single edge style bucket")
-import type { EdgeStyleBucket } from "./edge-layer-cache";
-import { arrowHeadPoints } from "./edge-path";
+import { useLayoutEffect, useRef } from "react";
+import { arrowHeadPath } from "./edge-arrow-zoom";
+import { crossHeadLines } from "./edge-cross-head";
+import type { BucketDomRefs } from "./edge-layer-dom-writer";
+import { styleKeyFromDrawStyle } from "./edge-path";
+import type { ViewportEdgeBucket } from "./viewport-edge-model";
 
 interface EdgeBucketSvgProps {
-  bucket: EdgeStyleBucket;
-  markerId: string;
+  bucket: ViewportEdgeBucket;
+  showArrows: boolean;
+  onRefs: (key: string, refs: BucketDomRefs | null) => void;
 }
 
-export function EdgeBucketSvg({ bucket, markerId }: EdgeBucketSvgProps) {
-  const { style, segments } = bucket;
+export function EdgeBucketSvg({ bucket, showArrows, onRefs }: EdgeBucketSvgProps) {
+  const bucketKey = styleKeyFromDrawStyle(bucket.style);
+  const strokeRef = useRef<SVGPathElement>(null);
+  const arrowRef = useRef<SVGGElement>(null);
+  const crossRef = useRef<SVGGElement>(null);
+  const { style } = bucket;
   const dash = style.dash?.join(" ") ?? undefined;
-  const useCross = style.marker === "cross";
+
+  useLayoutEffect(() => {
+    const strokePath = strokeRef.current;
+    if (!strokePath) return;
+    onRefs(bucketKey, {
+      strokePath,
+      arrowGroup: arrowRef.current,
+      crossGroup: crossRef.current,
+    });
+    return () => onRefs(bucketKey, null);
+  }, [bucketKey, onRefs]);
+
   return (
     <g
       fill="none"
@@ -20,21 +40,26 @@ export function EdgeBucketSvg({ bucket, markerId }: EdgeBucketSvgProps) {
       strokeDasharray={dash}
       strokeLinecap="round"
     >
-      {segments.map((segment, index) => (
-        <g key={index}>
-          <path
-            d={segment.path}
-            markerEnd={useCross ? undefined : `url(#${markerId})`}
-          />
-          {useCross && (
-            <CrossHead
-              tip={segment.arrowTip}
-              angle={segment.arrowAngle}
-              color={style.stroke}
+      <path ref={strokeRef} d={bucket.mergedPath} />
+      <g ref={arrowRef} fill={style.stroke}>
+        {showArrows &&
+          bucket.arrowSegments.map((segment, index) => (
+            <path
+              key={index}
+              d={arrowHeadPath(segment.arrowTip, segment.arrowAngle)}
             />
-          )}
-        </g>
-      ))}
+          ))}
+      </g>
+      <g ref={crossRef}>
+        {bucket.crossSegments.map((segment, index) => (
+          <CrossHead
+            key={index}
+            tip={segment.arrowTip}
+            angle={segment.arrowAngle}
+            color={style.stroke}
+          />
+        ))}
+      </g>
     </g>
   );
 }
@@ -48,49 +73,11 @@ function CrossHead({
   angle: number;
   color: string;
 }) {
-  const size = 5;
-  const c = Math.cos(angle);
-  const s = Math.sin(angle);
-  const dx = size * c;
-  const dy = size * s;
-  const px = -s * size * 0.7;
-  const py = c * size * 0.7;
-  const x1 = tip.x - dx + px;
-  const y1 = tip.y - dy + py;
-  const x2 = tip.x + dx - px;
-  const y2 = tip.y + dy - py;
-  const x3 = tip.x - dx - px;
-  const y3 = tip.y - dy - py;
-  const x4 = tip.x + dx + px;
-  const y4 = tip.y + dy + py;
+  const lines = crossHeadLines(tip, angle);
   return (
     <g stroke={color} strokeWidth={2.4} strokeLinecap="round">
-      <line x1={x1} y1={y1} x2={x2} y2={y2} />
-      <line x1={x3} y1={y3} x2={x4} y2={y4} />
+      <line x1={lines.x1} y1={lines.y1} x2={lines.x2} y2={lines.y2} />
+      <line x1={lines.x3} y1={lines.y3} x2={lines.x4} y2={lines.y4} />
     </g>
-  );
-}
-
-export function ArrowMarker({ id, color }: { id: string; color: string }) {
-  return (
-    <marker
-      id={id}
-      markerWidth="14"
-      markerHeight="14"
-      viewBox="-10 -10 20 20"
-      markerUnits="strokeWidth"
-      orient="auto-start-reverse"
-      refX="0"
-      refY="0"
-    >
-      <polyline
-        points={arrowHeadPoints()}
-        fill={color}
-        stroke={color}
-        strokeWidth="1"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </marker>
   );
 }

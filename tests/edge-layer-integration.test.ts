@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { projectGraph } from "../src/domain/graph";
 import { styleEdge } from "../src/features/graph_canvas";
 import { buildEdgeLayerModel } from "../src/features/graph_canvas/Private/edges/edge-layer-cache";
+import { buildStaticEdgeModel } from "../src/features/graph_canvas/Private/edges/viewport-edge-model";
 import { boxesFromFlowNodes } from "../src/features/graph_canvas/Private/edges/node-boxes";
 import { testGraphSessionStore } from "./helpers/test-graph-session-store";
 
@@ -39,5 +40,13 @@ describe("edge layer integration data", () => {
     expect(boxes.size).toBeGreaterThan(0);
     expect(model).not.toBeNull();
     expect(model!.buckets.some((b) => b.segments.length > 0)).toBe(true);
+
+    const viewport = buildStaticEdgeModel(model!, {
+      transform: [0, 0, 1],
+      width: 4000,
+      height: 4000,
+    });
+    expect(viewport).not.toBeNull();
+    expect(viewport!.buckets.some((b) => b.mergedPath.length > 0)).toBe(true);
   });
 });

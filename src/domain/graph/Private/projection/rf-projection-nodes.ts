@@ -1,10 +1,8 @@
 import { type LayoutBox } from "../../../layout";
-import { symbolNameFromId } from "../../symbol-id";
 import type { GroupNode } from "../../model/GroupNode";
 import type { ModuleNode } from "../../model/ModuleNode";
-import { inferSymbolKind } from "../symbol-kind";
 import { colorForGroup } from "./colors";
-import type { GroupRFNode, ModuleRFNode, SymbolRFNode } from "./node-data";
+import type { GroupRFNode, ModuleRFNode } from "./node-data";
 import { descriptionBoxGeometry } from "./rf-projection-desc-box";
 import { heatFields, heatmapSessionFields } from "./rf-projection-heat";
 import { relativePosition } from "./rf-projection-layout";
@@ -82,6 +80,7 @@ export function moduleNode(
   ctx: ProjectionCtx,
 ): ModuleRFNode {
   const showSymbols = ctx.options?.showSymbols ?? false;
+  const symbols = ctx.moduleSymbols.get(module.id);
   return {
     id: module.id,
     type: "module",
@@ -98,42 +97,12 @@ export function moduleNode(
       descriptionShort: module.annotation?.descriptionShort,
       descriptionLong: module.annotation?.descriptionLong,
       showSymbols,
+      symbols: showSymbols && symbols?.length ? symbols : undefined,
       snippet: ctx.options?.snippets?.get(module.id),
       path: module.path,
       disconnected: ctx.moduleDisconnected(module.id),
       loc: ctx.options?.locTotals ? module.metrics.loc : undefined,
       ...heatFields(ctx.options?.heat?.modules.get(module.id), ctx.options?.heat?.mode),
-      ...heatmapSessionFields(ctx),
-    },
-  };
-}
-
-export function symbolNode(
-  box: LayoutBox,
-  moduleById: Map<string, ModuleNode>,
-  ctx: ProjectionCtx,
-): SymbolRFNode {
-  const moduleId = box.parentId;
-  const module = moduleId ? moduleById.get(moduleId) : undefined;
-  if (!moduleId || !module) {
-    throw new Error(`symbol ${box.id} has no parent module`);
-  }
-  const label = symbolNameFromId(box.id);
-  const parentHeat = ctx.options?.heat?.modules.get(moduleId);
-  const mode = ctx.options?.heat?.mode;
-  return {
-    id: box.id,
-    type: "symbol",
-    position: relativePosition(box, ctx.index),
-    width: box.width,
-    height: box.height,
-    style: { width: box.width, height: box.height },
-    parentId: moduleId,
-    extent: "parent",
-    data: {
-      label,
-      kind: inferSymbolKind(label, module.language),
-      ...heatFields(parentHeat, mode),
       ...heatmapSessionFields(ctx),
     },
   };

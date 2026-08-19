@@ -1,8 +1,7 @@
 /* Neutralize React Flow's default node chrome so our custom node views own
    the full box: their border IS the only border, and there is no inset gap. */
 .react-flow__node-group,
-.react-flow__node-module,
-.react-flow__node-symbol {
+.react-flow__node-module {
   padding: 0;
   border: none;
   border-radius: 0;
@@ -10,10 +9,9 @@
   box-shadow: none;
 }
 
-/* Pin module/symbol boxes to their layout footprint — inner content must not
+/* Pin module boxes to their layout footprint — inner content must not
    expand the node (semantic zoom reveals children inside a fixed card). */
-.react-flow__node-module,
-.react-flow__node-symbol {
+.react-flow__node-module {
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -52,8 +50,7 @@
   overflow: hidden;
 }
 
-.symbol-box--selected,
-.react-flow__node-symbol.selected .symbol-box {
+.symbol-box--selected {
   outline: 2px solid #2563eb;
   outline-offset: -1px;
 }

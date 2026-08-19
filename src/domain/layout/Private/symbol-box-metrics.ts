@@ -18,3 +18,20 @@ export function symbolBoxWidth(label: string): number {
   const withPad = text + SYMBOL_BOX.hPadding + SYMBOL_BOX.kindBadgeWidth;
   return Math.min(SYMBOL_BOX.maxWidth, Math.max(SYMBOL_BOX.minWidth, withPad));
 }
+
+/** Minimum on-screen px for a world-sized symbol label to be readable. */
+const SYMBOL_FONT_SCREEN_MIN = 12;
+/** Minimum on-screen px for the card's shorter side before painting the grid. */
+const SYMBOL_CARD_MIN_SIDE_SCREEN = 140;
+
+/** Whether L1.5 symbol boxes should paint at this camera zoom and card size. */
+export function symbolsFitOnScreen(
+  worldWidth: number,
+  worldHeight: number,
+  zoom: number,
+): boolean {
+  if (!Number.isFinite(zoom) || zoom <= 0) return false;
+  if (SYMBOL_BOX.fontSize * zoom < SYMBOL_FONT_SCREEN_MIN) return false;
+  if (Math.min(worldWidth, worldHeight) * zoom < SYMBOL_CARD_MIN_SIDE_SCREEN) return false;
+  return true;
+}

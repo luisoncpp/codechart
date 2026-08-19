@@ -48,11 +48,10 @@ export type {
   ProjectedGraph,
   GroupNodeData,
   ModuleNodeData,
-  SymbolNodeData,
+  ModuleSymbolDescriptor,
   EdgeData,
   GroupRFNode,
   ModuleRFNode,
-  SymbolRFNode,
   RFNode,
   RFEdgeT,
 } from "./Private/projection/node-data";

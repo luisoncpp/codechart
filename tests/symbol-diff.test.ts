@@ -100,35 +100,37 @@ function sourceWith(returnStatement: string, finalSymbol: string) {
 function projectedSymbols(): ProjectedGraph {
   return {
     nodes: [
-      moduleNode(),
-      symbolNode("m.ts::added", "added", 10),
-      symbolNode("m.ts::kept", "kept", 30),
+      {
+        id: "m.ts",
+        type: "module" as const,
+        position: { x: 0, y: 0 },
+        width: 120,
+        height: 90,
+        data: {
+          label: "m.ts",
+          isFacade: false,
+          language: "typescript" as const,
+          showSymbols: true,
+          symbols: [
+            symbolDescriptor("m.ts::added", "added", 10),
+            symbolDescriptor("m.ts::kept", "kept", 30),
+          ],
+        },
+      },
     ],
     edges: [],
   };
 }
 
-function moduleNode() {
-  return {
-    id: "m.ts",
-    type: "module" as const,
-    position: { x: 0, y: 0 },
-    data: {
-      label: "m.ts",
-      isFacade: false,
-      language: "typescript" as const,
-      showSymbols: true,
-    },
-  };
-}
-
-function symbolNode(id: string, label: string, y: number) {
+function symbolDescriptor(id: string, label: string, y: number) {
   return {
     id,
-    type: "symbol" as const,
-    parentId: "m.ts",
-    position: { x: 10, y },
-    data: { label, kind: "function" as const },
+    label,
+    kind: "function" as const,
+    x: 10,
+    y,
+    width: 50,
+    height: 16,
   };
 }
 
@@ -151,5 +153,10 @@ function symbolOverlay(): GraphDiffOverlay {
 }
 
 function stateOf(nodes: RFNode[], id: string) {
-  return nodes.find((node) => node.id === id)?.data.diffState;
+  for (const node of nodes) {
+    if (node.type !== "module") continue;
+    const symbol = node.data.symbols?.find((entry) => entry.id === id);
+    if (symbol) return symbol.diffState;
+  }
+  return undefined;
 }

@@ -87,15 +87,13 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     [armOpenGrace, getFindQuery],
   );
 
-  /** Symbol node clicked on the canvas: replace all frames with one next to it. */
+  /** Symbol box clicked inside a module card: open a preview frame next to it. */
   const openFromSymbolNode = useCallback(
     async (node: FlowNode, event: React.MouseEvent) => {
-      const symbolEl =
-        (event.target as HTMLElement).closest(".symbol-box") ||
-        (event.target as HTMLElement).closest(".react-flow__node-symbol");
+      const symbolEl = (event.target as HTMLElement).closest("[data-symbol-id]");
       const container = containerRef.current;
-      if (!symbolEl || !container || !graph) return;
-      const moduleId = node.parentId!;
+      if (!symbolEl || !container || !graph || node.type !== "module") return;
+      const moduleId = node.id;
       const module = graph.modules.find((m) => m.id === moduleId);
       if (!module) return;
       const sourceText = await store.fetchModuleSource(moduleId);
@@ -103,7 +101,7 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
         symbolEl.getBoundingClientRect(),
         container.getBoundingClientRect(),
       );
-      const symbolName = (node.data?.label as string) || "";
+      const symbolName = symbolEl.getAttribute("data-symbol-name") || "";
       void prefetchSources(moduleId);
       open("close-unpinned", {
         moduleId,

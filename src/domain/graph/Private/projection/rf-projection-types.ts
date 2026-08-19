@@ -1,6 +1,7 @@
 import type { LayoutBox } from "../../../layout";
 import type { ModuleNode } from "../../model/ModuleNode";
 import type { HeatProjection } from "../heat/heat-types";
+import type { ModuleSymbolDescriptor } from "./node-data";
 
 export type BoxIndex = Map<string, LayoutBox>;
 
@@ -10,7 +11,7 @@ export interface RenderOptions {
   collapsedGroupIds?: Set<string>;
   disconnectedGroupIds?: Set<string>;
   disconnectedModuleIds?: Set<string>;
-  /** When true, symbol child boxes are emitted (L1.5+). */
+  /** When true, exported-symbol boxes are attached to each module (L1.5+). */
   showSymbols?: boolean;
   /** moduleId → source; presence (at L2) turns on the in-box snippet. */
   snippets?: Map<string, string>;
@@ -34,4 +35,6 @@ export interface ProjectionCtx {
   childBoxesByGroup: Map<string | null, LayoutBox[]>;
   /** Ids of module boxes in the layout — hidden at L0, unlike subgroup boxes. */
   moduleBoxIds: Set<string>;
+  /** moduleId → exported symbol descriptors when `showSymbols` is on. */
+  moduleSymbols: Map<string, ModuleSymbolDescriptor[]>;
 }

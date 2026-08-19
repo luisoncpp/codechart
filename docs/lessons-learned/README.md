@@ -21,6 +21,10 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [static-edge-paths-no-pan-d-rewrite.md](./static-edge-paths-no-pan-d-rewrite.md) | Merged bucket paths stay static in world space — pan uses RF CSS transform, not per-frame `d` writes; arrow LOD flips via React `showArrows` only | 2026-08-19 |
+| [edge-layer-needs-own-viewport-cull.md](./edge-layer-needs-own-viewport-cull.md) | `onlyRenderVisibleElements` does not cull a custom SVG edge layer — merge bucket paths, drop `marker-end`, static world-space `d`, arrow LOD on zoom threshold only | 2026-08-19 |
+| [l15-symbol-grid-screen-lod.md](./l15-symbol-grid-screen-lod.md) | L1.5 symbol grids need per-card screen LOD — in-module paint alone still mounts thousands of unreadable 9px labels at zoom 0.9 | 2026-08-19 |
+| [l15-symbols-in-module-not-rf-nodes.md](./l15-symbols-in-module-not-rf-nodes.md) | L1.5 exported symbols must paint inside module cards — nested RF symbol nodes defeat `onlyRenderVisibleElements` module-grain culling | 2026-08-19 |
 | [yaml-hash-comments-out-group-frontmatter.md](./yaml-hash-comments-out-group-frontmatter.md) | Unquoted `#` in `*.group.md` YAML is a comment — a `[[path#Section]]` in `descriptionShort` can drop the whole nested group from the canvas | 2026-08-18 |
 | [mock-analysis-client-never-throws-on-missing-files.md](./mock-analysis-client-never-throws-on-missing-files.md) | The mock client returns `// <path>` instead of failing, so every "unreadable file" branch is dead in dev/tests and any fallback chain that keys on a read failure never advances — order candidates by intent, and test failure paths with a throwing stub client | 2026-08-17 |
 | [l2-documents-need-stubbed-rects-under-jsdom.md](./l2-documents-need-stubbed-rects-under-jsdom.md) | `inFov` from `useL2ClampedLayout` is false under jsdom (all rects are 0×0), so L2 module documents and group doc panels mount nothing; stub `getBoundingClientRect` per test, never in the shared setup | 2026-08-17 |

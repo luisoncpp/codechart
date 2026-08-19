@@ -18,3 +18,4 @@ export { fitModuleHeaderFontSize } from "./Private/fit-module-header-font";
 export { expandedHeaderScale } from "./Private/group-header-metrics";
 export { wrapIdentifierLines } from "./Private/wrap-identifier";
 export { PRESETS } from "./Private/layout-presets";
+export { symbolsFitOnScreen } from "./Private/symbol-box-metrics";

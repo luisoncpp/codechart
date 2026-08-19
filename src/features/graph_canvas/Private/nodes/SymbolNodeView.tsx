@@ -1,6 +1,5 @@
 // @Architecture(descriptionShort="Renders individual exported symbol boxes inside modules")
-import { Handle, Position, type NodeProps } from "@xyflow/react";
-import type { SymbolRFNode } from "../../../../domain/graph";
+import type { ModuleNodeData, ModuleSymbolDescriptor } from "../../../../domain/graph";
 import { SYMBOL_KIND_DISPLAY } from "../../../../domain/graph";
 import {
   symbolBorderColor,
@@ -8,38 +7,42 @@ import {
   symbolHeatTintVar,
 } from "./heat-node-styles";
 
-const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
+export interface SymbolBoxProps {
+  symbol: ModuleSymbolDescriptor;
+  moduleData: ModuleNodeData;
+  color: string;
+}
 
-/** A single exported symbol — fixed-size box inside its parent module. */
-export function SymbolNodeView({ data, selected }: NodeProps<SymbolRFNode>) {
-  const color = data.color ?? "#64748b";
-  const kind = data.kind ?? "function";
+/** A single exported symbol — presentational box inside its parent module card. */
+export function SymbolNodeView({ symbol, moduleData, color }: SymbolBoxProps) {
+  const kind = symbol.kind ?? "function";
   const { glyph, label: kindLabel } = SYMBOL_KIND_DISPLAY[kind];
-
-  const borderColor = symbolBorderColor(data, color);
-  const heatTint = symbolHeatTintVar(data);
-  const heatMix = symbolHeatMixPercent(data);
-  const heatClass = data.heatmapActive ? " symbol-box--heat" : "";
-  const diffClass = data.diffState ? ` symbol-box--diff-${data.diffState}` : "";
-  const diffLabel = data.diffState ? `, ${data.diffState} in diff` : "";
+  const heat = moduleData;
+  const borderColor = symbolBorderColor(heat, color);
+  const heatTint = symbolHeatTintVar(heat);
+  const heatMix = symbolHeatMixPercent(heat);
+  const heatClass = moduleData.heatmapActive ? " symbol-box--heat" : "";
+  const diffClass = symbol.diffState ? ` symbol-box--diff-${symbol.diffState}` : "";
+  const diffLabel = symbol.diffState ? `, ${symbol.diffState} in diff` : "";
 
   return (
     <div
-      className={`symbol-box symbol-box--${kind}${selected ? " symbol-box--selected" : ""}${heatClass}${diffClass}`}
+      className={`symbol-box symbol-box--${kind}${heatClass}${diffClass}`}
       style={{
         "--symbol-group-color": borderColor,
         ...(heatTint ? { "--heat-tint": heatTint, "--heat-mix": `${heatMix}%` } : {}),
       } as React.CSSProperties}
-      title={`${kindLabel}: ${data.label}${diffLabel}`}
+      title={`${kindLabel}: ${symbol.label}${diffLabel}`}
+      data-id={symbol.id}
+      data-symbol-id={symbol.id}
+      data-symbol-name={symbol.label}
       data-kind={kind}
-      data-diff-state={data.diffState}
+      data-diff-state={symbol.diffState}
     >
-      <Handle type="target" position={Position.Left} style={HANDLE_STYLE} />
       <span className="symbol-box__badge" aria-hidden>
         {glyph}
       </span>
-      <span className="symbol-box__label">{data.label}</span>
-      <Handle type="source" position={Position.Right} style={HANDLE_STYLE} />
+      <span className="symbol-box__label">{symbol.label}</span>
     </div>
   );
 }

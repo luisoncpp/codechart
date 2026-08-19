@@ -20,6 +20,7 @@ import {
   expectGroupDescription,
   renderCanvasWithGroup,
 } from "./helpers/graph-canvas-dom";
+import { zoomCanvasUntilSymbolVisible } from "./helpers/zoom-canvas-for-symbols";
 
 const graph = goldenGraph as unknown as ProjectGraph;
 
@@ -53,10 +54,14 @@ describe("GraphCanvas", () => {
   });
 
   it("mounts the edge svg layer inside React Flow", async () => {
+  // jsdom: onlyRenderVisibleElements does not cull nodes (see
+  // docs/lessons-learned/react-flow-culling-is-inert-under-jsdom.md).
+  // Assert the custom layer exists; bucket count is style-based, not edge count.
     const { container } = renderGraphCanvas(store);
     await waitFor(() => {
       expect(container.querySelector(".codechart-edge-layer")).toBeTruthy();
-      expect(container.querySelectorAll(".codechart-edge-layer path").length).toBeGreaterThan(0);
+      const paths = container.querySelectorAll(".codechart-edge-layer path");
+      expect(paths.length).toBeGreaterThan(0);
     });
   });
 
@@ -118,15 +123,37 @@ describe("GraphCanvas", () => {
   it("renders exported symbols as child boxes at L1.5", async () => {
     store.setZoomLevel(1.5);
     const { container } = renderGraphCanvas(store);
+    const symbolId = "src/core/store.ts::TodoStore";
     await waitFor(() =>
-      expect(
-        container.querySelector(`[data-id="src/core/store.ts::TodoStore"]`),
-      ).toBeTruthy(),
+      expect(container.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),
     );
-    const symbol = container.querySelector(`[data-id="src/core/store.ts::TodoStore"]`)!;
+    await zoomCanvasUntilSymbolVisible(container, symbolId);
+    const symbol = container.querySelector(`[data-id="${symbolId}"]`)!;
+    expect(symbol.classList.contains("react-flow__node")).toBe(false);
+    expect(symbol.classList.contains("symbol-box--class")).toBe(true);
     expect(symbol.textContent).toContain("TodoStore");
-    expect(symbol.querySelector(".symbol-box--class")).toBeTruthy();
     expect(symbol.querySelector(".symbol-box__badge")?.textContent).toBe("C");
+    const rfNodes = container.querySelectorAll(".react-flow__node");
+    const groupCount = graph.groups.length;
+    const moduleCount = graph.modules.length;
+    expect(rfNodes.length).toBe(groupCount + moduleCount);
+  });
+
+  it("hides symbol grids at L1.5 until camera zoom makes labels readable", async () => {
+    store.setZoomLevel(1.5);
+    const moduleId = "src/core/store.ts";
+    const symbolId = `${moduleId}::TodoStore`;
+    const { container } = renderGraphCanvas(store);
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="${moduleId}"]`)).toBeTruthy(),
+    );
+    expect(container.querySelector(`[data-id="${symbolId}"]`)).toBeNull();
+    expect(container.querySelector(".symbol-box")).toBeNull();
+    expect(container.querySelector(`[data-id="${moduleId}"]`)!.textContent).toContain(
+      "store.ts",
+    );
+    await zoomCanvasUntilSymbolVisible(container, symbolId);
+    expect(container.querySelector(`[data-id="${symbolId}"]`)).toBeTruthy();
   });
 
   it("shows the group's short description in its reserved band at L1", async () => {

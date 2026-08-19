@@ -80,19 +80,20 @@ export interface ModuleNodeData extends Record<string, unknown> {
   reviewNoteCount?: number;
   /** Lines of code in this module's source (counter badge). */
   loc?: number;
+  /** Exported symbol boxes painted inside the module card at L1.5 (parent-relative geometry). */
+  symbols?: ModuleSymbolDescriptor[];
 }
 
-/** Data carried by an exported-symbol box nested under a module. */
-export interface SymbolNodeData extends Record<string, unknown> {
+/** Geometry + label for one exported symbol rendered inside a module card. */
+export interface ModuleSymbolDescriptor {
+  id: string;
   label: string;
   kind: SymbolKind;
-  color?: string;
-  /** Diff overlay state for L1.5 symbol backgrounds and border cues. */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   diffState?: "added" | "removed" | "modified";
-  heatScore?: number;
-  heatVisible?: boolean;
-  heatMode?: "activity" | "risk";
-  heatmapActive?: boolean;
 }
 
 /** Data carried by an import edge. */
@@ -110,8 +111,7 @@ export interface EdgeData extends Record<string, unknown> {
 
 export type GroupRFNode = Node<GroupNodeData, "group">;
 export type ModuleRFNode = Node<ModuleNodeData, "module">;
-export type SymbolRFNode = Node<SymbolNodeData, "symbol">;
-export type RFNode = GroupRFNode | ModuleRFNode | SymbolRFNode;
+export type RFNode = GroupRFNode | ModuleRFNode;
 export type RFEdgeT = RFEdge<EdgeData>;
 
 /** A `ProjectGraph` + layout projected into React Flow models. */
