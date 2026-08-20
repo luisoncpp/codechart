@@ -90,18 +90,19 @@ function handleHunkLine(ctx: ParseContext, raw: string) {
   }
   flushMarkers(ctx);
   if (raw.startsWith("\\")) return;
-  const prefix = raw[0];
-  if (prefix === " ") {
-    extendOrStartRun(ctx, " ", "after", ctx.newLine);
-    ctx.oldLine++;
-    ctx.newLine++;
-  } else if (prefix === "-") {
+  if (raw.startsWith("-")) {
     extendOrStartRun(ctx, "-", "before", ctx.oldLine);
     ctx.oldLine++;
-  } else if (prefix === "+") {
+    return;
+  }
+  if (raw.startsWith("+")) {
     extendOrStartRun(ctx, "+", "after", ctx.newLine);
     ctx.newLine++;
+    return;
   }
+  extendOrStartRun(ctx, " ", "after", ctx.newLine);
+  ctx.oldLine++;
+  ctx.newLine++;
 }
 
 function extendOrStartRun(

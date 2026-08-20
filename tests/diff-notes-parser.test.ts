@@ -309,5 +309,48 @@ describe("lineDiffsFromUnified and pathsFromUnifiedDiff with markers", () => {
       body: "**Refactored Type Exports:** Removed internal-only types `DiffNoteSide` and `DiffNoteParseResult`.",
     });
   });
+
+  it("handles diff hunks with unprefixed context lines and blank lines", () => {
+    const patch = [
+      "diff --git a/src/Lobby.tsx b/src/Lobby.tsx",
+      "--- a/src/Lobby.tsx",
+      "+++ b/src/Lobby.tsx",
+      "@@ -62,11 +62,11 @@",
+      "/** The mode header: the three tabs, for a host or an offline player. */",
+      "-export function LobbyModeTabsRow({ mode, isHost }: LobbyModeTabsProps) {",
+      "+export function LobbyModeTabsRow({ mode, isHost, onPick }: LobbyModeTabsProps) {",
+      "  return (",
+      "    <div style={TabRow}>",
+      "      {ModeTabs.map(tab => (",
+      "        <ModeTab key={tab.mode} tab={tab} isActive={tab.mode === mode}",
+      "-          showCrown={isHost && tab.mode === mode} />",
+      "+          showCrown={isHost && tab.mode === mode} onPick={onPick} />",
+      "      ))}",
+      "    </div>",
+      "  );",
+      "# The callback is threaded rather than the roster: the tabs stay ignorant of member counts and roles,",
+      "# so the decision cannot be re-derived (differently) here. One prop, no new state.",
+    ].join("\n");
+
+    const result = parseDiffNotes(patch);
+    expect(result.droppedMarkerText).toBe("");
+    expect(result.notes).toHaveLength(1);
+    expect(result.notes[0]).toEqual({
+      path: "src/Lobby.tsx",
+      startLine: 69,
+      endLine: 71,
+      side: "after",
+      body: "The callback is threaded rather than the roster: the tabs stay ignorant of member counts and roles,\nso the decision cannot be re-derived (differently) here. One prop, no new state.",
+    });
+
+    const diffs = lineDiffsFromUnified(patch);
+    const fileDiff = diffs.get("src/Lobby.tsx")!;
+    expect(fileDiff).toBeDefined();
+    expect([...fileDiff.addedLineNumbers]).toEqual([63, 68]);
+    expect(fileDiff.removeBeforeLine.has(63)).toBe(true);
+    expect(fileDiff.removeBeforeLine.has(68)).toBe(true);
+    expect(fileDiff.addedLineNumbers.has(62)).toBe(false);
+    expect(fileDiff.addedLineNumbers.has(67)).toBe(false);
+  });
 });
 

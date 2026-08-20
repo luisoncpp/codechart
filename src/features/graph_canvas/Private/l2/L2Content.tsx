@@ -1,6 +1,8 @@
+import { memo } from "react";
 import type { DiffNote, FileLineDiff } from "../../../../domain/diff";
 import { DiffCodeLines } from "../highlight/DiffCodeLines";
 import { segmentTokenText, type LineMatchRange } from "../highlight/match-highlight";
+import { renderBlockMarkdown } from "../descriptions/render-markdown";
 
 interface DescriptionProps {
   description?: string;
@@ -19,7 +21,15 @@ function DescriptionText({ description, matchRanges, activeMatchRef }: Omit<Desc
       </span>
     );
   }
-  if (!matchRanges?.length) return <>{description}</>;
+  if (!matchRanges?.length) {
+    const html = renderBlockMarkdown(description);
+    return (
+      <div
+        className="l2-desc-markdown"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
   return (
     <>
       {segmentTokenText(description, /*tokenStart=*/0, matchRanges).map((segment, i) =>
@@ -39,7 +49,13 @@ function DescriptionText({ description, matchRanges, activeMatchRef }: Omit<Desc
   );
 }
 
-export function L2Description({ description, color, zoom, matchRanges, activeMatchRef }: DescriptionProps) {
+export const L2Description = memo(function L2Description({
+  description,
+  color,
+  zoom,
+  matchRanges,
+  activeMatchRef,
+}: DescriptionProps) {
   const descSize = 13.75 / zoom;
   const padding = `${6 / zoom}px ${8 / zoom}px`;
   return (
@@ -83,7 +99,7 @@ export function L2Description({ description, color, zoom, matchRanges, activeMat
       </div>
     </div>
   );
-}
+});
 
 interface CodeBlockProps {
   snippet?: string;
@@ -99,7 +115,7 @@ interface CodeBlockProps {
   activeLineRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export function L2CodeBlock({
+export const L2CodeBlock = memo(function L2CodeBlock({
   snippet,
   path,
   zoom,
@@ -164,7 +180,7 @@ export function L2CodeBlock({
       </pre></div>
     </div>
   );
-}
+});
 
 function hasDiffRows(fileDiff?: FileLineDiff, diffNotes?: readonly DiffNote[]): boolean {
   if (diffNotes && diffNotes.length > 0) return true;

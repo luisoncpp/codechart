@@ -1,10 +1,11 @@
-// @Architecture(descriptionShort="In-group description text with a long-description hover tooltip at L1")
+// @Architecture(descriptionShort="In-group description text with Markdown support and hover tooltip at L1")
 import { useEffect, useState } from "react";
 import { useStore, useStoreApi } from "@xyflow/react";
 import type { GroupNodeData } from "../../../../domain/graph";
 import { UNCHANGED_MODULE_DIFF_OPACITY } from "../../../../domain/diff";
 import { DESC_BOX, fitDescriptionFontSize } from "../../../../domain/layout";
 import { DescriptionTooltip, type TooltipAnchor } from "./DescriptionTooltip";
+import { renderInlineMarkdown } from "./render-markdown";
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
@@ -37,6 +38,7 @@ export function GroupDescription({
   const font = showingLong
     ? DESC_BOX.fontSize
     : fitDescriptionFontSize(text, width, height);
+  const html = renderInlineMarkdown(text);
   return (
     <>
       <p
@@ -57,9 +59,8 @@ export function GroupDescription({
             : undefined
         }
         onMouseLeave={tooltipText ? /*closeTooltip*/ () => setAnchor(null) : undefined}
-      >
-        {text}
-      </p>
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
       {tooltipText && anchor && (
         <>
           <DescriptionTooltip text={tooltipText} anchor={anchor} />

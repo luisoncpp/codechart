@@ -267,11 +267,13 @@ hidden by zoom collapse.
     blindly pinned to the top (a module ELK placed up there blocks it; the box stops just below). Floored
     at the group content top (`groupPadding + groupHeaderHeight`). `textAlign: left` (React Flow's node
     default is centered). World units at `DESC_BOX.l1FontSize` (22, = `LABEL_FIT.maxFont`) — reads at the
-    same scale as the module filenames, not counter-scaled. **Hovering the short text opens a custom
+    same scale as the module filenames, not counter-scaled. `GroupDescription` parses inline Markdown
+    so bold, code, and links render styled HTML. **Hovering the short text opens a custom
     tooltip with the full `descriptionLong`** (`GroupDescription.tsx` + `DescriptionTooltip.tsx`): a
-    `position: fixed` div portaled to `document.body`, so it renders in screen space (unaffected by
-    canvas zoom, never clipped by the node) with no OS/native-`title` length truncation; it scrolls
-    internally past 60vh and flips above the cursor in the bottom half of the viewport. The `<p>` takes
+    `position: fixed` div portaled to `document.body`, rendering rich Markdown (paragraphs, lists, code,
+    headings, wiki-links) in screen space (unaffected by canvas zoom, never clipped by the node) with
+    no OS/native-`title` length truncation; it scrolls internally past 60vh and flips above the cursor
+    in the bottom half of the viewport. The `<p>` takes
     `pointerEvents: auto` only when a tooltip exists (L1 with a long description); the tooltip is
     suppressed whenever the displayed text already **is** the long one — at L1.5+ (inline long text)
     or when `descriptionLong` equals the displayed short text — and the `<p>` stays inert then.
@@ -282,6 +284,7 @@ hidden by zoom collapse.
   - **L1.5+ (`showLong`):** same box shows `descriptionLong` (falls back to `descriptionShort`) at the
     smaller `DESC_BOX.fontSize` (16): the long prose is denser, so a modest font keeps the box compact
     while L1's short blurb still reads large. The two fonts are independent on purpose.
+
   - **L2 (`architectureDoc`):** when a group declares `architectureDoc` in its `*.group.md`
     frontmatter, the description box becomes a scrollable **rendered markdown** panel (not source).
     `MarkdownBody` parses with a **private `Marked` instance** carrying the wiki-link inline

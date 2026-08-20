@@ -32,6 +32,8 @@ import {
 } from "./heat-node-styles";
 import { darkenHex } from "./color-utils";
 
+import { renderInlineMarkdown } from "../descriptions/render-markdown";
+
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
 
 const SNIPPET_LINES = 12;
@@ -140,13 +142,12 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
       />
 
       {data.showSymbols && data.descriptionShort && (
-
-        <div style={{ ...DESCRIPTION_STYLE, color: textColor }}>
-
-          {data.descriptionShort}
-
-        </div>
-
+        <div
+          style={{ ...DESCRIPTION_STYLE, color: textColor }}
+          dangerouslySetInnerHTML={{
+            __html: renderInlineMarkdown(data.descriptionShort),
+          }}
+        />
       )}
 
       {data.showSymbols && data.symbols && symbolsFitOnScreen(boxW, boxH, zoom) && (

@@ -1,5 +1,6 @@
-// @Architecture(descriptionShort="Custom screen-space tooltip for long group descriptions")
+// @Architecture(descriptionShort="Custom screen-space tooltip for long group descriptions with Markdown support")
 import { createPortal } from "react-dom";
+import { renderBlockMarkdown } from "./render-markdown";
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const MAX_WIDTH = 480;
@@ -23,10 +24,17 @@ export function DescriptionTooltip({
   text: string;
   anchor: TooltipAnchor;
 }) {
+  const html = renderBlockMarkdown(text);
   return createPortal(
-    <div data-description-tooltip role="tooltip" style={tooltipStyle(anchor)}>
-      {text}
-    </div>,
+    <>
+      <style>{tooltipMarkdownStyles}</style>
+      <div
+        data-description-tooltip
+        role="tooltip"
+        style={tooltipStyle(anchor)}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </>,
     document.body,
   );
 }
@@ -54,7 +62,8 @@ function tooltipStyle(anchor: TooltipAnchor) {
     fontWeight: 400,
     lineHeight: 1.45,
     textAlign: "left" as const,
-    whiteSpace: "pre-wrap" as const,
+    whiteSpace: "normal" as const,
+    wordBreak: "break-word" as const,
     boxShadow: "0 8px 24px rgba(15, 23, 42, 0.18)",
     zIndex: 10000,
     // The cursor moving onto the tooltip must not steal the hover that keeps it open.
@@ -70,3 +79,51 @@ function verticalPlacement(anchor: TooltipAnchor) {
   }
   return { bottom: window.innerHeight - anchor.y + CURSOR_OFFSET };
 }
+
+const tooltipMarkdownStyles = `
+  [data-description-tooltip] p {
+    margin: 0 0 6px 0;
+  }
+  [data-description-tooltip] p:last-child {
+    margin: 0;
+  }
+  [data-description-tooltip] code {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
+    font-size: 12px;
+    background: #f1f5f9;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #0f172a;
+  }
+  [data-description-tooltip] pre {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 6px 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 0 0 6px 0;
+    font-size: 12px;
+  }
+  [data-description-tooltip] pre code {
+    background: transparent;
+    padding: 0;
+  }
+  [data-description-tooltip] ul, [data-description-tooltip] ol {
+    margin: 0 0 6px 0;
+    padding-left: 18px;
+  }
+  [data-description-tooltip] li {
+    margin-bottom: 2px;
+  }
+  [data-description-tooltip] h1, [data-description-tooltip] h2, [data-description-tooltip] h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 4px 0 4px 0;
+    color: #0f172a;
+  }
+  [data-description-tooltip] a, [data-description-tooltip] a.hl-wiki-link {
+    color: #2563eb;
+    text-decoration: none;
+  }
+`;
+

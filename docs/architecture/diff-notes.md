@@ -11,7 +11,7 @@ CodeChart strictly consumes Diff Notes from pasted unified diffs (no in-app auth
 - **Diff Note Target**: binds to the maximal same-prefix hunk run immediately above:
   - `+` run $\rightarrow$ `side: "after"`, `startLine..endLine` from new-file line counters.
   - `-` run $\rightarrow$ `side: "before"`, `startLine..endLine` from old-file line counters.
-  - ` ` run $\rightarrow$ `side: "after"`, `startLine..endLine` from new-file line counters.
+  - ` ` run $\rightarrow$ `side: "after"`, `startLine..endLine` from new-file line counters (also includes blank lines or un-prefixed context lines in relaxed diffs).
   - A replace (`-` followed by `+`) splits into two notes if both sides have markers.
 - **Unbound markers**: markers before the first hunk, between files, stacked without intervening hunk body, or whitespace-only bodies are dropped into `droppedMarkerText`.
 - Git commit and working-tree diffs do not have markers and produce empty `diffNotes`.

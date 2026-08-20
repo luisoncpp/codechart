@@ -570,3 +570,38 @@ describe("countLineDiffStats", () => {
     expect(stats.removed).toBe(1);
   });
 });
+
+describe("lineDiffsFromUnified robustness", () => {
+  it("parses patches with --- and +++ without diff --git header", () => {
+    const text = [
+      "--- a/src/foo.ts",
+      "+++ b/src/foo.ts",
+      "@@ -1,3 +1,4 @@",
+      " keep",
+      "-old",
+      "+new",
+    ].join("\n");
+    const diffs = lineDiffsFromUnified(text);
+    expect(diffs.has("src/foo.ts")).toBe(true);
+    const foo = diffs.get("src/foo.ts")!;
+    expect([...foo.addedLineNumbers]).toEqual([2]);
+    expect([...(foo.removedLineNumbers ?? [])]).toEqual([2]);
+  });
+
+  it("handles blank lines in hunks as context lines", () => {
+    const text = [
+      "diff --git a/src/foo.ts b/src/foo.ts",
+      "--- a/src/foo.ts",
+      "+++ b/src/foo.ts",
+      "@@ -1,4 +1,4 @@",
+      " line1",
+      "",
+      "-old",
+      "+new",
+    ].join("\n");
+    const diffs = lineDiffsFromUnified(text);
+    const foo = diffs.get("src/foo.ts")!;
+    expect([...foo.addedLineNumbers]).toEqual([3]);
+    expect([...(foo.removedLineNumbers ?? [])]).toEqual([3]);
+  });
+});

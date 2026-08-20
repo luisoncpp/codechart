@@ -6,6 +6,7 @@ import {
   overlayFromPastedDiff,
   pathsFromUnifiedDiff,
 } from "../src/domain/diff";
+import { bodiesFromUnifiedDiff } from "../src/domain/diff/Private/rename-bodies";
 import { styleEdge } from "../src/features/graph_canvas";
 import type { GraphDiffOverlay } from "../src/domain/diff";
 import type { ProjectGraph } from "../src/domain/graph";
@@ -244,6 +245,25 @@ describe("applyDiffOverlay rename arrows", () => {
     const styled = styleEdge(renameEdge!, null);
     expect(styled.style?.stroke).toBe("#d97706");
     expect(styled.markerEnd).toBeDefined();
+  });
+});
+
+describe("bodiesFromUnifiedDiff robustness", () => {
+  it("reconstructs bodies with unprefixed context lines, blank lines, and diff markers", () => {
+    const patch = [
+      "--- a/src/a.ts",
+      "+++ b/src/a.ts",
+      "@@ -1,4 +1,4 @@",
+      "line 1",
+      "",
+      "-old line",
+      "+new line",
+      "# some diff note marker",
+      "line 4",
+    ].join("\n");
+    const bodies = bodiesFromUnifiedDiff(patch);
+    expect(bodies.old.get("src/a.ts")).toBe("line 1\n\nold line\nline 4");
+    expect(bodies.new.get("src/a.ts")).toBe("line 1\n\nnew line\nline 4");
   });
 });
 

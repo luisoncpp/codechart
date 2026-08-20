@@ -119,4 +119,21 @@ describe("group description tooltip (L1)", () => {
     act(/*panCanvas*/ () => flow.pan!(40, 0));
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
+
+  it("renders markdown elements inside the tooltip", () => {
+    renderDescription({
+      label: "core",
+      color: "#64748b",
+      descriptionShort: "Short label",
+      descriptionLong: "This is **bold** text with `inline code` and a [link](https://example.com).",
+      descriptionBox: { x: 0, y: 0, width: 200, height: 60 },
+    });
+    const short = screen.getByText("Short label");
+    fireEvent.mouseEnter(short, { clientX: 120, clientY: 80 });
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.querySelector("strong")).toHaveTextContent("bold");
+    expect(tooltip.querySelector("code")).toHaveTextContent("inline code");
+    expect(tooltip.querySelector("a")).toHaveAttribute("href", "https://example.com");
+  });
 });
+

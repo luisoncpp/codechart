@@ -24,41 +24,48 @@ export function lineDiffsFromUnified(text: string): Map<string, FileLineDiff> {
       builder = newFileBuilder();
       continue;
     }
+    const headerPath = parseHeaderPathLine(raw);
+    if (headerPath) {
+      if (!builder || currentPath !== headerPath) {
+        flushFile(out, currentPath, builder);
+        currentPath = headerPath;
+        builder = newFileBuilder();
+      }
+      continue;
+    }
     if (!builder || !currentPath) continue;
-
-    if (raw.startsWith("--- ") || raw.startsWith("+++ ")) {
-      const path = parseHeaderPath(raw.slice(4));
-      if (path && path !== "/dev/null") currentPath = path;
-      continue;
-    }
-
-    const hunk = parseHunkHeader(raw);
-    if (hunk) {
-      builder.oldLine = hunk.oldStart;
-      builder.newLine = hunk.newStart;
-      builder.inHunk = true;
-      continue;
-    }
-
-    if (!builder.inHunk) continue;
-    if (raw.startsWith("\\")) continue;
-
-    const prefix = raw[0];
-    const content = raw.slice(1);
-    if (prefix === " ") {
-      builder.oldLine++;
-      builder.newLine++;
-    } else if (prefix === "-") {
-      pushRemove(builder, content);
-      builder.removed.add(builder.oldLine);
-      builder.oldLine++;
-    } else if (prefix === "+") {
-      builder.added.add(builder.newLine);
-      builder.newLine++;
-    }
+    consumeDiffLine(raw, builder);
   }
   flushFile(out, currentPath, builder);
   return out;
+}
+
+function parseHeaderPathLine(raw: string): string | null {
+  if (!raw.startsWith("--- ") && !raw.startsWith("+++ ")) return null;
+  const path = parseHeaderPath(raw.slice(4));
+  return path && path !== "/dev/null" ? path : null;
+}
+
+function consumeDiffLine(raw: string, builder: FileBuilder): void {
+  const hunk = parseHunkHeader(raw);
+  if (hunk) {
+    builder.oldLine = hunk.oldStart;
+    builder.newLine = hunk.newStart;
+    builder.inHunk = true;
+    return;
+  }
+  if (!builder.inHunk || raw.startsWith("\\") || raw.startsWith("#")) return;
+  if (raw.startsWith("-")) {
+    pushRemove(builder, raw.slice(1));
+    builder.removed.add(builder.oldLine++);
+    return;
+  }
+  if (raw.startsWith("+")) {
+    builder.added.add(builder.newLine++);
+    return;
+  }
+  builder.oldLine++;
+  builder.newLine++;
 }
 
 function newFileBuilder(): FileBuilder {

@@ -31,15 +31,32 @@ function consumeLine(raw: string, acc: FileAcc | null, out: DiffBodies): FileAcc
     flushBodies(acc, out);
     return newAcc(raw);
   }
-  if (!acc) return acc;
-  if (applyPathHeader(raw, acc)) return acc;
-  if (raw.startsWith("@@ ")) {
+  if (isPathHeader(raw)) {
+    const current = acc ?? newBlankAcc();
+    applyPathHeader(raw, current);
+    return current;
+  }
+  if (!acc) return null;
+  if (isHunkHeader(raw)) {
     acc.inHunk = true;
     return acc;
   }
-  if (!acc.inHunk || raw.startsWith("\\")) return acc;
-  pushHunkLine(raw, acc);
+  if (acc.inHunk && !isSkippableHunkLine(raw)) {
+    pushHunkLine(raw, acc);
+  }
   return acc;
+}
+
+function isPathHeader(raw: string): boolean {
+  return raw.startsWith("--- ") || raw.startsWith("+++ ");
+}
+
+function isHunkHeader(raw: string): boolean {
+  return raw.startsWith("@@ ") || raw.startsWith("@@\t") || /^@@ -\d+/.test(raw);
+}
+
+function isSkippableHunkLine(raw: string): boolean {
+  return raw.startsWith("\\") || raw.startsWith("#");
 }
 
 function newAcc(gitLine: string): FileAcc {
@@ -47,6 +64,16 @@ function newAcc(gitLine: string): FileAcc {
   return {
     oldPath: match ? normalizeDiffPath(match[1]!) : null,
     newPath: match ? normalizeDiffPath(match[2]!) : null,
+    oldLines: [],
+    newLines: [],
+    inHunk: false,
+  };
+}
+
+function newBlankAcc(): FileAcc {
+  return {
+    oldPath: null,
+    newPath: null,
     oldLines: [],
     newLines: [],
     inHunk: false,
@@ -73,18 +100,17 @@ function headerPath(raw: string): string | null | undefined {
 }
 
 function pushHunkLine(raw: string, acc: FileAcc): void {
-  const prefix = raw[0];
-  const content = raw.slice(1);
-  if (prefix === " ") {
-    acc.oldLines.push(content);
-    acc.newLines.push(content);
+  if (raw.startsWith("-")) {
+    acc.oldLines.push(raw.slice(1));
     return;
   }
-  if (prefix === "-") {
-    acc.oldLines.push(content);
+  if (raw.startsWith("+")) {
+    acc.newLines.push(raw.slice(1));
     return;
   }
-  if (prefix === "+") acc.newLines.push(content);
+  const content = raw.startsWith(" ") ? raw.slice(1) : raw;
+  acc.oldLines.push(content);
+  acc.newLines.push(content);
 }
 
 function flushBodies(acc: FileAcc | null, out: DiffBodies): void {

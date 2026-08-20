@@ -515,6 +515,55 @@
   text-decoration: underline dotted currentColor;
 }
 
+.l2-desc-markdown p {
+  margin: 0 0 4px 0;
+}
+
+.l2-desc-markdown p:last-child {
+  margin: 0;
+}
+
+.l2-desc-markdown code {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
+  font-size: 0.9em;
+  background: #f1f5f9;
+  padding: 1px 3px;
+  border-radius: 3px;
+  color: #0f172a;
+}
+
+.l2-desc-markdown pre {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 4px 6px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 0 0 4px 0;
+}
+
+.l2-desc-markdown pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.l2-desc-markdown ul, .l2-desc-markdown ol {
+  margin: 0 0 4px 0;
+  padding-left: 16px;
+}
+
+.l2-desc-markdown li {
+  margin-bottom: 2px;
+}
+
+.l2-desc-markdown a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.l2-desc-markdown a:hover {
+  text-decoration: underline;
+}
+
 /* ── Syntax Highlighting Colors ── */
 :root {
   --hl-comment: #64748b;     /* Cool Gray */

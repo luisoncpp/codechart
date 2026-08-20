@@ -40,6 +40,18 @@ export function stripMarkdownFrontmatter(source: string): string {
   return source.slice(end + 4).replace(/^\s+/, "");
 }
 
+const bodyCache = new Map<string, string>();
+const MAX_BODY_CACHE = 500;
+
+function parseMarkdownBody(body: string): string {
+  const cached = bodyCache.get(body);
+  if (cached !== undefined) return cached;
+  const html = markdown.parse(body, { async: /*isAsync=*/false }) as string;
+  if (bodyCache.size >= MAX_BODY_CACHE) bodyCache.clear();
+  bodyCache.set(body, html);
+  return html;
+}
+
 interface MarkdownBodyProps {
   source: string;
   zoom: number;
@@ -50,7 +62,7 @@ interface MarkdownBodyProps {
 /** Render trusted project markdown as HTML inside the L2 scroll region. */
 export function MarkdownBody({ source, zoom, sourcePath }: MarkdownBodyProps) {
   const body = stripMarkdownFrontmatter(source);
-  const html = markdown.parse(body, { async: false }) as string;
+  const html = parseMarkdownBody(body);
 
   return (
     <div
