@@ -13,7 +13,7 @@ import {
   isTestModule,
 } from "../../../domain/graph";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
-import { DiffModal, DiffOverlayBar } from "../../diff_visualizer";
+import { DiffModal, DiffOverlayBar, DroppedMarkersWarning } from "../../diff_visualizer";
 import type { GitClient } from "../../../ipc/git-client";
 import type { ShellClient } from "../../../ipc/shell-client";
 import { ModuleContextMenu, type ModuleContextMenuState } from "./toolbar/ModuleContextMenu";
@@ -215,6 +215,12 @@ export function GraphCanvas({
         <SelectionNavigation store={store} />
         {diffOverlay && (
           <DiffOverlayBar store={store} onStop={() => store.clearDiffOverlay()} />
+        )}
+        {diffOverlay?.droppedMarkerText && !session.getDiffNotesWarningClosed() && (
+          <DroppedMarkersWarning
+            text={diffOverlay.droppedMarkerText}
+            onClose={() => store.closeDiffNotesWarning()}
+          />
         )}
         {heatmapEnabled && heatmapGitAvailable && !heatmapLoading && !diffOverlay && (
           <HeatmapLegend

@@ -1,4 +1,4 @@
-import type { FileLineDiff } from "../../../../domain/diff";
+import type { DiffNote, FileLineDiff } from "../../../../domain/diff";
 import { DiffCodeLines } from "../highlight/DiffCodeLines";
 import { segmentTokenText, type LineMatchRange } from "../highlight/match-highlight";
 
@@ -90,6 +90,7 @@ interface CodeBlockProps {
   path?: string;
   zoom: number;
   fileDiff?: FileLineDiff;
+  diffNotes?: readonly DiffNote[];
   clickableNames?: ReadonlySet<string>;
   lineClassPrefix?: string;
   matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
@@ -103,6 +104,7 @@ export function L2CodeBlock({
   path,
   zoom,
   fileDiff,
+  diffNotes,
   clickableNames,
   lineClassPrefix,
   matchesByLine,
@@ -144,11 +146,12 @@ export function L2CodeBlock({
           color: "#334155",
         }}
       >
-        {snippet || hasDiffRows(fileDiff) ? (
+        {snippet || hasDiffRows(fileDiff, diffNotes) ? (
           <DiffCodeLines
             source={snippet ?? ""}
             path={path ?? ""}
             fileDiff={fileDiff}
+            diffNotes={diffNotes}
             zoom={zoom}
             lineClassPrefix={lineClassPrefix ?? "diff-code"}
             clickableNames={clickableNames}
@@ -163,7 +166,8 @@ export function L2CodeBlock({
   );
 }
 
-function hasDiffRows(fileDiff?: FileLineDiff): boolean {
+function hasDiffRows(fileDiff?: FileLineDiff, diffNotes?: readonly DiffNote[]): boolean {
+  if (diffNotes && diffNotes.length > 0) return true;
   if (!fileDiff) return false;
   return fileDiff.addedLineNumbers.size > 0 || fileDiff.removeBeforeLine.size > 0;
 }

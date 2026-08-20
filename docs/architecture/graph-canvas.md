@@ -135,7 +135,9 @@ Both deep modules organize their implementation into subfolders, each a config s
   **L0 bird's-eye is disabled** while diff is active — scroll zoom floors at L1
   so module-level highlights remain visible; clearing the overlay restores normal L0 behavior.
   **L2 source panels and the symbol preview widget** show unified-diff rows:
-  green `+` lines for additions, red `-` lines for deletions (`DiffCodeLines`). A deleted file's
+  green `+` lines for additions, red `-` lines for deletions (`DiffCodeLines`), plus inline **Diff Notes**
+  (read-only explanations consumed from `#` marker lines in pasted diffs, stacked above Review Notes) and a floating warning
+  for unbound dropped markers (`DroppedMarkersWarning`). A deleted file's
   **Open file preview** uses empty after-text plus `lineDiffByPath` (or a synthesized all-removed
   diff from `beforeSourceByPath`) so the frame is all red; editor/explorer menu items are disabled.
   Diff styling wins over

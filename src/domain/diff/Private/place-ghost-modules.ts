@@ -113,6 +113,7 @@ function buildGhostNode(
   parentId: string | undefined,
   ctx: PlacementContext,
 ): RFNode {
+  const notes = ctx.overlay.diffNotes?.filter((n) => n.path === mod.path) ?? [];
   return {
     id: mod.id,
     type: "module" as const,
@@ -128,6 +129,7 @@ function buildGhostNode(
       ...(ctx.overlay.lineDiffByPath.get(mod.path)
         ? { diffLineDiff: ctx.overlay.lineDiffByPath.get(mod.path) }
         : {}),
+      ...(notes.length > 0 ? { diffNotes: notes } : {}),
     },
     style: { width: size.width, height: size.height },
     width: size.width,

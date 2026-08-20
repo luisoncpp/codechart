@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Preview frame body: symbol source, module document, or rendered markdown")
-import type { FileLineDiff } from "../../../../domain/diff";
+import type { DiffNote, FileLineDiff } from "../../../../domain/diff";
 import { DiffCodeLines } from "../highlight/DiffCodeLines";
 import { L2CodeBlock, L2Description } from "../l2/L2Content";
 import { MarkdownBody, markdownBodyStyles } from "../l2/MarkdownBody";
@@ -15,6 +15,7 @@ interface FrameMatchProps {
 interface CodeContentProps {
   frame: PreviewFrame;
   fileDiff?: FileLineDiff;
+  diffNotes?: readonly DiffNote[];
   clickableSymbols: ReadonlySet<string>;
   matchProps: FrameMatchProps;
 }
@@ -51,6 +52,7 @@ function SymbolCode(
         source={props.frame.sourceText}
         path={props.frame.modulePath}
         fileDiff={props.fileDiff}
+        diffNotes={props.diffNotes}
         lineClassPrefix="symbol-widget"
         activeLine={props.targetLine}
         activeLineRef={props.lineRef}
@@ -65,6 +67,7 @@ function SymbolCode(
 function DocumentContent({
   frame,
   fileDiff,
+  diffNotes,
   clickableSymbols,
   matchProps,
   lineRef,
@@ -84,6 +87,7 @@ function DocumentContent({
         path={frame.modulePath}
         zoom={1}
         fileDiff={fileDiff}
+        diffNotes={diffNotes}
         clickableNames={clickableSymbols}
         lineClassPrefix="symbol-widget"
         matchesByLine={matchProps.matchesByLine}

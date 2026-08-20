@@ -31,12 +31,14 @@ function stampNode(overlay: GraphDiffOverlay) {
     const diffState = moduleDiffState(node.id, overlay);
     const path = node.data.path ?? node.id;
     const lineDiff = overlay.lineDiffByPath.get(path);
+    const notes = overlay.diffNotes?.filter((n) => n.path === path) ?? [];
     return {
       ...node,
       data: {
         ...node.data,
         diffState,
         ...(lineDiff ? { diffLineDiff: lineDiff } : {}),
+        ...(notes.length > 0 ? { diffNotes: notes } : {}),
       },
     };
   };

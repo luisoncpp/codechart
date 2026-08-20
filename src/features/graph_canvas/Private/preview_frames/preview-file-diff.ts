@@ -1,6 +1,7 @@
-// @Architecture(descriptionShort="Resolves the FileLineDiff a preview frame should render")
+// @Architecture(descriptionShort="Resolves the FileLineDiff and DiffNotes a preview frame should render")
 import {
   computeLineDiff,
+  type DiffNote,
   type FileLineDiff,
   type GraphDiffOverlay,
 } from "../../../../domain/diff";
@@ -17,4 +18,13 @@ export function fileDiffForPreview(
   const before = overlay.beforeSourceByPath.get(path);
   if (before === undefined) return undefined;
   return computeLineDiff(before, "");
+}
+
+/** Filter overlay Diff Notes for the given preview frame module path. */
+export function diffNotesForPreview(
+  path: string,
+  overlay: GraphDiffOverlay | null,
+): readonly DiffNote[] {
+  if (!overlay) return [];
+  return overlay.diffNotes.filter((note) => note.path === path);
 }

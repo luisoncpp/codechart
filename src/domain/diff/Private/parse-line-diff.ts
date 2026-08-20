@@ -93,19 +93,19 @@ function flushFile(
   });
 }
 
-function pathFromDiffGit(line: string): string | null {
+export function pathFromDiffGit(line: string): string | null {
   const match = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
   if (!match) return null;
   return normalizeDiffPath(match[2]!);
 }
 
-function parseHeaderPath(raw: string): string | null {
+export function parseHeaderPath(raw: string): string | null {
   const trimmed = raw.trim();
   if (trimmed === "/dev/null") return "/dev/null";
   return normalizeDiffPath(trimmed.replace(/^(a|b)\//, ""));
 }
 
-function parseHunkHeader(line: string): { oldStart: number; newStart: number } | null {
+export function parseHunkHeader(line: string): { oldStart: number; newStart: number } | null {
   const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
   if (!match) return null;
   return { oldStart: Number(match[1]), newStart: Number(match[2]) };

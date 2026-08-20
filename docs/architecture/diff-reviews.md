@@ -8,7 +8,7 @@ Reviewed paths are keyed by a diff id derived when the overlay is applied (`stat
 
 - `commits:<baseRef>..<headRef>` — commit-to-commit
 - `working-tree:<baseRef>` — local changes against a base ref
-- `paste:<fnv1a-hex>` — pasted unified diff, content-addressed
+- `paste:<fnv1a-hex>` — pasted unified diff, content-addressed (hashing strips column-0 `#` marker lines so review marks survive adding or modifying Diff Notes)
 
 Re-applying the same diff restores its marks. Marks are per path, not per content: a file that changes again under the same diff id (e.g. working-tree) stays marked.
 

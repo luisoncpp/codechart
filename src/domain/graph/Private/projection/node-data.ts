@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="TypeScript interfaces and types for projection nodes")
 import type { Node, Edge as RFEdge } from "@xyflow/react";
-import type { FileLineDiff } from "../../../diff";
+import type { DiffNote, FileLineDiff } from "../../../diff";
 import type { Language } from "../../model/Language";
 import type { SymbolKind } from "../symbol-kind";
 
@@ -67,6 +67,8 @@ export interface ModuleNodeData extends Record<string, unknown> {
   diffState?: "affected" | "deleted" | "unchanged";
   /** Parsed line diff for code panels (add/remove highlights). */
   diffLineDiff?: FileLineDiff;
+  /** Parsed Diff Notes for this module's code lines. */
+  diffNotes?: ReadonlyArray<DiffNote>;
   /** Diff review progress — user marked this file as reviewed (checkmark + dimmed). */
   diffReviewed?: boolean;
   /** Normalized heat score in [0, 1] when heatmap overlay is active. */

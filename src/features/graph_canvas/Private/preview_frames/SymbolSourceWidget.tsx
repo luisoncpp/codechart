@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="Displays a draggable, resizable panel with the source code of a symbol")
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { FileLineDiff } from "../../../../domain/diff";
+import type { DiffNote, FileLineDiff } from "../../../../domain/diff";
 import { findSymbolLine } from "./symbol-source-utils";
 import type { PreviewFrame } from "./frame-list";
 import type { Position } from "./frame-placement";
@@ -26,6 +26,7 @@ interface SymbolSourceWidgetProps {
   frame: PreviewFrame;
   clickableSymbols: ReadonlySet<string>;
   fileDiff?: FileLineDiff;
+  diffNotes?: readonly DiffNote[];
   handlers: FrameHandlers;
 }
 
@@ -40,6 +41,7 @@ export function SymbolSourceWidget({
   frame,
   clickableSymbols,
   fileDiff,
+  diffNotes,
   handlers,
 }: SymbolSourceWidgetProps) {
   const frameRef = useRef<HTMLDivElement>(null);
@@ -164,6 +166,7 @@ export function SymbolSourceWidget({
         <FrameContent
           frame={frame}
           fileDiff={fileDiff}
+          diffNotes={diffNotes}
           clickableSymbols={clickableSymbols}
           renderMarkdown={renderMarkdown}
           targetLine={targetLine}

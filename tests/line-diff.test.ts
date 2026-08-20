@@ -48,8 +48,8 @@ describe("buildModuleDiffDisplay", () => {
     const file = lineDiffsFromUnified(text).get("src/gone.ts");
     const rows = buildModuleDiffDisplay("", file);
     expect(rows).toEqual([
-      { kind: "remove", text: "line 1" },
-      { kind: "remove", text: "line 2" },
+      { kind: "remove", lineNumber: 1, text: "line 1" },
+      { kind: "remove", lineNumber: 2, text: "line 2" },
     ]);
   });
 });

@@ -9,21 +9,23 @@ export function buildModuleDiffDisplay(
   if (!fileDiff) return contextRows(source);
   const lines = afterLines(source);
   const rows: DiffDisplayRow[] = [];
+  let oldLineNumber = 1;
 
   for (let i = 0; i < lines.length; i++) {
     const lineNumber = i + 1;
     for (const removed of fileDiff.removeBeforeLine.get(lineNumber) ?? []) {
-      rows.push({ kind: "remove", text: removed });
+      rows.push({ kind: "remove", lineNumber: oldLineNumber++, text: removed });
     }
     const text = lines[i] ?? "";
-    const kind = fileDiff.addedLineNumbers.has(lineNumber) ? "add" : "context";
-    rows.push({ kind, lineNumber, text });
+    const isAdd = fileDiff.addedLineNumbers.has(lineNumber);
+    rows.push({ kind: isAdd ? "add" : "context", lineNumber, text });
+    if (!isAdd) oldLineNumber++;
   }
 
   for (const [lineNumber, removedLines] of fileDiff.removeBeforeLine) {
     if (isAfterLine(lineNumber, lines.length)) continue;
     for (const removed of removedLines) {
-      rows.push({ kind: "remove", text: removed });
+      rows.push({ kind: "remove", lineNumber: oldLineNumber++, text: removed });
     }
   }
 

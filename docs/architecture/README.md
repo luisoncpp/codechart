@@ -18,4 +18,6 @@ Covers only what's already implemented. For architecture docs of not implemented
 | [unity-prefabs.md](./unity-prefabs.md) | `unity_assets` + `unity_prefab` adapter + `references::unity` | `.prefab` YAML → script/nested-prefab soft edges; serialized fields as `exportedSymbols` |
 | [review-notes.md](./review-notes.md) | project-local Review Notes | Versioned persistence, reconciliation, inline notes, badges, and sidebar navigation |
 | [diff-reviews.md](./diff-reviews.md) | project-local Diff Reviews | Per-diff reviewed-file checkmarks: identity, reconciliation, canvas toggles, and progress checklist |
+| [diff-notes.md](./diff-notes.md) | Diff Notes | Read-only markdown explanations consumed from `#` marker lines in pasted diffs |
 | [project-search.md](./project-search.md) | `search` (Rust) + `project_search` find bar | Ctrl+Shift+F content search, Ctrl+P file search, and Search ▾ exported-symbol search; match navigation via `focusOn` |
+

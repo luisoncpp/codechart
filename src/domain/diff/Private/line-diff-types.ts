@@ -12,7 +12,7 @@ export interface FileLineDiff {
 export type DiffDisplayRow =
   | { kind: "context"; lineNumber: number; text: string }
   | { kind: "add"; lineNumber: number; text: string }
-  | { kind: "remove"; text: string };
+  | { kind: "remove"; lineNumber: number; text: string };
 
 /** Opacity for modules untouched by the active diff overlay. */
 export const UNCHANGED_MODULE_DIFF_OPACITY = 0.4;

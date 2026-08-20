@@ -2,6 +2,7 @@ import { Fragment, useMemo } from "react";
 import {
   buildModuleDiffDisplay,
   type DiffDisplayRow,
+  type DiffNote,
   type FileLineDiff,
 } from "../../../../domain/diff";
 import type { Token } from "./highlighter";
@@ -10,11 +11,13 @@ import type { LineMatchRange } from "./match-highlight";
 import { DiffCodeLine } from "./DiffCodeLine";
 import { findWikiLinks, isMarkdownPath, type WikiLinkSpan } from "../wiki_links";
 import { InlineReviewNotes, useReviewNotesStore } from "../../../review_notes";
+import { DiffNotesList } from "../../../diff_visualizer";
 
 interface DiffCodeLinesProps {
   source: string;
   path: string;
   fileDiff?: FileLineDiff;
+  diffNotes?: readonly DiffNote[];
   zoom?: number;
   lineClassPrefix?: string;
   activeLine?: number;
@@ -32,6 +35,7 @@ export function DiffCodeLines({
   source,
   path,
   fileDiff,
+  diffNotes,
   zoom = 1,
   lineClassPrefix = "diff-code",
   activeLine,
@@ -59,6 +63,7 @@ export function DiffCodeLines({
         const showNotes = row.kind !== "remove";
         const lineNotes = showNotes ? notes.filter((note) => note.endLine === row.lineNumber) : [];
         const showDraft = showNotes && draft?.path === path && draft.endLine === row.lineNumber;
+        const matchingDiffNotes = matchingDiffNotesForRow(row, diffNotes);
         return <Fragment key={idx}>
           <DiffCodeLine
             row={row}
@@ -76,11 +81,23 @@ export function DiffCodeLines({
             anchored={showNotes && notes.some((note) => row.lineNumber >= note.startLine && row.lineNumber <= note.endLine)}
             onLineClick={reviewNotes && showNotes ? (line, extend) => selectReviewLine(reviewNotes, source, path, line, extend) : undefined}
           />
+          {matchingDiffNotes.length > 0 && (
+            <DiffNotesList notes={matchingDiffNotes} zoom={zoom} />
+          )}
           {showNotes && <InlineReviewNotes notes={lineNotes} showDraft={showDraft} zoom={zoom} />}
         </Fragment>;
       })}
     </>
   );
+}
+
+function matchingDiffNotesForRow(
+  row: DiffDisplayRow,
+  diffNotes?: readonly DiffNote[],
+): readonly DiffNote[] {
+  if (!diffNotes || diffNotes.length === 0) return [];
+  const side = row.kind === "remove" ? "before" : "after";
+  return diffNotes.filter((n) => n.side === side && n.endLine === row.lineNumber);
 }
 
 /** One tokenizer for the whole document so block comments span rows. */

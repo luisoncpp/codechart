@@ -27,8 +27,8 @@ describe("computeLineDiff basic", () => {
     expect(diff.removeBeforeLine.get(1)).toEqual(["line 1", "line 2"]);
     const rows = buildModuleDiffDisplay("", diff);
     expect(rows).toEqual([
-      { kind: "remove", text: "line 1" },
-      { kind: "remove", text: "line 2" },
+      { kind: "remove", lineNumber: 1, text: "line 1" },
+      { kind: "remove", lineNumber: 2, text: "line 2" },
     ]);
   });
 
@@ -53,11 +53,11 @@ describe("computeLineDiff modifications", () => {
 
     const rows = buildModuleDiffDisplay(newSource, diff);
     expect(rows).toEqual([
-      { kind: "remove", text: "import { alpha } from './alpha';" },
+      { kind: "remove", lineNumber: 1, text: "import { alpha } from './alpha';" },
       { kind: "add", lineNumber: 1, text: "import { beta } from './beta';" },
       { kind: "context", lineNumber: 2, text: "" },
       { kind: "context", lineNumber: 3, text: "export function run() {" },
-      { kind: "remove", text: "  return alpha();" },
+      { kind: "remove", lineNumber: 4, text: "  return alpha();" },
       { kind: "add", lineNumber: 4, text: "  return beta();" },
       { kind: "context", lineNumber: 5, text: "}" },
     ]);

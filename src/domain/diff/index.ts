@@ -1,9 +1,10 @@
-export type { GraphDiffOverlay } from "./Private/types";
+export type { GraphDiffOverlay, DiffNote } from "./Private/types";
 export type { FileLineDiff, DiffDisplayRow } from "./Private/line-diff-types";
 export { UNCHANGED_MODULE_DIFF_OPACITY } from "./Private/line-diff-types";
 export { compareGraphs } from "./Private/compare-graphs";
 export { pathsFromUnifiedDiff, normalizeDiffPath } from "./Private/parse-unified-diff";
 export { lineDiffsFromUnified } from "./Private/parse-line-diff";
+export { parseDiffNotes } from "./Private/parse-diff-notes";
 export { computeLineDiff } from "./Private/compute-line-diff";
 export { buildModuleDiffDisplay } from "./Private/module-diff-display";
 export { countLineDiffStats, diffStatsSuffixLength } from "./Private/line-diff-stats";

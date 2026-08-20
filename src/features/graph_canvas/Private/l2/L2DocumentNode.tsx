@@ -82,6 +82,7 @@ export function L2DocumentNode({
               path={data.path}
               zoom={zoom}
               fileDiff={data.diffLineDiff}
+              diffNotes={data.diffNotes}
             />
           </L2ScrollableBody>
         </div>

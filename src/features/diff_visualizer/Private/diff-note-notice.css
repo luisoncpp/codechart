@@ -1,0 +1,88 @@
+.diff-note-inline {
+  --diff-note-scale: 1;
+  position: sticky;
+  left: 0;
+  box-sizing: border-box;
+  display: grid;
+  gap: calc(8px * var(--diff-note-scale));
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: calc(8px * var(--diff-note-scale)) 0;
+  padding: 0 calc(8px * var(--diff-note-scale));
+  color: #334155;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  white-space: normal;
+}
+
+.diff-note-inline__card {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-left: calc(3px * var(--diff-note-scale)) solid #0284c7;
+  border-radius: calc(6px * var(--diff-note-scale));
+}
+
+.diff-note-inline__toggle {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: calc(28px * var(--diff-note-scale));
+  padding: calc(5px * var(--diff-note-scale)) calc(8px * var(--diff-note-scale));
+  color: #334155;
+  background: #f8fafc;
+  border: 0;
+  border-bottom: 1px solid #e2e8f0;
+  font: 600 calc(11px * var(--diff-note-scale)) / 1.3 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.diff-note-inline__toggle:hover {
+  background: #f1f5f9;
+}
+
+.diff-note-inline__toggle:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+.diff-note-inline__chevron {
+  flex: 0 0 calc(16px * var(--diff-note-scale));
+  color: #64748b;
+  font-size: calc(14px * var(--diff-note-scale));
+  line-height: 1;
+}
+
+.diff-note-inline__body {
+  padding: calc(8px * var(--diff-note-scale));
+  font: 400 calc(12px * var(--diff-note-scale)) / 1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+.diff-note-inline__body p {
+  margin: 0 0 calc(6px * var(--diff-note-scale)) 0;
+}
+
+.diff-note-inline__body p:last-child {
+  margin-bottom: 0;
+}
+
+.diff-note-inline__body code {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: calc(11px * var(--diff-note-scale));
+  background: #f1f5f9;
+  padding: calc(1px * var(--diff-note-scale)) calc(4px * var(--diff-note-scale));
+  border-radius: calc(3px * var(--diff-note-scale));
+}
+
+.diff-note-inline__body a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.diff-note-inline__body a:hover {
+  text-decoration: underline;
+}

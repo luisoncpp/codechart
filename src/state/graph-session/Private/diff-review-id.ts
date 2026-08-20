@@ -10,9 +10,17 @@ export function workingTreeDiffId(baseRef: string): string {
   return `working-tree:${baseRef}`;
 }
 
-/** Persistence key for pasted diff text (content-addressed). */
+/** Persistence key for pasted diff text (content-addressed, marker-stripped). */
 export function pasteDiffId(text: string): string {
-  return `paste:${fnv1aHex(text)}`;
+  const stripped = stripMarkerLines(text);
+  return `paste:${fnv1aHex(stripped)}`;
+}
+
+function stripMarkerLines(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => !line.startsWith("#"))
+    .join("\n");
 }
 
 /** FNV-1a 32-bit hash — enough to tell pasted diffs apart, stable per content. */

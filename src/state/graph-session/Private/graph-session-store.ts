@@ -69,6 +69,7 @@ export class GraphSessionStore extends EventEmitter {
   private layoutSeq = 0;
   private diffOverlay: GraphDiffOverlay | null = null;
   private diffError: string | null = null;
+  private diffNotesWarningClosed = false;
   /** Module ids whose sourceCache was overridden by the active diff snapshot. */
   private diffSourceIds = new Set<string>();
   private heatmapEnabled = false;
@@ -115,6 +116,13 @@ export class GraphSessionStore extends EventEmitter {
   getDiffError = () => this.diffError;
   getDiffReviewedIds = () => this.diffReview.getReviewed();
   getDiffReviewError = () => this.diffReview.getError();
+  getDiffNotesWarningClosed = () => this.diffNotesWarningClosed;
+
+  closeDiffNotesWarning() {
+    if (this.diffNotesWarningClosed) return;
+    this.diffNotesWarningClosed = true;
+    this.emit("diff-changed");
+  }
 
   /** Flip a module's reviewed mark for the active diff (persisted). */
   toggleDiffReviewed(moduleId: string) {
@@ -146,6 +154,7 @@ export class GraphSessionStore extends EventEmitter {
     if (!this.diffOverlay && !this.diffError) return;
     this.diffOverlay = null;
     this.diffError = null;
+    this.diffNotesWarningClosed = false;
     this.diffReview.clear();
     this.restoreDiffSources();
     this.restoreHeatAfterDiff();
@@ -222,6 +231,7 @@ export class GraphSessionStore extends EventEmitter {
   async applyDiffFromCommits(baseRef: string, headRef: string) {
     if (!this.root || !this.graph) return;
     this.diffError = null;
+    this.diffNotesWarningClosed = false;
     try {
       this.diffOverlay = await buildCommitDiffOverlay({
         git: this.git,
@@ -245,6 +255,7 @@ export class GraphSessionStore extends EventEmitter {
   async applyDiffFromWorkingTree(baseRef: string, ignoreSubmodules = true) {
     if (!this.root || !this.graph) return;
     this.diffError = null;
+    this.diffNotesWarningClosed = false;
     try {
       this.diffOverlay = await buildWorkingTreeDiffOverlay({
         client: this.client,
@@ -269,6 +280,7 @@ export class GraphSessionStore extends EventEmitter {
   async applyDiffFromPaste(text: string) {
     if (!this.graph) return;
     this.diffError = null;
+    this.diffNotesWarningClosed = false;
     this.diffOverlay = buildPasteDiffOverlay(text, this.graph);
     await this.activateDiffReview(pasteDiffId(text));
     this.pauseHeatForDiff();

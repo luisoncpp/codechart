@@ -39,6 +39,25 @@ export interface GraphDiffOverlay {
    * from unified-diff hunks). Preview frames render this as all-removed rows.
    */
   beforeSourceByPath: ReadonlyMap<string, string>;
+  /** Parsed Diff Notes from unified diff marker lines (`# ...`). */
+  diffNotes: ReadonlyArray<DiffNote>;
+  /** Raw text of dropped `#` marker lines that could not bind to a hunk run. */
+  droppedMarkerText: string;
+}
+
+export type DiffNoteSide = "after" | "before";
+
+export interface DiffNote {
+  path: string;
+  startLine: number;
+  endLine: number;
+  side: DiffNoteSide;
+  body: string;
+}
+
+export interface DiffNoteParseResult {
+  notes: DiffNote[];
+  droppedMarkerText: string;
 }
 
 export interface ParsedDiffPaths {
@@ -56,5 +75,10 @@ export interface GraphDiffInput {
 /** Graph diff without line-level parse (added by `attachLineDiff`). */
 export type GraphDiffCore = Omit<
   GraphDiffOverlay,
-  "unifiedDiff" | "lineDiffByPath" | "afterSourceByPath" | "beforeSourceByPath"
+  | "unifiedDiff"
+  | "lineDiffByPath"
+  | "afterSourceByPath"
+  | "beforeSourceByPath"
+  | "diffNotes"
+  | "droppedMarkerText"
 >;
