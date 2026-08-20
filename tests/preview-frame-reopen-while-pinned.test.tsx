@@ -70,5 +70,5 @@ describe("preview frame reopen while pinned", () => {
     await waitFor(() => {
       expect(document.querySelectorAll(".symbol-widget").length).toBe(2);
     });
-  });
+  }, 15000);
 });

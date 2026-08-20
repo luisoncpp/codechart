@@ -21,6 +21,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [imperative-dom-mutations-break-react-reconciliation.md](./imperative-dom-mutations-break-react-reconciliation.md) | Imperative DOM child mutations inside React components cause removeChild crashes during commit phase | 2026-08-19 |
 | [edge-clip-cell-hysteresis.md](./edge-clip-cell-hysteresis.md) | Clip-cell key from tight padded rect + scale in key; filter from inflated rect — cell-count w/h in the key is zoom-invariant on square viewports | 2026-08-19 |
 | [static-edge-paths-no-pan-d-rewrite.md](./static-edge-paths-no-pan-d-rewrite.md) | Merged bucket paths stay static in world space — pan uses RF CSS transform, not per-frame `d` writes; clip merged `d` on cell change; arrow LOD flips via React `showArrows` only | 2026-08-19 |
 | [edge-layer-needs-own-viewport-cull.md](./edge-layer-needs-own-viewport-cull.md) | `onlyRenderVisibleElements` does not cull a custom SVG edge layer — merge bucket paths, drop `marker-end`, static world-space `d`, arrow LOD on zoom threshold only | 2026-08-19 |

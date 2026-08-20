@@ -116,6 +116,7 @@
 post-M1 roadmap (TDD §11), each mapping to an existing seam — no rework on the contract:
 
 - ~~Narrative diff visualizer~~ — **done**: paste or git-commit diff → green/red module borders, green added edges, red removed edges with X head; see [visualize-diff.md](../flows/visualize-diff.md). Review tracking added: checkmark diffed files as reviewed, persisted per project+diff — see [diff-reviews.md](../architecture/diff-reviews.md) + [mark-file-reviewed.md](../flows/mark-file-reviewed.md). Settings → **Clear review info...** wipes all Review Notes + all persisted diff checkmarks behind a confirmation.
+- Diff Notes (storytelling remainder of §3.4) — planned: optional `#` markers in a **pasted** unified diff → read-only notices in L2/previews; git/local overlays unchanged. Plan: [diff-notes.md](../plans/diff-notes.md).
 - Git time-travel (new `ProjectSource` over revisions).
 - Activity heatmaps (`ModuleNode.metrics` + render layer).
 - Global symbol resolution / LSP / stack-graphs (upgrade inside `references`).

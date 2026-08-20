@@ -9,6 +9,7 @@ import { createTauriGitClient } from "../../ipc/git-client";
 import { createTauriShellClient } from "../../ipc/shell-client";
 import { createTauriDiffReviewClient } from "../../ipc/diff-review-client";
 import { createTauriStartupClient } from "../../ipc/startup-client";
+import { createTauriDevtoolsClient } from "../../ipc/devtools-client";
 import { ElkLayoutEngine } from "../../domain/layout";
 import { GraphSessionStore, useGraphSession } from "../../state/graph-session";
 import { ReviewNotesStore, useReviewNotes } from "../../state/review-notes";
@@ -22,8 +23,11 @@ import {
   InspectionPanel,
 } from "../../features/inspection_panel";
 import { useOpenStartupProject } from "./use-open-startup-project";
+import { useDevtoolsShortcut } from "./use-devtools-shortcut";
 
 export function App() {
+  const devtools = useMemo(/*build devtools client*/ () => createTauriDevtoolsClient(), []);
+  useDevtoolsShortcut(devtools);
   const git = useMemo(/*build git client*/ () => createTauriGitClient(), []);
   const config = useMemo(
     /*build config client*/ () => createTauriProjectConfigClient(),

@@ -15,19 +15,13 @@ interface EdgeBucketSvgProps {
 export function EdgeBucketSvg({ bucket, showArrows, onRefs }: EdgeBucketSvgProps) {
   const bucketKey = styleKeyFromDrawStyle(bucket.style);
   const strokeRef = useRef<SVGPathElement>(null);
-  const arrowRef = useRef<SVGGElement>(null);
-  const crossRef = useRef<SVGGElement>(null);
   const { style } = bucket;
   const dash = style.dash?.join(" ") ?? undefined;
 
   useLayoutEffect(() => {
     const strokePath = strokeRef.current;
     if (!strokePath) return;
-    onRefs(bucketKey, {
-      strokePath,
-      arrowGroup: arrowRef.current,
-      crossGroup: crossRef.current,
-    });
+    onRefs(bucketKey, { strokePath });
     return () => onRefs(bucketKey, null);
   }, [bucketKey, onRefs]);
 
@@ -41,7 +35,7 @@ export function EdgeBucketSvg({ bucket, showArrows, onRefs }: EdgeBucketSvgProps
       strokeLinecap="round"
     >
       <path ref={strokeRef} d={bucket.mergedPath} />
-      <g ref={arrowRef} fill={style.stroke}>
+      <g fill={style.stroke}>
         {showArrows &&
           bucket.arrowSegments.map((segment, index) => (
             <path
@@ -50,7 +44,7 @@ export function EdgeBucketSvg({ bucket, showArrows, onRefs }: EdgeBucketSvgProps
             />
           ))}
       </g>
-      <g ref={crossRef}>
+      <g>
         {bucket.crossSegments.map((segment, index) => (
           <CrossHead
             key={index}

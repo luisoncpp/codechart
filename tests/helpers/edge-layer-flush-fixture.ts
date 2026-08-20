@@ -101,8 +101,6 @@ export function setupFlushController(opts: FlushFixtureOpts = {}) {
   const bucketKey = styleKeyFromDrawStyle(drawStyleFromEdge(edges[0]!));
   controller.setBucketRefs(bucketKey, {
     strokePath,
-    arrowGroup: document.createElementNS("http://www.w3.org/2000/svg", "g"),
-    crossGroup: document.createElementNS("http://www.w3.org/2000/svg", "g"),
   });
 
   return { controller, rafQueue, onViewportModel, setAttributeSpy, edges, nodes };

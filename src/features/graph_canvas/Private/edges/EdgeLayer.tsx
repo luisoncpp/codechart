@@ -49,7 +49,7 @@ function useEdgeLayerController(deps: EdgeLayerControllerDeps): EdgeLayerControl
 
 function bindEdgeLayer(
   controller: EdgeLayerController,
-  storeApi: EdgeLayerControllerDeps["storeApi"],
+  storeApi: ReturnType<typeof useStoreApi>,
 ): () => void {
   const rebuild = () => controller.rebuildFromGeometry();
   rebuild();
