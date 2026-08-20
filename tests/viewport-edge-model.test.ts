@@ -33,26 +33,27 @@ describe("buildStaticEdgeModel", () => {
   const outside = segment({ minX: 500, minY: 500, maxX: 520, maxY: 520 }, "M500,500 L520,520");
   const removed = segment({ minX: 40, minY: 40, maxX: 60, maxY: 60 }, "M40,40 L60,60");
 
-  it("merges all segments into one path per bucket regardless of viewport", () => {
+  it("clips segments to inflated viewport cell; inside kept, outside dropped", () => {
     const model = buildStaticEdgeModel(
       { buckets: [{ style: arrowStyle, segments: [inside, outside] }] },
       { transform: [0, 0, 1], width: 100, height: 100 },
     );
 
     expect(model).not.toBeNull();
-    expect(model!.buckets[0]?.mergedPath).toBe("M10,10 L30,30 M500,500 L520,520");
+    expect(model!.buckets[0]?.mergedPath).toBe("M10,10 L30,30");
     expect(model!.showArrows).toBe(false);
-    expect(model!.buckets[0]?.arrowSegments).toEqual([inside, outside]);
+    expect(model!.buckets[0]?.arrowSegments).toEqual([inside]);
   });
 
-  it("puts all removed-diff segments in crossSegments, not arrowSegments", () => {
+  it("drops cross segments outside the clip rect", () => {
+    const farCross = segment({ minX: 500, minY: 500, maxX: 520, maxY: 520 }, "M500,500 L520,520");
     const model = buildStaticEdgeModel(
-      { buckets: [{ style: crossStyle, segments: [removed] }] },
+      { buckets: [{ style: crossStyle, segments: [removed, farCross] }] },
       { transform: [0, 0, 1], width: 100, height: 100 },
     );
 
     expect(model!.buckets[0]?.crossSegments).toEqual([removed]);
-    expect(model!.buckets[0]?.arrowSegments).toEqual([]);
+    expect(model!.buckets[0]?.mergedPath).toBe("M40,40 L60,60");
   });
 
   it("sets showArrows false when zoom is below threshold", () => {

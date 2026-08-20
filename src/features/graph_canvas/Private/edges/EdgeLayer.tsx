@@ -56,7 +56,7 @@ function bindEdgeLayer(
   const raf = requestAnimationFrame(/*rebuildAfterLayout*/ rebuild);
   const unsub = subscribeEdgeLayer(storeApi, {
     onGeometryDirty: rebuild,
-    onViewportDirty: (input) => controller.scheduleArrowLodCheck(input),
+    onViewportDirty: (input) => controller.scheduleViewportFlush(input),
   });
   return () => {
     cancelAnimationFrame(raf);

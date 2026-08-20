@@ -48,7 +48,7 @@ describe("EdgeLayerRenderer viewport", () => {
     expect(total).toBe(1);
   });
 
-  it("buildStaticModel mergedPath includes every geometry segment", () => {
+  it("buildStaticModel draw model drops far edge on small viewport", () => {
     const nodes = [node("a", 0, 0), node("b", 50, 0), node("c", 2000, 2000), node("d", 2100, 2000)];
     const edges = [
       styleEdge(
@@ -79,8 +79,34 @@ describe("EdgeLayerRenderer viewport", () => {
     );
 
     expect(geometryTotal).toBe(2);
-    expect(bucketArrowCount).toBe(2);
+    expect(bucketArrowCount).toBe(1);
     expect(model!.buckets[0]?.mergedPath.length).toBeGreaterThan(0);
+  });
+
+  it("clipCellChanged after large pan and rebuildClippedModel updates mergedPath", () => {
+    const nodes = [node("a", 0, 0), node("b", 200, 0), node("c", 2000, 0), node("d", 2200, 0)];
+    const edges = [
+      styleEdge(
+        { id: "e1", source: "a", target: "b", data: { isViolation: false, kind: "import" } },
+        null,
+      ),
+      styleEdge(
+        { id: "e2", source: "c", target: "d", data: { isViolation: false, kind: "import" } },
+        null,
+      ),
+    ];
+    const renderer = new EdgeLayerRenderer();
+    renderer.setEdges(edges);
+    renderer.rebuildGeometry(nodes, lookupFor(nodes) as never);
+
+    const nearVp = { transform: [0, 0, 1], width: 400, height: 300 };
+    const nearModel = renderer.buildStaticModel(nearVp);
+    const nearPath = nearModel!.buckets[0]?.mergedPath;
+
+    const farVp = { transform: [-1800, 0, 1], width: 400, height: 300 };
+    expect(renderer.clipCellChanged(farVp)).toBe(true);
+    const farModel = renderer.rebuildClippedModel(farVp);
+    expect(farModel!.buckets[0]?.mergedPath).not.toBe(nearPath);
   });
 
   it("arrowLodFlipped is false when only pan changes transform", () => {

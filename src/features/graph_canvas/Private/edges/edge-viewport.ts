@@ -43,3 +43,31 @@ export function filterVisibleSegments(
 ): EdgeSegment[] {
   return segments.filter((segment) => rectsIntersect(rect, segment));
 }
+
+export const CLIP_CELL_VIEWPORT_FRACTION = 0.5;
+
+export function clipCellSize(rect: WorldRect): number {
+  return Math.max(rect.width, rect.height) * CLIP_CELL_VIEWPORT_FRACTION;
+}
+
+export function clipCellKey(rect: WorldRect): string {
+  const cell = clipCellSize(rect);
+  if (cell <= 0) return "0,0,0";
+  const cx = Math.floor(rect.x / cell);
+  const cy = Math.floor(rect.y / cell);
+  const scale = Math.round(cell);
+  return `${cx},${cy},${scale}`;
+}
+
+export function inflateClipRect(rect: WorldRect, cellSize: number): WorldRect {
+  return {
+    x: rect.x - cellSize,
+    y: rect.y - cellSize,
+    width: rect.width + 2 * cellSize,
+    height: rect.height + 2 * cellSize,
+  };
+}
+
+export function sameClipCell(a: ViewportInput, b: ViewportInput): boolean {
+  return clipCellKey(visibleWorldRect(a)) === clipCellKey(visibleWorldRect(b));
+}

@@ -52,14 +52,20 @@ export class EdgeLayerController {
     if (this.writer.hasRefs()) this.writer.writeGeometry(model);
   }
 
-  scheduleArrowLodCheck(input: ViewportInput): void {
+  scheduleViewportFlush(input: ViewportInput): void {
     this.pendingViewport = input;
     if (this.rafId !== null) return;
-    this.rafId = requestAnimationFrame(/*flushArrowLodCheck*/ () => {
+    this.rafId = requestAnimationFrame(/*flushViewport*/ () => {
       this.rafId = null;
       const vp = this.pendingViewport;
       this.pendingViewport = null;
       if (!vp) return;
+      if (this.renderer.clipCellChanged(vp)) {
+        const model = this.renderer.rebuildClippedModel(vp);
+        this.deps.onViewportModel(model);
+        if (model && this.writer.hasRefs()) this.writer.writeGeometry(model);
+        return;
+      }
       if (!this.renderer.arrowLodFlipped(vp)) return;
       const model = this.renderer.applyArrowLodFlip(vp);
       if (!model) return;
