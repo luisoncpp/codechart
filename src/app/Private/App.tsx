@@ -17,6 +17,7 @@ import { createTauriReviewNotesClient } from "../../ipc/review-notes-client";
 import { ReviewNotesProvider } from "../../features/review_notes";
 import { ProjectLoaderPanel } from "../../features/project_loader";
 import { SettingsMenu } from "../../features/project_settings";
+import { HelpMenu } from "../../features/help_menu";
 import { CanvasUiState, GraphCanvas, SearchMenu, ViewMenu } from "../../features/graph_canvas";
 import {
   DEFAULT_INSPECTOR_WIDTH,
@@ -87,28 +88,31 @@ export function App() {
       <ProjectLoaderPanel
         store={store}
         menus={
-          projectRoot ? (
-            <>
-              {ready && (
-                <>
-                  <ViewMenu store={store} ui={canvasUi} />
-                  <SearchMenu ui={canvasUi} />
-                </>
-              )}
-              <SettingsMenu
-                root={projectRoot}
-                editor={editor}
-                hasCppModules={hasCppModules}
-                client={config}
-                onEditorSaved={setEditor}
-                onCppConfigSaved={() => store.loadProject(projectRoot)}
-                onClearReviewInfo={/*clear notes and checkmarks*/ async () => {
-                  reviewNotes.clearAll();
-                  await store.clearAllDiffReviews();
-                }}
-              />
-            </>
-          ) : null
+          <>
+            {projectRoot && (
+              <>
+                {ready && (
+                  <>
+                    <ViewMenu store={store} ui={canvasUi} />
+                    <SearchMenu ui={canvasUi} />
+                  </>
+                )}
+                <SettingsMenu
+                  root={projectRoot}
+                  editor={editor}
+                  hasCppModules={hasCppModules}
+                  client={config}
+                  onEditorSaved={setEditor}
+                  onCppConfigSaved={() => store.loadProject(projectRoot)}
+                  onClearReviewInfo={/*clear notes and checkmarks*/ async () => {
+                    reviewNotes.clearAll();
+                    await store.clearAllDiffReviews();
+                  }}
+                />
+              </>
+            )}
+            <HelpMenu />
+          </>
         }
       />
       {ready && (

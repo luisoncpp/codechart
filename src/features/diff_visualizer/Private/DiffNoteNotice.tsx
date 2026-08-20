@@ -53,29 +53,48 @@ export function DiffNotesList({ notes, zoom = 1 }: DiffNotesListProps) {
 
 function DiffNoteCard({ note }: { note: DiffNote }) {
   const [expanded, setExpanded] = useState(/*defaultExpanded=*/true);
-  const html = useMemo(() => {
-    return diffNoteMarked.parse(note.body, { async: false }) as string;
-  }, [note.body]);
+  const html = useMemo(
+    () => diffNoteMarked.parse(note.body, { async: false }) as string,
+    [note.body],
+  );
+
+  if (!expanded) {
+    return (
+      <article className="diff-note-inline__card diff-note-inline__card--collapsed">
+        <button
+          type="button"
+          className="diff-note-inline__toggle"
+          aria-expanded={false}
+          onClick={() => setExpanded(/*expanded=*/true)}
+        >
+          <span className="diff-note-inline__chevron" aria-hidden>
+            ›
+          </span>
+          <span>Diff note</span>
+        </button>
+      </article>
+    );
+  }
 
   return (
     <article className="diff-note-inline__card">
-      <button
-        type="button"
-        className="diff-note-inline__toggle"
-        aria-expanded={expanded}
-        onClick={() => setExpanded((prev) => !prev)}
-      >
-        <span className="diff-note-inline__chevron" aria-hidden>
-          {expanded ? "⌄" : "›"}
-        </span>
-        <span>Diff Note</span>
-      </button>
-      {expanded && (
+      <div className="diff-note-inline__body">
+        <button
+          type="button"
+          className="diff-note-inline__collapse-btn"
+          aria-expanded={true}
+          aria-label="Collapse diff note"
+          onClick={() => setExpanded(/*expanded=*/false)}
+        >
+          <span className="diff-note-inline__chevron" aria-hidden>
+            ⌄
+          </span>
+        </button>
         <div
-          className="diff-note-inline__body"
+          className="diff-note-inline__content"
           dangerouslySetInnerHTML={{ __html: html }}
         />
-      )}
+      </div>
     </article>
   );
 }

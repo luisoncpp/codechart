@@ -40,7 +40,8 @@ describe("DiffCodeLines with DiffNotes", () => {
       />,
     );
 
-    expect(screen.getByText("Diff Note")).toBeTruthy();
+    expect(screen.queryByText("Diff note")).toBeNull();
+    expect(screen.getByRole("button", { name: /collapse diff note/i })).toBeTruthy();
     expect(screen.getByText("Note on lines 1-2")).toBeTruthy();
   });
 
@@ -69,7 +70,8 @@ describe("DiffCodeLines with DiffNotes", () => {
       />,
     );
 
-    expect(screen.getByText("Diff Note")).toBeTruthy();
+    expect(screen.queryByText("Diff note")).toBeNull();
+    expect(screen.getByRole("button", { name: /collapse diff note/i })).toBeTruthy();
     expect(screen.getByText("Explanation of removal")).toBeTruthy();
   });
 
@@ -131,10 +133,17 @@ describe("DiffCodeLines with DiffNotes", () => {
     );
 
     expect(screen.getByText("Collapsible note")).toBeTruthy();
+    expect(screen.queryByText("Diff note")).toBeNull();
 
-    const toggleBtn = screen.getByRole("button", { name: /Diff Note/ });
-    fireEvent.click(toggleBtn);
+    const collapseBtn = screen.getByRole("button", { name: /collapse diff note/i });
+    fireEvent.click(collapseBtn);
     expect(screen.queryByText("Collapsible note")).toBeNull();
+    expect(screen.getByText("Diff note")).toBeTruthy();
+
+    const expandBtn = screen.getByRole("button", { name: /diff note/i });
+    fireEvent.click(expandBtn);
+    expect(screen.getByText("Collapsible note")).toBeTruthy();
+    expect(screen.queryByText("Diff note")).toBeNull();
 
     // Remounting a new instance starts expanded
     rerender(
@@ -268,7 +277,7 @@ describe("GraphSessionStore diffNotes warning lifecycle", () => {
       zIndex: 1,
     };
 
-    const { container } = render(
+    render(
       <PreviewFramesView
         frames={[frame]}
         clickableByModule={new Map()}
@@ -284,7 +293,8 @@ describe("GraphSessionStore diffNotes warning lifecycle", () => {
       />,
     );
 
-    expect(screen.getAllByText("Diff Note").length).toBe(2);
+    expect(screen.queryByText("Diff note")).toBeNull();
+    expect(screen.getAllByRole("button", { name: /collapse diff note/i }).length).toBe(2);
     expect(screen.getByText(/New Export:/)).toBeTruthy();
     expect(screen.getByText(/Warning Component:/)).toBeTruthy();
   });

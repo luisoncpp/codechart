@@ -29,7 +29,9 @@ To ensure Diff Review checkmarks survive adding or removing Diff Notes, `pasteDi
   - Before-side notes render after the last `remove` row of the target range.
   - Review Notes remain disabled on `remove` rows.
 - **Notice Chrome (`DiffNoteNotice`):**
-  - Accent bar, kind label `Diff Note`, chevron toggle (starts expanded; collapse is local component state).
+  - Accent bar, starts expanded (collapse is local component state).
+  - When expanded: no header row; collapse button (`⌄`) sits inline on the first line with the Markdown body.
+  - When collapsed: compact single-line bar displaying `› Diff note`.
   - Counter-scales with zoom via `--diff-note-scale: 1 / zoom`.
   - Body parsed with a private `Marked` instance: allows paragraphs, bold (`<strong>`), italic (`<em>`), inline code (`<code>`), and links (`<a>`). Escapes raw HTML and excludes wiki-link extensions or task lists.
 - **Floating Warning (`DroppedMarkersWarning`):**
