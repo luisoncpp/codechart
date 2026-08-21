@@ -150,4 +150,38 @@ describe("flow: visualize-diff deleted file preview", () => {
     expect(widget.querySelectorAll(".symbol-widget__line--context").length).toBe(0);
     expect(widget.textContent).toContain("export function validate() {}");
   });
+
+  it("toggles mark as reviewed directly from preview frame header", async () => {
+    const store = await readyGraphStore();
+    await store.applyDiffFromPaste(PASTED_DIFF);
+    const { container } = renderGraphCanvas(store);
+    const card = await waitFor(() => {
+      const node = container.querySelector('[data-id="src/core/store.ts"]');
+      expect(node).toBeTruthy();
+      return node!;
+    });
+
+    fireEvent.contextMenu(card);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Open file preview" }));
+
+    const widget = await waitFor(() => {
+      const frame = document.querySelector(".symbol-widget");
+      expect(frame).toBeTruthy();
+      return frame!;
+    });
+
+    const checkbox = widget.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    expect(checkbox).toBeInTheDocument();
+    expect(checkbox.checked).toBe(false);
+    expect(store.getDiffReviewedIds().has("src/core/store.ts")).toBe(false);
+
+    fireEvent.click(checkbox);
+    expect(store.getDiffReviewedIds().has("src/core/store.ts")).toBe(true);
+    expect(checkbox.checked).toBe(true);
+
+    fireEvent.click(checkbox);
+    expect(store.getDiffReviewedIds().has("src/core/store.ts")).toBe(false);
+    expect(checkbox.checked).toBe(false);
+  });
 });
+

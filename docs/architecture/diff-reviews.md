@@ -19,8 +19,9 @@ Re-applying the same diff restores its marks. Marks are per path, not per conten
 - `state/graph-session/Private/diff-review-tracker.ts` owns the active diff's reviewed set: loads reconciled state on apply, flips paths (or empties the set via `unmarkAll`) with serialized saves, clears on diff stop (persistence survives). The set is replaced immutably on every change so memoized canvas projections invalidate by identity. `clearAll` awaits any queued save (so it cannot resurrect an entry), wipes all persisted entries, and throws on failure.
 - `GraphSessionStore` composes the tracker (optional 4th constructor client; a no-op default keeps tests/constructions unchanged): activates after each overlay build, clears on `clearDiffOverlay`/`loadProject`, emits the existing `diff-changed` on toggle/`unmarkAllDiffReviewed`/`clearAllDiffReviews`. Load/save failures surface as `getDiffReviewError()` without breaking the overlay.
 - `domain/diff` `withDiffReview` is a display-only post-pass after `applyDiffOverlay` stamping `diffReviewed` on reviewed module nodes.
-- `features/graph_canvas` renders a checkmark toggle on diffed module cards (L1/L1.5 and L2; `data-diff-review-toggle` intercepted before selection like the connection toggle); reviewed modules dim to the unchanged-module opacity.
+- `features/graph_canvas` renders a checkmark toggle on diffed module cards (L1/L1.5 and L2; `data-diff-review-toggle` intercepted before selection like the connection toggle) and in the preview frame header (`FrameHeader`) for diffed files; reviewed modules dim to the unchanged-module opacity.
 - `features/diff_visualizer` `DiffOverlayBar` shows `Reviewed X/Y`, an expandable checklist of every changed/deleted file with an **Unmark all** top row (disabled when nothing is marked; the empty-set save removes the persisted entry), and a save-failure hint.
+
 
 ## Invariants
 

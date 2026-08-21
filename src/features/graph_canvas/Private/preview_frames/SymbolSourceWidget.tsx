@@ -18,6 +18,7 @@ export interface FrameHandlers {
   onMove: (id: number, pos: Position) => void;
   onActivate: (id: number) => void;
   onTogglePin: (id: number) => void;
+  onToggleDiffReview?: (moduleId: string) => void;
   onNavigate: (id: number, symbolName: string) => void;
   onOpenWikiLink: (id: number, link: WikiLinkClick) => void;
 }
@@ -27,6 +28,7 @@ interface SymbolSourceWidgetProps {
   clickableSymbols: ReadonlySet<string>;
   fileDiff?: FileLineDiff;
   diffNotes?: readonly DiffNote[];
+  diffReview?: { reviewed: boolean; toggle: () => void } | null;
   handlers: FrameHandlers;
 }
 
@@ -42,9 +44,11 @@ export function SymbolSourceWidget({
   clickableSymbols,
   fileDiff,
   diffNotes,
+  diffReview,
   handlers,
 }: SymbolSourceWidgetProps) {
   const frameRef = useRef<HTMLDivElement>(null);
+
   const lineRef = useRef<HTMLDivElement>(null);
   const targetLine = useMemo(
     /*scanSourceForDefinition*/ () =>
@@ -86,7 +90,7 @@ export function SymbolSourceWidget({
   }, [renderMarkdown, frame.sectionAnchor, frame.sourceText]);
 
   const onHeaderPointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest("button")) return;
+    if ((e.target as HTMLElement).closest("button, label, input")) return;
     startFrameDrag(e, { top: frame.top, left: frame.left }, /*commitDropPosition*/ (pos) =>
       handlers.onMove(frame.id, pos),
     );
@@ -145,6 +149,7 @@ export function SymbolSourceWidget({
                 toggle: search.barOpen ? closeBarAndRefocusFrame : search.openBar,
               }
         }
+        diffReview={diffReview}
         actions={{
           onTogglePin: () => handlers.onTogglePin(frame.id),
           onClose: () => handlers.onClose(frame.id),

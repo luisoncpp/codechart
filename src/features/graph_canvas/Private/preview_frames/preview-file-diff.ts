@@ -28,3 +28,13 @@ export function diffNotesForPreview(
   if (!overlay) return [];
   return overlay.diffNotes.filter((note) => note.path === path);
 }
+
+/** Whether the given module path is an affected or deleted file in the active diff. */
+export function isDiffPreviewFile(
+  path: string,
+  overlay: GraphDiffOverlay | null,
+): boolean {
+  if (!overlay) return false;
+  return overlay.affectedModuleIds.has(path) || overlay.deletedModuleIds.has(path);
+}
+

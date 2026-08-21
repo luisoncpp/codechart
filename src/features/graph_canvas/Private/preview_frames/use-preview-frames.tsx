@@ -6,12 +6,7 @@ import type { GraphDiffOverlay } from "../../../../domain/diff";
 import type { GraphSessionStore } from "../../../../state/graph-session";
 import { type FrameHandlers } from "./SymbolSourceWidget";
 import {
-  openFrame,
-  bringToFront,
-  moveFrame,
-  togglePin,
-  closeUnpinned,
-  type PreviewFrame,
+  openFrame, bringToFront, moveFrame, togglePin, closeUnpinned, type PreviewFrame,
 } from "./frame-list";
 import { computePointWidgetPosition, computeWidgetPosition } from "./frame-placement";
 import { combinedSymbolTargets, sourcePrefetchIds } from "./imported-symbol-resolver";
@@ -29,17 +24,17 @@ interface PreviewFramesDeps {
   store: GraphSessionStore;
   graph: ProjectGraph | null;
   diffOverlay: GraphDiffOverlay | null;
+  diffReviewedIds?: ReadonlySet<string>;
   containerRef: React.RefObject<HTMLDivElement | null>;
   /** The live project-search query; a new frame seeds its find bar with it. */
   getFindQuery: () => string;
 }
 
 export function usePreviewFrames(deps: PreviewFramesDeps) {
-  const { store, graph, diffOverlay, containerRef, getFindQuery } = deps;
+  const { store, graph, diffOverlay, diffReviewedIds, containerRef, getFindQuery } = deps;
   const [frames, setFrames] = useState<readonly PreviewFrame[]>([]);
   const [moduleSources, setModuleSources] = useState<ReadonlyMap<string, string>>(new Map());
   const nextId = useRef(1);
-
   const framesRef = useRef(frames);
   framesRef.current = frames;
 
@@ -57,31 +52,16 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     [graph, store],
   );
 
-  const closeTransient = useCallback(
-    () => setFrames((previous) => closeUnpinned(previous)),
-    [],
-  );
-
-  const { armOpenGrace, closeIfAllowed } = useClosePreviewFrames(
-    frames.length > 0,
-    closeTransient,
-  );
+  const closeTransient = useCallback(() => setFrames((prev) => closeUnpinned(prev)), []);
+  const { armOpenGrace, closeIfAllowed } = useClosePreviewFrames(frames.length > 0, closeTransient);
 
   const open = useCallback(
-    (
-      mode: "close-unpinned" | "keep-all",
-      frame: Omit<PreviewFrame, "id" | "zIndex" | "pinned">,
-    ) => {
+    (mode: "close-unpinned" | "keep-all", frame: Omit<PreviewFrame, "id" | "zIndex" | "pinned">) => {
       const initialFindQuery = getFindQuery() || undefined;
       armOpenGrace();
       setFrames((prev) => {
         const base = mode === "close-unpinned" ? closeUnpinned(prev) : prev;
-        return openFrame(base, {
-          ...frame,
-          pinned: false,
-          initialFindQuery,
-          id: nextId.current++,
-        });
+        return openFrame(base, { ...frame, pinned: false, initialFindQuery, id: nextId.current++ });
       });
     },
     [armOpenGrace, getFindQuery],
@@ -97,35 +77,20 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
       const module = graph.modules.find((m) => m.id === moduleId);
       if (!module) return;
       const sourceText = await store.fetchModuleSource(moduleId);
-      const pos = computeWidgetPosition(
-        symbolEl.getBoundingClientRect(),
-        container.getBoundingClientRect(),
-      );
+      const pos = computeWidgetPosition(symbolEl.getBoundingClientRect(), container.getBoundingClientRect());
       const symbolName = symbolEl.getAttribute("data-symbol-name") || "";
       void prefetchSources(moduleId);
       open("close-unpinned", {
-        moduleId,
-        moduleLabel: module.label,
-        symbolName,
-        modulePath: module.path,
+        moduleId, moduleLabel: module.label, symbolName, modulePath: module.path,
         color: typeof node.data?.color === "string" ? node.data.color : "#64748b",
-        sourceText,
-        ...pos,
+        sourceText, ...pos,
       });
     },
     [graph, store, containerRef, open, prefetchSources],
   );
 
   const openDocumentPreview = useMemo(
-    () =>
-      createDocumentPreview({
-        containerRef,
-        store,
-        graph,
-        diffOverlay,
-        open,
-        prefetchSources,
-      }),
+    () => createDocumentPreview({ containerRef, store, graph, diffOverlay, open, prefetchSources }),
     [containerRef, store, graph, diffOverlay, open, prefetchSources],
   );
 
@@ -158,13 +123,8 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
         containerBox,
       );
       open("keep-all", {
-        moduleId: target.moduleId,
-        moduleLabel: targetModule.label,
-        symbolName,
-        modulePath: target.path,
-        color: "#64748b",
-        sourceText,
-        ...pos,
+        moduleId: target.moduleId, moduleLabel: targetModule.label, symbolName,
+        modulePath: target.path, color: "#64748b", sourceText, ...pos,
       });
     },
     [graph, store, containerRef, open, moduleSources, prefetchSources],
@@ -176,11 +136,12 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
       onMove: (id, pos) => setFrames((prev) => moveFrame(prev, id, pos)),
       onActivate: (id) => setFrames((prev) => bringToFront(prev, id)),
       onTogglePin: (id) => setFrames((prev) => togglePin(prev, id)),
+      onToggleDiffReview: (moduleId) => store.toggleDiffReviewed(moduleId),
       onNavigate: openFromSymbolClick,
       onOpenWikiLink: (frameId: number, link: WikiLinkClick) =>
         void wikiLink.openLink({ link, anchor: { frameId } }),
     }),
-    [openFromSymbolClick, wikiLink],
+    [openFromSymbolClick, store, wikiLink],
   );
 
   const clickableByModule = useClickableSymbols(graph, frames, moduleSources);
@@ -191,6 +152,16 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     openReviewNotePreview,
     openWikiLinkFromEvent: wikiLink.openFromEvent,
     closeTransient: closeIfAllowed,
-    framesView: <PreviewFramesView frames={frames} clickableByModule={clickableByModule} diffOverlay={diffOverlay} handlers={handlers} />,
+    framesView: (
+      <PreviewFramesView
+        frames={frames}
+        clickableByModule={clickableByModule}
+        diffOverlay={diffOverlay}
+        diffReviewedIds={diffReviewedIds}
+        handlers={handlers}
+      />
+    ),
   };
 }
+
+

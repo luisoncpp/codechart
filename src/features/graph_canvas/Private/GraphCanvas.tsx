@@ -77,7 +77,7 @@ export function GraphCanvas({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const previews = usePreviewFrames({
-    store, graph, diffOverlay, containerRef, getFindQuery: () => ui.getFindQuery(),
+    store, graph, diffOverlay, diffReviewedIds, containerRef, getFindQuery: () => ui.getFindQuery(),
   });
   const moveGuard = useRef(new ProgrammaticMoveGuard()).current;
   useReviewNoteNavigation({

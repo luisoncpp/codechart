@@ -287,6 +287,15 @@
   margin-left: 8px;
 }
 
+.symbol-widget__diff-review {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
 .symbol-widget__find-toggle {
   background: transparent;
   border: none;
