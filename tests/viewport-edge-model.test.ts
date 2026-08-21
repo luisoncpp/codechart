@@ -41,7 +41,8 @@ describe("buildStaticEdgeModel", () => {
 
     expect(model).not.toBeNull();
     expect(model!.buckets[0]?.mergedPath).toBe("M10,10 L30,30");
-    expect(model!.showArrows).toBe(false);
+    expect(model!.buckets[0]?.mergedArrowPath.length).toBeGreaterThan(0);
+    expect(model!.showArrows).toBe(true);
     expect(model!.buckets[0]?.arrowSegments).toEqual([inside]);
   });
 

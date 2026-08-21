@@ -1,8 +1,8 @@
 // @Architecture(descriptionShort="Zoom threshold and arrowhead path geometry")
 const ARROW_LEN = 8; // edge-path.ts ARROW_LEN
 const ARROW_WIDTH = 8; // edge-path.ts arrowHeadPoints half-span
-/** Same 12px screen floor as `symbolsFitOnScreen` labels. */
-const ARROW_SCREEN_MIN = 12;
+/** 4.4px screen floor so arrowheads show from Level 1 card view (zoom >= 0.55). */
+const ARROW_SCREEN_MIN = 4.4;
 
 export function showArrowHeadsAtZoom(zoom: number): boolean {
   if (!Number.isFinite(zoom) || zoom <= 0) return false;

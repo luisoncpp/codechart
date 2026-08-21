@@ -5,13 +5,15 @@ import {
 } from "../src/features/graph_canvas/Private/edges/edge-arrow-zoom";
 
 describe("showArrowHeadsAtZoom", () => {
-  it("hides arrows at L1.5 entry zoom where the overview hairball is still on screen", () => {
-    expect(showArrowHeadsAtZoom(0.5)).toBe(false);
-    expect(showArrowHeadsAtZoom(0.9)).toBe(false);
-    expect(showArrowHeadsAtZoom(1.4)).toBe(false);
+  it("hides arrows at overview and bird's-eye zoom levels (< 0.55)", () => {
+    expect(showArrowHeadsAtZoom(0.3)).toBe(false);
+    expect(showArrowHeadsAtZoom(0.45)).toBe(false);
+    expect(showArrowHeadsAtZoom(0.54)).toBe(false);
   });
 
-  it("shows arrows once an 8px world head is at least 12px on screen", () => {
+  it("shows arrows from Level 1 card view (zoom >= 0.55)", () => {
+    expect(showArrowHeadsAtZoom(0.55)).toBe(true);
+    expect(showArrowHeadsAtZoom(0.9)).toBe(true);
     expect(showArrowHeadsAtZoom(1.5)).toBe(true);
     expect(showArrowHeadsAtZoom(2)).toBe(true);
   });

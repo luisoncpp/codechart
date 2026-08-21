@@ -12,6 +12,7 @@ import { bucketFromVisibleSegments } from "./viewport-edge-bucket";
 export interface ViewportEdgeBucket {
   style: EdgeDrawStyle;
   mergedPath: string;
+  mergedArrowPath: string;
   arrowSegments: EdgeSegment[];
   crossSegments: EdgeSegment[];
 }

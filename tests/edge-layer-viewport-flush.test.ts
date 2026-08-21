@@ -23,12 +23,12 @@ describe("viewport rAF flush", () => {
     });
 
     controller.scheduleViewportFlush({
-      transform: [0, 0, 1.4],
+      transform: [0, 0, 0.5],
       width: 100,
       height: 100,
     });
     controller.scheduleViewportFlush({
-      transform: [0, 0, 1.5],
+      transform: [0, 0, 0.6],
       width: 100,
       height: 100,
     });
@@ -47,12 +47,12 @@ describe("viewport rAF flush", () => {
       setupFlushController({ width: 100, height: 100 });
 
     controller.scheduleViewportFlush({
-      transform: [0, 0, 1.4],
+      transform: [0, 0, 0.5],
       width: 100,
       height: 100,
     });
     controller.scheduleViewportFlush({
-      transform: [10, 0, 1.4],
+      transform: [10, 0, 0.5],
       width: 100,
       height: 100,
     });
@@ -68,7 +68,7 @@ describe("viewport rAF flush", () => {
       setupFlushController({ width: 100, height: 100 });
 
     controller.scheduleViewportFlush({
-      transform: [0, 0, 1.5],
+      transform: [0, 0, 0.6],
       width: 100,
       height: 100,
     });
@@ -87,7 +87,7 @@ describe("viewport rAF flush", () => {
       setupFlushController();
 
     controller.scheduleViewportFlush({
-      transform: [600, 0, 1.4],
+      transform: [600, 0, 0.5],
       width: 800,
       height: 600,
     });

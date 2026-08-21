@@ -6,7 +6,7 @@
 
 ## Markers vs merged paths
 
-`marker-end` on a merged multi-subpath `d` only marks the **last** endpoint. Batching strokes per style bucket means dropping SVG markers at overview and drawing arrow geometry (`arrowHeadPath`) only for non-cross segments once an 8px world head is ≥12px on screen (zoom ≥ 1.5 — L1.5 *entry* at 0.9 still has the hairball on screen). Removed-diff X heads (`CrossHead`) live in the full static cross set per bucket.
+`marker-end` on a merged multi-subpath `d` only marks the **last** endpoint. Batching strokes per style bucket means dropping SVG markers at overview and drawing batched arrowhead geometry (`mergedArrowPath` via `arrowHeadPath`) as a single `<path>` per bucket once an 8px world head is ≥4.4px on screen (zoom ≥ 0.55 — Level 1 card view shows arrows; overview/bird's-eye zooms ≤ 0.45 hide arrows to prevent clutter). Removed-diff X heads (`CrossHead`) live in the full static cross set per bucket.
 
 ## Pan must stay out of GraphCanvas setState
 

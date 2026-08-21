@@ -1,6 +1,5 @@
 // @Architecture(descriptionShort="SVG paths for a single edge style bucket")
 import { useLayoutEffect, useRef } from "react";
-import { arrowHeadPath } from "./edge-arrow-zoom";
 import { crossHeadLines } from "./edge-cross-head";
 import type { BucketDomRefs } from "./edge-layer-dom-writer";
 import { styleKeyFromDrawStyle } from "./edge-path";
@@ -35,15 +34,16 @@ export function EdgeBucketSvg({ bucket, showArrows, onRefs }: EdgeBucketSvgProps
       strokeLinecap="round"
     >
       <path ref={strokeRef} d={bucket.mergedPath} />
-      <g fill={style.stroke}>
-        {showArrows &&
-          bucket.arrowSegments.map((segment, index) => (
-            <path
-              key={index}
-              d={arrowHeadPath(segment.arrowTip, segment.arrowAngle)}
-            />
-          ))}
-      </g>
+      {showArrows && bucket.mergedArrowPath.length > 0 && (
+        <path
+          d={bucket.mergedArrowPath}
+          fill={style.stroke}
+          stroke={style.stroke}
+          strokeWidth={style.lineWidth}
+          strokeLinejoin="round"
+          strokeDasharray="none"
+        />
+      )}
       <g>
         {bucket.crossSegments.map((segment, index) => (
           <CrossHead

@@ -331,9 +331,9 @@ hidden by zoom collapse.
   large box instead of floating tiny in it. `ModuleNodeView` reads the node's laid-out `width`/`height`
   (`NodeProps`) to compute it; L2 detail labels stay at the compact 9px. At **L1.5**, `ModuleSymbolBoxes`
   paints the exported-symbol grid only when `symbolsFitOnScreen(boxW, boxH, cameraZoom)` (`domain/layout`,
-  pure): world-sized 9px labels need ≥12px on screen and the card's shorter side needs ≥140px — so the
+  pure): world-sized 9px labels need ≥12px on screen and the card's shorter side needs ≥100px — so the
   semantic level still starts at camera zoom 0.9 (bold filename, group long text) but symbol DOM is skipped
-  until camera zoom makes the labels readable **and** the card's shorter side is ≥140px on screen. Net L1 hierarchy: zoom out → group
+  until camera zoom makes the labels readable **and** the card's shorter side is ≥100px on screen. Net L1 hierarchy: zoom out → group
   headers grow and dominate, module labels shrink with their boxes and always fit. `InspectionPanel` gains a
   `MetadataSection` (`This module` + `Group` annotation: type / short / long), rendering nothing when
   neither side is annotated (graceful fallback, TDD §10). `icon-map` covers the fixture's icon names.

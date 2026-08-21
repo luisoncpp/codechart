@@ -22,7 +22,7 @@ export function symbolBoxWidth(label: string): number {
 /** Minimum on-screen px for a world-sized symbol label to be readable. */
 const SYMBOL_FONT_SCREEN_MIN = 12;
 /** Minimum on-screen px for the card's shorter side before painting the grid. */
-const SYMBOL_CARD_MIN_SIDE_SCREEN = 140;
+const SYMBOL_CARD_MIN_SIDE_SCREEN = 100;
 
 /** Whether L1.5 symbol boxes should paint at this camera zoom and card size. */
 export function symbolsFitOnScreen(

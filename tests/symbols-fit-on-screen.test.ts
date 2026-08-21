@@ -5,9 +5,12 @@ describe("symbolsFitOnScreen", () => {
   it("returns false when font or card is too small on screen", () => {
     expect(symbolsFitOnScreen(120, 90, 0.9)).toBe(false);
     expect(symbolsFitOnScreen(800, 600, 1.1)).toBe(false);
+    expect(symbolsFitOnScreen(60, 40, 1.4)).toBe(false);
   });
 
-  it("returns true when font and card meet screen thresholds", () => {
+  it("returns true when font and card meet screen thresholds at readable L1.5 zoom", () => {
+    expect(symbolsFitOnScreen(120, 90, 1.35)).toBe(true);
+    expect(symbolsFitOnScreen(132, 99, 1.35)).toBe(true);
     expect(symbolsFitOnScreen(120, 90, 1.6)).toBe(true);
     expect(symbolsFitOnScreen(120, 90, 2)).toBe(true);
   });

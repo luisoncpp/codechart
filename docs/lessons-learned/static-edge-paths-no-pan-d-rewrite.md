@@ -15,7 +15,7 @@ Even a single unculled merged `d` is expensive at idle/first paint — SVG still
 ## Pan vs LOD
 
 - **Pan:** subscribe to RF `transform` inside `EdgeLayer` (rAF-throttled) only to detect clip-cell changes and arrow-LOD threshold flips — never `setAttribute("d")` every pointermove, never `GraphCanvas.onMove` `setState` (see `drag-via-react-state-rerenders-whole-canvas.md`).
-- **Arrow LOD:** when zoom crosses `showArrowHeadsAtZoom` (≥ 1.5), call `onViewportModel` once (coalesced per rAF) so React owns arrow children via `showArrows`. Do not imperatively write arrow DOM when refs exist — a later `GraphCanvas` re-render would wipe stale imperative children.
+- **Arrow LOD:** when zoom crosses `showArrowHeadsAtZoom` (≥ 0.55), call `onViewportModel` once (coalesced per rAF) so React owns arrow children via `showArrows`. Do not imperatively write arrow DOM when refs exist — a later `GraphCanvas` re-render would wipe stale imperative children.
 
 Geometry rebuilds (`writeGeometry`: stroke `d`) run on graph/layout changes and on clip-cell change; pan within the same clip cell does not call `writeGeometry`. Arrow and cross heads are rendered declaratively by React in `EdgeBucketSvg`.
 

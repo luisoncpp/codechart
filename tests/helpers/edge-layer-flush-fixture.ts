@@ -83,7 +83,7 @@ export function setupFlushController(opts: FlushFixtureOpts = {}) {
       getState: () => ({
         domNode: makeDom(),
         nodeLookup: lookupFor(nodes),
-        transform: opts.transform ?? ([0, 0, 1.4] as const),
+        transform: opts.transform ?? ([0, 0, 0.5] as const),
         width: opts.width ?? 800,
         height: opts.height ?? 600,
       }),

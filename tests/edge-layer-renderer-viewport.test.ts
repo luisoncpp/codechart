@@ -127,7 +127,7 @@ describe("EdgeLayerRenderer viewport", () => {
     ).toBe(false);
   });
 
-  it("arrowLodFlipped is true when zoom crosses 1.5 threshold", () => {
+  it("arrowLodFlipped is true when zoom crosses 0.55 threshold", () => {
     const nodes = [node("a", 0, 0), node("b", 200, 0)];
     const edges = [
       styleEdge(
@@ -138,10 +138,10 @@ describe("EdgeLayerRenderer viewport", () => {
     const renderer = new EdgeLayerRenderer();
     renderer.setEdges(edges);
     renderer.rebuildGeometry(nodes, lookupFor(nodes) as never);
-    renderer.buildStaticModel({ transform: [0, 0, 1.4], width: 800, height: 600 });
+    renderer.buildStaticModel({ transform: [0, 0, 0.5], width: 800, height: 600 });
 
     expect(
-      renderer.arrowLodFlipped({ transform: [0, 0, 1.5], width: 800, height: 600 }),
+      renderer.arrowLodFlipped({ transform: [0, 0, 0.6], width: 800, height: 600 }),
     ).toBe(true);
   });
 });
