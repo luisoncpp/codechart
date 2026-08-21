@@ -55,6 +55,7 @@ describe("buildStaticEdgeModel", () => {
 
     expect(model!.buckets[0]?.crossSegments).toEqual([removed]);
     expect(model!.buckets[0]?.mergedPath).toBe("M40,40 L60,60");
+    expect(model!.buckets[0]?.mergedCrossPath.length).toBeGreaterThan(0);
   });
 
   it("sets showArrows false when zoom is below threshold", () => {

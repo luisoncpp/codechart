@@ -13,6 +13,7 @@ export interface ViewportEdgeBucket {
   style: EdgeDrawStyle;
   mergedPath: string;
   mergedArrowPath: string;
+  mergedCrossPath: string;
   arrowSegments: EdgeSegment[];
   crossSegments: EdgeSegment[];
 }

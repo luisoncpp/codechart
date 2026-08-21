@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Shared X-head line geometry for edge crosses")
-export interface CrossHeadLines {
+interface CrossHeadLines {
   x1: number;
   y1: number;
   x2: number;
@@ -10,7 +10,7 @@ export interface CrossHeadLines {
   y4: number;
 }
 
-export function crossHeadLines(
+function crossHeadLines(
   tip: { x: number; y: number },
   angle: number,
   size = 5,
@@ -31,4 +31,13 @@ export function crossHeadLines(
     x4: tip.x + dx + px,
     y4: tip.y + dy + py,
   };
+}
+
+export function crossHeadPath(
+  tip: { x: number; y: number },
+  angle: number,
+  size = 5,
+): string {
+  const lines = crossHeadLines(tip, angle, size);
+  return `M ${lines.x1},${lines.y1} L ${lines.x2},${lines.y2} M ${lines.x3},${lines.y3} L ${lines.x4},${lines.y4}`;
 }

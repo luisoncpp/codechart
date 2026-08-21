@@ -1,5 +1,6 @@
 // @Architecture(descriptionShort="Partitions all edge segments per style bucket")
 import { arrowHeadPath } from "./edge-arrow-zoom";
+import { crossHeadPath } from "./edge-cross-head";
 import type { EdgeDrawStyle, EdgeSegment } from "./edge-path";
 import { mergePathD } from "./edge-path-merge";
 import type { WorldRect } from "./edge-viewport";
@@ -9,6 +10,11 @@ import type { ViewportEdgeBucket } from "./viewport-edge-model";
 function mergeArrowHeadD(segments: EdgeSegment[]): string {
   if (segments.length === 0) return "";
   return segments.map((s) => arrowHeadPath(s.arrowTip, s.arrowAngle)).join(" ");
+}
+
+function mergeCrossHeadD(segments: EdgeSegment[]): string {
+  if (segments.length === 0) return "";
+  return segments.map((s) => crossHeadPath(s.arrowTip, s.arrowAngle)).join(" ");
 }
 
 function bucketFromAllSegments(
@@ -25,6 +31,7 @@ function bucketFromAllSegments(
     style,
     mergedPath: mergePathD(segments),
     mergedArrowPath: mergeArrowHeadD(arrowSegments),
+    mergedCrossPath: mergeCrossHeadD(crossSegments),
     arrowSegments,
     crossSegments,
   };

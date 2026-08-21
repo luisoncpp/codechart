@@ -1,6 +1,5 @@
 // @Architecture(descriptionShort="SVG paths for a single edge style bucket")
 import { useLayoutEffect, useRef } from "react";
-import { crossHeadLines } from "./edge-cross-head";
 import type { BucketDomRefs } from "./edge-layer-dom-writer";
 import { styleKeyFromDrawStyle } from "./edge-path";
 import type { ViewportEdgeBucket } from "./viewport-edge-model";
@@ -44,34 +43,15 @@ export function EdgeBucketSvg({ bucket, showArrows, onRefs }: EdgeBucketSvgProps
           strokeDasharray="none"
         />
       )}
-      <g>
-        {bucket.crossSegments.map((segment, index) => (
-          <CrossHead
-            key={index}
-            tip={segment.arrowTip}
-            angle={segment.arrowAngle}
-            color={style.stroke}
-          />
-        ))}
-      </g>
-    </g>
-  );
-}
-
-function CrossHead({
-  tip,
-  angle,
-  color,
-}: {
-  tip: { x: number; y: number };
-  angle: number;
-  color: string;
-}) {
-  const lines = crossHeadLines(tip, angle);
-  return (
-    <g stroke={color} strokeWidth={2.4} strokeLinecap="round">
-      <line x1={lines.x1} y1={lines.y1} x2={lines.x2} y2={lines.y2} />
-      <line x1={lines.x3} y1={lines.y3} x2={lines.x4} y2={lines.y4} />
+      {bucket.mergedCrossPath.length > 0 && (
+        <path
+          d={bucket.mergedCrossPath}
+          stroke={style.stroke}
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          strokeDasharray="none"
+        />
+      )}
     </g>
   );
 }
