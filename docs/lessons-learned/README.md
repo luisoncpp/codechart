@@ -21,6 +21,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [flexbox-breaks-inline-markdown-flow.md](./flexbox-breaks-inline-markdown-flow.md) | Flexbox on inline markdown containers turns text nodes and inline tags into flex item columns | 2026-08-20 |
 | [relaxed-diff-hunk-context-lines.md](./relaxed-diff-hunk-context-lines.md) | Treat non-change/non-marker lines in diff hunks as context to avoid line drift in LLM-generated patches | 2026-08-20 |
 | [imperative-dom-mutations-break-react-reconciliation.md](./imperative-dom-mutations-break-react-reconciliation.md) | Imperative DOM child mutations inside React components cause removeChild crashes during commit phase | 2026-08-19 |
 | [edge-clip-cell-hysteresis.md](./edge-clip-cell-hysteresis.md) | Clip-cell key from tight padded rect + scale in key; filter from inflated rect — cell-count w/h in the key is zoom-invariant on square viewports | 2026-08-19 |

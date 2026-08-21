@@ -135,5 +135,22 @@ describe("group description tooltip (L1)", () => {
     expect(tooltip.querySelector("code")).toHaveTextContent("inline code");
     expect(tooltip.querySelector("a")).toHaveAttribute("href", "https://example.com");
   });
+
+  it("renders inline wiki links without flex layout on paragraph", () => {
+    const textWithLink =
+      "Fastify plugin serving battler [[BattlerBodySchema]] declares every writable field";
+    const { container } = renderDescription({
+      label: "battlers",
+      color: "#ef4444",
+      descriptionShort: textWithLink,
+      descriptionBox: { x: 0, y: 0, width: 240, height: 100 },
+    });
+    const p = container.querySelector("p");
+    expect(p).not.toBeNull();
+    expect(p?.style.display).not.toBe("flex");
+    const link = p?.querySelector("a.hl-wiki-link");
+    expect(link).not.toBeNull();
+    expect(link).toHaveTextContent("BattlerBodySchema");
+  });
 });
 

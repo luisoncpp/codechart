@@ -129,7 +129,7 @@ function bandDescriptionStyle(
     textAlign: "left" as const,
     color,
     overflow: "hidden",
-    display: "flex",
-    alignItems: "center",
+    whiteSpace: "normal" as const,
+    wordBreak: "break-word" as const,
   };
 }
