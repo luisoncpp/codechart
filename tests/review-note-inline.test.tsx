@@ -31,4 +31,19 @@ describe("InlineReviewNotes", () => {
     expect(notes.getDraft()).toBeNull();
     expect(notes.getDocument().notes).toHaveLength(0);
   });
+
+  it("resolves an existing note using the header Resolve button and has no Done button", () => {
+    const notes = store();
+    notes.beginDraft({ path: "a.ts", startLine: 3, endLine: 3, anchorLines: ["a"] });
+    notes.confirmDraft("Needs fix");
+    render(<ReviewNotesProvider store={notes}><InlineReviewNotes notes={notes.getDocument().notes} showDraft={false} /></ReviewNotesProvider>);
+
+    expect(screen.queryByRole("button", { name: "Done" })).toBeNull();
+    const resolveBtn = screen.getByRole("button", { name: "Resolve Review Note on line 3" });
+    expect(resolveBtn).toBeInTheDocument();
+    expect(screen.getByText("Saved")).toBeInTheDocument();
+
+    fireEvent.click(resolveBtn);
+    expect(notes.getDocument().notes).toHaveLength(0);
+  });
 });

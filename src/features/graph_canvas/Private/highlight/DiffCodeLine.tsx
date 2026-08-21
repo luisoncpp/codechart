@@ -35,11 +35,10 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
   const { row, zoom, prefix, active, lineRef, anchored, onLineClick } = props;
   const fontSize = 12.5 / zoom;
   const gutter = row.kind === "add" ? "+" : row.kind === "remove" ? "-" : " ";
-  const lineNumber = row.kind === "remove" ? "" : String(row.lineNumber);
-  const numberStyle = {
+  const numStyle = {
     flex: `0 0 ${18 / zoom}px`,
     textAlign: "right" as const,
-    paddingRight: 6 / zoom,
+    paddingRight: 4 / zoom,
     color: "#94a3b8",
     fontSize: fontSize * 0.9,
   };
@@ -51,7 +50,7 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
       style={{
         display: "flex",
         alignItems: "flex-start",
-        padding: `0 ${8 / zoom}px`,
+        padding: `0 ${4 / zoom}px`,
         whiteSpace: "pre",
         fontSize,
         lineHeight: 1.4,
@@ -59,30 +58,11 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
     >
       <span
         className={`${prefix}__gutter ${prefix}__gutter--${row.kind}`}
-        style={{
-          flex: `0 0 ${22 / zoom}px`,
-          textAlign: "right",
-          paddingRight: 6 / zoom,
-          userSelect: "none",
-          fontSize: fontSize * 0.9,
-        }}
+        style={{ flex: `0 0 ${11 / zoom}px`, textAlign: "center", userSelect: "none", fontSize: fontSize * 0.9 }}
       >
         {gutter}
       </span>
-      {row.kind === "remove" ? (
-        <span className={`${prefix}__ln`} style={{ ...numberStyle, userSelect: "none" }}>
-          {lineNumber}
-        </span>
-      ) : (
-        <button
-          type="button"
-          className={`${prefix}__ln`}
-          onClick={(event) => onLineClick?.(row.lineNumber, event.shiftKey)}
-          style={{ ...numberStyle, border: 0, background: "transparent", cursor: "pointer" }}
-        >
-          {lineNumber}
-        </button>
-      )}
+      <LineNumber prefix={prefix} kind={row.kind} lineNumber={row.lineNumber} style={numStyle} onLineClick={onLineClick} />
       <span
         className={`${prefix}__text${anchored ? ` ${prefix}__text--review-note` : ""}`}
         style={{ flex: 1, background: anchored ? "#f3e8ff" : undefined }}
@@ -90,6 +70,34 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
         <LineTokens {...props} />
       </span>
     </div>
+  );
+}
+
+interface LineNumberProps {
+  prefix: string;
+  kind: DiffDisplayRow["kind"];
+  lineNumber: number;
+  style: React.CSSProperties;
+  onLineClick?: (line: number, extend: boolean) => void;
+}
+
+function LineNumber({ prefix, kind, lineNumber, style, onLineClick }: LineNumberProps) {
+  if (kind === "remove") {
+    return (
+      <span className={`${prefix}__ln`} style={{ ...style, userSelect: "none" }}>
+        {""}
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={`${prefix}__ln`}
+      onClick={(event) => onLineClick?.(lineNumber, event.shiftKey)}
+      style={{ ...style, border: 0, background: "transparent", cursor: "pointer" }}
+    >
+      {lineNumber}
+    </button>
   );
 }
 

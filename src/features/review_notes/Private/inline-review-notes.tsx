@@ -33,29 +33,45 @@ function ReviewNoteCard({ note }: { note: ReviewNote }) {
   if (!store) return null;
   return (
     <article className="review-note-inline__card">
-      <button
-        type="button"
-        className="review-note-inline__toggle"
-        aria-expanded={expanded}
-        aria-controls={bodyId}
-        onClick={() => setExpanded((current) => !current)}
-      >
-        <span className="review-note-inline__chevron" aria-hidden>{expanded ? "⌄" : "›"}</span>
-        <span>{label}</span>
-      </button>
-      {expanded && (
-        <div id={bodyId} className="review-note-inline__body">
-          <textarea
-            aria-label={`Review Note ${note.body}`}
-            defaultValue={note.body}
-            onBlur={(event) => store.editBody(note.id, event.target.value)}
-          />
-          <div className="review-note-inline__actions">
-            <button type="button" onClick={() => store.done(note.id)}>Done</button>
-          </div>
-        </div>
-      )}
+      <div className="review-note-inline__header">
+        <button
+          type="button"
+          className="review-note-inline__toggle"
+          aria-expanded={expanded}
+          aria-controls={bodyId}
+          onClick={() => setExpanded((current) => !current)}
+        >
+          <span className="review-note-inline__chevron" aria-hidden>{expanded ? "⌄" : "›"}</span>
+          <span>{label}</span>
+        </button>
+        <button
+          type="button"
+          className="review-note-inline__resolve"
+          aria-label={`Resolve ${label}`}
+          onClick={() => store.done(note.id)}
+        >
+          <span aria-hidden>✓</span> Resolve
+        </button>
+      </div>
+      {expanded && <ReviewNoteBody id={bodyId} note={note} />}
     </article>
+  );
+}
+
+function ReviewNoteBody({ id, note }: { id: string; note: ReviewNote }) {
+  const store = useReviewNotesStore();
+  if (!store) return null;
+  return (
+    <div id={id} className="review-note-inline__body">
+      <textarea
+        aria-label={`Review Note ${note.body}`}
+        defaultValue={note.body}
+        onBlur={(event) => store.editBody(note.id, event.target.value)}
+      />
+      <div className="review-note-inline__footer">
+        <span className="review-note-inline__status">Saved</span>
+      </div>
+    </div>
   );
 }
 
