@@ -15,6 +15,10 @@ export function HelpMenu() {
           onSelect={() => setActiveTopic(HELP_TOPICS["groups-format"])}
         />
         <MenuActionItem
+          label="Architecture tags..."
+          onSelect={() => setActiveTopic(HELP_TOPICS["architecture-tags"])}
+        />
+        <MenuActionItem
           label="Diff notes..."
           onSelect={() => setActiveTopic(HELP_TOPICS["diff-notes"])}
         />

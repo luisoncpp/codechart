@@ -50,9 +50,10 @@ export function computeWidgetPosition(
 export function computePointWidgetPosition(
   point: ClientPoint,
   containerRect: DOMRect,
+  frameHeight: number = FRAME_HEIGHT,
 ): Position {
   const maxLeft = Math.max(SPACING, containerRect.width - FRAME_WIDTH - SPACING);
-  const maxTop = Math.max(SPACING, containerRect.height - FRAME_HEIGHT - SPACING);
+  const maxTop = Math.max(SPACING, containerRect.height - frameHeight - SPACING);
   const left = Math.min(Math.max(SPACING, point.x - containerRect.left), maxLeft);
   const top = Math.min(Math.max(SPACING, point.y - containerRect.top), maxTop);
   return { top, left };

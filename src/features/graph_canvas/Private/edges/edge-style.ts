@@ -1,6 +1,8 @@
 // @Architecture(descriptionShort="Applies strokes, patterns, and colors to visual edges")
 import { MarkerType } from "@xyflow/react";
 import type { EdgeFocus, RFEdgeT } from "../../../../domain/graph";
+import type { ArrowVisibility } from "../controller/canvas-ui-state";
+
 
 export type EdgeRole =
   | "import"
@@ -70,19 +72,27 @@ function edgeOpacity(
 
 /** Apply the sample's edge aesthetic + focus dimming (floating routing).
  *  Soft (event/runtime) edges render dashed; direction color still applies. */
-export function styleEdge(edge: RFEdgeT, focus: EdgeFocus | null): RFEdgeT {
+export function styleEdge(
+  edge: RFEdgeT,
+  focus: EdgeFocus | null,
+  arrowVisibility: ArrowVisibility = "all",
+): RFEdgeT | null {
   const role = edgeRole(edge, focus);
   const color = COLOR[role];
   const focused = role !== "neutral";
   const isDiff = isDiffRole(role);
   const connected = roleForFocus(edge, focus) !== null;
+  if (arrowVisibility === "hide-non-selected-arrows" && !connected) {
+    return null;
+  }
   const dashed = edge.data?.kind === "soft";
   const isRemoved = role === "diff-removed";
+  const hideHead = arrowVisibility === "hide-non-selected-heads" && !connected;
   const strokeWidth = isDiff ? 2.8 : (focused ? 2 : 1.2);
   return {
     ...edge,
     type: "floating",
-    markerEnd: isRemoved
+    markerEnd: isRemoved || hideHead
       ? undefined
       : { type: MarkerType.ArrowClosed, color, width: 14, height: 14 },
     style: {
@@ -93,4 +103,5 @@ export function styleEdge(edge: RFEdgeT, focus: EdgeFocus | null): RFEdgeT {
     },
   };
 }
+
 

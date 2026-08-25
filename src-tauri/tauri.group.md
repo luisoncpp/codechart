@@ -8,13 +8,18 @@ groups:
   - analysis
   - contract
   - diagnostics
+  - diff_reviews_backend
+  - git
   - grouping
   - language_adapter
   - project_config
   - project_source
   - references
+  - review_notes_backend
   - semantic_comments
   - tauri_api
+  - tsconfig_paths
+  - unity_assets
   - cli
 descriptionShort: Rust analysis backend
 ---

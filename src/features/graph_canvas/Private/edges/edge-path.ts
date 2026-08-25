@@ -25,7 +25,7 @@ export interface EdgeDrawStyle {
   lineWidth: number;
   opacity: number;
   dash: number[] | null;
-  marker: "arrow" | "cross";
+  marker: "arrow" | "cross" | "none";
 }
 
 export interface EdgeSegment {
@@ -40,7 +40,8 @@ export interface EdgeSegment {
 
 export function drawStyleFromEdge(edge: RFEdgeT): EdgeDrawStyle {
   const style = edge.style ?? {};
-  const marker = edge.data?.diffState === "removed" ? "cross" : "arrow";
+  const isRemoved = edge.data?.diffState === "removed";
+  const marker = isRemoved ? "cross" : (edge.markerEnd ? "arrow" : "none");
   return {
     stroke: String(style.stroke ?? "#94a3b8"),
     lineWidth: Number(style.strokeWidth ?? 1.2),
@@ -49,6 +50,7 @@ export function drawStyleFromEdge(edge: RFEdgeT): EdgeDrawStyle {
     marker,
   };
 }
+
 
 export function styleKeyFromDrawStyle(style: EdgeDrawStyle): string {
   const dash = style.dash?.join(",") ?? "";

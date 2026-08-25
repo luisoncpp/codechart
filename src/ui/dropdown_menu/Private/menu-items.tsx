@@ -1,13 +1,18 @@
-// @Architecture(descriptionShort="Menu item primitives: action, checkbox, radio, and separator")
-import { useContext, type ReactNode } from "react";
+// @Architecture(descriptionShort="Menu item primitives: action, checkbox, radio, submenu, and separator")
+import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { MenuCloseContext } from "./DropdownMenu";
 import {
   checkSlotStyle,
   itemDisabledStyle,
   itemStyle,
+  sectionHeaderStyle,
   separatorStyle,
   shortcutStyle,
+  submenuBridgeStyle,
+  submenuPanelStyle,
 } from "./menu-styles";
+
+
 
 interface MenuActionItemProps {
   label: string;
@@ -98,3 +103,84 @@ export function MenuRadioItem({ label, checked, onSelect, indent }: MenuRadioIte
 export function MenuSeparator() {
   return <div role="separator" style={separatorStyle} />;
 }
+
+export function MenuSectionHeader({ label }: { label: string }) {
+  return <div style={sectionHeaderStyle}>{label}</div>;
+}
+
+const CLOSE_DELAY_MS = 180;
+
+interface MenuSubmenuProps {
+  label: string;
+  children: ReactNode;
+}
+
+/** Opens a cascading submenu on the right when hovered or clicked, with a diagonal hover grace period. */
+export function MenuSubmenu({ label, children }: MenuSubmenuProps) {
+  const [open, setOpen] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTimer = () => {
+    if (timerRef.current === null) return;
+    clearTimeout(timerRef.current);
+    timerRef.current = null;
+  };
+
+  const handleMouseEnter = () => {
+    clearTimer();
+    setOpen(/*open=*/true);
+  };
+
+  const handleMouseLeave = () => {
+    clearTimer();
+    timerRef.current = setTimeout(/*closeSubmenu*/ () => {
+      setOpen(/*open=*/false);
+    }, /*delayInMs=*/CLOSE_DELAY_MS);
+  };
+
+  useEffect(() => () => clearTimer(), []);
+
+  return (
+    <div
+      style={{ position: "relative" }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      <button
+        type="button"
+        role="menuitem"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        style={open ? { ...itemStyle, background: "#f8fafc" } : itemStyle}
+        onClick={() => {
+          clearTimer();
+          setOpen((prev) => !prev);
+        }}
+      >
+        <span aria-hidden="true" style={checkSlotStyle} />
+        <span>{label}</span>
+        <span
+          aria-hidden="true"
+          style={{ marginLeft: "auto", paddingLeft: 16, fontSize: 9, color: "#94a3b8" }}
+        >
+          ▸
+        </span>
+      </button>
+      {open && (
+        <div
+          role="menu"
+          aria-label={label}
+          style={submenuPanelStyle}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          <div aria-hidden="true" style={submenuBridgeStyle} />
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+

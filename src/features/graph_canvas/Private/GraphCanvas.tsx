@@ -153,7 +153,11 @@ export function GraphCanvas({
     return reviewNotes ? withReviewCounts(diffed, heatGraph, reviewNotes) : diffed;
   }, [projected, diffOverlay, diffReviewedIds, reviewNotes, reviewNotesDocument, heatGraph]);
 
-  const styledEdges = useStyledEdges(displayProjected, edgeFocus);
+  const styledEdges = useStyledEdges(
+    displayProjected,
+    edgeFocus,
+    uiState.getArrowVisibility(),
+  );
 
   if (!displayProjected) return null;
 

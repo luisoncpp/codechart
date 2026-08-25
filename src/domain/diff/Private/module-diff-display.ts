@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Merges live source with parsed file diff into display rows")
-import type { DiffDisplayRow, FileLineDiff } from "./line-diff-types";
+import type { DiffDisplayRow, FileLineDiff, MovedLocation } from "./line-diff-types";
 
 /** Merge live source with a parsed file diff into renderable rows. */
 export function buildModuleDiffDisplay(
@@ -10,26 +10,72 @@ export function buildModuleDiffDisplay(
   const lines = afterLines(source);
   const rows: DiffDisplayRow[] = [];
   let oldLineNumber = 1;
+  let removedIdx = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const lineNumber = i + 1;
     for (const removed of fileDiff.removeBeforeLine.get(lineNumber) ?? []) {
-      rows.push({ kind: "remove", lineNumber: oldLineNumber++, text: removed });
+      const oldLine = getRemovedLine(fileDiff, removedIdx++, oldLineNumber++);
+      rows.push(createRemovedRow(oldLine, removed, fileDiff.movedRemovedLines));
     }
     const text = lines[i] ?? "";
     const isAdd = fileDiff.addedLineNumbers.has(lineNumber);
-    rows.push({ kind: isAdd ? "add" : "context", lineNumber, text });
+    rows.push(isAdd ? createAddedRow(lineNumber, text, fileDiff.movedAddedLines) : { kind: "context", lineNumber, text });
     if (!isAdd) oldLineNumber++;
   }
 
   for (const [lineNumber, removedLines] of fileDiff.removeBeforeLine) {
     if (isAfterLine(lineNumber, lines.length)) continue;
     for (const removed of removedLines) {
-      rows.push({ kind: "remove", lineNumber: oldLineNumber++, text: removed });
+      const oldLine = getRemovedLine(fileDiff, removedIdx++, oldLineNumber++);
+      rows.push(createRemovedRow(oldLine, removed, fileDiff.movedRemovedLines));
     }
   }
 
   return rows;
+}
+
+function getRemovedLine(fileDiff: FileLineDiff, idx: number, fallback: number): number {
+  if (fileDiff.removedLineDetails && idx < fileDiff.removedLineDetails.length) {
+    return fileDiff.removedLineDetails[idx]!.oldLine;
+  }
+  return fallback;
+}
+
+function createRemovedRow(
+  oldLine: number,
+  text: string,
+  moved?: ReadonlyMap<number, MovedLocation>,
+): DiffDisplayRow {
+  const target = moved?.get(oldLine);
+  if (target) {
+    return {
+      kind: "move-remove",
+      lineNumber: oldLine,
+      text,
+      movedTo: target,
+      tooltip: `Moved to ${target.path}:${target.line}`,
+    };
+  }
+  return { kind: "remove", lineNumber: oldLine, text };
+}
+
+function createAddedRow(
+  newLine: number,
+  text: string,
+  moved?: ReadonlyMap<number, MovedLocation>,
+): DiffDisplayRow {
+  const origin = moved?.get(newLine);
+  if (origin) {
+    return {
+      kind: "move-add",
+      lineNumber: newLine,
+      text,
+      movedFrom: origin,
+      tooltip: `Moved from ${origin.path}:${origin.line}`,
+    };
+  }
+  return { kind: "add", lineNumber: newLine, text };
 }
 
 /** `"".split("\n")` is `[""]`; a deleted after-file has no rows. */

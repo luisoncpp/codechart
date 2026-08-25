@@ -3,5 +3,9 @@ export {
   MenuActionItem,
   MenuCheckboxItem,
   MenuRadioItem,
+  MenuSectionHeader,
   MenuSeparator,
+  MenuSubmenu,
 } from "./Private/menu-items";
+
+

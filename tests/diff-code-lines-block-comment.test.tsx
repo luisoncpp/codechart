@@ -44,4 +44,37 @@ describe("DiffCodeLines block comments", () => {
     expect(rows[2]!.querySelector(".diff-code__gutter")).toHaveTextContent("+");
     expect(rows[2]!.querySelector(".diff-code__ln")).toHaveTextContent("2");
   });
+
+  it("renders moved lines with move-add / move-remove classes and title tooltips", () => {
+    const { container } = render(
+      <DiffCodeLines
+        source={"destination line"}
+        path="dest.ts"
+        fileDiff={{
+          addedLineNumbers: new Set([1]),
+          removeBeforeLine: new Map([[1, ["source moved line"]]]),
+          movedAddedLines: new Map([[1, { path: "source.ts", line: 10 }]]),
+          movedRemovedLines: new Map([[1, { path: "other.ts", line: 20 }]]),
+        }}
+      />
+    );
+
+    const rows = container.querySelectorAll(".diff-code__line");
+    expect(rows).toHaveLength(2);
+
+    // Row 0: move-remove row
+    expect(rows[0]!.className).toContain("diff-code__line--move-remove");
+    expect(rows[0]!.getAttribute("title")).toBe("Moved to other.ts:20");
+    expect(rows[0]!.querySelector(".diff-code__gutter")!.className).toContain("diff-code__gutter--move-remove");
+    expect(rows[0]!.querySelector(".diff-code__gutter")).toHaveTextContent("-");
+    expect(rows[0]!.querySelector(".diff-code__ln")).toHaveTextContent("");
+
+    // Row 1: move-add row
+    expect(rows[1]!.className).toContain("diff-code__line--move-add");
+    expect(rows[1]!.getAttribute("title")).toBe("Moved from source.ts:10");
+    expect(rows[1]!.querySelector(".diff-code__gutter")!.className).toContain("diff-code__gutter--move-add");
+    expect(rows[1]!.querySelector(".diff-code__gutter")).toHaveTextContent("+");
+    expect(rows[1]!.querySelector(".diff-code__ln")).toHaveTextContent("1");
+  });
 });
+

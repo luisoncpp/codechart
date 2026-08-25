@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  computePointWidgetPosition,
   placeAdjacentFrame,
   type FrameRect,
 } from "../src/features/graph_canvas/Private/preview_frames/frame-placement";
 import {
   FRAME_WIDTH,
   FRAME_HEIGHT,
+  DOCUMENT_FRAME_HEIGHT,
 } from "../src/features/graph_canvas/Private/preview_frames/frame-list";
 
 const SPACING = 8;
@@ -18,6 +20,33 @@ function anchorAt(top: number, left: number): FrameRect {
 function frameAt(pos: { top: number; left: number }): FrameRect {
   return { ...pos, width: FRAME_WIDTH, height: FRAME_HEIGHT };
 }
+
+describe("computePointWidgetPosition", () => {
+  const containerRect = {
+    left: 0,
+    top: 0,
+    right: 1000,
+    bottom: 800,
+    width: 1000,
+    height: 800,
+  } as DOMRect;
+
+  it("uses FRAME_HEIGHT by default for clamping", () => {
+    const pos = computePointWidgetPosition({ x: 100, y: 700 }, containerRect);
+    // maxTop = 800 - 360 - 8 = 432
+    expect(pos).toEqual({ left: 100, top: 432 });
+  });
+
+  it("uses custom DOCUMENT_FRAME_HEIGHT for clamping when provided", () => {
+    const pos = computePointWidgetPosition(
+      { x: 100, y: 700 },
+      containerRect,
+      DOCUMENT_FRAME_HEIGHT,
+    );
+    // maxTop = 800 - 720 - 8 = 72
+    expect(pos).toEqual({ left: 100, top: 72 });
+  });
+});
 
 describe("placeAdjacentFrame", () => {
   const anchor = anchorAt(500, 500);

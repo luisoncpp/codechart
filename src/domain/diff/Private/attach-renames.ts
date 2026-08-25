@@ -4,6 +4,7 @@ import { bodiesFromUnifiedDiff, type DiffBodies } from "./rename-bodies";
 import { fingerprintModule, matchRenamePairs } from "./rename-match";
 import { pathsFromUnifiedDiff } from "./parse-unified-diff";
 import { computeLineDiff } from "./compute-line-diff";
+import { detectMovedLines } from "./detect-moved-lines";
 import type { FileLineDiff } from "./line-diff-types";
 import type { GraphDiffOverlay, RenamePair } from "./types";
 
@@ -33,7 +34,8 @@ export function attachRenames(input: RenameAttachInput): GraphDiffOverlay {
         fingerprintsFor(leftover.added, /*side=*/"new", ctx),
       );
   const pairs = [...header, ...extra];
-  const lineDiffByPath = computeRenameLineDiffs(pairs, ctx);
+  const rawLineDiffs = computeRenameLineDiffs(pairs, ctx);
+  const lineDiffByPath = detectMovedLines(rawLineDiffs, pairs);
   return { ...input.overlay, renamePairs: pairs, lineDiffByPath };
 }
 

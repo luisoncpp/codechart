@@ -25,7 +25,7 @@ function bucketFromAllSegments(
   const arrowSegments: EdgeSegment[] = [];
   for (const segment of segments) {
     if (style.marker === "cross") crossSegments.push(segment);
-    else arrowSegments.push(segment);
+    else if (style.marker === "arrow") arrowSegments.push(segment);
   }
   return {
     style,

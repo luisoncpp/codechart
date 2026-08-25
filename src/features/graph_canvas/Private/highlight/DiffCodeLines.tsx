@@ -59,35 +59,100 @@ export function DiffCodeLines({
 
   return (
     <>
-      {rows.map((row, idx) => {
-        const showNotes = row.kind !== "remove";
-        const lineNotes = showNotes ? notes.filter((note) => note.endLine === row.lineNumber) : [];
-        const showDraft = showNotes && draft?.path === path && draft.endLine === row.lineNumber;
-        const matchingDiffNotes = matchingDiffNotesForRow(row, diffNotes);
-        return <Fragment key={idx}>
-          <DiffCodeLine
-            row={row}
-            tokens={tokenized[idx]!}
-            zoom={zoom}
-            prefix={lineClassPrefix}
-            active={showNotes && row.lineNumber === activeLine}
-            lineRef={showNotes && row.lineNumber === activeLine ? activeLineRef : undefined}
-            clickableNames={clickableNames}
-            path={path}
-            links={wikiLinks[idx]!}
-            linkEveryToken={linkEveryToken}
-            matchRanges={showNotes ? matchesByLine?.get(row.lineNumber) : undefined}
-            activeMatchRef={activeMatchRef}
-            anchored={showNotes && notes.some((note) => row.lineNumber >= note.startLine && row.lineNumber <= note.endLine)}
-            onLineClick={reviewNotes && showNotes ? (line, extend) => selectReviewLine(reviewNotes, source, path, line, extend) : undefined}
-          />
-          {matchingDiffNotes.length > 0 && (
-            <DiffNotesList notes={matchingDiffNotes} zoom={zoom} />
-          )}
-          {showNotes && <InlineReviewNotes notes={lineNotes} showDraft={showDraft} zoom={zoom} />}
-        </Fragment>;
-      })}
+      {rows.map((row, idx) => (
+        <DiffRowItem
+          key={idx}
+          row={row}
+          tokens={tokenized[idx]!}
+          zoom={zoom}
+          prefix={lineClassPrefix}
+          activeLine={activeLine}
+          activeLineRef={activeLineRef}
+          clickableNames={clickableNames}
+          path={path}
+          links={wikiLinks[idx]!}
+          linkEveryToken={linkEveryToken}
+          matchesByLine={matchesByLine}
+          activeMatchRef={activeMatchRef}
+          notes={notes}
+          draft={draft}
+          diffNotes={diffNotes}
+          onLineClick={reviewNotes ? (line, extend) => selectReviewLine(reviewNotes, source, path, line, extend) : undefined}
+        />
+      ))}
     </>
+  );
+}
+
+interface DiffRowItemProps {
+  row: DiffDisplayRow;
+  tokens: Token[];
+  zoom: number;
+  prefix: string;
+  activeLine?: number;
+  activeLineRef?: React.RefObject<HTMLDivElement | null>;
+  clickableNames?: ReadonlySet<string>;
+  path: string;
+  links: readonly WikiLinkSpan[];
+  linkEveryToken: boolean;
+  matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
+  activeMatchRef?: React.RefObject<HTMLElement | null>;
+  notes: any[];
+  draft: any;
+  diffNotes?: readonly DiffNote[];
+  onLineClick?: (line: number, extend: boolean) => void;
+}
+
+function DiffRowItem(props: DiffRowItemProps) {
+  const { row, tokens, zoom, prefix, activeLine, activeLineRef, clickableNames, path, links, linkEveryToken, matchesByLine, activeMatchRef, notes, draft, diffNotes, onLineClick } = props;
+  const isRem = row.kind === "remove" || row.kind === "move-remove";
+  const matchingDiffNotes = matchingDiffNotesForRow(row, diffNotes);
+
+  if (isRem) {
+    return (
+      <Fragment>
+        <DiffCodeLine
+          row={row}
+          tokens={tokens}
+          zoom={zoom}
+          prefix={prefix}
+          clickableNames={clickableNames}
+          path={path}
+          links={links}
+          linkEveryToken={linkEveryToken}
+        />
+        {matchingDiffNotes.length > 0 && <DiffNotesList notes={matchingDiffNotes} zoom={zoom} />}
+      </Fragment>
+    );
+  }
+
+  const line = row.lineNumber;
+  const isActive = line === activeLine;
+  const isDraft = draft?.path === path && draft.endLine === line;
+  const lineNotes = notes.filter((n) => n.endLine === line);
+  const isAnchored = notes.some((n) => line >= n.startLine && line <= n.endLine);
+
+  return (
+    <Fragment>
+      <DiffCodeLine
+        row={row}
+        tokens={tokens}
+        zoom={zoom}
+        prefix={prefix}
+        active={isActive}
+        lineRef={isActive ? activeLineRef : undefined}
+        clickableNames={clickableNames}
+        path={path}
+        links={links}
+        linkEveryToken={linkEveryToken}
+        matchRanges={matchesByLine?.get(line)}
+        activeMatchRef={activeMatchRef}
+        anchored={isAnchored}
+        onLineClick={onLineClick}
+      />
+      {matchingDiffNotes.length > 0 && <DiffNotesList notes={matchingDiffNotes} zoom={zoom} />}
+      <InlineReviewNotes notes={lineNotes} showDraft={isDraft} zoom={zoom} />
+    </Fragment>
   );
 }
 
@@ -96,7 +161,7 @@ function matchingDiffNotesForRow(
   diffNotes?: readonly DiffNote[],
 ): readonly DiffNote[] {
   if (!diffNotes || diffNotes.length === 0) return [];
-  const side = row.kind === "remove" ? "before" : "after";
+  const side = row.kind === "remove" || row.kind === "move-remove" ? "before" : "after";
   return diffNotes.filter((n) => n.side === side && n.endLine === row.lineNumber);
 }
 
@@ -104,7 +169,7 @@ function matchingDiffNotesForRow(
 function tokenizeRows(rows: readonly DiffDisplayRow[], path: string): Token[][] {
   const tokenizer = new LineTokenizer(path);
   return rows.map((row) =>
-    row.kind === "remove"
+    row.kind === "remove" || row.kind === "move-remove"
       ? [{ type: "plain", text: row.text }]
       : tokenizer.tokenizeLine(row.text),
   );
@@ -112,7 +177,7 @@ function tokenizeRows(rows: readonly DiffDisplayRow[], path: string): Token[][] 
 
 /** `remove` rows come from the before-snapshot; their links are not navigable. */
 function wikiLinksPerRow(rows: readonly DiffDisplayRow[]): WikiLinkSpan[][] {
-  return rows.map((row) => (row.kind === "remove" ? [] : findWikiLinks(row.text)));
+  return rows.map((row) => (row.kind === "remove" || row.kind === "move-remove" ? [] : findWikiLinks(row.text)));
 }
 
 function selectReviewLine(store: NonNullable<ReturnType<typeof useReviewNotesStore>>, source: string, path: string, line: number, extend: boolean) {

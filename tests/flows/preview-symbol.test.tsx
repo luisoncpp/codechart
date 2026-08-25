@@ -46,6 +46,7 @@ describe("flow: preview-symbol", () => {
       expect(frame).toBeTruthy();
       return frame!;
     });
+    expect((widget as HTMLElement).style.height).toBe("720px");
     expect(widget.querySelector(".symbol-widget__title")?.textContent).toBe("store.ts");
     expect(widget.textContent).toContain("Redux-like store managing state changes");
     expect(widget.textContent).toContain("Source Code");
@@ -62,6 +63,7 @@ describe("flow: preview-symbol", () => {
       expect(document.querySelector(".symbol-widget")).toBeTruthy();
     });
     const widget = document.querySelector(".symbol-widget")!;
+    expect((widget as HTMLElement).style.height).toBe("");
     expect(widget.querySelector(".symbol-widget__title")?.textContent).toBe("TodoStore");
     expect(widget.querySelector(".symbol-widget__path")?.textContent).toBe(
       "src/core/store.ts",

@@ -24,4 +24,4 @@
 
 Review Note navigation opens or raises the document frame for the anchored module and centers the selected range. Document frames use the shared inline source notes.
 
-The default frame is 680 by 360 pixels; user drag and resize behavior remains unchanged.
+The default frame is 680 by 360 pixels (document preview frames opened via **Open file preview** in the context menu use a taller default height of 720 pixels); user drag and resize behavior remains unchanged.

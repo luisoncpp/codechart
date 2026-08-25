@@ -60,4 +60,6 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [go-to-symbol.md](./go-to-symbol.md) | Search ▾ → Go to symbol → filter exported symbol names in the analyzed graph → center each matching module |
 | [find-in-preview.md](./find-in-preview.md) | Ctrl+F on a focused/hovered preview frame or header ⌕ → in-frame find bar → highlight and center matches |
 | [change-metrics-timeframe.md](./change-metrics-timeframe.md) | Click the heatmap's timeframe label → choose days → recompute Git activity/risk metrics |
+| [toggle-arrow-visibility.md](./toggle-arrow-visibility.md) | View ▾ menu → toggle arrow visibility: show all, hide non-selected arrowheads, or hide non-selected arrows |
 | [open-help-topic.md](./open-help-topic.md) | Help ▾ menu → choose topic → open rendered Markdown doc modal + copy to clipboard for LLMs |
+

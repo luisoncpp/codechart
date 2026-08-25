@@ -133,7 +133,12 @@ export function SymbolSourceWidget({
       className={frame.pinned ? "symbol-widget symbol-widget--pinned" : "symbol-widget"}
       data-frame-id={frame.id}
       tabIndex={-1}
-      style={{ top: frame.top, left: frame.left, zIndex: 1000 + frame.zIndex }}
+      style={{
+        top: frame.top,
+        left: frame.left,
+        ...(frame.height ? { height: frame.height } : {}),
+        zIndex: 1000 + frame.zIndex,
+      }}
       onClick={(e) => e.stopPropagation()}
       onPointerDown={onFramePointerDown}
       onKeyDown={onFrameKeyDown}

@@ -25,6 +25,7 @@ describe("HelpMenu dropdown and modals", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("menu", { name: "Help" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Groups format..." })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Architecture tags..." })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Diff notes..." })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Wiki links..." })).toBeInTheDocument();
   });
@@ -39,6 +40,18 @@ describe("HelpMenu dropdown and modals", () => {
     expect(screen.getByRole("heading", { name: "Help: Groups format" })).toBeInTheDocument();
     expect(screen.getByText(/In CodeChart, architectural boundaries/)).toBeInTheDocument();
     expect(screen.getByText("Frontmatter Configuration")).toBeInTheDocument();
+  });
+
+  it("opens the Architecture tags documentation modal and renders content", () => {
+    renderHelpMenu();
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Architecture tags..." }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Help: Architecture tags" })).toBeInTheDocument();
+    expect(screen.getByText(/In CodeChart, source modules can define local architectural metadata/)).toBeInTheDocument();
+    expect(screen.getByText("Description Length Rules")).toBeInTheDocument();
   });
 
   it("opens the Diff notes documentation modal", () => {

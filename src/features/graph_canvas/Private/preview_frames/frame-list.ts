@@ -14,6 +14,7 @@ export interface PreviewFrame {
   sourceText: string;
   top: number;
   left: number;
+  height?: number;
   zIndex: number;
   pinned: boolean;
   activeRange?: { startLine: number; endLine: number };
@@ -38,6 +39,7 @@ export type OpenPreviewFrame = (mode: OpenFrameMode, frame: NewPreviewFrame) => 
 /** Default frame size — must match the `.symbol-widget` CSS box. */
 export const FRAME_WIDTH = 680;
 export const FRAME_HEIGHT = 360;
+export const DOCUMENT_FRAME_HEIGHT = 720;
 
 function topZIndex(frames: readonly PreviewFrame[]): number {
   return frames.reduce((max, f) => Math.max(max, f.zIndex), 0);
@@ -55,6 +57,7 @@ function mergeOnDedupe(
   };
   if (incoming.activeRange !== undefined) merged.activeRange = incoming.activeRange;
   if (incoming.sectionAnchor !== undefined) merged.sectionAnchor = incoming.sectionAnchor;
+  if (incoming.height !== undefined) merged.height = incoming.height;
   return merged;
 }
 

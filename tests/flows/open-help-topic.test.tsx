@@ -35,4 +35,26 @@ describe("flow: open help topic and copy markdown", () => {
     fireEvent.click(closeBtn);
     expect(screen.queryByRole("dialog")).toBeNull();
   });
+
+  it("opens Architecture tags topic, verifies markdown heading, and copies", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    render(<HelpMenu />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Help" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Architecture tags..." }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Help: Architecture tags" })).toBeInTheDocument();
+
+    const copyBtn = screen.getAllByRole("button", { name: "Copy markdown explanation" })[0];
+    await act(async () => {
+      fireEvent.click(copyBtn);
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Architecture Tags (`@Architecture`)")
+    );
+  });
 });

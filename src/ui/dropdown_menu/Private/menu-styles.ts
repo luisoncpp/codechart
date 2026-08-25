@@ -81,3 +81,32 @@ export const separatorStyle: React.CSSProperties = {
   margin: "4px 0",
   background: "#e2e8f0",
 };
+
+export const sectionHeaderStyle: React.CSSProperties = {
+  padding: "6px 12px 2px 12px",
+  fontSize: 11,
+  fontWeight: 600,
+  color: "#64748b",
+};
+
+export const submenuPanelStyle: React.CSSProperties = {
+  ...panelStyle,
+  position: "absolute",
+  top: -4,
+  left: "100%",
+  marginTop: 0,
+  marginLeft: 0,
+};
+
+/** Invisible hit bridge spanning the boundary between the parent menu and submenu. */
+export const submenuBridgeStyle: React.CSSProperties = {
+  position: "absolute",
+  top: 0,
+  bottom: 0,
+  left: -8,
+  width: 8,
+  pointerEvents: "auto",
+};
+
+
+

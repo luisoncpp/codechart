@@ -4,7 +4,7 @@ import type { GraphDiffOverlay } from "../../../../domain/diff";
 import type { ModuleNode, ProjectGraph } from "../../../../domain/graph";
 import type { GraphSessionStore } from "../../../../state/graph-session";
 import { computePointWidgetPosition } from "./frame-placement";
-import type { OpenPreviewFrame } from "./frame-list";
+import { DOCUMENT_FRAME_HEIGHT, type OpenPreviewFrame } from "./frame-list";
 
 interface DocumentPreviewRequest {
   moduleId: string;
@@ -41,7 +41,11 @@ export function createDocumentPreview(deps: DocumentPreviewDeps) {
     if (!container || !module) return;
     const deleted = Boolean(deps.diffOverlay?.deletedModuleIds.has(module.id));
     const sourceText = deleted ? "" : await deps.store.fetchModuleSource(module.id);
-    const pos = computePointWidgetPosition(request, container.getBoundingClientRect());
+    const pos = computePointWidgetPosition(
+      request,
+      container.getBoundingClientRect(),
+      DOCUMENT_FRAME_HEIGHT,
+    );
     if (!deleted) void deps.prefetchSources(module.id);
     deps.open("close-unpinned", {
       moduleId: module.id,
@@ -51,6 +55,7 @@ export function createDocumentPreview(deps: DocumentPreviewDeps) {
       description: module.annotation?.descriptionLong || module.annotation?.descriptionShort,
       color: request.color,
       sourceText,
+      height: DOCUMENT_FRAME_HEIGHT,
       ...pos,
     });
   };

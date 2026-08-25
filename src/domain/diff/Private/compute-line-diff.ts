@@ -32,20 +32,32 @@ function emptyDiff(): FileLineDiff {
 
 function allAdded(lines: readonly string[]): FileLineDiff {
   const added = new Set<number>();
-  for (let i = 1; i <= lines.length; i++) added.add(i);
+  const addedTexts = new Map<number, string>();
+  for (let i = 1; i <= lines.length; i++) {
+    added.add(i);
+    addedTexts.set(i, lines[i - 1]!);
+  }
   return {
     addedLineNumbers: added,
+    addedLineTexts: addedTexts,
     removedLineNumbers: new Set(),
+    removedLineDetails: [],
     removeBeforeLine: new Map(),
   };
 }
 
 function allRemoved(lines: readonly string[]): FileLineDiff {
   const removed = new Set<number>();
-  for (let i = 1; i <= lines.length; i++) removed.add(i);
+  const removedDetails: Array<{ oldLine: number; text: string }> = [];
+  for (let i = 1; i <= lines.length; i++) {
+    removed.add(i);
+    removedDetails.push({ oldLine: i, text: lines[i - 1]! });
+  }
   return {
     addedLineNumbers: new Set(),
+    addedLineTexts: new Map(),
     removedLineNumbers: removed,
+    removedLineDetails: removedDetails,
     removeBeforeLine: new Map([[1, [...lines]]]),
   };
 }
@@ -127,7 +139,9 @@ function prevKFor(k: number, d: number, prevV: Int32Array, max: number): number 
 
 function editsToFileLineDiff(edits: readonly DiffEdit[]): FileLineDiff {
   const added = new Set<number>();
+  const addedTexts = new Map<number, string>();
   const removed = new Set<number>();
+  const removedDetails: Array<{ oldLine: number; text: string }> = [];
   const removeBefore = new Map<number, string[]>();
   let oldLine = 1;
   let newLine = 1;
@@ -140,6 +154,7 @@ function editsToFileLineDiff(edits: readonly DiffEdit[]): FileLineDiff {
     }
     if (edit.kind === "remove") {
       removed.add(oldLine);
+      removedDetails.push({ oldLine, text: edit.text });
       const list = removeBefore.get(newLine) ?? [];
       list.push(edit.text);
       removeBefore.set(newLine, list);
@@ -147,8 +162,15 @@ function editsToFileLineDiff(edits: readonly DiffEdit[]): FileLineDiff {
       continue;
     }
     added.add(newLine);
+    addedTexts.set(newLine, edit.text);
     newLine++;
   }
 
-  return { addedLineNumbers: added, removedLineNumbers: removed, removeBeforeLine: removeBefore };
+  return {
+    addedLineNumbers: added,
+    addedLineTexts: addedTexts,
+    removedLineNumbers: removed,
+    removedLineDetails: removedDetails,
+    removeBeforeLine: removeBefore,
+  };
 }

@@ -138,4 +138,41 @@ describe("flow: view-menu", () => {
 
     expect(screen.queryByRole("menuitem", { name: "Visualize diff…" })).toBeNull();
   });
+
+  it("Arrow visibility defaults to 'Show all' and switches options in submenu", async () => {
+    const store = await readyGraphStore();
+    const { canvasUi } = renderGraphCanvas(store);
+    openViewMenu();
+
+    const submenuTrigger = screen.getByRole("menuitem", { name: /Arrow visibility/ });
+    expect(submenuTrigger).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.mouseEnter(submenuTrigger.parentElement!);
+    expect(submenuTrigger).toHaveAttribute("aria-expanded", "true");
+
+    const showAll = screen.getByRole("menuitemradio", { name: "Show all" });
+    const hideHeads = screen.getByRole("menuitemradio", {
+      name: "Hide arrow heads for non-selected modules",
+    });
+    const hideArrows = screen.getByRole("menuitemradio", {
+      name: "Hide entire arrows for non-selected modules",
+    });
+
+    expect(showAll).toHaveAttribute("aria-checked", "true");
+    expect(hideHeads).toHaveAttribute("aria-checked", "false");
+    expect(hideArrows).toHaveAttribute("aria-checked", "false");
+    expect(canvasUi.getArrowVisibility()).toBe("all");
+
+    fireEvent.click(hideHeads);
+    expect(canvasUi.getArrowVisibility()).toBe("hide-non-selected-heads");
+    expect(hideHeads).toHaveAttribute("aria-checked", "true");
+    expect(showAll).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(hideArrows);
+    expect(canvasUi.getArrowVisibility()).toBe("hide-non-selected-arrows");
+    expect(hideArrows).toHaveAttribute("aria-checked", "true");
+    expect(hideHeads).toHaveAttribute("aria-checked", "false");
+  });
 });
+
+

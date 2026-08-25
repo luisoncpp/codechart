@@ -6,6 +6,12 @@ type Listener = () => void;
 /** What the find bar searches: sources, file names, or exported symbols. */
 export type FindBarMode = "content" | "files" | "symbols";
 
+/** How reference edges/arrowheads are displayed on the canvas. */
+export type ArrowVisibility =
+  | "all"
+  | "hide-non-selected-heads"
+  | "hide-non-selected-arrows";
+
 /**
  * Holds transient canvas UI flags that the toolbar menus also drive.
  * Kept out of GraphSessionStore: these are view chrome, not session data.
@@ -16,7 +22,9 @@ export class CanvasUiState {
   private findQuery = "";
   private diffModalOpen = false;
   private lineCountsVisible = false;
+  private arrowVisibility: ArrowVisibility = "all";
   private listeners: Listener[] = [];
+
 
   getFindBarOpen(): boolean {
     return this.findBarOpen;
@@ -73,6 +81,17 @@ export class CanvasUiState {
     this.diffModalOpen = open;
     this.emit();
   }
+
+  getArrowVisibility(): ArrowVisibility {
+    return this.arrowVisibility;
+  }
+
+  setArrowVisibility(visibility: ArrowVisibility) {
+    if (this.arrowVisibility === visibility) return;
+    this.arrowVisibility = visibility;
+    this.emit();
+  }
+
 
   /** Project reload/failure invalidates any open chrome. */
   reset() {

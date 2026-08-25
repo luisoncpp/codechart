@@ -24,8 +24,8 @@ use crate::review_notes::{
 };
 use crate::{
     ensure_unreal_defaults, read_project_config as load_project_config, search_sources,
-    startup_args::StartupProjectPath, write_project_config as save_project_config, ProjectConfig,
-    SearchResult,
+    write_project_config as save_project_config, ProjectConfig, SearchResult,
+    StartupProjectPath,
 };
 use std::collections::{HashMap, HashSet};
 

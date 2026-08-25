@@ -68,9 +68,13 @@ describe("openFrame dedupe", () => {
     expect(next[0]?.sectionAnchor).toBe("setup");
   });
 
-  it("keeps sectionAnchor when the incoming frame omits it", () => {
-    const withAnchor: PreviewFrame = { ...base, sectionAnchor: "setup" };
-    const next = openFrame([withAnchor], { ...withAnchor, id: 2, sourceText: "v2" });
-    expect(next[0]?.sectionAnchor).toBe("setup");
+  it("merges height when incoming frame specifies it", () => {
+    const next = openFrame([base], {
+      ...base,
+      id: 2,
+      sourceText: "v2",
+      height: 720,
+    });
+    expect(next[0]?.height).toBe(720);
   });
 });

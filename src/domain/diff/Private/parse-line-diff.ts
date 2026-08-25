@@ -1,10 +1,13 @@
 // @Architecture(descriptionShort="Parses unified diff hunks into per-file line add/remove maps")
 import { normalizeDiffPath } from "./parse-unified-diff";
 import type { FileLineDiff } from "./line-diff-types";
+import { detectMovedLines } from "./detect-moved-lines";
 
 interface FileBuilder {
   added: Set<number>;
+  addedTexts: Map<number, string>;
   removed: Set<number>;
+  removedDetails: Array<{ oldLine: number; text: string }>;
   removeBefore: Map<number, string[]>;
   oldLine: number;
   newLine: number;
@@ -37,7 +40,7 @@ export function lineDiffsFromUnified(text: string): Map<string, FileLineDiff> {
     consumeDiffLine(raw, builder);
   }
   flushFile(out, currentPath, builder);
-  return out;
+  return detectMovedLines(out);
 }
 
 function parseHeaderPathLine(raw: string): string | null {
@@ -56,12 +59,18 @@ function consumeDiffLine(raw: string, builder: FileBuilder): void {
   }
   if (!builder.inHunk || raw.startsWith("\\") || raw.startsWith("#")) return;
   if (raw.startsWith("-")) {
-    pushRemove(builder, raw.slice(1));
-    builder.removed.add(builder.oldLine++);
+    const text = raw.slice(1);
+    pushRemove(builder, text);
+    builder.removed.add(builder.oldLine);
+    builder.removedDetails.push({ oldLine: builder.oldLine, text });
+    builder.oldLine++;
     return;
   }
   if (raw.startsWith("+")) {
-    builder.added.add(builder.newLine++);
+    const text = raw.slice(1);
+    builder.added.add(builder.newLine);
+    builder.addedTexts.set(builder.newLine, text);
+    builder.newLine++;
     return;
   }
   builder.oldLine++;
@@ -71,7 +80,9 @@ function consumeDiffLine(raw: string, builder: FileBuilder): void {
 function newFileBuilder(): FileBuilder {
   return {
     added: new Set(),
+    addedTexts: new Map(),
     removed: new Set(),
+    removedDetails: [],
     removeBefore: new Map(),
     oldLine: 1,
     newLine: 1,
@@ -95,10 +106,13 @@ function flushFile(
   if (builder.added.size === 0 && builder.removeBefore.size === 0) return;
   out.set(path, {
     addedLineNumbers: builder.added,
+    addedLineTexts: builder.addedTexts,
     removedLineNumbers: builder.removed,
+    removedLineDetails: builder.removedDetails,
     removeBeforeLine: builder.removeBefore,
   });
 }
+
 
 export function pathFromDiffGit(line: string): string | null {
   const match = line.match(/^diff --git a\/(.+?) b\/(.+)$/);

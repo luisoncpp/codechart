@@ -623,6 +623,16 @@
   background: #fee2e2;
 }
 
+.diff-code__line--move-add,
+.symbol-widget__line--move-add {
+  background: #fef9c3;
+}
+
+.diff-code__line--move-remove,
+.symbol-widget__line--move-remove {
+  background: #ffedd5;
+}
+
 .diff-code__gutter--add,
 .symbol-widget__gutter--add {
   color: #16a34a;
@@ -635,7 +645,20 @@
   font-weight: 700;
 }
 
+.diff-code__gutter--move-add,
+.symbol-widget__gutter--move-add {
+  color: #ca8a04;
+  font-weight: 700;
+}
+
+.diff-code__gutter--move-remove,
+.symbol-widget__gutter--move-remove {
+  color: #ea580c;
+  font-weight: 700;
+}
+
 .diff-code__gutter--context,
 .symbol-widget__gutter--context {
   color: #cbd5e1;
 }
+

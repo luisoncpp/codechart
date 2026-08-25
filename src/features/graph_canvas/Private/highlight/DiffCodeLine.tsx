@@ -34,7 +34,9 @@ function tokenClass(token: Token, clickableNames?: ReadonlySet<string>): string 
 export function DiffCodeLine(props: DiffCodeLineProps) {
   const { row, zoom, prefix, active, lineRef, anchored, onLineClick } = props;
   const fontSize = 12.5 / zoom;
-  const gutter = row.kind === "add" ? "+" : row.kind === "remove" ? "-" : " ";
+  const isAdd = row.kind === "add" || row.kind === "move-add";
+  const isRemove = row.kind === "remove" || row.kind === "move-remove";
+  const gutter = isAdd ? "+" : isRemove ? "-" : " ";
   const numStyle = {
     flex: `0 0 ${18 / zoom}px`,
     textAlign: "right" as const,
@@ -47,6 +49,7 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
     <div
       ref={lineRef}
       className={`${prefix}__line ${prefix}__line--${row.kind}${active ? ` ${prefix}__line--active` : ""}`}
+      title={row.tooltip}
       style={{
         display: "flex",
         alignItems: "flex-start",
@@ -82,7 +85,7 @@ interface LineNumberProps {
 }
 
 function LineNumber({ prefix, kind, lineNumber, style, onLineClick }: LineNumberProps) {
-  if (kind === "remove") {
+  if (kind === "remove" || kind === "move-remove") {
     return (
       <span className={`${prefix}__ln`} style={{ ...style, userSelect: "none" }}>
         {""}

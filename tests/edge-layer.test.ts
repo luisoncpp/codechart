@@ -127,5 +127,61 @@ describe("edge layer model", () => {
       expect(styledRenamed.style?.stroke).toBe("#d97706");
     });
   });
+
+  describe("arrow visibility options", () => {
+    const edge1 = {
+      id: "e1",
+      source: "a",
+      target: "b",
+      data: { isViolation: false, kind: "import" },
+    };
+    const edge2 = {
+      id: "e2",
+      source: "c",
+      target: "d",
+      data: { isViolation: false, kind: "import" },
+    };
+
+    it("shows all arrow heads when arrowVisibility is 'all'", () => {
+      const styled1 = styleEdge(edge1, "a", "all");
+      const styled2 = styleEdge(edge2, "a", "all");
+      expect(styled1?.markerEnd).toBeDefined();
+      expect(styled2?.markerEnd).toBeDefined();
+    });
+
+    it("hides arrow heads for non-selected modules when arrowVisibility is 'hide-non-selected-heads'", () => {
+      const styledConnected = styleEdge(edge1, "a", "hide-non-selected-heads");
+      const styledNonConnected = styleEdge(edge2, "a", "hide-non-selected-heads");
+
+      expect(styledConnected?.markerEnd).toBeDefined();
+      expect(styledNonConnected?.markerEnd).toBeUndefined();
+      expect(styledNonConnected?.style?.stroke).toBeDefined();
+    });
+
+    it("hides entire arrows for non-selected modules when arrowVisibility is 'hide-non-selected-arrows'", () => {
+      const styledConnected = styleEdge(edge1, "a", "hide-non-selected-arrows");
+      const styledNonConnected = styleEdge(edge2, "a", "hide-non-selected-arrows");
+
+      expect(styledConnected).not.toBeNull();
+      expect(styledNonConnected).toBeNull();
+    });
+
+    it("hides all arrow heads when no module is selected and mode is 'hide-non-selected-heads'", () => {
+      const styled1 = styleEdge(edge1, null, "hide-non-selected-heads");
+      const styled2 = styleEdge(edge2, null, "hide-non-selected-heads");
+
+      expect(styled1?.markerEnd).toBeUndefined();
+      expect(styled2?.markerEnd).toBeUndefined();
+    });
+
+    it("hides all arrows when no module is selected and mode is 'hide-non-selected-arrows'", () => {
+      const styled1 = styleEdge(edge1, null, "hide-non-selected-arrows");
+      const styled2 = styleEdge(edge2, null, "hide-non-selected-arrows");
+
+      expect(styled1).toBeNull();
+      expect(styled2).toBeNull();
+    });
+  });
 });
+
 

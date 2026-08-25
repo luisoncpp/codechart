@@ -6,6 +6,7 @@ export { pathsFromUnifiedDiff, normalizeDiffPath } from "./Private/parse-unified
 export { lineDiffsFromUnified } from "./Private/parse-line-diff";
 export { parseDiffNotes } from "./Private/parse-diff-notes";
 export { computeLineDiff } from "./Private/compute-line-diff";
+export { detectMovedLines } from "./Private/detect-moved-lines";
 export { buildModuleDiffDisplay } from "./Private/module-diff-display";
 export { countLineDiffStats, diffStatsSuffixLength } from "./Private/line-diff-stats";
 export type { LineDiffStats } from "./Private/line-diff-stats";
@@ -19,3 +20,4 @@ export { mergeCommitOverlay } from "./Private/merge-commit-overlay";
 export { excludeSubmoduleModules } from "./Private/exclude-submodule-modules";
 export { classifySymbolChanges } from "./Private/symbol-diff";
 export { attachSymbolDiff } from "./Private/attach-symbol-diff";
+

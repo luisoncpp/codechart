@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import {
   DropdownMenu,
   MenuActionItem,
   MenuCheckboxItem,
   MenuRadioItem,
   MenuSeparator,
+  MenuSubmenu,
 } from "../src/ui/dropdown_menu";
 
 function renderMenu(onAction = vi.fn(), onToggle = vi.fn()) {
@@ -85,4 +86,44 @@ describe("DropdownMenu", () => {
     expect(item).toBeDisabled();
     expect(item).toHaveAttribute("title", "Requires a git repository");
   });
+
+  it("opens a cascading submenu on hover or click and closes after hover grace period", () => {
+    vi.useFakeTimers();
+    try {
+      const onRadioSelect = vi.fn();
+      render(
+        <DropdownMenu label="View">
+          <MenuSubmenu label="Arrow visibility">
+            <MenuRadioItem label="Show all" checked onSelect={onRadioSelect} />
+          </MenuSubmenu>
+        </DropdownMenu>,
+      );
+      openMenu();
+
+      const trigger = screen.getByRole("menuitem", { name: /Arrow visibility/ });
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByRole("menuitemradio", { name: "Show all" })).toBeNull();
+
+      fireEvent.mouseEnter(trigger.parentElement!);
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      const option = screen.getByRole("menuitemradio", { name: "Show all" });
+      expect(option).toBeInTheDocument();
+      expect(option).toHaveAttribute("aria-checked", "true");
+
+      fireEvent.click(option);
+      expect(onRadioSelect).toHaveBeenCalledOnce();
+
+      fireEvent.mouseLeave(trigger.parentElement!);
+      expect(screen.getByRole("menuitemradio", { name: "Show all" })).toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      expect(screen.queryByRole("menuitemradio", { name: "Show all" })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
+
+

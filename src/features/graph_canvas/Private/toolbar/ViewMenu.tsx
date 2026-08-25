@@ -1,21 +1,26 @@
-// @Architecture(descriptionShort="Toolbar View menu: test/dot-dir filters, line counts, heatmap toggles, and diff entry")
+// @Architecture(descriptionShort="Toolbar View menu: test/dot-dir filters, line counts, heatmap toggles, arrow visibility submenu, and diff entry")
 import {
   DropdownMenu,
   MenuActionItem,
   MenuCheckboxItem,
   MenuRadioItem,
   MenuSeparator,
+  MenuSubmenu,
 } from "../../../../ui/dropdown_menu";
 import { GraphSessionStore, useGraphSession } from "../../../../state/graph-session";
 import type { HeatmapMode } from "../../../../domain/graph";
-import { CanvasUiState, useCanvasUiState } from "../controller/canvas-ui-state";
+import {
+  ArrowVisibility,
+  CanvasUiState,
+  useCanvasUiState,
+} from "../controller/canvas-ui-state";
 
 interface ViewMenuProps {
   store: GraphSessionStore;
   ui: CanvasUiState;
 }
 
-/** Toolbar dropdown for canvas view options (hide tests, heatmap, diff overlay). */
+/** Toolbar dropdown for canvas view options (hide tests, heatmap, diff entry). */
 export function ViewMenu({ store, ui }: ViewMenuProps) {
   const session = useGraphSession(store);
   const uiState = useCanvasUiState(ui);
@@ -24,6 +29,7 @@ export function ViewMenu({ store, ui }: ViewMenuProps) {
   const heatmapEnabled = session.getHeatmapEnabled();
   const heatmapUsable = heatmapEnabled && gitAvailable && !loading;
   const diffActive = !!session.getDiffOverlay();
+  const arrowVisibility = uiState.getArrowVisibility();
 
   return (
     <DropdownMenu label="View">
@@ -55,6 +61,8 @@ export function ViewMenu({ store, ui }: ViewMenuProps) {
           <HeatmapModeRadio store={store} mode="risk" label="Risk" />
         </>
       )}
+      <MenuSeparator />
+      <ArrowVisibilitySubmenu ui={ui} current={arrowVisibility} />
       {!diffActive && (
         <>
           <MenuSeparator />
@@ -67,6 +75,35 @@ export function ViewMenu({ store, ui }: ViewMenuProps) {
     </DropdownMenu>
   );
 }
+
+interface ArrowVisibilitySubmenuProps {
+  ui: CanvasUiState;
+  current: ArrowVisibility;
+}
+
+function ArrowVisibilitySubmenu({ ui, current }: ArrowVisibilitySubmenuProps) {
+  return (
+    <MenuSubmenu label="Arrow visibility">
+      <MenuRadioItem
+        label="Show all"
+        checked={current === "all"}
+        onSelect={() => ui.setArrowVisibility("all")}
+      />
+      <MenuRadioItem
+        label="Hide arrow heads for non-selected modules"
+        checked={current === "hide-non-selected-heads"}
+        onSelect={() => ui.setArrowVisibility("hide-non-selected-heads")}
+      />
+      <MenuRadioItem
+        label="Hide entire arrows for non-selected modules"
+        checked={current === "hide-non-selected-arrows"}
+        onSelect={() => ui.setArrowVisibility("hide-non-selected-arrows")}
+      />
+    </MenuSubmenu>
+  );
+}
+
+
 
 interface HeatmapModeRadioProps {
   store: GraphSessionStore;

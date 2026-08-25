@@ -88,6 +88,20 @@ fn search_command_does_not_bypass_the_backend_shell_facade() {
 }
 
 #[test]
+fn startup_args_command_does_not_bypass_the_backend_shell_facade() {
+    let source = FsProjectSource::new(WORKSPACE_DIR);
+    let graph = crate::analysis::analyze_project(&source, WORKSPACE_DIR).expect("builds");
+
+    assert!(
+        graph.edges.iter().all(|edge| {
+            edge.source != "src-tauri/src/tauri_api/mod.rs"
+                || edge.target != "src-tauri/src/startup_args/mod.rs"
+        }),
+        "Tauri commands must access startup_args through the backend_shell facade"
+    );
+}
+
+#[test]
 fn read_module_source_on_a_missing_file_errors() {
     let result = read_module_source(FIXTURE_DIR.to_string(), "src/nope.ts".to_string());
     assert!(result.is_err());

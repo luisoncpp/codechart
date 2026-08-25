@@ -46,8 +46,9 @@ Both deep modules organize their implementation into subfolders, each a config s
 | `GraphCanvas` | `features/graph_canvas` | Renders React Flow with custom `group`/`module` nodes; applies `selected` per store; `colorMode="light"`. **Only** React-Flow-aware module. `FocusNode` centers the viewport for inspector and Review Note navigation. Sets `onlyRenderVisibleElements` so only viewport-intersecting **module/group** nodes stay mounted — L1.5 symbol boxes are in-module HTML inside those cards (painted only when `symbolsFitOnScreen`; see `docs/lessons-learned/l15-symbol-grid-screen-lod.md`), so culling is module-grain (see `docs/lessons-learned/l15-symbols-in-module-not-rf-nodes.md`). Safe with `EdgeLayer`: culling is render-only. Edge geometry still reads the full projected `nodes` prop + store `nodeLookup` (RF node culling never filters those). |
 | `GraphCanvasController` | `features/graph_canvas` | Thin adapter: node click (modules + groups) → `store.select`; pane click → clear; right-click module/symbol → context menu path. |
 | `SelectionNavigation` | `features/graph_canvas` | Top-left back/forward controls plus `Alt+Left` / `Alt+Right`; disabled states come from the session history pointer. |
-| `ViewMenu` / `SearchMenu` | `features/graph_canvas` (facade exports) | Toolbar dropdowns (rendered by `App` into `ProjectLoaderPanel`'s `menus` slot, built on the shared `src/ui/dropdown_menu` module). View ▾: Hide tests, **Hide dot directories** (default on; re-analyzes), Line counts, Heatmap + Activity/Risk, Visualize diff…; Search ▾: Search project (Ctrl+Shift+F), Go to file (Ctrl+P), Go to symbol. |
-| `CanvasUiState` | `features/graph_canvas/Private/controller/canvas-ui-state.ts` (facade export) | Transient UI flags (`findBarOpen`, `findBarMode`, `diffModalOpen`, `lineCountsVisible`) shared between the toolbar menus and `GraphCanvas`; kept out of `GraphSessionStore`. `App` instantiates it and resets on `phase-changed`. |
+| `ViewMenu` / `SearchMenu` | `features/graph_canvas` (facade exports) | Toolbar dropdowns (rendered by `App` into `ProjectLoaderPanel`'s `menus` slot, built on the shared `src/ui/dropdown_menu` module). View ▾: Hide tests, **Hide dot directories** (default on; re-analyzes), Line counts, Heatmap + Activity/Risk, **Arrow visibility** (Show all / Hide heads non-selected / Hide entire arrows non-selected), Visualize diff…; Search ▾: Search project (Ctrl+Shift+F), Go to file (Ctrl+P), Go to symbol. |
+| `CanvasUiState` | `features/graph_canvas/Private/controller/canvas-ui-state.ts` (facade export) | Transient UI flags (`findBarOpen`, `findBarMode`, `diffModalOpen`, `lineCountsVisible`, `arrowVisibility`) shared between the toolbar menus and `GraphCanvas`; kept out of `GraphSessionStore`. `App` instantiates it and resets on `phase-changed`. |
+
 | `HeatmapLegend` | `features/graph_canvas` | Top-right gradient chip, shown only while the heatmap is on (below `LevelBadge`). Its timeframe label opens `MetricsWindowModal`; the heatmap toggles themselves live in the View menu. |
 | `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, opens the absolute path in the project-configured editor, copies the graph-relative path, or reveals the file via `ShellClient`. Deleted diff files keep preview and copy; editor/explorer are disabled. |
 | `TokenText` | `features/graph_canvas/Private/highlight/TokenText.tsx` | Renders one syntax token's text with **nested** sub-spans: wiki links (`hl-wiki-link`) outside, find matches (`hl-match`) inside. Nesting — never sibling-splitting — is what keeps `hl-clickable` navigation reading a whole identifier from `textContent`. `DiffCodeLine` renders the row; `DiffCodeLines` owns rows, tokenizing, and the per-row link scan. |
@@ -110,10 +111,15 @@ Both deep modules organize their implementation into subfolders, each a config s
   visually distinct from a selected import. `edgeOpacity(role, connected, hasFocus)` applies focus
   dimming: a node's own edges stay opaque (1.0); other context edges sit at 0.45 opacity. When visualizing
   diffs with no selection, all diff edges stay fully opaque (1.0); when a module is selected, diff edges
-  not connected to that module dim to 0.45 while connected diff edges stay fully opaque. Both live in
-  `edge-style.ts` (`GraphCanvas` passes `edgeFocusForSelection` per render); pure `edgeRole`/`styleEdge`/`borderAnchor`
+  not connected to that module dim to 0.45 while connected diff edges stay fully opaque.
+  **Arrow visibility modes (`View ▾ → Arrow visibility`):**
+  - **Show all (default):** all edges and arrowheads are drawn.
+  - **Hide arrow heads for non-selected modules:** non-connected edges omit arrowheads (`marker: "none"`), keeping strokes.
+  - **Hide entire arrows for non-selected modules:** non-connected edges are filtered out entirely.
+  Both live in `edge-style.ts` (`GraphCanvas` passes `edgeFocusForSelection` and `arrowVisibility` per render); pure `edgeRole`/`styleEdge`/`borderAnchor`
   are the testable seams (edges don't render under jsdom).
 - **Diff overlay (narrative diff visualizer):** optional session overlay from `GraphSessionStore.getDiffOverlay()`.
+
   Enter via toolbar **View ▾ → Visualize diff…** (`DiffModal`: paste unified diff or pick two git revisions when the
   project root is a repo). The **after** list includes **Local changes**: tracked staged/unstaged
   changes come from `git diff <before>` (with optional `--ignore-submodules=all` via **Exclude submodules**,
