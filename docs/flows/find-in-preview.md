@@ -15,7 +15,7 @@ Ctrl/Cmd+F while a preview frame is focused (or, failing that, hovered), or the 
 3. `codeMatchesByLine` / `descriptionRanges` flag the active match; `DiffCodeLines` (via `matchesByLine`) and `L2Description` (via `matchRanges`) render `hl-match` / `hl-match--active` spans **nested inside** token spans (`segmentTokenText`, `Private/match-highlight.ts`).
 4. Enter / Shift+Enter / ↑↓ buttons call `navigate(delta)` → shared `Private/match-stepper.ts` `stepIndex` (wrap-around).
 5. An effect centers `activeMatchRef` via `centerElementInBody` (`center-in-body.ts`, body-`scrollTop` only — never `scrollIntoView`).
-6. Escape in the input closes the bar (refocuses the frame); Escape on the frame root with the bar closed closes the frame.
+6. Escape in the input closes the bar (refocuses the frame). Escape on the frame root escalates: copy menu first (if open), then the find bar, then the frame.
 
 ## Reads
 

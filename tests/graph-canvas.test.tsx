@@ -139,23 +139,6 @@ describe("GraphCanvas", () => {
     expect(rfNodes.length).toBe(groupCount + moduleCount);
   });
 
-  it("hides symbol grids at L1.5 until camera zoom makes labels readable", async () => {
-    store.setZoomLevel(1.5);
-    const moduleId = "src/core/store.ts";
-    const symbolId = `${moduleId}::TodoStore`;
-    const { container } = renderGraphCanvas(store);
-    await waitFor(() =>
-      expect(container.querySelector(`[data-id="${moduleId}"]`)).toBeTruthy(),
-    );
-    expect(container.querySelector(`[data-id="${symbolId}"]`)).toBeNull();
-    expect(container.querySelector(".symbol-box")).toBeNull();
-    expect(container.querySelector(`[data-id="${moduleId}"]`)!.textContent).toContain(
-      "store.ts",
-    );
-    await zoomCanvasUntilSymbolVisible(container, symbolId);
-    expect(container.querySelector(`[data-id="${symbolId}"]`)).toBeTruthy();
-  });
-
   it("shows the group's short description in its reserved band at L1", async () => {
     await expectGroupDescription(store, "core", "Domain types & state");
   });

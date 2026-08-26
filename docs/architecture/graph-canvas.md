@@ -38,7 +38,7 @@ Both deep modules organize their implementation into subfolders, each a config s
 
 | Piece | File | Role |
 |-------|------|------|
-| `projectGraph(graph, layout)` | `domain/graph/Private/projection/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. At L1.5 (`showSymbols`), exported symbols are **not** RF nodes — geometry is on `ModuleNodeData.symbols` and painted inside the module card when `symbolsFitOnScreen` says the label and card are large enough on screen (render LOD; projection still attaches descriptors). Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
+| `projectGraph(graph, layout)` | `domain/graph/Private/projection/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. At L1.5 (`showSymbols`), exported symbols are **not** RF nodes — geometry is on `ModuleNodeData.symbols` and painted inside the module card when `symbolsFitOnScreen` says the card is large enough on screen (render LOD; projection still attaches descriptors). Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
 | `EdgeLayer` + `segmentForEdge` | `features/graph_canvas/Private/edges/EdgeLayer.tsx`, `edge-path.ts`, `viewport-edge-model.ts`; `EdgeLayerRenderer` / `EdgeLayerController` | Custom SVG edge layer (portal into RF's `.react-flow__edges`); React Flow receives `edges={[]}`. Merges **clipped visible** segments per style bucket into one static world-space `<path>` (`mergePathD`); the camera is React Flow's CSS transform on `.react-flow__viewport` / `.react-flow__edges`, so pan does **not** rewrite `d`. **Hysteresis clip:** `filterVisibleSegments` against `inflateClipRect(tightVisibleWorldRect, clipCellSize)`; rebuild clipped merged `d` when `clipCellKey` changes (cell index from tight rect + scale-sensitive `round(cell)` in the key — not cell-count width/height) or on geometry rebuild; pan within the same clip cell stays CSS-transform only. Arrow LOD flips only when zoom crosses `showArrowHeadsAtZoom` (≥ 1.5); that discrete `setState` is coalesced per rAF inside `EdgeLayer` — never from `GraphCanvas.onMove` `setState`. `segmentForEdge` computes endpoints via `borderAnchor` from live node boxes (`boxesFromFlowNodes`); honors `data.groupTargetId`. Geometry rebuilds (`writeGeometry`) on graph/layout changes and on clip-cell change (not every pan). |
 | `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/edges/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
 | selectors | `domain/graph/Private/selectors.ts` | `findModule`, `findGroup`, `groupOf`, `modulesInGroup`, `childGroupsOf`, `groupImportsOf`, `groupImportedBy`, `diagnosticsForGroup`, `edgeFocusForSelection`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. |
@@ -337,9 +337,9 @@ hidden by zoom collapse.
   large box instead of floating tiny in it. `ModuleNodeView` reads the node's laid-out `width`/`height`
   (`NodeProps`) to compute it; L2 detail labels stay at the compact 9px. At **L1.5**, `ModuleSymbolBoxes`
   paints the exported-symbol grid only when `symbolsFitOnScreen(boxW, boxH, cameraZoom)` (`domain/layout`,
-  pure): world-sized 9px labels need ≥12px on screen and the card's shorter side needs ≥100px — so the
-  semantic level still starts at camera zoom 0.9 (bold filename, group long text) but symbol DOM is skipped
-  until camera zoom makes the labels readable **and** the card's shorter side is ≥100px on screen. Net L1 hierarchy: zoom out → group
+  pure): the card's shorter side needs ≥100px on screen — so compact 120×90 modules skip the grid until
+  camera zoom ~1.12, but a large card paints as soon as L1.5 starts (zoom 0.9). Card chrome (bold
+  filename, description) still renders at L1.5 entry zoom. Net L1 hierarchy: zoom out → group
   headers grow and dominate, module labels shrink with their boxes and always fit. `InspectionPanel` gains a
   `MetadataSection` (`This module` + `Group` annotation: type / short / long), rendering nothing when
   neither side is annotated (graceful fallback, TDD §10). `icon-map` covers the fixture's icon names.
@@ -422,8 +422,14 @@ hidden by zoom collapse.
   are untouched; `remove` diff rows never highlight (matches index the live source). Navigation
   (Enter / Shift+Enter / ↑↓ buttons) steps via the shared `Private/match-stepper.ts` and centers the
   active span with `centerElementInBody` (body-`scrollTop` math only). Frames are focusable
-  (`tabIndex=-1`, focused on pointerdown with `preventScroll`); Escape escalates: find bar first,
-  frame close second. Find-bar keys stop propagation so they never reach canvas/window shortcuts.
+  (`tabIndex=-1`, focused on pointerdown with `preventScroll`); Escape escalates: copy menu first,
+  find bar second, frame close third. Find-bar keys stop propagation so they never reach canvas/window shortcuts.
+- **Copy with context:** right-click a text selection in a preview-frame body replaces the native
+  context menu with **Copy** (the snippet) and **Copy with context** (markdown fence
+  ` ```start:end:path ` plus the snippet). Line range comes from `[data-line]` on `DiffCodeLine`
+  rows. Disabled when the selection is empty (**Copy** too) or not on source rows. Menu is
+  `data-preview-keep` and portaled so it cannot clip or dismiss an unpinned frame. Ctrl/Cmd+C is
+  unchanged. Sequence: `docs/flows/copy-with-context.md`.
 
 Store surface (TDD §5.1): `getZoomLevel`, `getReducedGraph`, `getCollapsedGroupIds`,
 `getDisconnectedGroupIds`, `getDisconnectedModuleIds`, `getSourceCache`,

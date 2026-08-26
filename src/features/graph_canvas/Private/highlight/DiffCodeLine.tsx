@@ -49,6 +49,7 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
     <div
       ref={lineRef}
       className={`${prefix}__line ${prefix}__line--${row.kind}${active ? ` ${prefix}__line--active` : ""}`}
+      data-line={row.lineNumber}
       title={row.tooltip}
       style={{
         display: "flex",

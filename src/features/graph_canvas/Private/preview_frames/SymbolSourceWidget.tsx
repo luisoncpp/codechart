@@ -12,6 +12,8 @@ import { FrameFindBar } from "./FrameFindBar";
 import { useFrameSearch } from "./use-frame-search";
 import { codeMatchesByLine, descriptionRanges, matchCounter } from "./frame-search";
 import { wikiLinkFromEvent, type WikiLinkClick } from "../wiki_links";
+import { FrameContextMenu } from "./FrameContextMenu";
+import { useFrameCopyMenu } from "./use-frame-copy-menu";
 
 export interface FrameHandlers {
   onClose: (id: number) => void;
@@ -32,13 +34,7 @@ interface SymbolSourceWidgetProps {
   handlers: FrameHandlers;
 }
 
-/**
- * One preview frame: scrollable source code centered on the symbol's
- * definition line, draggable by its header bar. Identifiers matching
- * `clickableSymbols` navigate to the defining module in a new frame.
- * Ctrl/Cmd+F (focused or hovered frame) or the header ⌕ toggle opens an
- * in-frame find bar.
- */
+/** One preview frame: source, drag, find, identifier navigation, copy menu. */
 export function SymbolSourceWidget({
   frame,
   clickableSymbols,
@@ -60,6 +56,7 @@ export function SymbolSourceWidget({
   // Match ranges cannot be applied to rendered markdown HTML, so find stays off
   // until the reader switches to raw source.
   const renderMarkdown = !!frame.isMarkdown && !rawSource;
+  const copyMenu = useFrameCopyMenu(frame.modulePath);
   const search = useFrameSearch({
     frameRef,
     description: frame.symbolName ? undefined : frame.description,
@@ -120,6 +117,7 @@ export function SymbolSourceWidget({
   const onFrameKeyDown = (e: React.KeyboardEvent) => {
     if (e.key !== "Escape") return;
     e.stopPropagation();
+    if (copyMenu.consumeEscape()) return;
     if (search.barOpen) {
       closeBarAndRefocusFrame();
       return;
@@ -172,7 +170,11 @@ export function SymbolSourceWidget({
           inputRef={search.inputRef}
         />
       )}
-      <div className="symbol-widget__body" onClick={onCodeClick}>
+      <div
+        className="symbol-widget__body"
+        onClick={onCodeClick}
+        onContextMenu={copyMenu.onContextMenu}
+      >
         <FrameContent
           frame={frame}
           fileDiff={fileDiff}
@@ -188,6 +190,7 @@ export function SymbolSourceWidget({
           }}
         />
       </div>
+      <FrameContextMenu menu={copyMenu.menu} onClose={copyMenu.closeMenu} />
     </div>
   );
 }

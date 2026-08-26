@@ -2,13 +2,19 @@ import { describe, expect, it } from "vitest";
 import { symbolsFitOnScreen } from "../src/domain/layout";
 
 describe("symbolsFitOnScreen", () => {
-  it("returns false when font or card is too small on screen", () => {
+  it("returns false when the card is too small on screen", () => {
     expect(symbolsFitOnScreen(120, 90, 0.9)).toBe(false);
-    expect(symbolsFitOnScreen(800, 600, 1.1)).toBe(false);
     expect(symbolsFitOnScreen(60, 40, 1.4)).toBe(false);
   });
 
-  it("returns true when font and card meet screen thresholds at readable L1.5 zoom", () => {
+  it("paints large cards across L1.5, not only after 9px labels reach 12px on screen", () => {
+    expect(symbolsFitOnScreen(800, 600, 0.9)).toBe(true);
+    expect(symbolsFitOnScreen(800, 600, 1.1)).toBe(true);
+    expect(symbolsFitOnScreen(200, 160, 0.9)).toBe(true);
+  });
+
+  it("returns true when compact cards meet the screen-size floor", () => {
+    expect(symbolsFitOnScreen(120, 90, 1.12)).toBe(true);
     expect(symbolsFitOnScreen(120, 90, 1.35)).toBe(true);
     expect(symbolsFitOnScreen(132, 99, 1.35)).toBe(true);
     expect(symbolsFitOnScreen(120, 90, 1.6)).toBe(true);

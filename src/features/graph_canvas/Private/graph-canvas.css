@@ -439,6 +439,45 @@
   background: #fafafa;
 }
 
+.frame-copy-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+}
+
+.frame-copy-menu {
+  position: fixed;
+  z-index: 10001;
+  min-width: 180px;
+  padding: 4px 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+.frame-copy-menu button {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.frame-copy-menu button:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.frame-copy-menu button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .symbol-widget__code {
   margin: 0;
   padding: 8px 0;
