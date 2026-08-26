@@ -65,10 +65,12 @@ Recommendations marked **(rec)**. Accept or reject before implementation.
 
 ### Primary language / project
 
+- **Accepted:** Same pass runs on **all supported languages** (TS/Rust/C#/C++/…).
+  C++ same-stem collapsing applies where pairs exist; elsewhere each file is its
+  own unit.
 - **(rec)** Design and test first for **C++ / Unreal** include graphs
-  (`references/cpp.rs`, `unreal.knownPaths`, hidden `*.generated.h`).
-- **(rec)** Still run the same pass on TS/Rust/C# import edges when present
-  (no language gate). Pair-collapsing is a no-op outside C++ extensions.
+  (`references/cpp.rs`, `unreal.knownPaths`, hidden `*.generated.h`), with
+  explicit non-C++ cases in the unit suite too.
 - Engine / generated includes stay out of the graph already
   (`excludeEngineReferences`, `hideGeneratedFiles`) — no extra cycle rules.
 
