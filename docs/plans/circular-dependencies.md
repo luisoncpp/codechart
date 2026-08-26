@@ -56,7 +56,8 @@ After analyze, every *meaningful* include cycle is a first-class diagnostic (D5)
 
 1. Backend finds cycles as a `references` post-pass (peer of `flag_drift`).
 2. Participating modules list the cycle in the **InspectionPanel**.
-3. Cycle edges are distinct on the canvas (not facade-bypass red).
+3. Cycle edges paint **red** on the canvas (same `isViolation` stroke as
+   facade bypass).
 4. A toolbar chip lists every cycle, copyable, like **FacadeBypassList**.
 
 ## Product decisions (proposed)
@@ -87,11 +88,12 @@ Recommendations marked **(rec)**. Accept or reject before implementation.
     `Player.cpp → Enemy.h` if Player has no paired header).
   - An edge `A.h → B.h` stays `A.h → B.h`.
 - **Accepted:** Run SCC on that **unit graph**. Report cycles between units.
+- **Accepted:** Cycle edges use existing **violation red** (`isViolation = true`).
+  No new `inCycle` field. Pair self-edges (`Foo.cpp → Foo.h`) stay
+  `isViolation = false`.
 - **(rec)** Only solid `kind = import` edges. Skip `soft` seams.
-- **(rec)** Mark `inCycle` on the **original file edges** that map into a cycled
-  unit-pair (so the canvas still lights the real `#include` arrows, including
-  `Private/*.cpp → Public/*.h` when that edge participates in a larger cycle —
-  rare — and always the header↔header edges that form the cycle).
+- **(rec)** Set `isViolation` on the **original file edges** that map into a
+  cycled unit-pair (header↔header cycle arrows; not the dropped pair include).
 - **(rec)** Do **not** flag `Foo.cpp → Foo.h` alone.
 - **(rec)** Self-include of a header (`A.h → A.h`) remains a one-unit cycle.
 
@@ -123,8 +125,11 @@ Recommendations marked **(rec)**. Accept or reject before implementation.
 
 ### Canvas / toolbar / inspector
 
-Same as before: `inCycle` on edges (not `isViolation`); distinct edge color;
-toolbar chip next to **FacadeBypassList**; inspector colors the new kind.
+- **Accepted:** Reuse `isViolation` so `styleEdge` already paints cycle edges
+  red (`#dc2626`). No new edge field, no new `EdgeRole`.
+- **(rec)** Keep a **separate diagnostic kind** and a **separate toolbar chip**
+  from **FacadeBypassList**, so the two findings stay distinguishable even
+  though both edges are red. Inspector colors `circularDependency` red too.
 
 ### Fixtures
 
@@ -168,17 +173,20 @@ Steps:
 3. Project import edges to unit→unit; drop unit self-edges from pairing.
 4. Tarjan/Kosaraju SCC on the unit adjacency (`BTreeMap`/`BTreeSet`).
 5. Witness cycle on unit ids; diagnostics on every file in those units.
-6. Set `in_cycle` on original edges whose unit-projected endpoints both lie in
-   the same reported SCC (and the edge is not a dropped pair self-edge — those
-   stay `in_cycle = false`).
+6. Set `is_violation` on original edges whose unit-projected endpoints both lie
+   in the same reported SCC (skip dropped pair self-edges). An edge that is
+   already a facade bypass stays `true`.
 
 Keep files ≤200 lines, functions ≤30 lines.
 
 ### Contract / frontend / docs
 
-Unchanged from the previous draft except messages say **circular include** for
-C++-looking cycles (or always use that wording — **(rec)** one string
-`circular include: …` for all languages to avoid TS/C++ split in the UI).
+- Contract: add `CircularDependency` to `DiagnosticKind` only. `Edge` stays as
+  today (`isViolation` already serializes).
+- Frontend: no `styleEdge` change for color. New selector + toolbar chip.
+  Inspector treats `circularDependency` as red like `architectureViolation`.
+- **(rec)** Diagnostic message always `circular include: …` (one wording for
+  all languages).
 
 Docs to update after ship: `references-analysis.md`, `contract.md`,
 `graph-canvas.md`, `analyze-project.md`, new flow
@@ -189,11 +197,11 @@ Docs to update after ship: `references-analysis.md`, `contract.md`,
 
 - `Private/Foo.cpp → Public/Foo.h` only → **no** diagnostic.
 - `A.h → B.h → A.h` → one SCC; diagnostics on both headers; both edges
-  `inCycle`; message uses header paths.
+  `isViolation`; message uses header paths.
 - Unreal-shaped stems across Public/Private still collapse.
 - `A.cpp → B.h` + `B.h → A.h` → unit cycle involving A and B; `A.cpp` and `A.h`
   both get the diagnostic; `A.cpp → A.h` pair edge (if present) not marked
-  `inCycle` as the cycle cause.
+  `isViolation` as the cycle cause.
 - Orphan `.cpp` with no header keeps its own unit id.
 - TS `a.ts ↔ b.ts` still detected (collapse no-op).
 - Soft edges ignored; determinism; golden TS fixture unchanged.
@@ -209,20 +217,23 @@ Docs to update after ship: `references-analysis.md`, `contract.md`,
 
 ## Implementation order (after approval)
 
-1. Contract: `CircularDependency` + `in_cycle`.
+1. Contract: `CircularDependency` kind only (no new edge field).
 2. `flag_cycles` with C++ unit collapsing + Rust tests (TDD).
 3. Wire `resolve_edges`; confirm golden still matches.
-4. Selectors + toolbar + inspector + edge style.
+4. Selectors + toolbar chip + inspector color (edge red is already `isViolation`).
 5. Frontend tests + small C++ fixture if used for analysis checkpoint.
 6. Docs.
 7. `npx fallow audit`.
 
 ## Decisions locked
 
-- **Collapse same-stem `.h`/`.cpp` into logical units before SCC** (accepted).
+- **Collapse same-stem `.h`/`.cpp` into logical units before SCC.**
+- **Run the pass for all supported languages** (not C++-only).
+- **Paint cycle edges red** by setting `isViolation` (no new `inCycle` field).
 
 ## Open question (please answer)
 
-Should cycle detection also run on non-C++ import edges in the same pass
-(TS/Rust/C# — collapsing is a no-op there) (**recommended**), or only emit
-findings when at least one edge endpoint is a C++/Unreal header or impl?
+Even though both are red on the canvas, should cycles still get a **new
+`circularDependency` diagnostic kind** and a **separate toolbar chip**
+(**recommended**), or should they reuse `architectureViolation` and appear
+inside **FacadeBypassList**?
