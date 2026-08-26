@@ -74,9 +74,8 @@ Recommendations marked **(rec)**. Accept or reject before implementation.
 
 ### Graph that is searched — C++ logical units
 
-- **(rec)** Only solid `kind = import` edges. Skip `soft` seams.
-- **(rec)** Before SCC, collapse each **C++ same-stem pair** into one **logical
-  unit**:
+- **Accepted:** Before SCC, collapse each **C++ same-stem pair** into one
+  **logical unit**. Rejected alternative: headers-only graph (ignore `.cpp`).
   - Pair rule = existing `is_paired_cpp_header` stem match (Public/Private OK).
   - Unit id = the **header path** when a header is in the pair; else the sole
     file path (orphan `.cpp` / unpaired header).
@@ -85,17 +84,14 @@ Recommendations marked **(rec)**. Accept or reject before implementation.
   - An edge `Player.cpp → Enemy.h` becomes `Player.h → Enemy.h` (or
     `Player.cpp → Enemy.h` if Player has no paired header).
   - An edge `A.h → B.h` stays `A.h → B.h`.
-- **(rec)** Run SCC on that **unit graph**. Report cycles between units.
+- **Accepted:** Run SCC on that **unit graph**. Report cycles between units.
+- **(rec)** Only solid `kind = import` edges. Skip `soft` seams.
 - **(rec)** Mark `inCycle` on the **original file edges** that map into a cycled
   unit-pair (so the canvas still lights the real `#include` arrows, including
   `Private/*.cpp → Public/*.h` when that edge participates in a larger cycle —
   rare — and always the header↔header edges that form the cycle).
 - **(rec)** Do **not** flag `Foo.cpp → Foo.h` alone.
 - **(rec)** Self-include of a header (`A.h → A.h`) remains a one-unit cycle.
-- Alternative rejected for MVP: “headers-only graph” (ignore all `.cpp` sources).
-  That misses a `.cpp` that includes `B.h` while somehow closing a loop through
-  another path; unit collapsing is stricter about pairs and still sees
-  impl→other-header edges.
 
 ### What counts as one finding
 
@@ -105,7 +101,7 @@ Recommendations marked **(rec)**. Accept or reject before implementation.
 - Message uses **unit ids** (prefer header paths) in a canonical witness cycle.
 - Example: `circular include: Characters/A.h → Characters/B.h → Characters/A.h`.
 - Dense SCC: `circular include: A.h → B.h → A.h (also C.h)`.
-- **(rec)** Do not list both `A.cpp` and `A.h` as separate cycle members when
+- **Accepted:** Do not list both `A.cpp` and `A.h` as separate cycle members when
   they collapsed to one unit.
 
 ### Diagnostics
@@ -219,8 +215,12 @@ Docs to update after ship: `references-analysis.md`, `contract.md`,
 6. Docs.
 7. `npx fallow audit`.
 
+## Decisions locked
+
+- **Collapse same-stem `.h`/`.cpp` into logical units before SCC** (accepted).
+
 ## Open question (please answer)
 
-For C++, should MVP collapse same-stem `.h`/`.cpp` into one logical unit before
-SCC (**recommended**), or only walk header→header edges and ignore `.cpp`
-sources entirely?
+Should cycle detection also run on non-C++ import edges in the same pass
+(TS/Rust/C# — collapsing is a no-op there) (**recommended**), or only emit
+findings when at least one edge endpoint is a C++/Unreal header or impl?
