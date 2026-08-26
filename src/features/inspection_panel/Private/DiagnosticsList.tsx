@@ -22,5 +22,7 @@ export function DiagnosticsList({ items }: DiagnosticsListProps) {
 }
 
 function diagnosticColor(kind: string): string {
-  return kind === "architectureViolation" ? "#dc2626" : "#b45309";
+  return kind === "architectureViolation" || kind === "circularDependency"
+    ? "#dc2626"
+    : "#b45309";
 }

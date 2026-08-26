@@ -1,6 +1,6 @@
 # Import-cycle detection (circular dependencies)
 
-**Status: plan for review — do not implement until accepted.**
+**Status: implemented** (see `docs/live/current-status.md`, `references/cycles.rs`).
 
 **Audience focus: C++ / Unreal.** The first draft treated cycles as a generic
 module-file SCC. That is wrong for the main use case: declaration and definition

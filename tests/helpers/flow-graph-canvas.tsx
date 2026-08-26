@@ -5,6 +5,8 @@ import {
   SearchMenu,
   ViewMenu,
 } from "../../src/features/graph_canvas";
+import { createMockAnalysisClient } from "../../src/ipc/analysis-client";
+import type { AnalysisClient } from "../../src/ipc/analysis-client";
 import { createMockGitClient } from "../../src/ipc/git-client";
 import { createMockShellClient } from "../../src/ipc/shell-client";
 import type { ShellClient } from "../../src/ipc/shell-client";
@@ -17,8 +19,14 @@ import type { ProjectGraph } from "../../src/domain/graph";
 
 export const flowGoldenGraph = goldenGraph as unknown as ProjectGraph;
 
-export async function readyGraphStore(): Promise<GraphSessionStore> {
-  const store = testGraphSessionStore();
+export async function readyGraphStore(
+  graph: ProjectGraph = flowGoldenGraph,
+): Promise<GraphSessionStore> {
+  const client: AnalysisClient = {
+    ...createMockAnalysisClient(),
+    analyzeProject: async () => graph,
+  };
+  const store = testGraphSessionStore(client);
   await store.loadProject("/sample");
   return store;
 }

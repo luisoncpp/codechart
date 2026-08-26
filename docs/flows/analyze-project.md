@@ -19,9 +19,10 @@ End-to-end backend sequence that turns a folder of source into a `ProjectGraph`.
 | 5 | Assign modules → nested groups + facades | `resolve_groups` | `grouping/mod.rs` |
 | 6 | Resolve imports → edges + unresolved diagnostics | `resolve_references_with_options` | `references/mod.rs`, `references/resolve.rs`, `references/cpp.rs` |
 | 6b | Flag facade-bypass drift → `isViolation` + `architectureViolation` (Phase 8) | `flag_drift` (via `resolve_edges` + `group_boundaries`) | `analysis/mod.rs`, `references/drift.rs` |
-| 6c | Pair event emit/listen tokens → `soft` (dashed) edges, appended (Phase 9) | `classify_soft` (via `resolve_edges`) | `analysis/mod.rs`, `references/soft.rs` |
-| 6d | Pair Tauri `invoke("cmd")` with `#[tauri::command] fn cmd` → `soft` edges + `unresolvedIpc` diagnostics | `classify_tauri_ipc` (via `resolve_edges`) | `analysis/mod.rs`, `references/tauri_ipc.rs` |
-| 6e | Pair interface importers with cross-group implementors → `soft` seam edges (Phase 10) | `classify_interface_seams` (via `resolve_edges`) | `analysis/mod.rs`, `references/interface_seams.rs` |
+| 6c | Flag import cycles → `isViolation` + `circularDependency` | `flag_cycles` (via `resolve_edges`) | `analysis/mod.rs`, `references/cycles.rs` |
+| 6d | Pair event emit/listen tokens → `soft` (dashed) edges, appended (Phase 9) | `classify_soft` (via `resolve_edges`) | `analysis/mod.rs`, `references/soft.rs` |
+| 6e | Pair Tauri `invoke("cmd")` with `#[tauri::command] fn cmd` → `soft` edges + `unresolvedIpc` diagnostics | `classify_tauri_ipc` (via `resolve_edges`) | `analysis/mod.rs`, `references/tauri_ipc.rs` |
+| 6f | Pair interface importers with cross-group implementors → `soft` seam edges (Phase 10) | `classify_interface_seams` (via `resolve_edges`) | `analysis/mod.rs`, `references/interface_seams.rs` |
 | 7 | Build `ModuleNode`s (id/label/lang/group/facade/loc/annotation) | `build_modules` | `analysis/nodes.rs` |
 | 7b | For Git repositories, enrich modules with activity/risk metrics from the requested lookback window | `enrich_module_metrics` | `git/metrics.rs`, `git/metrics_log.rs` |
 | 8 | Merge + sort diagnostics | `merge` | `diagnostics/mod.rs` |

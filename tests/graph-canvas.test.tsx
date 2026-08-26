@@ -397,6 +397,29 @@ describe("InspectionPanel", () => {
     expect(message).toHaveStyle({ color: "#dc2626" }); // red, matches the edge
   });
 
+  it("colors circularDependency diagnostics red in the inspector", async () => {
+    const cycleGraph: ProjectGraph = {
+      ...graph,
+      diagnostics: [
+        ...graph.diagnostics,
+        {
+          id: "circularDependency:a.h,b.h:src/ui/TodoList.tsx",
+          severity: "warning",
+          kind: "circularDependency",
+          message: "circular include: a.h → b.h → a.h",
+          moduleId: "src/ui/TodoList.tsx",
+        },
+      ],
+    };
+    const store = await readyGraphStore(cycleGraph);
+    store.select("src/ui/TodoList.tsx");
+    renderInspectionPanel(store);
+
+    const message = screen.getByText(/circular include:/);
+    expect(message).toBeInTheDocument();
+    expect(message).toHaveStyle({ color: "#dc2626" });
+  });
+
   it("shows group metadata and cross-boundary imports when a group is selected", async () => {
     const store = await readyGraphStore();
     store.select("core");

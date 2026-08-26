@@ -2,6 +2,12 @@
 
 ## Implemented
 
+**Import-cycle detection** — solid import cycles surface as `circularDependency` diagnostics and red edges.
+
+- `references::flag_cycles` (`cycles.rs`): C++ same-stem impl/header collapse before Tarjan SCC; one finding per SCC (≥2 units) plus true header self-includes; messages `circular include: …`; `is_violation` on cycle import edges (not `Foo.cpp → Foo.h` pair edges). Wired after `flag_drift` in `resolve_edges`.
+- Contract: `DiagnosticKind::CircularDependency`. Frontend: `architectureViolations` adds deduped cycle rows; toolbar chip **N architecture issues** (`FacadeBypassList`); inspector colors `circularDependency` red. Golden TS fixture unchanged.
+- Tests: 9 Rust cycle units + selector/toolbar/inspector vitest. Flow: [inspect-circular-dependency.md](../flows/inspect-circular-dependency.md).
+
 **Phase 10 — Semantic zoom (L0/L1/L2) + metadata rendering** is complete — the last MVP-roadmap item.
 
 - Semantic zoom is a **pure projection over the immutable graph** (TDD §8): new `projectForZoom(graph, collapsedGroupIds)` (`domain/graph/Private/reduction/zoom-projection.ts`) drops modules under a collapsed group, keeps every collapsed group box visible (including nested groups), re-routes their edges onto the nearest collapsed ancestor box, drops self-loops and dedups (a merged violation survives). `allGroupIds` = L0 default; `levelFromZoom(factor)` maps scroll zoom → 0/1/2 (`<0.55 / <1.7 / ≥1.7`). Pipeline: `projectForZoom` → `layout(reduced, sizeOpts)` → `projectGraph(reduced, layout, renderOpts)`.

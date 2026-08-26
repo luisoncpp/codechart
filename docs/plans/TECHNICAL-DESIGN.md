@@ -110,7 +110,8 @@ golden JSON; CI fails on divergence.
 type EdgeKind = "import" | "unresolvedImport" | "soft";
 type Severity = "info" | "warning" | "error";
 type DiagnosticKind =
-  | "parseError" | "unresolvedImport" | "configError" | "architectureViolation";
+  | "parseError" | "unresolvedImport" | "configError" | "architectureViolation"
+  | "circularDependency";
 
 interface Annotation {            // from // @Architecture(...) comment blocks
   type?: string;                  // "Facade" | "Module" | ...

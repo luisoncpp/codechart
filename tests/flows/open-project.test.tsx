@@ -7,7 +7,7 @@ import goldenGraph from "../fixtures/golden/project-graph.json";
 import { testGraphSessionStore } from "../helpers/test-graph-session-store";
 import {
   clickOpenFolder,
-  openFacadeBypassDialog,
+  openArchitectureIssuesDialog,
   mockClipboardWriteText,
   renderProjectLoaderPanel,
   waitForGraphSummary,
@@ -74,9 +74,9 @@ describe("flow: open-project", () => {
     });
   });
 
-  it("clicking Copy list copies the facade bypass list", async () => {
+  it("clicking Copy list copies the architecture issues list", async () => {
     const writeText = mockClipboardWriteText();
-    const dialog = await openFacadeBypassDialog();
+    const dialog = await openArchitectureIssuesDialog();
     fireEvent.click(within(dialog).getByRole("button", { name: "Copy list" }));
     await waitFor(() => {
       expect(writeText).toHaveBeenCalledWith(

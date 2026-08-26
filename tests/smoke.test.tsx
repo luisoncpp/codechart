@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import {
   clickOpenFolder,
   mockClipboardWriteText,
-  openFacadeBypassDialog,
+  openArchitectureIssuesDialog,
   renderProjectLoaderPanel,
   waitForGraphSummary,
 } from "./helpers/project-loader-panel";
@@ -34,9 +34,9 @@ describe("ProjectLoaderPanel", () => {
     expect(chip).toHaveAttribute("title", "/some/project");
   });
 
-  it("lists facade bypasses in a modal with a copyable textarea", async () => {
+  it("lists architecture issues in a modal with a copyable textarea", async () => {
     const writeText = mockClipboardWriteText();
-    const dialog = await openFacadeBypassDialog();
+    const dialog = await openArchitectureIssuesDialog();
 
     const textarea = within(dialog).getByRole("textbox");
     expect(textarea).toHaveValue(

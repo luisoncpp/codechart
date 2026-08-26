@@ -31,6 +31,7 @@ pub enum DiagnosticKind {
     UnresolvedUnityAsset,
     ConfigError,
     ArchitectureViolation,
+    CircularDependency,
 }
 
 #[derive(Serialize, Deserialize, TS, Debug, Clone, PartialEq)]

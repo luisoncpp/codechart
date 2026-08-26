@@ -13,8 +13,8 @@ export function FacadeBypassList({ violations }: FacadeBypassListProps) {
 
   const label =
     violations.length === 1
-      ? "1 facade bypass"
-      : `${violations.length} facade bypasses`;
+      ? "1 architecture issue"
+      : `${violations.length} architecture issues`;
 
   return (
     <>

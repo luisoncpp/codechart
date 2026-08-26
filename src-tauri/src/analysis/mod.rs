@@ -28,8 +28,8 @@ use crate::project_config::{
 };
 use crate::project_source::ProjectSource;
 use crate::references::{
-    classify_interface_seams, classify_soft, classify_tauri_ipc, classify_unity_assets, flag_drift,
-    resolve_imports, GroupBoundaries,
+    classify_interface_seams, classify_soft, classify_tauri_ipc, classify_unity_assets, flag_cycles,
+    flag_drift, resolve_imports, GroupBoundaries,
 };
 use crate::tsconfig_paths::load_from_source;
 use crate::unity_assets::index_meta_files;
@@ -146,6 +146,8 @@ fn resolve_edges(
     let mut refs = resolve_imports(parsed, unreal, aliases);
     let bounds = group_boundaries(groups);
     let violations = flag_drift(&mut refs.edges, &bounds);
+    let module_ids: Vec<String> = parsed.iter().map(|m| m.path.clone()).collect();
+    let cycle_diags = flag_cycles(&mut refs.edges, &module_ids);
     let import_pairs = collect_import_pairs(&refs.edges);
     refs.edges.extend(classify_soft(parsed));
     refs.edges
@@ -156,6 +158,7 @@ fn resolve_edges(
     refs.edges.extend(unity_edges);
     let mut diagnostics = refs.diagnostics;
     diagnostics.extend(violations);
+    diagnostics.extend(cycle_diags);
     diagnostics.extend(ipc_diags);
     diagnostics.extend(unity_diags);
     (refs.edges, diagnostics)

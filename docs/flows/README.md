@@ -43,6 +43,7 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 |------|-------|
 | [analyze-project.md](./analyze-project.md) | Folder → `ProjectGraph`: the full backend pipeline (parse → group → resolve → build) |
 | [open-project.md](./open-project.md) | Open folder → IPC → live diagram: the UI front of the analysis pipeline (session phases) |
+| [inspect-circular-dependency.md](./inspect-circular-dependency.md) | Select a module in an import cycle → red edges + `circular include` diagnostic in the panel |
 | [expand-collapse-group.md](./expand-collapse-group.md) | Group chevron / double-click → collapse override (+ ancestor chain) → re-layout → card vs. header |
 | [select-module.md](./select-module.md) | Click a module or group on the canvas → selection → inspection panel (pure UI state) |
 | [navigate-from-inspector.md](./navigate-from-inspector.md) | Click an import in the inspector → select that module and center the canvas on it |

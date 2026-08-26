@@ -153,13 +153,29 @@ export function diagnosticsFor(graph: ProjectGraph, id: string): Diagnostic[] {
   return graph.diagnostics.filter((d) => d.moduleId === id);
 }
 
-/** Every facade-bypass (`architectureViolation`) diagnostic in the project. */
+/** Every architecture issue in the project: facade bypasses + import cycles. */
 export function architectureViolations(graph: ProjectGraph): Diagnostic[] {
-  return graph.diagnostics.filter(
-    (d) =>
-      d.kind === "architectureViolation" &&
-      !isTestImporter(graph, d),
+  const bypasses = graph.diagnostics.filter(
+    (d) => d.kind === "architectureViolation" && !isTestImporter(graph, d),
   );
+  const seenCycleKeys = new Set<string>();
+  const cycles: Diagnostic[] = [];
+  for (const d of graph.diagnostics) {
+    if (d.kind !== "circularDependency") continue;
+    const key = cycleKeyFromDiagnosticId(d.id);
+    if (!key || seenCycleKeys.has(key)) continue;
+    seenCycleKeys.add(key);
+    cycles.push(d);
+  }
+  return [...bypasses, ...cycles];
+}
+
+function cycleKeyFromDiagnosticId(id: string): string | null {
+  if (!id.startsWith("circularDependency:")) return null;
+  const rest = id.slice("circularDependency:".length);
+  const lastColon = rest.lastIndexOf(":");
+  if (lastColon === -1) return null;
+  return rest.slice(0, lastColon);
 }
 
 function isTestImporter(graph: ProjectGraph, diagnostic: Diagnostic): boolean {

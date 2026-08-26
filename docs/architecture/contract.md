@@ -39,6 +39,10 @@ Ids are path-derived; edge id = `${source}->${target}:${kind}:${ordinal}`. No
 timestamps/random in graph data, so golden-fixture diffs and layout snapshots are
 meaningful. Analyzers (Phase 4+) must emit in a deterministic order.
 
+`DiagnosticKind` includes `architectureViolation` (facade bypass) and
+`circularDependency` (import cycle). Both set participating import edges
+`isViolation` and surface in the toolbar **architecture issues** list.
+
 ## North Star fixtures
 
 - `tests/fixtures/ts-basic-project/` — the reference TS project (the analysis input).
