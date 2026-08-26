@@ -4,7 +4,7 @@ import { ProjectLoaderPanel } from "../../src/features/project_loader";
 import type { GraphSessionStore } from "../../src/state/graph-session";
 import { testGraphSessionStore } from "./test-graph-session-store";
 
-export function projectLoaderStore(): GraphSessionStore {
+function projectLoaderStore(): GraphSessionStore {
   return testGraphSessionStore();
 }
 
@@ -28,7 +28,7 @@ export async function waitForGraphSummary() {
   });
 }
 
-export async function waitForArchitectureIssuesButton() {
+async function waitForArchitectureIssuesButton() {
   await waitFor(() => {
     expect(screen.getByRole("button", { name: "1 architecture issue" })).toBeInTheDocument();
   });

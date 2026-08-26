@@ -243,8 +243,6 @@ Docs to update after ship: `references-analysis.md`, `contract.md`,
 - **One toolbar list** labeled **`N architecture issues`**.
 - **Message text** is always **`circular include: …`**.
 
-## Open question (please answer)
-
-The rest of the plan still uses the remaining **(rec)** defaults (import edges
-only, one SCC = one finding, no planted cycle in the TS golden fixture, a
-small C++/Unreal test fixture). **Implement as written?**
+Remaining **(rec)** items were accepted at implementation time (import edges
+only, one SCC = one finding, no planted cycle in the TS golden fixture, C++
+cases covered by Rust unit tests).
