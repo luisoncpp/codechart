@@ -58,7 +58,8 @@ After analyze, every *meaningful* include cycle is a first-class diagnostic (D5)
 2. Participating modules list the cycle in the **InspectionPanel**.
 3. Cycle edges paint **red** on the canvas (same `isViolation` stroke as
    facade bypass).
-4. A toolbar chip lists every cycle, copyable, like **FacadeBypassList**.
+4. Facade bypasses and circular includes share **one toolbar list** (today’s
+   **FacadeBypassList**).
 
 ## Product decisions (proposed)
 
@@ -111,7 +112,8 @@ Recommendations marked **(rec)**. Accept or reject before implementation.
 ### Diagnostics
 
 - **(rec)** New `DiagnosticKind::CircularDependency` (`"circularDependency"`).
-  Do **not** reuse `architectureViolation`.
+  Do **not** reuse `architectureViolation` — messages and inspector still need
+  to say which rule fired. Same **list**, two **kinds**.
 - Severity: **warning**. Graph still builds (D5).
 - **(rec)** Emit one diagnostic **per file module that belongs to a cycled
   unit**, so selecting either `Player.h` or `Player.cpp` shows the cycle when
@@ -121,15 +123,19 @@ Recommendations marked **(rec)**. Accept or reject before implementation.
   - `moduleId`: the file
   - `edgeId`: optional — a concrete import edge from that file that maps into
     the witness cycle when one exists
-- Toolbar count = number of unit SCCs, not per-file diagnostic count.
+- **Accepted:** One toolbar list for facade bypasses **and** circular includes.
+  Count = bypass diagnostics + unit SCCs (dedupe cycle rows by `cycle-key` so
+  `A.h` / `A.cpp` do not appear twice).
 
 ### Canvas / toolbar / inspector
 
 - **Accepted:** Reuse `isViolation` so `styleEdge` already paints cycle edges
   red (`#dc2626`). No new edge field, no new `EdgeRole`.
-- **(rec)** Keep a **separate diagnostic kind** and a **separate toolbar chip**
-  from **FacadeBypassList**, so the two findings stay distinguishable even
-  though both edges are red. Inspector colors `circularDependency` red too.
+- **Accepted:** Same toolbar list as facade bypasses. Extend
+  `architectureViolations` / **FacadeBypassList** to include
+  `circularDependency` rows (deduped by cycle). No second chip.
+- Inspector already lists a module’s diagnostics; color
+  `circularDependency` red like `architectureViolation`.
 
 ### Fixtures
 
@@ -183,8 +189,8 @@ Keep files ≤200 lines, functions ≤30 lines.
 
 - Contract: add `CircularDependency` to `DiagnosticKind` only. `Edge` stays as
   today (`isViolation` already serializes).
-- Frontend: no `styleEdge` change for color. New selector + toolbar chip.
-  Inspector treats `circularDependency` as red like `architectureViolation`.
+- Frontend: no `styleEdge` change for color. Extend the existing toolbar list
+  (do not add a second chip). Inspector treats `circularDependency` as red.
 - **(rec)** Diagnostic message always `circular include: …` (one wording for
   all languages).
 
@@ -213,6 +219,7 @@ Docs to update after ship: `references-analysis.md`, `contract.md`,
 - Collapsing Unreal `*.generated.h` (already hidden/external).
 - Module.Build.cs dependency cycles (different graph).
 - Group-level cycle badges, click-to-focus from the list, ignore allowlists.
+- A second toolbar chip for cycles.
 - Auto-layout clustering of cycle members.
 
 ## Implementation order (after approval)
@@ -220,7 +227,8 @@ Docs to update after ship: `references-analysis.md`, `contract.md`,
 1. Contract: `CircularDependency` kind only (no new edge field).
 2. `flag_cycles` with C++ unit collapsing + Rust tests (TDD).
 3. Wire `resolve_edges`; confirm golden still matches.
-4. Selectors + toolbar chip + inspector color (edge red is already `isViolation`).
+4. Selectors + same toolbar list + inspector color (edge red is already
+   `isViolation`).
 5. Frontend tests + small C++ fixture if used for analysis checkpoint.
 6. Docs.
 7. `npx fallow audit`.
@@ -230,10 +238,10 @@ Docs to update after ship: `references-analysis.md`, `contract.md`,
 - **Collapse same-stem `.h`/`.cpp` into logical units before SCC.**
 - **Run the pass for all supported languages** (not C++-only).
 - **Paint cycle edges red** by setting `isViolation` (no new `inCycle` field).
+- **One toolbar list** for facade bypasses and circular includes.
 
 ## Open question (please answer)
 
-Even though both are red on the canvas, should cycles still get a **new
-`circularDependency` diagnostic kind** and a **separate toolbar chip**
-(**recommended**), or should they reuse `architectureViolation` and appear
-inside **FacadeBypassList**?
+The chip today says `N facade bypasses`. With cycles in that list, should the
+label become **`N architecture issues`** (**recommended**), stay
+**`N facade bypasses`**, or use **`N violations`**?
