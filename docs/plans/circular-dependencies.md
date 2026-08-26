@@ -2,176 +2,225 @@
 
 **Status: plan for review — do not implement until accepted.**
 
+**Audience focus: C++ / Unreal.** The first draft treated cycles as a generic
+module-file SCC. That is wrong for the main use case: declaration and definition
+live in separate files (`.h` / `.cpp`, often Unreal `Public/` vs `Private/`), and
+a naive file walk either confuses readers or under-explains the real problem
+(**header include cycles** between types).
+
 ## What this is in CodeChart language
 
-The request is **import-cycle detection**: find loops among **modules** connected by solid **import edges** in the `ProjectGraph`, and surface them as **diagnostics**.
+**Import-cycle detection**: find loops in the solid **import** graph
+(`kind = import` edges from `#include` / imports), and surface them as
+**diagnostics**.
 
-That is **not** the existing **group parent cycle** check (`detect_group_cycle` in `contract/validate.rs`). That one rejects a broken **group tree** (`parentId` loop) as `BuildError::SiblingOverlap`. It never looks at imports.
-
-It is also **not** **facade bypass**. That is `flag_drift` → `isViolation` + `architectureViolation` (red edges, **FacadeBypassList** in the toolbar).
+Not these existing checks:
 
 | User phrase | CodeChart name | Exists today |
 |-------------|----------------|--------------|
-| Circular dependency | **Import cycle** (SCC of `kind === "import"` edges) | No |
-| Group containment loop | **Group parent cycle** | Yes — builder invariant |
+| Circular dependency | **Import cycle** | No |
+| Group containment loop | **Group parent cycle** (`detect_group_cycle`) | Yes — builder error |
 | Illegal private import | **Facade bypass** / `architectureViolation` | Yes — Phase 8 |
+
+CodeChart already has a **same-stem C++ pair** notion used when copying header
+exports onto an implementation module (`analysis/nodes.rs`:
+`is_paired_cpp_header` — `.cpp`/`.cc`/`.cxx` → `.h`/`.hpp`/`.hxx` with the same
+basename, including Unreal `Private/Player.cpp` → `Public/…/Player.h`). Cycle
+detection must reuse that idea so declaration/definition split is not mistaken
+for a cycle.
+
+## Why file-only SCCs confuse C++ / Unreal
+
+Typical Unreal edges look like:
+
+```text
+Source/Game/Private/Player.cpp  →  Source/Game/Public/Characters/Player.h
+```
+
+That is **one-way** and **not** a cycle. A naive SCC never flags it alone.
+The confusion is elsewhere:
+
+1. **Witness paths** that list both `Player.cpp` and `Player.h` as separate
+   “modules” when the author thinks of one type / one compilation unit.
+2. **Useful cycles** are almost always **header ↔ header**
+   (`A.h → B.h → A.h`). `.cpp` files almost never appear in an SCC because
+   nothing `#include`s a `.cpp`.
+3. Authors care about cycles **between types** (logical units), not between a
+   definition file and its own declaration file.
+
+So MVP is **C++-aware unit collapsing**, not “treat every path as equal.”
 
 ## Goal
 
-After analyze, every import cycle is a first-class **diagnostic** (D5), visible without hunting the canvas:
+After analyze, every *meaningful* include cycle is a first-class diagnostic (D5):
 
-1. Backend finds cycles as a **post-pass** over resolved import edges (same pattern as `flag_drift`).
-2. Each participating **module** lists the cycle in the **InspectionPanel**.
-3. Cycle **import edges** are distinct on the canvas (not the same red as facade bypass).
+1. Backend finds cycles as a `references` post-pass (peer of `flag_drift`).
+2. Participating modules list the cycle in the **InspectionPanel**.
+3. Cycle edges are distinct on the canvas (not facade-bypass red).
 4. A toolbar chip lists every cycle, copyable, like **FacadeBypassList**.
 
 ## Product decisions (proposed)
 
-Accept or reject these before implementation. Recommendations are marked **(rec)**.
+Recommendations marked **(rec)**. Accept or reject before implementation.
 
-### Graph that is searched
+### Primary language / project
 
-- **(rec)** Only solid `kind = import` edges. Skip `soft` (events, interface seams, Tauri IPC, Unity). Those are runtime/semantic seams, not compile-time coupling.
-- **(rec)** Include test modules. Unlike `flag_drift`, a test↔production cycle is a real import cycle. **Hide tests** already drops them from the canvas.
-- **(rec)** Include C++ header↔header cycles. Do not special-case `.h`/`.cpp`. A `.cpp` including its own `.h` is not a cycle.
-- **(rec)** Include self-imports (`A → A`) as a one-module cycle.
-- **(rec)** Module granularity only for MVP. No separate group-level cycle finder. Cross-group cycles still show as module cycles; at L0, intra-group cycles disappear because collapsed self-loops are dropped (existing zoom reduction). Group-level cycle badges can be a follow-up.
+- **(rec)** Design and test first for **C++ / Unreal** include graphs
+  (`references/cpp.rs`, `unreal.knownPaths`, hidden `*.generated.h`).
+- **(rec)** Still run the same pass on TS/Rust/C# import edges when present
+  (no language gate). Pair-collapsing is a no-op outside C++ extensions.
+- Engine / generated includes stay out of the graph already
+  (`excludeEngineReferences`, `hideGeneratedFiles`) — no extra cycle rules.
+
+### Graph that is searched — C++ logical units
+
+- **(rec)** Only solid `kind = import` edges. Skip `soft` seams.
+- **(rec)** Before SCC, collapse each **C++ same-stem pair** into one **logical
+  unit**:
+  - Pair rule = existing `is_paired_cpp_header` stem match (Public/Private OK).
+  - Unit id = the **header path** when a header is in the pair; else the sole
+    file path (orphan `.cpp` / unpaired header).
+  - An edge `Player.cpp → Player.h` becomes a **unit self-edge** and is
+    **dropped** before SCC (never a finding).
+  - An edge `Player.cpp → Enemy.h` becomes `Player.h → Enemy.h` (or
+    `Player.cpp → Enemy.h` if Player has no paired header).
+  - An edge `A.h → B.h` stays `A.h → B.h`.
+- **(rec)** Run SCC on that **unit graph**. Report cycles between units.
+- **(rec)** Mark `inCycle` on the **original file edges** that map into a cycled
+  unit-pair (so the canvas still lights the real `#include` arrows, including
+  `Private/*.cpp → Public/*.h` when that edge participates in a larger cycle —
+  rare — and always the header↔header edges that form the cycle).
+- **(rec)** Do **not** flag `Foo.cpp → Foo.h` alone.
+- **(rec)** Self-include of a header (`A.h → A.h`) remains a one-unit cycle.
+- Alternative rejected for MVP: “headers-only graph” (ignore all `.cpp` sources).
+  That misses a `.cpp` that includes `B.h` while somehow closing a loop through
+  another path; unit collapsing is stricter about pairs and still sees
+  impl→other-header edges.
 
 ### What counts as one finding
 
-- **(rec)** One finding per **strongly connected component (SCC)** with ≥2 modules, plus each self-loop. Do not enumerate every elementary cycle (exponential).
-- Message includes a **canonical witness cycle** (rotated so the lexicographically smallest module id is first) and, when the SCC has extra members, the full member list.
-- Example: `circular import: a.ts → b.ts → a.ts`.
-- Dense SCC example: `circular import: a.ts → b.ts → a.ts (also c.ts)`.
+- **(rec)** One finding per **SCC of logical units** with size ≥ 2, plus
+  unit self-loops that survive (true self-include).
+- Do not enumerate every elementary cycle.
+- Message uses **unit ids** (prefer header paths) in a canonical witness cycle.
+- Example: `circular include: Characters/A.h → Characters/B.h → Characters/A.h`.
+- Dense SCC: `circular include: A.h → B.h → A.h (also C.h)`.
+- **(rec)** Do not list both `A.cpp` and `A.h` as separate cycle members when
+  they collapsed to one unit.
 
 ### Diagnostics
 
-- **(rec)** New `DiagnosticKind::CircularDependency` (`"circularDependency"`). Do **not** reuse `architectureViolation` — that kind is facade bypass, and **FacadeBypassList** filters on it.
-- Severity: **warning** (same as unresolved import / facade bypass). The graph still builds (D5).
-- **(rec)** One diagnostic **per participating module**, so `diagnosticsFor(graph, module.id)` shows it.
+- **(rec)** New `DiagnosticKind::CircularDependency` (`"circularDependency"`).
+  Do **not** reuse `architectureViolation`.
+- Severity: **warning**. Graph still builds (D5).
+- **(rec)** Emit one diagnostic **per file module that belongs to a cycled
+  unit**, so selecting either `Player.h` or `Player.cpp` shows the cycle when
+  that unit is in an SCC.
   - `id`: `circularDependency:<cycle-key>:<moduleId>`
-  - `cycle-key`: SCC member ids sorted and joined (stable)
-  - `moduleId`: that module
-  - `edgeId`: that module's outgoing edge on the witness cycle (if any)
-- Toolbar count = **number of SCCs**, not number of per-module diagnostics.
+  - `cycle-key`: sorted unit ids in the SCC
+  - `moduleId`: the file
+  - `edgeId`: optional — a concrete import edge from that file that maps into
+    the witness cycle when one exists
+- Toolbar count = number of unit SCCs, not per-file diagnostic count.
 
-### Canvas
+### Canvas / toolbar / inspector
 
-- **(rec)** Do **not** set `isViolation`. Red stays facade-bypass.
-- **(rec)** Add `inCycle: bool` on `Edge`, `serde(default, skip_serializing_if = "is_false")` so the golden fixture's edges do not need rewriting. Projection copies it into RF edge data. New `EdgeRole` (e.g. `"cycle"`, distinct color from `#dc2626` violation and from import orange).
-- Mark **every** import edge whose both ends sit in the same reported SCC (witness cycle + chords).
-- Focus coloring still wins when a cycle module is selected (import orange / export blue), same as today's violation-vs-focus order.
+Same as before: `inCycle` on edges (not `isViolation`); distinct edge color;
+toolbar chip next to **FacadeBypassList**; inspector colors the new kind.
 
-### Toolbar / inspector
+### Fixtures
 
-- New chip next to **FacadeBypassList**: `N circular dependencies`, same modal pattern (copyable messages). One line per SCC (dedupe by `cycle-key`), not one line per module diagnostic.
-- **InspectionPanel** already renders diagnostics; color `circularDependency` like violations (or the cycle color).
-- **(rec)** Chip text is not click-to-focus in MVP (FacadeBypassList is copy-only). Follow-up: click a cycle → `focusOn` the first module.
-
-### Golden fixture / sample project
-
-- **(rec)** Do **not** plant a cycle in `tests/fixtures/ts-basic-project/`. The sample already has a planted facade bypass; a planted cycle would make the demo look broken.
-- Cover detection with Rust unit tests on synthetic edges. Cover UI with a constructed `ProjectGraph` in vitest (same as other panel/canvas tests).
-- Optional later: a tiny `tests/fixtures/ts-cycle-project/` if we want a CLI visual checkpoint.
+- **(rec)** Do not plant a cycle in `ts-basic-project` / golden.
+- **(rec)** Add a small **C++/Unreal-shaped fixture** (or extend
+  `tests/fixtures` Unreal mini project) with:
+  - normal `Player.cpp → Player.h` (must **not** flag)
+  - real `A.h ↔ B.h` cycle (must flag, message names headers)
+  - optional: `A.cpp → B.h` + `B.h → A.h` (unit cycle `A`↔`B` even though only
+    one header edge closes the loop from B’s side — wait: `A.cpp→B.h`, `B.h→A.h`
+    is a unit cycle only if A.cpp maps to unit A and B.h→A.h maps to B→A, so
+    A→B→A yes). Include this case in tests.
 
 ## Architecture
 
 ### Backend — `references` post-pass
 
-New file `src-tauri/src/references/cycles.rs`, exported from the `references` deep module. Public surface:
+`src-tauri/src/references/cycles.rs`:
 
 ```text
 flag_cycles(edges: &mut [Edge]) -> Vec<Diagnostic>
 ```
 
-Same shape as `flag_drift`: one argument, mutate `in_cycle` in place, return diagnostics.
+Needs module path list (or derive nodes from edge endpoints) to classify
+header vs impl and build stem→pair maps. If a second argument is required,
+use a small struct rather than >3 params (`GUIDELINES.md`). Prefer:
 
-Wire in `analysis::resolve_edges` **after** `flag_drift` and **before** soft/IPC/Unity classifiers, so only import edges exist yet (or filter `EdgeKind::Import` regardless). Soft edges appended later must not be walked.
+```text
+flag_cycles(edges: &mut [Edge], module_ids: &[String]) -> Vec<Diagnostic>
+```
 
-Algorithm:
+(2 params) or pack into `CycleInput { edges, module_ids }`.
 
-1. Build adjacency from import edges (`BTreeMap` / `BTreeSet` for determinism).
-2. Tarjan (or Kosaraju) SCC.
-3. Keep SCCs with size ≥ 2, plus size-1 nodes that have a self-edge.
-4. For each SCC, compute a canonical witness cycle (start at min id; deterministic DFS preferring lexicographically smallest unused target in the SCC).
-5. Set `in_cycle` on every import edge with both ends in that SCC.
-6. Emit one diagnostic per member.
+Wire in `analysis::resolve_edges` after `flag_drift`, before soft classifiers.
+Filter `EdgeKind::Import`.
 
-Keep `cycles.rs` under 200 lines; functions under 30 lines; no function with more than 3 parameters (`GUIDELINES.md`).
+Steps:
 
-`resolve_references` stays pure and group-agnostic (lesson: `edge-classifiers-are-post-passes-not-in-resolve.md`).
+1. Index C++ headers/impls by stem among `module_ids`.
+2. Map each path → unit id (paired header path, else self).
+3. Project import edges to unit→unit; drop unit self-edges from pairing.
+4. Tarjan/Kosaraju SCC on the unit adjacency (`BTreeMap`/`BTreeSet`).
+5. Witness cycle on unit ids; diagnostics on every file in those units.
+6. Set `in_cycle` on original edges whose unit-projected endpoints both lie in
+   the same reported SCC (and the edge is not a dropped pair self-edge — those
+   stay `in_cycle = false`).
 
-### Contract
+Keep files ≤200 lines, functions ≤30 lines.
 
-- `DiagnosticKind` += `CircularDependency`.
-- `Edge` += `in_cycle` (default false, omit when false).
-- `npm run check` regenerates `src/domain/graph/model/*` via ts-rs. Do not hand-edit those files.
+### Contract / frontend / docs
 
-No `ProjectGraphBuilder` invariant change. Cycles are legal graphs; they are findings, not `BuildError`.
+Unchanged from the previous draft except messages say **circular include** for
+C++-looking cycles (or always use that wording — **(rec)** one string
+`circular include: …` for all languages to avoid TS/C++ split in the UI).
 
-### Frontend
+Docs to update after ship: `references-analysis.md`, `contract.md`,
+`graph-canvas.md`, `analyze-project.md`, new flow
+`inspect-circular-dependency.md`, `current-status.md`, move this plan to
+`docs/plans/done/`.
 
-| Piece | Change |
-|-------|--------|
-| `domain/graph/Private/selectors.ts` | `circularDependencies(graph)` → one diagnostic per SCC (dedupe by id prefix / cycle-key). |
-| `features/project_loader` | `CircularDependencyList` beside `FacadeBypassList`. Extract shared modal chrome only if it stays a thin copy; do not invent a generic diagnostics-modal framework. |
-| `features/inspection_panel/Private/DiagnosticsList.tsx` | Color `circularDependency`. |
-| `features/graph_canvas/Private/edges/edge-style.ts` | New role when `data.inCycle` and not focused/diff/violation. |
-| `domain/graph/Private/projection/rf-projection-edges.ts` | Copy `inCycle` into edge data. |
-| `domain/graph/Private/reduction/zoom-edge-reduction.ts` | When collapsing, `inCycle` survives a merge the same way `isViolation` does (`OR`). |
+## Tests (C++-first)
 
-### Docs after implementation
-
-- `docs/architecture/references-analysis.md` — new `flag_cycles` section.
-- `docs/architecture/contract.md` — `DiagnosticKind` + `inCycle`.
-- `docs/architecture/graph-canvas.md` — cycle edge role + toolbar chip.
-- `docs/flows/analyze-project.md` — step after `flag_drift`.
-- New flow `docs/flows/inspect-circular-dependency.md` (toolbar chip / select module → diagnostics).
-- `docs/live/current-status.md` — implemented.
-- Move this file to `docs/plans/done/` when shipped.
-- `docs/plans/TECHNICAL-DESIGN.md` — add the kind to the `DiagnosticKind` union (the living contract sketch).
-
-No new flow if we only emit diagnostics and never add a user action — but the toolbar chip **is** a user action, so a short flow is warranted.
-
-## Tests
-
-### Rust (`references/tests.rs` or `cycles.rs` `#[cfg(test)]`)
-
-- No cycle → no diagnostics, no `in_cycle`.
-- Pair `A ↔ B` → one SCC, two module diagnostics, both edges `in_cycle`, witness `A → B → A` (A < B).
-- Triangle `A → B → C → A`.
-- Self-import.
-- Chord in an SCC: extra edge also `in_cycle`; still one SCC / one toolbar finding.
-- Soft-looking edges ignored if present (kind filter).
-- Two disjoint cycles → two cycle-keys.
-- Determinism: same edges in any input order → identical diagnostic ids and messages.
-
-### Analysis
-
-- Golden `analyze_matches_the_golden_fixture` still exact (no planted cycle).
-
-### Frontend
-
-- Selector dedupes per-module diagnostics down to SCC count.
-- Toolbar chip hidden at 0; shows `1 circular dependency` / `N circular dependencies`.
-- Inspection panel lists the message on a participating module.
-- `styleEdge`: `inCycle` gets the cycle color when unfocused; focus still overrides; `isViolation` still red and is not used for cycles.
+- `Private/Foo.cpp → Public/Foo.h` only → **no** diagnostic.
+- `A.h → B.h → A.h` → one SCC; diagnostics on both headers; both edges
+  `inCycle`; message uses header paths.
+- Unreal-shaped stems across Public/Private still collapse.
+- `A.cpp → B.h` + `B.h → A.h` → unit cycle involving A and B; `A.cpp` and `A.h`
+  both get the diagnostic; `A.cpp → A.h` pair edge (if present) not marked
+  `inCycle` as the cycle cause.
+- Orphan `.cpp` with no header keeps its own unit id.
+- TS `a.ts ↔ b.ts` still detected (collapse no-op).
+- Soft edges ignored; determinism; golden TS fixture unchanged.
 
 ## Out of scope (MVP)
 
-- Auto-layout that pulls cycle members together.
-- Click-to-focus from the cycle list.
-- Group-level cycle summary / L0 badges.
-- Config to ignore paths or allow listed cycles.
-- Treating type-only TS imports differently (they are already import edges if the adapter recorded them).
-- Suggesting how to break the cycle.
+- Suggesting forward declarations / how to break the cycle.
+- IWYU or “this include is unused.”
+- Collapsing Unreal `*.generated.h` (already hidden/external).
+- Module.Build.cs dependency cycles (different graph).
+- Group-level cycle badges, click-to-focus from the list, ignore allowlists.
+- Auto-layout clustering of cycle members.
 
 ## Implementation order (after approval)
 
 1. Contract: `CircularDependency` + `in_cycle`.
-2. `flag_cycles` + Rust tests (TDD: tests fail, then pass).
+2. `flag_cycles` with C++ unit collapsing + Rust tests (TDD).
 3. Wire `resolve_edges`; confirm golden still matches.
-4. Selectors + toolbar chip + inspector color + edge style.
-5. Frontend tests.
-6. Docs listed above.
+4. Selectors + toolbar + inspector + edge style.
+5. Frontend tests + small C++ fixture if used for analysis checkpoint.
+6. Docs.
 7. `npx fallow audit`.
+
+## Open question (please answer)
+
+For C++, should MVP collapse same-stem `.h`/`.cpp` into one logical unit before
+SCC (**recommended**), or only walk header→header edges and ignore `.cpp`
+sources entirely?
