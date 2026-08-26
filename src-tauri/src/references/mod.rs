@@ -26,6 +26,7 @@ mod unity;
 #[cfg(test)]
 mod tests;
 
+pub use cpp::is_paired_cpp_header;
 pub use drift::{flag_drift, GroupBoundaries};
 pub use cycles::flag_cycles;
 pub use interface_seams::classify_interface_seams;

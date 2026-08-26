@@ -23,10 +23,6 @@ pub fn is_paired_cpp_header(impl_path: &str, header_path: &str) -> bool {
     is_cpp_impl(impl_path) && is_cpp_header(header_path) && file_stem(impl_path) == file_stem(header_path)
 }
 
-pub fn is_pair_self_edge(source: &str, target: &str) -> bool {
-    is_paired_cpp_header(source, target)
-}
-
 fn basename(path: &str) -> &str {
     path.rsplit('/').next().unwrap_or(path)
 }

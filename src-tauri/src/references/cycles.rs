@@ -4,8 +4,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contract::{Diagnostic, DiagnosticKind, Edge, EdgeKind, Severity};
 
-use super::cpp::{is_pair_self_edge, is_paired_cpp_header};
-use super::cycle_scc::{cycle_key, cycle_message, find_cycle_sccs, witness_cycle};
+use super::cpp::is_paired_cpp_header;
+use super::cycle_scc::{find_cycle_sccs, witness_cycle};
 
 /// Flag import-cycle edges and emit `circularDependency` diagnostics per cycled unit.
 pub fn flag_cycles(edges: &mut [Edge], module_ids: &[String]) -> Vec<Diagnostic> {
@@ -13,24 +13,62 @@ pub fn flag_cycles(edges: &mut [Edge], module_ids: &[String]) -> Vec<Diagnostic>
     let units = unit_map(module_ids, edges, &import_indices);
     let adj = unit_adjacency(edges, &import_indices, &units);
     let mut diagnostics = Vec::new();
+    let mut graph = CycleGraph {
+        edges,
+        import_indices: &import_indices,
+        units: &units,
+    };
     for scc in find_cycle_sccs(&adj) {
         let members: BTreeSet<String> = scc.iter().cloned().collect();
         let witness = witness_cycle(&members, &adj);
         let key = cycle_key(&members);
         let message = cycle_message(&witness, &members);
-        flag_scc_edges(edges, &import_indices, &units, &members);
-        emit_scc_diagnostics(
-            &mut diagnostics,
+        flag_scc_edges(&mut graph, &members);
+        let emit = SccEmit {
             module_ids,
-            &units,
-            &members,
-            &key,
-            &message,
-            edges,
-            &import_indices,
-        );
+            graph: &graph,
+            members: &members,
+            cycle_key: &key,
+            message: &message,
+        };
+        emit_scc_diagnostics(&mut diagnostics, &emit);
     }
     diagnostics
+}
+
+fn cycle_key(members: &BTreeSet<String>) -> String {
+    members.iter().cloned().collect::<Vec<_>>().join(",")
+}
+
+fn cycle_message(witness: &[String], members: &BTreeSet<String>) -> String {
+    let chain = witness.join(" → ");
+    let extras: Vec<&String> = members
+        .iter()
+        .filter(|m| !witness.contains(m))
+        .collect();
+    if extras.is_empty() {
+        return format!("circular include: {chain}");
+    }
+    let also = extras
+        .iter()
+        .map(|s| s.as_str())
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("circular include: {chain} (also {also})")
+}
+
+struct CycleGraph<'a> {
+    edges: &'a mut [Edge],
+    import_indices: &'a [usize],
+    units: &'a BTreeMap<String, String>,
+}
+
+struct SccEmit<'a> {
+    module_ids: &'a [String],
+    graph: &'a CycleGraph<'a>,
+    members: &'a BTreeSet<String>,
+    cycle_key: &'a str,
+    message: &'a str,
 }
 
 struct ProjectedEdge {
@@ -96,19 +134,14 @@ fn project_edge(edge: &Edge, units: &BTreeMap<String, String>) -> ProjectedEdge 
     ProjectedEdge {
         unit_source,
         unit_target,
-        is_pair_self: is_pair_self_edge(&edge.source, &edge.target),
+        is_pair_self: is_paired_cpp_header(&edge.source, &edge.target),
     }
 }
 
-fn flag_scc_edges(
-    edges: &mut [Edge],
-    import_indices: &[usize],
-    units: &BTreeMap<String, String>,
-    members: &BTreeSet<String>,
-) {
-    for i in import_indices {
-        let edge = &mut edges[*i];
-        let projected = project_edge(edge, units);
+fn flag_scc_edges(graph: &mut CycleGraph, members: &BTreeSet<String>) {
+    for i in graph.import_indices {
+        let edge = &mut graph.edges[*i];
+        let projected = project_edge(edge, graph.units);
         if projected.is_pair_self {
             continue;
         }
@@ -118,27 +151,23 @@ fn flag_scc_edges(
     }
 }
 
-fn emit_scc_diagnostics(
-    diagnostics: &mut Vec<Diagnostic>,
-    module_ids: &[String],
-    units: &BTreeMap<String, String>,
-    members: &BTreeSet<String>,
-    cycle_key: &str,
-    message: &str,
-    edges: &[Edge],
-    import_indices: &[usize],
-) {
-    for file in module_ids {
-        let unit = units.get(file).cloned().unwrap_or_else(|| file.clone());
-        if !members.contains(&unit) {
+fn emit_scc_diagnostics(diagnostics: &mut Vec<Diagnostic>, emit: &SccEmit) {
+    for file in emit.module_ids {
+        let unit = emit
+            .graph
+            .units
+            .get(file)
+            .cloned()
+            .unwrap_or_else(|| file.clone());
+        if !emit.members.contains(&unit) {
             continue;
         }
-        let edge_id = witness_edge_for_file(file, edges, import_indices, units, members);
+        let edge_id = witness_edge_for_file(emit.graph, file, emit.members);
         diagnostics.push(Diagnostic {
-            id: format!("circularDependency:{cycle_key}:{file}"),
+            id: format!("circularDependency:{}:{}", emit.cycle_key, file),
             severity: Severity::Warning,
             kind: DiagnosticKind::CircularDependency,
-            message: message.to_string(),
+            message: emit.message.to_string(),
             module_id: Some(file.clone()),
             edge_id,
             unresolved_target: None,
@@ -147,18 +176,16 @@ fn emit_scc_diagnostics(
 }
 
 fn witness_edge_for_file(
+    graph: &CycleGraph,
     file: &str,
-    edges: &[Edge],
-    import_indices: &[usize],
-    units: &BTreeMap<String, String>,
     members: &BTreeSet<String>,
 ) -> Option<String> {
-    for i in import_indices {
-        let edge = &edges[*i];
+    for i in graph.import_indices {
+        let edge = &graph.edges[*i];
         if edge.source != file {
             continue;
         }
-        let projected = project_edge(edge, units);
+        let projected = project_edge(edge, graph.units);
         if projected.is_pair_self {
             continue;
         }
