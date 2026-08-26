@@ -124,6 +124,7 @@ Recommendations marked **(rec)**. Accept or reject before implementation.
   - `edgeId`: optional — a concrete import edge from that file that maps into
     the witness cycle when one exists
 - **Accepted:** One toolbar list for facade bypasses **and** circular includes.
+  Chip label: **`N architecture issues`** (singular `1 architecture issue`).
   Count = bypass diagnostics + unit SCCs (dedupe cycle rows by `cycle-key` so
   `A.h` / `A.cpp` do not appear twice).
 
@@ -131,7 +132,8 @@ Recommendations marked **(rec)**. Accept or reject before implementation.
 
 - **Accepted:** Reuse `isViolation` so `styleEdge` already paints cycle edges
   red (`#dc2626`). No new edge field, no new `EdgeRole`.
-- **Accepted:** Same toolbar list as facade bypasses. Extend
+- **Accepted:** Same toolbar list as facade bypasses. Chip copy:
+  `1 architecture issue` / `N architecture issues`. Extend
   `architectureViolations` / **FacadeBypassList** to include
   `circularDependency` rows (deduped by cycle). No second chip.
 - Inspector already lists a module’s diagnostics; color
@@ -238,10 +240,10 @@ Docs to update after ship: `references-analysis.md`, `contract.md`,
 - **Collapse same-stem `.h`/`.cpp` into logical units before SCC.**
 - **Run the pass for all supported languages** (not C++-only).
 - **Paint cycle edges red** by setting `isViolation` (no new `inCycle` field).
-- **One toolbar list** for facade bypasses and circular includes.
+- **One toolbar list** labeled **`N architecture issues`**.
 
 ## Open question (please answer)
 
-The chip today says `N facade bypasses`. With cycles in that list, should the
-label become **`N architecture issues`** (**recommended**), stay
-**`N facade bypasses`**, or use **`N violations`**?
+Diagnostic message: always **`circular include: A.h → B.h → A.h`**
+(**recommended** — matches C++/Unreal), always **`circular dependency: …`**,
+or **`circular import: …`** for non-C++ and `circular include` for C++?
