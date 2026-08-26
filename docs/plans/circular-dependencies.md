@@ -193,8 +193,8 @@ Keep files ≤200 lines, functions ≤30 lines.
   today (`isViolation` already serializes).
 - Frontend: no `styleEdge` change for color. Extend the existing toolbar list
   (do not add a second chip). Inspector treats `circularDependency` as red.
-- **(rec)** Diagnostic message always `circular include: …` (one wording for
-  all languages).
+- **Accepted:** Diagnostic message always **`circular include: …`** (one wording
+  for all languages).
 
 Docs to update after ship: `references-analysis.md`, `contract.md`,
 `graph-canvas.md`, `analyze-project.md`, new flow
@@ -241,9 +241,10 @@ Docs to update after ship: `references-analysis.md`, `contract.md`,
 - **Run the pass for all supported languages** (not C++-only).
 - **Paint cycle edges red** by setting `isViolation` (no new `inCycle` field).
 - **One toolbar list** labeled **`N architecture issues`**.
+- **Message text** is always **`circular include: …`**.
 
 ## Open question (please answer)
 
-Diagnostic message: always **`circular include: A.h → B.h → A.h`**
-(**recommended** — matches C++/Unreal), always **`circular dependency: …`**,
-or **`circular import: …`** for non-C++ and `circular include` for C++?
+The rest of the plan still uses the remaining **(rec)** defaults (import edges
+only, one SCC = one finding, no planted cycle in the TS golden fixture, a
+small C++/Unreal test fixture). **Implement as written?**
