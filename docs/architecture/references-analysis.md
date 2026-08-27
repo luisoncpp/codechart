@@ -177,8 +177,13 @@ self-edge and is dropped (never a finding, never flagged `is_violation`).
 **Algorithm:** project import edges to unit→unit; Tarjan SCC on a `BTreeMap`
 adjacency; report SCCs with ≥2 units plus size-1 units with a true self-include
 (`A.h → A.h`). One diagnostic per **file** that maps to a cycled unit; toolbar
-dedupes by `cycle-key` (sorted unit ids). Message always `circular include: …`
-with a canonical witness cycle on unit ids; dense SCCs append `(also …)`.
+dedupes by `cycle-key` (sorted unit ids). Message shape:
+`circular include (N modules): <witness> (others in this cycle: …)`.
+Witness = **shortest elementary cycle through the highest-degree** SCC member
+(lex tie-break); never unrolls or invents edges. C++ unit paths in the message
+drop `.h`/`.cpp`/`.hpp`/… (logical unit id); TS/other languages keep extensions.
+`(others in this cycle: …)` lists other **SCC members** not on the witness — not
+inbound-only predecessors.
 
 Sets `is_violation = true` on original import edges whose unit-projected endpoints
 both lie in the same reported SCC, except dropped pair self-edges. Does not clear

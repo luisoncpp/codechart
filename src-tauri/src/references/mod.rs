@@ -14,6 +14,7 @@
 mod cpp;
 mod csharp;
 mod cycle_scc;
+mod cycle_witness;
 mod cycles;
 mod drift;
 mod interface_seams;

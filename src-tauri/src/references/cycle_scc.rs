@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Tarjan SCC and canonical cycle witnesses for import cycles")
+// @Architecture(descriptionShort="Tarjan SCC detection for import-cycle units")
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -10,21 +10,8 @@ pub fn find_cycle_sccs(adj: &BTreeMap<String, BTreeSet<String>>) -> Vec<Vec<Stri
             tarjan(node, &mut state);
         }
     }
-    state
-        .sccs
-        .retain(|scc| is_reportable_scc(scc, adj));
+    state.sccs.retain(|scc| is_reportable_scc(scc, adj));
     state.sccs
-}
-
-pub fn witness_cycle(
-    members: &BTreeSet<String>,
-    adj: &BTreeMap<String, BTreeSet<String>>,
-) -> Vec<String> {
-    let start = members.iter().next().expect("non-empty scc").clone();
-    if members.len() == 1 {
-        return vec![start.clone(), start.clone()];
-    }
-    witness_walk(start, members, adj)
 }
 
 struct TarjanState<'a> {
@@ -49,11 +36,6 @@ impl<'a> TarjanState<'a> {
             sccs: Vec::new(),
         }
     }
-}
-
-struct WitnessWalk<'a> {
-    members: &'a BTreeSet<String>,
-    adj: &'a BTreeMap<String, BTreeSet<String>>,
 }
 
 fn collect_adj_nodes(adj: &BTreeMap<String, BTreeSet<String>>) -> BTreeSet<String> {
@@ -128,50 +110,4 @@ fn pop_scc(node: &String, state: &mut TarjanState) {
     }
     scc.sort();
     state.sccs.push(scc);
-}
-
-fn witness_walk(
-    start: String,
-    members: &BTreeSet<String>,
-    adj: &BTreeMap<String, BTreeSet<String>>,
-) -> Vec<String> {
-    let walk = WitnessWalk { members, adj };
-    let mut path = vec![start.clone()];
-    let mut current = start.clone();
-    while path.len() <= members.len() + 1 {
-        let prev = if path.len() > 1 {
-            Some(path[path.len() - 2].as_str())
-        } else {
-            None
-        };
-        let next = next_witness_step(&walk, &current, prev);
-        match next {
-            Some(n) if n == start && path.len() > 1 => {
-                path.push(start.clone());
-                return path;
-            }
-            Some(n) => {
-                path.push(n.clone());
-                current = n;
-            }
-            None => break,
-        }
-    }
-    path.push(start.clone());
-    path
-}
-
-fn next_witness_step(
-    walk: &WitnessWalk,
-    current: &str,
-    prev: Option<&str>,
-) -> Option<String> {
-    walk.adj
-        .get(current)
-        .into_iter()
-        .flat_map(|s| s.iter())
-        .filter(|n| walk.members.contains(n.as_str()))
-        .filter(|n| prev.map(|p| n.as_str() != p).unwrap_or(true))
-        .min()
-        .cloned()
 }

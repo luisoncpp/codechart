@@ -4,8 +4,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contract::{Diagnostic, DiagnosticKind, Edge, EdgeKind, Severity};
 
-use super::cpp::is_paired_cpp_header;
-use super::cycle_scc::{find_cycle_sccs, witness_cycle};
+use super::cpp::{display_cycle_unit, is_paired_cpp_header};
+use super::cycle_scc::find_cycle_sccs;
+use super::cycle_witness::witness_cycle;
 
 /// Flag import-cycle edges and emit `circularDependency` diagnostics per cycled unit.
 pub fn flag_cycles(edges: &mut [Edge], module_ids: &[String]) -> Vec<Diagnostic> {
@@ -41,20 +42,23 @@ fn cycle_key(members: &BTreeSet<String>) -> String {
 }
 
 fn cycle_message(witness: &[String], members: &BTreeSet<String>) -> String {
-    let chain = witness.join(" → ");
-    let extras: Vec<&String> = members
+    let n = members.len();
+    let label = if n == 1 { "module" } else { "modules" };
+    let chain = witness
+        .iter()
+        .map(|u| display_cycle_unit(u))
+        .collect::<Vec<_>>()
+        .join(" → ");
+    let extras: Vec<String> = members
         .iter()
         .filter(|m| !witness.contains(m))
+        .map(|m| display_cycle_unit(m))
         .collect();
     if extras.is_empty() {
-        return format!("circular include: {chain}");
+        return format!("circular include ({n} {label}): {chain}");
     }
-    let also = extras
-        .iter()
-        .map(|s| s.as_str())
-        .collect::<Vec<_>>()
-        .join(", ");
-    format!("circular include: {chain} (also {also})")
+    let others = extras.join(", ");
+    format!("circular include ({n} {label}): {chain} (others in this cycle: {others})")
 }
 
 struct CycleGraph<'a> {

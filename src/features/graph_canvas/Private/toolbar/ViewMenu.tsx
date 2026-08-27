@@ -18,10 +18,11 @@ import {
 interface ViewMenuProps {
   store: GraphSessionStore;
   ui: CanvasUiState;
+  plugins?: { hidden: boolean; onChange: (hide: boolean) => void };
 }
 
 /** Toolbar dropdown for canvas view options (hide tests, heatmap, diff entry). */
-export function ViewMenu({ store, ui }: ViewMenuProps) {
+export function ViewMenu({ store, ui, plugins }: ViewMenuProps) {
   const session = useGraphSession(store);
   const uiState = useCanvasUiState(ui);
   const gitAvailable = session.getIsGitRepo() === true;
@@ -43,6 +44,13 @@ export function ViewMenu({ store, ui }: ViewMenuProps) {
         checked={session.getHideDotDirectories()}
         onChange={(hide) => void store.setHideDotDirectories(hide)}
       />
+      {plugins && (
+        <MenuCheckboxItem
+          label="Hide plugins"
+          checked={plugins.hidden}
+          onChange={plugins.onChange}
+        />
+      )}
       <MenuCheckboxItem
         label="Line counts"
         checked={uiState.getLineCountsVisible()}

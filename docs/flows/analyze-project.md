@@ -5,14 +5,15 @@ End-to-end backend sequence that turns a folder of source into a `ProjectGraph`.
 1. **Trigger** — CLI `analyze <dir>` (or, from Phase 7, the Tauri `analyze_project` command).
 2. **Entry point** — `analysis::analyze_project` / `analyze_project_with_options`
    (`src-tauri/src/analysis/mod.rs`). Options include `metrics_window_days` and
-   `hide_top_level_dot_dirs` (default true).
+   `hide_top_level_dot_dirs` (default true). Unreal `hidePlugins` comes from
+   `.codechart/config.json` (default on), not from these session options.
 
 ## Step-by-step
 
 | # | Step | Function | File |
 |---|------|----------|------|
-| 0 | Filesystem entry only: create Unreal defaults when needed | `ensure_unreal_defaults` | `tauri_api/mod.rs`, `unreal_config/mod.rs` |
-| 1 | Read Unreal options + list files; optionally drop top-level `.*` dirs | `unreal_options_from_source`, `list_files`, `retain_without_top_level_dot_dirs` | `unreal_config/mod.rs`, `project_source/fs_source.rs`, `project_config/ignore.rs` |
+| 0 | Filesystem entry only: create Unreal defaults when needed; skip `Plugins/` dirs when hiding plugins | `ensure_unreal_defaults`, `analysis_fs_source` | `tauri_api/mod.rs`, `unreal_config/` |
+| 1 | Read Unreal options + list files; optionally drop top-level `.*` dirs and `Plugins/` paths | `unreal_options_from_source`, `list_files`, `retain_without_top_level_dot_dirs`, `retain_without_plugins_dirs` | `unreal_config/mod.rs`, `project_source/fs_source.rs`, `project_config/ignore.rs` |
 | 2 | Discover + parse `*.group.md` → defs + configErrors (from filtered paths) | `discover_group_defs_from` | `project_config/mod.rs` |
 | 3 | Filter ignored/generated files | `ignore_patterns_with_unreal`, `retain_unignored` | `project_config/ignore.rs` |
 | 4 | Parse each adapter-supported, non-config file (partial results) | `parse_file` → `LanguageAdapter::parse` | `analysis/mod.rs`, `language_adapter/` |

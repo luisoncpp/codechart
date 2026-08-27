@@ -24,7 +24,7 @@ use crate::grouping::{resolve_groups, ResolvedGroups};
 use crate::language_adapter::{registry_for_path, ParsedModule};
 use crate::project_config::{
     discover_group_defs_from, ignore_patterns_with_unreal, is_group_file, retain_unignored,
-    retain_without_top_level_dot_dirs,
+    retain_without_plugins_dirs, retain_without_top_level_dot_dirs,
 };
 use crate::project_source::ProjectSource;
 use crate::references::{
@@ -43,6 +43,7 @@ struct GraphParts {
     modules: Vec<ModuleNode>,
     edges: Vec<Edge>,
     diagnostics: Vec<Diagnostic>,
+    is_unreal_project: bool,
 }
 
 /// Whether analysis ever opens this file, as opposed to merely seeing its path.
@@ -94,10 +95,7 @@ pub fn analyze_project_with_options(
     options: AnalyzeOptions,
 ) -> Result<ProjectGraph, BuildError> {
     let unreal = unreal_options_from_source(source);
-    let mut files = source.list_files().unwrap_or_default();
-    if options.hide_top_level_dot_dirs {
-        files = retain_without_top_level_dot_dirs(files);
-    }
+    let (files, is_unreal_project) = listed_files(source, &options, &unreal);
     let (defs, config_diags) = discover_group_defs_from(source, files.clone());
     let patterns = ignore_patterns_with_unreal(&defs, &unreal);
     let files = retain_unignored(files, &patterns);
@@ -124,8 +122,27 @@ pub fn analyze_project_with_options(
         ]),
         groups: groups.groups,
         edges,
+        is_unreal_project,
     };
     assemble(root, parts)
+}
+
+/// List, then apply session and Unreal plugin filters. Unreal detection runs on
+/// the pre-plugin list so hiding Plugins does not hide the View-menu checkbox.
+fn listed_files(
+    source: &dyn ProjectSource,
+    options: &AnalyzeOptions,
+    unreal: &UnrealOptions,
+) -> (Vec<String>, bool) {
+    let mut files = source.list_files().unwrap_or_default();
+    if options.hide_top_level_dot_dirs {
+        files = retain_without_top_level_dot_dirs(files);
+    }
+    let is_unreal = crate::unreal_config::is_unreal_project(&files);
+    if unreal.hide_plugins {
+        files = retain_without_plugins_dirs(files);
+    }
+    (files, is_unreal)
 }
 
 /// Resolve import edges, flag facade-bypass drift (Phase 8), then append
@@ -230,7 +247,10 @@ fn parse_file(source: &dyn ProjectSource, path: &str) -> Result<ParsedFile, Diag
 
 /// Feed parts through the builder so the §2.2 invariants are enforced.
 fn assemble(root: &str, parts: GraphParts) -> Result<ProjectGraph, BuildError> {
-    let mut builder = ProjectGraphBuilder::new().version(1).root(root);
+    let mut builder = ProjectGraphBuilder::new()
+        .version(1)
+        .root(root)
+        .is_unreal_project(parts.is_unreal_project);
     for group in parts.groups {
         builder = builder.group(group);
     }

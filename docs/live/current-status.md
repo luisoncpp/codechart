@@ -4,9 +4,9 @@
 
 **Import-cycle detection** — solid import cycles surface as `circularDependency` diagnostics and red edges.
 
-- `references::flag_cycles` (`cycles.rs`): C++ same-stem impl/header collapse before Tarjan SCC; one finding per SCC (≥2 units) plus true header self-includes; messages `circular include: …`; `is_violation` on cycle import edges (not `Foo.cpp → Foo.h` pair edges). Wired after `flag_drift` in `resolve_edges`.
+- `references::flag_cycles` (`cycles.rs` + `cycle_scc.rs` + `cycle_witness.rs`): C++ same-stem impl/header collapse before Tarjan SCC; one finding per SCC; messages `circular include (N modules): …` with shortest witness through the highest-degree hub; `others in this cycle` = co-members; C++ paths shown without extensions; `is_violation` on cycle import edges (not pair edges). Wired after `flag_drift` in `resolve_edges`.
 - Contract: `DiagnosticKind::CircularDependency`. Frontend: `architectureViolations` adds deduped cycle rows; toolbar chip **N architecture issues** (`FacadeBypassList`); inspector colors `circularDependency` red. Golden TS fixture unchanged.
-- Tests: 9 Rust cycle units + selector/toolbar/inspector vitest. Flow: [inspect-circular-dependency.md](../flows/inspect-circular-dependency.md).
+- Tests: Rust cycle units (hub witness + display) + selector/toolbar/inspector vitest. Flow: [inspect-circular-dependency.md](../flows/inspect-circular-dependency.md).
 
 **Phase 10 — Semantic zoom (L0/L1/L2) + metadata rendering** is complete — the last MVP-roadmap item.
 

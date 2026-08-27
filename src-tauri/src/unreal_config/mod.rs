@@ -9,8 +9,12 @@ use std::path::{Path, PathBuf};
 
 use crate::project_source::ProjectSource;
 
+mod detect;
+
 pub const CONFIG_PATH: &str = ".codechart/config.json";
 pub const DEFAULT_EDITOR: &str = "code";
+
+pub use detect::{analysis_fs_source, is_unreal_project, should_skip_plugins_walk};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -26,6 +30,8 @@ pub struct UnrealConfig {
     pub known_paths: Vec<String>,
     pub hide_generated_files: bool,
     pub exclude_engine_references: bool,
+    #[serde(default = "default_true")]
+    pub hide_plugins: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,17 +39,25 @@ pub struct UnrealOptions {
     pub known_paths: Vec<String>,
     pub hide_generated_files: bool,
     pub exclude_engine_references: bool,
+    pub hide_plugins: bool,
 }
 
 impl Default for ProjectConfig {
     fn default() -> Self {
         Self {
             editor: default_editor(),
-            unreal: UnrealConfig {
-                known_paths: Vec::new(),
-                hide_generated_files: true,
-                exclude_engine_references: true,
-            },
+            unreal: UnrealConfig::default(),
+        }
+    }
+}
+
+impl Default for UnrealConfig {
+    fn default() -> Self {
+        Self {
+            known_paths: Vec::new(),
+            hide_generated_files: true,
+            exclude_engine_references: true,
+            hide_plugins: true,
         }
     }
 }
@@ -54,6 +68,7 @@ impl ProjectConfig {
             known_paths: normalized_paths(&self.unreal.known_paths),
             hide_generated_files: self.unreal.hide_generated_files,
             exclude_engine_references: self.unreal.exclude_engine_references,
+            hide_plugins: self.unreal.hide_plugins,
         }
     }
 }
@@ -64,6 +79,7 @@ impl Default for UnrealOptions {
             known_paths: Vec::new(),
             hide_generated_files: false,
             exclude_engine_references: false,
+            hide_plugins: false,
         }
     }
 }
@@ -133,16 +149,10 @@ fn deduced_config(source: &dyn ProjectSource) -> Option<ProjectConfig> {
     Some(ProjectConfig {
         unreal: UnrealConfig {
             known_paths: paths,
-            ..ProjectConfig::default().unreal
+            ..UnrealConfig::default()
         },
         ..ProjectConfig::default()
     })
-}
-
-fn is_unreal_project(files: &[String]) -> bool {
-    files.iter().any(|p| p.ends_with(".uproject"))
-        || files.iter().any(|p| p.ends_with(".uplugin"))
-        || files.iter().any(|p| p.ends_with(".Build.cs"))
 }
 
 fn deduce_known_paths(files: &[String]) -> Vec<String> {
@@ -189,6 +199,10 @@ fn normalized_paths(paths: &[String]) -> Vec<String> {
 
 fn default_editor() -> String {
     DEFAULT_EDITOR.to_string()
+}
+
+fn default_true() -> bool {
+    true
 }
 
 #[cfg(test)]

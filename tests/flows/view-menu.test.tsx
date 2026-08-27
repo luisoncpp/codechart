@@ -1,11 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { readyGraphStore, renderGraphCanvas } from "../helpers/flow-graph-canvas";
 import { createMockAnalysisClient } from "../../src/ipc/analysis-client";
+import type { AnalysisClient } from "../../src/ipc/analysis-client";
 import { createMockGitClient } from "../../src/ipc/git-client";
+import { createMockProjectConfigClient, writeHidePlugins } from "../../src/ipc/project-config-client";
 import { ElkLayoutEngine } from "../../src/domain/layout";
 import { GraphSessionStore } from "../../src/state/graph-session";
-import type { AnalysisClient } from "../../src/ipc/analysis-client";
+import { CanvasUiState, ViewMenu } from "../../src/features/graph_canvas";
 
 /** A ready store whose project looks like a git repository (heatmap available). */
 async function readyGitGraphStore(
@@ -32,6 +34,45 @@ describe("flow: view-menu", () => {
 
     expect(store.getHideTests()).toBe(true);
     expect(screen.getByRole("menu")).toBeInTheDocument();
+  });
+
+  it("hides Hide plugins on non-Unreal graphs", async () => {
+    const store = await readyGraphStore();
+    renderGraphCanvas(store);
+    openViewMenu();
+    expect(screen.queryByRole("menuitemcheckbox", { name: "Hide plugins" })).toBeNull();
+  });
+
+  it("shows Hide plugins checked for Unreal graphs and reports uncheck", async () => {
+    const store = await readyGraphStore();
+    const onChange = vi.fn();
+    render(
+      <ViewMenu
+        store={store}
+        ui={new CanvasUiState()}
+        plugins={{ hidden: true, onChange }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
+    const item = screen.getByRole("menuitemcheckbox", { name: "Hide plugins" });
+    expect(item).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(item);
+    expect(onChange).toHaveBeenCalledWith(false);
+  });
+
+  it("persisting Hide plugins writes config then reloads analysis", async () => {
+    const client = createMockProjectConfigClient();
+    const analysis = createMockAnalysisClient();
+    const analyzeProject = vi.spyOn(analysis, "analyzeProject");
+    const store = await readyGitGraphStore(analysis);
+    await writeHidePlugins(client, "/sample", /*hide=*/ false);
+    await store.loadProject("/sample");
+    const saved = await client.readProjectConfig("/sample");
+    expect(saved.unreal.hidePlugins).toBe(false);
+    expect(analyzeProject).toHaveBeenLastCalledWith("/sample", {
+      metricsWindowDays: 90,
+      hideTopLevelDotDirs: true,
+    });
   });
 
   it("Hide dot directories starts on and reloads the project when unchecked", async () => {

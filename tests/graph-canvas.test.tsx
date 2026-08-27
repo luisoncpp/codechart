@@ -406,7 +406,7 @@ describe("InspectionPanel", () => {
           id: "circularDependency:a.h,b.h:src/ui/TodoList.tsx",
           severity: "warning",
           kind: "circularDependency",
-          message: "circular include: a.h → b.h → a.h",
+          message: "circular include (2 modules): a.h → b.h → a.h",
           moduleId: "src/ui/TodoList.tsx",
         },
       ],
@@ -415,7 +415,7 @@ describe("InspectionPanel", () => {
     store.select("src/ui/TodoList.tsx");
     renderInspectionPanel(store);
 
-    const message = screen.getByText(/circular include:/);
+    const message = screen.getByText(/circular include/);
     expect(message).toBeInTheDocument();
     expect(message).toHaveStyle({ color: "#dc2626" });
   });

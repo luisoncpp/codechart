@@ -304,6 +304,7 @@ fn unreal_mini_project_resolves_includes_and_hides_generated_files() {
         .edges
         .iter()
         .any(|e| e.source == source_file && e.target == header));
+    assert_eq!(graph.is_unreal_project, Some(true));
 }
 
 #[test]
@@ -316,6 +317,60 @@ fn unreal_cpp_module_displays_exports_from_its_paired_header() {
         .find(|m| m.id == "Source/MiniGame/Private/MiniPlayer.cpp")
         .expect("implementation module exists");
     assert_eq!(module.exported_symbols, vec!["MiniPlayer"]);
+}
+
+#[test]
+fn unreal_defaults_hide_plugin_sources() {
+    let source = memory(&[
+        ("Game.uproject", "{}"),
+        ("Source/Game/Game.Build.cs", ""),
+        ("Source/Game/Public/Player.h", "class Player {};"),
+        (
+            "Plugins/Inventory/Source/Inventory/Public/Inv.h",
+            "class Inv {};",
+        ),
+        (
+            "Plugins/Inventory/Source/Inventory/Inventory.Build.cs",
+            "",
+        ),
+    ]);
+    let graph = analyze_project(&source, "mem").expect("builds");
+    assert_eq!(graph.is_unreal_project, Some(true));
+    assert!(graph.modules.iter().any(|m| m.id.ends_with("Player.h")));
+    assert!(
+        graph.modules.iter().all(|m| !m.id.contains("Plugins")),
+        "plugin sources should stay hidden by default"
+    );
+}
+
+#[test]
+fn unreal_shows_plugin_sources_when_hide_plugins_is_off() {
+    let source = memory(&[
+        ("Game.uproject", "{}"),
+        (
+            crate::unreal_config::CONFIG_PATH,
+            r#"{"unreal":{"knownPaths":["Source/Game/Public"],"hideGeneratedFiles":true,"excludeEngineReferences":true,"hidePlugins":false}}"#,
+        ),
+        ("Source/Game/Public/Player.h", "class Player {};"),
+        (
+            "Plugins/Inventory/Source/Inventory/Public/Inv.h",
+            "class Inv {};",
+        ),
+    ]);
+    let graph = analyze_project(&source, "mem").expect("builds");
+    assert_eq!(graph.is_unreal_project, Some(true));
+    assert!(graph.modules.iter().any(|m| m.id.contains("Plugins")));
+}
+
+#[test]
+fn non_unreal_plugins_folder_is_not_hidden() {
+    let source = memory(&[
+        ("src/a.ts", "export const a = 1;"),
+        ("Plugins/foo.ts", "export const p = 1;"),
+    ]);
+    let graph = analyze_project(&source, "mem").expect("builds");
+    assert_eq!(graph.is_unreal_project, None);
+    assert!(graph.modules.iter().any(|m| m.id == "Plugins/foo.ts"));
 }
 
 #[test]

@@ -43,6 +43,9 @@ meaningful. Analyzers (Phase 4+) must emit in a deterministic order.
 `circularDependency` (import cycle). Both set participating import edges
 `isViolation` and surface in the toolbar **architecture issues** list.
 
+`ProjectGraph.isUnrealProject` is optional and omitted when false (Unreal
+detection from the pre-filter file list). The golden TS fixture stays unchanged.
+
 ## North Star fixtures
 
 - `tests/fixtures/ts-basic-project/` — the reference TS project (the analysis input).

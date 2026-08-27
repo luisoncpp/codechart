@@ -11,6 +11,7 @@ pub struct ProjectGraphBuilder {
     modules: Vec<ModuleNode>,
     edges: Vec<Edge>,
     diagnostics: Vec<Diagnostic>,
+    is_unreal_project: bool,
 }
 
 impl ProjectGraphBuilder {
@@ -48,6 +49,11 @@ impl ProjectGraphBuilder {
         self
     }
 
+    pub fn is_unreal_project(mut self, is_unreal: bool) -> Self {
+        self.is_unreal_project = is_unreal;
+        self
+    }
+
     /// Validate the five §2.2 invariants and produce the graph, or reject it.
     pub fn build(self) -> Result<ProjectGraph, BuildError> {
         validate(&self.groups, &self.modules, &self.edges)?;
@@ -58,6 +64,7 @@ impl ProjectGraphBuilder {
             modules: self.modules,
             edges: self.edges,
             diagnostics: self.diagnostics,
+            is_unreal_project: self.is_unreal_project.then_some(true),
         })
     }
 }
