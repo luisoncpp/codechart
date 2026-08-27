@@ -31,6 +31,7 @@ pub enum DiagnosticKind {
     UnresolvedUnityAsset,
     ConfigError,
     ArchitectureViolation,
+    CircularDependency,
 }
 
 #[derive(Serialize, Deserialize, TS, Debug, Clone, PartialEq)]
@@ -175,4 +176,7 @@ pub struct ProjectGraph {
     pub modules: Vec<ModuleNode>,
     pub edges: Vec<Edge>,
     pub diagnostics: Vec<Diagnostic>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub is_unreal_project: Option<bool>,
 }

@@ -35,6 +35,7 @@ fn deduces_unreal_module_include_paths() {
     );
     assert!(config.unreal.hide_generated_files);
     assert!(config.unreal.exclude_engine_references);
+    assert!(config.unreal.hide_plugins);
 }
 
 #[test]
@@ -51,6 +52,16 @@ fn explicit_config_wins_over_deduced_defaults() {
     assert_eq!(config.unreal.known_paths, vec!["Custom".to_string()]);
     assert!(!config.unreal.hide_generated_files);
     assert!(!config.unreal.exclude_engine_references);
+    assert!(config.unreal.hide_plugins, "missing field defaults on");
+}
+
+#[test]
+fn explicit_hide_plugins_false_wins() {
+    let source = memory(&[(
+        CONFIG_PATH,
+        r#"{"unreal":{"knownPaths":[],"hideGeneratedFiles":true,"excludeEngineReferences":true,"hidePlugins":false}}"#,
+    )]);
+    assert!(!config_from_source(&source).unreal.hide_plugins);
 }
 
 #[test]
@@ -72,6 +83,7 @@ fn read_write_project_config_round_trips() {
             known_paths: vec!["Source/Game/Public".into()],
             hide_generated_files: false,
             exclude_engine_references: true,
+            hide_plugins: false,
         },
     };
     write_project_config(&root, config.clone()).expect("write config");
@@ -94,6 +106,7 @@ fn ensure_defaults_fills_empty_existing_config() {
                 known_paths: Vec::new(),
                 hide_generated_files: false,
                 exclude_engine_references: false,
+                hide_plugins: false,
             },
         },
     )
@@ -106,5 +119,42 @@ fn ensure_defaults_fills_empty_existing_config() {
         .iter()
         .any(|p| p == "Source/Game/Public"));
     assert!(!config.unreal.hide_generated_files, "preserve user toggle");
+    assert!(!config.unreal.hide_plugins, "preserve hide-plugins toggle");
     assert_eq!(config.editor, "zed", "preserve the project editor");
+}
+
+#[test]
+fn skip_plugins_walk_defaults_on_for_unreal_roots() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let root_path = temp.path();
+    std::fs::write(root_path.join("Game.uproject"), "{}").expect("uproject");
+    let root = root_path.to_string_lossy().to_string();
+    assert!(should_skip_plugins_walk(&root));
+}
+
+#[test]
+fn skip_plugins_walk_respects_config_false() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let root_path = temp.path();
+    std::fs::write(root_path.join("Game.uproject"), "{}").expect("uproject");
+    let root = root_path.to_string_lossy().to_string();
+    write_project_config(
+        &root,
+        ProjectConfig {
+            unreal: UnrealConfig {
+                hide_plugins: false,
+                ..UnrealConfig::default()
+            },
+            ..ProjectConfig::default()
+        },
+    )
+    .expect("write config");
+    assert!(!should_skip_plugins_walk(&root));
+}
+
+#[test]
+fn skip_plugins_walk_ignores_non_unreal_roots() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let root = temp.path().to_string_lossy().to_string();
+    assert!(!should_skip_plugins_walk(&root));
 }

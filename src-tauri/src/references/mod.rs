@@ -13,6 +13,9 @@
 
 mod cpp;
 mod csharp;
+mod cycle_scc;
+mod cycle_witness;
+mod cycles;
 mod drift;
 mod interface_seams;
 mod resolve;
@@ -24,7 +27,9 @@ mod unity;
 #[cfg(test)]
 mod tests;
 
+pub use cpp::is_paired_cpp_header;
 pub use drift::{flag_drift, GroupBoundaries};
+pub use cycles::flag_cycles;
 pub use interface_seams::classify_interface_seams;
 pub use soft::classify_soft;
 pub use tauri_ipc::classify_tauri_ipc;

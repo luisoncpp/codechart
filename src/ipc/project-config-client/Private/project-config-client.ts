@@ -9,6 +9,7 @@ export interface UnrealConfig {
   knownPaths: string[];
   hideGeneratedFiles: boolean;
   excludeEngineReferences: boolean;
+  hidePlugins: boolean;
 }
 
 export interface ProjectConfigClient {
@@ -24,5 +25,20 @@ export const defaultProjectConfig = (): ProjectConfig => ({
     knownPaths: [],
     hideGeneratedFiles: true,
     excludeEngineReferences: true,
+    hidePlugins: true,
   },
 });
+
+export async function writeHidePlugins(
+  client: ProjectConfigClient,
+  projectRoot: string,
+  hide: boolean,
+): Promise<ProjectConfig> {
+  const current = await client.readProjectConfig(projectRoot);
+  const next = {
+    ...current,
+    unreal: { ...current.unreal, hidePlugins: hide },
+  };
+  await client.writeProjectConfig(projectRoot, next);
+  return next;
+}

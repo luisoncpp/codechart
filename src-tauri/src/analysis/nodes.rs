@@ -3,6 +3,7 @@
 use crate::contract::{Annotation, Edge, EdgeKind, Language, ModuleMetrics, ModuleNode};
 use crate::grouping::ResolvedGroups;
 use crate::language_adapter::ParsedModule;
+use crate::references::is_paired_cpp_header;
 use crate::semantic_comments::parse_annotations;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -117,22 +118,6 @@ fn extend_unique(exports: &mut Vec<String>, symbols: &[String]) {
             exports.push(symbol.clone());
         }
     }
-}
-
-fn is_paired_cpp_header(source: &str, target: &str) -> bool {
-    is_cpp_impl(source) && is_cpp_header(target) && file_stem(source) == file_stem(target)
-}
-
-fn is_cpp_impl(path: &str) -> bool {
-    path.ends_with(".cpp") || path.ends_with(".cc") || path.ends_with(".cxx")
-}
-
-fn is_cpp_header(path: &str) -> bool {
-    path.ends_with(".h") || path.ends_with(".hpp") || path.ends_with(".hxx")
-}
-
-fn file_stem(path: &str) -> &str {
-    basename(path).split('.').next().unwrap_or(path)
 }
 
 fn basename(path: &str) -> &str {

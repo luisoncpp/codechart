@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Copyable list of facade-bypass architecture violations")
+// @Architecture(descriptionShort="Copyable list of architecture issues (facade bypasses + import cycles)")
 import { useRef, useState } from "react";
 import type { Diagnostic } from "../../../domain/graph";
 
@@ -6,15 +6,15 @@ interface FacadeBypassListProps {
   violations: Diagnostic[];
 }
 
-/** Clickable label that opens a modal listing all facade-bypass errors in the project. */
+/** Clickable label that opens a modal listing all architecture issues in the project. */
 export function FacadeBypassList({ violations }: FacadeBypassListProps) {
   const [open, setOpen] = useState(false);
   if (violations.length === 0) return null;
 
   const label =
     violations.length === 1
-      ? "1 facade bypass"
-      : `${violations.length} facade bypasses`;
+      ? "1 architecture issue"
+      : `${violations.length} architecture issues`;
 
   return (
     <>

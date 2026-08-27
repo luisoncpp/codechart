@@ -4,4 +4,4 @@ import type { Edge } from "./Edge";
 import type { GroupNode } from "./GroupNode";
 import type { ModuleNode } from "./ModuleNode";
 
-export type ProjectGraph = { version: number, root: string, groups: Array<GroupNode>, modules: Array<ModuleNode>, edges: Array<Edge>, diagnostics: Array<Diagnostic>, };
+export type ProjectGraph = { version: number, root: string, groups: Array<GroupNode>, modules: Array<ModuleNode>, edges: Array<Edge>, diagnostics: Array<Diagnostic>, isUnrealProject?: boolean, };

@@ -7,6 +7,36 @@ use crate::UnrealOptions;
 
 use super::resolve::{is_relative, resolve_path, resolve_relative};
 
+pub fn is_cpp_impl(path: &str) -> bool {
+    path.ends_with(".cpp") || path.ends_with(".cc") || path.ends_with(".cxx")
+}
+
+pub fn is_cpp_header(path: &str) -> bool {
+    path.ends_with(".h") || path.ends_with(".hpp") || path.ends_with(".hxx")
+}
+
+pub fn file_stem(path: &str) -> &str {
+    basename(path).split('.').next().unwrap_or(path)
+}
+
+pub fn is_paired_cpp_header(impl_path: &str, header_path: &str) -> bool {
+    is_cpp_impl(impl_path) && is_cpp_header(header_path) && file_stem(impl_path) == file_stem(header_path)
+}
+
+/// Path shown in cycle diagnostics — C++ units drop `.h`/`.cpp`/… so the logical unit is clear.
+pub fn display_cycle_unit(path: &str) -> String {
+    for ext in [".cpp", ".cxx", ".cc", ".hpp", ".hxx", ".h"] {
+        if let Some(stem) = path.strip_suffix(ext) {
+            return stem.to_string();
+        }
+    }
+    path.to_string()
+}
+
+fn basename(path: &str) -> &str {
+    path.rsplit('/').next().unwrap_or(path)
+}
+
 pub fn is_cpp_path(path: &str) -> bool {
     path.ends_with(".cpp")
         || path.ends_with(".cc")

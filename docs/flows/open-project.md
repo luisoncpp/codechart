@@ -25,7 +25,7 @@ in the running app or launching with a CLI path until the canvas renders.
 | 4 | Backend pipeline → `ProjectGraph` | `tauri_api::analyze_project` | `src-tauri/src/tauri_api/mod.rs` (→ [analyze-project](./analyze-project.md)) |
 | 5 | 0 modules → `empty`; else ELK layout → `ready` | `GraphSessionStore.loadProject` | same as #2 |
 | 6 | Render canvas + collapsible inspection panel (left-edge drag to resize) | `App` gates on `phase==="ready"` | `app/Private/App.tsx` |
-| 6b | When ready, show collapsible **facade bypasses** list (textarea + **Copy list**) | `FacadeBypassList` | `project_loader/Private/FacadeBypassList.tsx` |
+| 6b | When ready, show **architecture issues** list (facade bypasses + import cycles; textarea + **Copy list**) | `FacadeBypassList` | `project_loader/Private/FacadeBypassList.tsx` |
 | 6c | Toolbar shows the project chip (folder basename, full path in tooltip) plus **View ▾**, **Search ▾**, and **Settings ▾** (`App` fills the `menus` slot when ready) | `ProjectLoaderPanel` + app menus | `project_loader/Private/ProjectLoaderPanel.tsx`, `app/Private/App.tsx` |
 | 6d | Load the project's editor preference from `.codechart/config.json`; missing or old config defaults to `code` | `App` + `ProjectConfigClient` | `app/Private/App.tsx`, `ipc/project-config-client` |
 

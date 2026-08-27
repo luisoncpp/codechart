@@ -1,6 +1,6 @@
 # References & Analysis (the backend pipeline)
 
-**Status: implemented (Phase 4; drift detection Phase 8; soft edges Phase 9; interface seams Phase 10; Tauri IPC seams).**
+**Status: implemented (Phase 4; drift detection Phase 8; import cycles; soft edges Phase 9; interface seams Phase 10; Tauri IPC seams).**
 Source: `src-tauri/src/references/`, `src-tauri/src/diagnostics/`,
 `src-tauri/src/analysis/`.
 
@@ -162,6 +162,36 @@ and `edge_id`, and reads `"<S> imports <T>, bypassing the <group> facade"`.
 derived by `analysis::group_boundaries` from the `ResolvedGroups` — `references`
 owns the input type so it stays decoupled from `grouping`.
 
+## `references::flag_cycles` — import-cycle detection
+
+`flag_cycles(&mut edges, module_ids) -> Vec<Diagnostic>` (`cycles.rs`). Third
+post-pass on resolved **import** edges, wired in `analysis::resolve_edges`
+immediately after `flag_drift`, before soft/IPC/seam classifiers.
+
+**C++ logical units:** before SCC, collapse same-stem impl/header pairs when an
+import edge `impl → header` exists (`cpp.rs` stem helpers — same rule as
+`analysis/nodes` header-export copy). Unit id = header path for a paired impl;
+unpaired files keep their own path. `Player.cpp → Player.h` projects to a unit
+self-edge and is dropped (never a finding, never flagged `is_violation`).
+
+**Algorithm:** project import edges to unit→unit; Tarjan SCC on a `BTreeMap`
+adjacency; report SCCs with ≥2 units plus size-1 units with a true self-include
+(`A.h → A.h`). One diagnostic per **file** that maps to a cycled unit; toolbar
+dedupes by `cycle-key` (sorted unit ids). Message shape:
+`circular include (N modules): <witness> (others in this cycle: …)`.
+Witness = **shortest elementary cycle through the highest-degree** SCC member
+(lex tie-break); never unrolls or invents edges. C++ unit paths in the message
+drop `.h`/`.cpp`/`.hpp`/… (logical unit id); TS/other languages keep extensions.
+`(others in this cycle: …)` lists other **SCC members** not on the witness — not
+inbound-only predecessors.
+
+Sets `is_violation = true` on original import edges whose unit-projected endpoints
+both lie in the same reported SCC, except dropped pair self-edges. Does not clear
+existing facade-bypass flags. Soft/IPC/seam edges are ignored.
+
+Diagnostic: `kind: CircularDependency`, `id: circularDependency:<cycle-key>:<moduleId>`,
+`severity: Warning`, optional `edge_id` linking a witness import from that file.
+
 ## `diagnostics` — normalization
 
 Config/import findings already arrive as `Diagnostic`s. This thin module owns the
@@ -178,7 +208,7 @@ sort by id, dedup by id — for deterministic final output.
    the rest of the graph still builds.
 3. `resolve_groups(parsed_paths, defs)` — group tree, membership, facades.
 4. `resolve_edges(parsed_modules, &groups)` — `resolve_references` for edges +
-   unresolved diagnostics, then `flag_drift` for facade-bypass violations, then
+   unresolved diagnostics, then `flag_drift`, then `flag_cycles`, then
    `classify_soft` appends event soft edges (imports stay sorted first).
 5. Build `ModuleNode`s (`nodes.rs`): id = path, label = basename, language from
    extension (`tsx` → `Tsx`, else `TypeScript`), `group_id`/`is_facade` from the

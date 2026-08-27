@@ -23,8 +23,8 @@ use crate::review_notes::{
     load_review_notes as load_notes, save_review_notes as save_notes, ReviewNotesDocument,
 };
 use crate::{
-    ensure_unreal_defaults, read_project_config as load_project_config, search_sources,
-    write_project_config as save_project_config, ProjectConfig, SearchResult,
+    analysis_fs_source, ensure_unreal_defaults, read_project_config as load_project_config,
+    search_sources, write_project_config as save_project_config, ProjectConfig, SearchResult,
     StartupProjectPath,
 };
 use std::collections::{HashMap, HashSet};
@@ -58,7 +58,7 @@ pub fn analyze_project(
         return Err("Metrics window must be at least one day.".to_string());
     }
     ensure_unreal_defaults(&path)?;
-    let source = FsProjectSource::new(&path);
+    let source = analysis_fs_source(&path);
     run_analysis_with_options(
         &source,
         &path,
@@ -78,7 +78,13 @@ pub fn load_project_snapshot(
     module_paths: Vec<String>,
     hide_top_level_dot_dirs: Option<bool>,
 ) -> Result<GitProjectSnapshot, String> {
-    let source = git::source_at_ref(&path, &git_ref, &crate::analysis::opens_file)?;
+    let skip_plugins = crate::should_skip_plugins_walk(&path);
+    let source = git::source_at_ref(&path, &git_ref, &|file_path| {
+        if skip_plugins && crate::project_config::is_under_plugins_dir(file_path) {
+            return false;
+        }
+        crate::analysis::opens_file(file_path)
+    })?;
     let graph = run_analysis_with_options(
         &source,
         &path,

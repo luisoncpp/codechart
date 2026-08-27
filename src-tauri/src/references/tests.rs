@@ -941,3 +941,243 @@ fn two_commands_between_same_pair_get_incrementing_ordinals() {
         ]
     );
 }
+
+// ---- import-cycle detection -----------------------------------------------
+
+#[test]
+fn cpp_pair_include_is_not_a_cycle() {
+    let mut edges = vec![
+        edge("Private/Foo.cpp", "Public/Foo.h"),
+    ];
+    let module_ids = vec![
+        "Private/Foo.cpp".into(),
+        "Public/Foo.h".into(),
+    ];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert!(diags.is_empty());
+    assert!(!edges[0].is_violation);
+}
+
+#[test]
+fn header_include_cycle_is_reported() {
+    let mut edges = vec![
+        edge("A.h", "B.h"),
+        edge("B.h", "A.h"),
+    ];
+    let module_ids = vec!["A.h".into(), "B.h".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 2);
+    assert!(edges[0].is_violation);
+    assert!(edges[1].is_violation);
+    assert_eq!(
+        diags[0].message,
+        "circular include (2 modules): A → B → A"
+    );
+}
+
+#[test]
+fn unreal_public_private_stem_collapses_for_cycles() {
+    let mut edges = vec![
+        edge("Source/Game/Private/Player.cpp", "Source/Game/Public/Player.h"),
+        edge("Source/Game/Public/Enemy.h", "Source/Game/Public/Player.h"),
+        edge("Source/Game/Public/Player.h", "Source/Game/Public/Enemy.h"),
+    ];
+    let module_ids = vec![
+        "Source/Game/Private/Player.cpp".into(),
+        "Source/Game/Public/Player.h".into(),
+        "Source/Game/Public/Enemy.h".into(),
+    ];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 3);
+    let pair_edge = edges
+        .iter()
+        .find(|e| e.source.contains("Player.cpp"))
+        .expect("pair edge");
+    assert!(!pair_edge.is_violation);
+}
+
+#[test]
+fn cpp_impl_header_cycle_flags_files_but_not_pair_edge() {
+    let mut edges = vec![
+        edge("A.cpp", "B.h"),
+        edge("B.h", "A.h"),
+        edge("A.cpp", "A.h"),
+    ];
+    let module_ids = vec![
+        "A.cpp".into(),
+        "A.h".into(),
+        "B.h".into(),
+    ];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 3);
+    let pair_edge = edges.iter().find(|e| e.target == "A.h" && e.source == "A.cpp");
+    assert!(pair_edge.is_some_and(|e| !e.is_violation));
+}
+
+#[test]
+fn orphan_cpp_is_own_unit() {
+    let mut edges = vec![edge("Orphan.cpp", "Other.h"), edge("Other.h", "Orphan.cpp")];
+    let module_ids = vec!["Orphan.cpp".into(), "Other.h".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 2);
+}
+
+#[test]
+fn typescript_cycles_detected_without_collapsing() {
+    let mut edges = vec![edge("a.ts", "b.ts"), edge("b.ts", "a.ts")];
+    let module_ids = vec!["a.ts".into(), "b.ts".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 2);
+    assert_eq!(diags[0].kind, DiagnosticKind::CircularDependency);
+}
+
+#[test]
+fn soft_edges_are_ignored_for_cycles() {
+    let mut edges = vec![
+        Edge {
+            id: "a.ts->b.ts:soft:0".into(),
+            source: "a.ts".into(),
+            target: "b.ts".into(),
+            kind: EdgeKind::Soft,
+            trigger: "event:test".into(),
+            is_violation: false,
+        },
+        edge("a.ts", "b.ts"),
+        edge("b.ts", "a.ts"),
+    ];
+    let module_ids = vec!["a.ts".into(), "b.ts".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 2);
+    assert!(!edges[0].is_violation);
+}
+
+#[test]
+fn self_include_header_is_a_cycle_finding() {
+    let mut edges = vec![edge("A.h", "A.h")];
+    let module_ids = vec!["A.h".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 1);
+    assert!(edges[0].is_violation);
+    assert!(diags[0].message.starts_with("circular include ("));
+}
+
+#[test]
+fn cycle_detection_is_deterministic_under_shuffled_edges() {
+    let module_ids = vec!["A.h".into(), "B.h".into()];
+    let pairs = [("A.h", "B.h"), ("B.h", "A.h")];
+    let mut edges_a = vec![edge("B.h", "A.h"), edge("A.h", "B.h")];
+    let mut edges_b = vec![edge("A.h", "B.h"), edge("B.h", "A.h")];
+    let diags_a = flag_cycles(&mut edges_a, &module_ids);
+    let diags_b = flag_cycles(&mut edges_b, &module_ids);
+    assert_eq!(diags_a.len(), diags_b.len());
+    for pair in pairs {
+        let id_a = format!("circularDependency:A.h,B.h:{}", pair.0);
+        assert!(diags_a.iter().any(|d| d.id == id_a));
+        assert!(diags_b.iter().any(|d| d.id == id_a));
+    }
+    assert_eq!(diags_a[0].message, diags_b[0].message);
+}
+
+#[test]
+fn inbound_predecessor_is_not_prefixed_onto_cycle_message() {
+    // GenAI-shaped core + inbound-only headers (real-world RexCheatManager case).
+    let mut edges = vec![
+        edge("Private/CheatManager.h", "Public/Wrapper.h"),
+        edge("Public/Wrapper.h", "Public/Types.h"),
+        edge("Public/Types.h", "Public/Component.h"),
+        edge("Public/Types.h", "Public/Wrapper.h"),
+        edge("Public/Component.h", "Public/Wrapper.h"),
+        edge("Public/Leaf.h", "Public/Wrapper.h"),
+        edge("Public/Other.h", "Public/Wrapper.h"),
+    ];
+    let module_ids = vec![
+        "Private/CheatManager.h".into(),
+        "Public/Wrapper.h".into(),
+        "Public/Types.h".into(),
+        "Public/Component.h".into(),
+        "Public/Leaf.h".into(),
+        "Public/Other.h".into(),
+    ];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 3);
+    let msg = &diags[0].message;
+    assert!(!msg.contains("CheatManager"), "{msg}");
+    assert!(!msg.contains("Leaf"), "{msg}");
+    assert!(!msg.contains("Other"), "{msg}");
+    assert!(msg.starts_with("circular include (3 modules):"), "{msg}");
+    assert_elementary_circular_include(msg);
+}
+
+#[test]
+fn witness_prefers_shortest_cycle_through_hub() {
+    // S is lex-first; B has highest degree — witness is B↔A, not a path from S.
+    let mut edges = vec![
+        edge("A/S.h", "B/A.h"),
+        edge("B/A.h", "B/B.h"),
+        edge("B/B.h", "B/C.h"),
+        edge("B/C.h", "B/B.h"),
+        edge("B/B.h", "B/A.h"),
+        edge("B/C.h", "A/S.h"),
+    ];
+    let module_ids = vec![
+        "A/S.h".into(),
+        "B/A.h".into(),
+        "B/B.h".into(),
+        "B/C.h".into(),
+    ];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 4);
+    assert_eq!(
+        diags[0].message,
+        "circular include (4 modules): B/B → B/A → B/B (others in this cycle: A/S, B/C)"
+    );
+}
+
+#[test]
+fn witness_is_elementary_and_does_not_fabricate_edges() {
+    // Walk A→B→C dead-ends if it only avoids `prev`; old reporter closed with
+    // fabricated C→A. Hub B → shortest is B↔A; C stays in others.
+    let mut edges = vec![
+        edge("A.h", "B.h"),
+        edge("B.h", "C.h"),
+        edge("C.h", "B.h"),
+        edge("B.h", "A.h"),
+    ];
+    let module_ids = vec!["A.h".into(), "B.h".into(), "C.h".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 3);
+    assert_eq!(
+        diags[0].message,
+        "circular include (3 modules): B → A → B (others in this cycle: C)"
+    );
+}
+
+#[test]
+fn cpp_cycle_message_omits_extensions_ts_keeps_them() {
+    let mut cpp = vec![edge("A.h", "B.h"), edge("B.h", "A.h")];
+    let cpp_ids = vec!["A.h".into(), "B.h".into()];
+    let cpp_msg = flag_cycles(&mut cpp, &cpp_ids)[0].message.clone();
+    assert_eq!(cpp_msg, "circular include (2 modules): A → B → A");
+
+    let mut ts = vec![edge("a.ts", "b.ts"), edge("b.ts", "a.ts")];
+    let ts_ids = vec!["a.ts".into(), "b.ts".into()];
+    let ts_msg = flag_cycles(&mut ts, &ts_ids)[0].message.clone();
+    assert_eq!(ts_msg, "circular include (2 modules): a.ts → b.ts → a.ts");
+}
+
+fn assert_elementary_circular_include(message: &str) {
+    let after_size = message
+        .split_once("): ")
+        .map(|(_, rest)| rest)
+        .expect("size prefix");
+    let chain = after_size
+        .split(" (others in this cycle: ")
+        .next()
+        .expect("chain");
+    let nodes: Vec<&str> = chain.split(" → ").collect();
+    assert!(nodes.len() >= 2, "{message}");
+    assert_eq!(nodes.first(), nodes.last(), "{message}");
+    let inner = &nodes[..nodes.len() - 1];
+    let unique: BTreeSet<&str> = inner.iter().copied().collect();
+    assert_eq!(unique.len(), inner.len(), "repeated node before close: {message}");
+}

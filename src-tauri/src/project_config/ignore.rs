@@ -76,6 +76,18 @@ pub fn retain_without_top_level_dot_dirs(paths: Vec<String>) -> Vec<String> {
         .collect()
 }
 
+/// True when any path segment is the Unreal `Plugins` directory.
+pub fn is_under_plugins_dir(path: &str) -> bool {
+    path.split('/').any(|seg| seg == "Plugins")
+}
+
+pub fn retain_without_plugins_dirs(paths: Vec<String>) -> Vec<String> {
+    paths
+        .into_iter()
+        .filter(|p| !is_under_plugins_dir(p))
+        .collect()
+}
+
 #[cfg(test)]
 mod top_level_dot_dir_tests {
     use super::{is_under_top_level_dot_dir, retain_without_top_level_dot_dirs};
@@ -97,5 +109,28 @@ mod top_level_dot_dir_tests {
             ".env".into(),
         ]);
         assert_eq!(kept, vec!["src/a.ts".to_string(), ".env".to_string()]);
+    }
+}
+
+#[cfg(test)]
+mod plugins_dir_tests {
+    use super::{is_under_plugins_dir, retain_without_plugins_dirs};
+
+    #[test]
+    fn matches_any_plugins_directory_segment() {
+        assert!(is_under_plugins_dir("Plugins/Inventory/Inv.cpp"));
+        assert!(is_under_plugins_dir("Engine/Plugins/Foo/Bar.h"));
+        assert!(!is_under_plugins_dir("Source/Plugins.h"));
+        assert!(!is_under_plugins_dir("Source/Game/Game.cpp"));
+    }
+
+    #[test]
+    fn retain_drops_plugin_paths() {
+        let kept = retain_without_plugins_dirs(vec![
+            "Source/Game/Game.cpp".into(),
+            "Plugins/Inventory/Inv.cpp".into(),
+            "Engine/Plugins/Foo.h".into(),
+        ]);
+        assert_eq!(kept, vec!["Source/Game/Game.cpp".to_string()]);
     }
 }

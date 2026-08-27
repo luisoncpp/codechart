@@ -24,6 +24,7 @@ import {
   InspectionPanel,
 } from "../../features/inspection_panel";
 import { useOpenStartupProject } from "./use-open-startup-project";
+import { useHidePlugins } from "./use-hide-plugins";
 import { useDevtoolsShortcut } from "./use-devtools-shortcut";
 
 export function App() {
@@ -51,6 +52,9 @@ export function App() {
   const ready = session.getPhase() === "ready";
   const [editor, setEditor] = useState(DEFAULT_EDITOR);
   const hasCppModules = graph?.modules.some((module) => module.language === "cpp") ?? false;
+  const { hidePlugins, setHidden } = useHidePlugins(config, projectRoot, /*reload*/ () => {
+    if (projectRoot) void store.loadProject(projectRoot);
+  });
 
   useEffect(() => {
     if (!projectRoot) {
@@ -93,7 +97,18 @@ export function App() {
               <>
                 {ready && (
                   <>
-                    <ViewMenu store={store} ui={canvasUi} />
+                    <ViewMenu
+                      store={store}
+                      ui={canvasUi}
+                      plugins={
+                        graph?.isUnrealProject
+                          ? {
+                              hidden: hidePlugins,
+                              onChange: (hide) => void setHidden(hide),
+                            }
+                          : undefined
+                      }
+                    />
                     <SearchMenu ui={canvasUi} />
                   </>
                 )}

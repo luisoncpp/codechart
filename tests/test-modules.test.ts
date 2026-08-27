@@ -132,4 +132,59 @@ describe("architectureViolations", () => {
     expect(violations).toHaveLength(1);
     expect(violations[0].moduleId).toBe("src/app.ts");
   });
+
+  it("dedupes circularDependency diagnostics by cycle key", () => {
+    const graph: ProjectGraph = {
+      ...base,
+      diagnostics: [
+        {
+          id: "circularDependency:A.h,B.h:Public/A.h",
+          severity: "warning",
+          kind: "circularDependency",
+          message: "circular include (2 modules): A.h → B.h → A.h",
+          moduleId: "Public/A.h",
+        },
+        {
+          id: "circularDependency:A.h,B.h:Private/A.cpp",
+          severity: "warning",
+          kind: "circularDependency",
+          message: "circular include (2 modules): A.h → B.h → A.h",
+          moduleId: "Private/A.cpp",
+        },
+      ],
+    };
+    const violations = architectureViolations(graph);
+    expect(violations).toHaveLength(1);
+    expect(violations[0].kind).toBe("circularDependency");
+  });
+
+  it("includes test-module circular includes unlike facade bypasses", () => {
+    const graph: ProjectGraph = {
+      ...base,
+      modules: [
+        ...base.modules,
+        {
+          id: "src/foo.test.ts",
+          label: "foo.test.ts",
+          path: "src/foo.test.ts",
+          language: "typescript",
+          groupId: "app",
+          isFacade: false,
+          loc: 1,
+        },
+      ],
+      diagnostics: [
+        {
+          id: "circularDependency:a.ts,b.ts:src/foo.test.ts",
+          severity: "warning",
+          kind: "circularDependency",
+          message: "circular include (2 modules): a.ts → b.ts → a.ts",
+          moduleId: "src/foo.test.ts",
+        },
+      ],
+    };
+    const violations = architectureViolations(graph);
+    expect(violations).toHaveLength(1);
+    expect(violations[0].moduleId).toBe("src/foo.test.ts");
+  });
 });

@@ -8,6 +8,7 @@
 use std::process::ExitCode;
 
 use codechart_lib::analysis::analyze_project;
+use codechart_lib::analysis_fs_source;
 use codechart_lib::grouping::{resolve_groups, ResolvedGroups};
 use codechart_lib::language_adapter::{registry_for_path, ParsedImport, ParsedModule};
 use codechart_lib::project_config::{
@@ -31,7 +32,7 @@ fn run_analyze(path: Option<&str>) -> ExitCode {
     let Some(path) = path else {
         return fail("usage: codechart-cli analyze <project-dir>");
     };
-    let source = FsProjectSource::new(path);
+    let source = analysis_fs_source(path);
     let graph = match analyze_project(&source, path) {
         Ok(graph) => graph,
         Err(e) => return fail(&format!("analysis failed: {e:?}")),

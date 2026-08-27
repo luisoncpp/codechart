@@ -14,8 +14,9 @@ mod parse;
 mod tests;
 
 pub use ignore::{
-    ignore_patterns, ignore_patterns_with_unreal, is_ignored, is_under_top_level_dot_dir,
-    retain_unignored, retain_without_top_level_dot_dirs,
+    ignore_patterns, ignore_patterns_with_unreal, is_ignored, is_under_plugins_dir,
+    is_under_top_level_dot_dir, retain_unignored, retain_without_plugins_dirs,
+    retain_without_top_level_dot_dirs,
 };
 pub use parse::parse_group_def;
 

@@ -4,7 +4,7 @@ import { ProjectLoaderPanel } from "../../src/features/project_loader";
 import type { GraphSessionStore } from "../../src/state/graph-session";
 import { testGraphSessionStore } from "./test-graph-session-store";
 
-export function projectLoaderStore(): GraphSessionStore {
+function projectLoaderStore(): GraphSessionStore {
   return testGraphSessionStore();
 }
 
@@ -28,9 +28,9 @@ export async function waitForGraphSummary() {
   });
 }
 
-export async function waitForFacadeBypassButton() {
+async function waitForArchitectureIssuesButton() {
   await waitFor(() => {
-    expect(screen.getByRole("button", { name: "1 facade bypass" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "1 architecture issue" })).toBeInTheDocument();
   });
 }
 
@@ -40,10 +40,10 @@ export function mockClipboardWriteText() {
   return writeText;
 }
 
-export async function openFacadeBypassDialog() {
+export async function openArchitectureIssuesDialog() {
   renderProjectLoaderPanel(async () => "/some/project");
   clickOpenFolder();
-  await waitForFacadeBypassButton();
-  fireEvent.click(screen.getByRole("button", { name: "1 facade bypass" }));
+  await waitForArchitectureIssuesButton();
+  fireEvent.click(screen.getByRole("button", { name: "1 architecture issue" }));
   return screen.getByRole("dialog");
 }
