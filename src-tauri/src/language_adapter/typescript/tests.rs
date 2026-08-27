@@ -23,7 +23,10 @@ fn specifiers(module: &ParsedModule) -> Vec<&str> {
 
 #[test]
 fn javascript_file_import_and_export() {
-    let m = parse("util.js", r#"import { foo } from "./foo"; export function bar() {}"#);
+    let m = parse(
+        "util.js",
+        r#"import { foo } from "./foo"; export function bar() {}"#,
+    );
     assert_eq!(specifiers(&m), vec!["./foo"]);
     assert_eq!(m.imports[0].kind, ImportKind::Named);
     assert_eq!(m.imports[0].names, vec!["foo"]);

@@ -250,3 +250,6 @@ prints the full `ProjectGraph` as JSON. The Rust test
 `analysis::tests::analyze_matches_the_golden_fixture` diffs it against
 `tests/fixtures/golden/project-graph.json` — **must match exactly**. This single
 assertion validates the entire backend.
+
+`check` is the CI counterpart of that dump: diagnostics only, git metrics skipped,
+non-zero exit on architecture findings. See [cli.md](./cli.md).

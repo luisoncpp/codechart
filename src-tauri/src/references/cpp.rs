@@ -20,7 +20,9 @@ pub fn file_stem(path: &str) -> &str {
 }
 
 pub fn is_paired_cpp_header(impl_path: &str, header_path: &str) -> bool {
-    is_cpp_impl(impl_path) && is_cpp_header(header_path) && file_stem(impl_path) == file_stem(header_path)
+    is_cpp_impl(impl_path)
+        && is_cpp_header(header_path)
+        && file_stem(impl_path) == file_stem(header_path)
 }
 
 /// Path shown in cycle diagnostics — C++ units drop `.h`/`.cpp`/… so the logical unit is clear.

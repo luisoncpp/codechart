@@ -79,9 +79,7 @@ fn dir_prefixes(dir: &str) -> Vec<String> {
         return Vec::new();
     }
     let parts: Vec<&str> = dir.split('/').collect();
-    (1..=parts.len())
-        .map(|n| parts[..n].join("/"))
-        .collect()
+    (1..=parts.len()).map(|n| parts[..n].join("/")).collect()
 }
 
 fn group_id(dir: &str) -> String {

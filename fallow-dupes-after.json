@@ -1,0 +1,745 @@
+{
+  "kind": "dupes",
+  "schema_version": 7,
+  "version": "2.102.0",
+  "elapsed_ms": 45,
+  "clone_groups": [
+    {
+      "instances": [
+        {
+          "file": "tests/flows/open-project.test.tsx",
+          "start_line": 63,
+          "end_line": 70,
+          "start_col": 55,
+          "end_col": 45,
+          "fragment": ", async () => {\n    const writeText = vi.fn();\n    Object.assign(navigator, { clipboard: { writeText } });\n    renderProjectLoaderPanel(async () => \"/some/project\");\n    clickOpenFolder();\n    await waitForFacadeBypassButton();\n    fireEvent.click(screen.getByRole(\"button\", { name: \"1 facade bypass\" }));\n    const dialog = screen.getByRole(\"dialog\")"
+        },
+        {
+          "file": "tests/smoke.test.tsx",
+          "start_line": 30,
+          "end_line": 40,
+          "start_col": 64,
+          "end_col": 45,
+          "fragment": ", async () => {\r\n    const writeText = vi.fn();\r\n    Object.assign(navigator, { clipboard: { writeText } });\r\n\r\n    renderProjectLoaderPanel(async () => \"/some/project\");\r\n    clickOpenFolder();\r\n    await waitForFacadeBypassButton();\r\n\r\n    fireEvent.click(screen.getByRole(\"button\", { name: \"1 facade bypass\" }));\r\n\r\n    const dialog = screen.getByRole(\"dialog\")"
+        }
+      ],
+      "token_count": 80,
+      "line_count": 11,
+      "fingerprint": "dup:1e8e857b",
+      "actions": [
+        {
+          "type": "extract-shared",
+          "auto_fixable": false,
+          "description": "Extract duplicated code (11 lines, 2 instances) into a shared function"
+        },
+        {
+          "type": "suppress-line",
+          "auto_fixable": false,
+          "description": "Suppress with an inline comment above the duplicated code",
+          "comment": "// fallow-ignore-next-line code-duplication"
+        }
+      ]
+    },
+    {
+      "instances": [
+        {
+          "file": "tests/flows/resize-inspector.test.tsx",
+          "start_line": 25,
+          "end_line": 31,
+          "start_col": 46,
+          "end_col": 5,
+          "fragment": ", async () => {\n    const store = await readyInspectorStore();\n    const onHide = vi.fn();\n    renderInspectionPanel(store, { onHide });\n    fireEvent.click(screen.getByRole(\"button\", { name: \"Hide inspector\" }));\n    expect(onHide).toHaveBeenCalledOnce();\n  });"
+        },
+        {
+          "file": "tests/inspection-panel-resize.test.tsx",
+          "start_line": 65,
+          "end_line": 71,
+          "start_col": 42,
+          "end_col": 5,
+          "fragment": ", async () => {\n    const store = await readyInspectorStore();\n    const onHide = vi.fn();\n    renderInspectionPanel(store, { onHide });\n    fireEvent.click(screen.getByRole(\"button\", { name: \"Hide inspector\" }));\n    expect(onHide).toHaveBeenCalledOnce();\n  });"
+        }
+      ],
+      "token_count": 65,
+      "line_count": 7,
+      "fingerprint": "dup:f0d6c67d",
+      "suggested_name": "onHide",
+      "actions": [
+        {
+          "type": "extract-shared",
+          "auto_fixable": false,
+          "description": "Extract duplicated code (7 lines, 2 instances) into a shared function"
+        },
+        {
+          "type": "suppress-line",
+          "auto_fixable": false,
+          "description": "Suppress with an inline comment above the duplicated code",
+          "comment": "// fallow-ignore-next-line code-duplication"
+        }
+      ]
+    },
+    {
+      "instances": [
+        {
+          "file": "tests/graph-canvas.test.tsx",
+          "start_line": 69,
+          "end_line": 77,
+          "start_col": 93,
+          "end_col": 17,
+          "fragment": ", async () => {\r\n    // Regression: at L0 edges re-route onto group boxes; without handles React\r\n    // Flow drops them (error #008) and the overview shows no edges at all.\r\n    const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"app\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"app\"]`)!;\r\n    expect(group."
+        },
+        {
+          "file": "tests/graph-canvas.test.tsx",
+          "start_line": 122,
+          "end_line": 128,
+          "start_col": 69,
+          "end_col": 17,
+          "fragment": ", async () => {\r\n    const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"core\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"core\"]`)!;\r\n    expect(group."
+        }
+      ],
+      "token_count": 55,
+      "line_count": 9,
+      "fingerprint": "dup:823b1e13",
+      "suggested_name": "container",
+      "actions": [
+        {
+          "type": "extract-shared",
+          "auto_fixable": false,
+          "description": "Extract duplicated code (9 lines, 2 instances) into a shared function"
+        },
+        {
+          "type": "suppress-line",
+          "auto_fixable": false,
+          "description": "Suppress with an inline comment above the duplicated code",
+          "comment": "// fallow-ignore-next-line code-duplication"
+        }
+      ]
+    },
+    {
+      "instances": [
+        {
+          "file": "tests/graph-canvas.test.tsx",
+          "start_line": 123,
+          "end_line": 128,
+          "start_col": 4,
+          "end_col": 40,
+          "fragment": "const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"core\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"core\"]`)!;\r\n    expect(group.textContent).toContain("
+        },
+        {
+          "file": "tests/graph-canvas.test.tsx",
+          "start_line": 133,
+          "end_line": 138,
+          "start_col": 4,
+          "end_col": 40,
+          "fragment": "const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"core\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"core\"]`)!;\r\n    expect(group.textContent).toContain("
+        },
+        {
+          "file": "tests/graph-canvas.test.tsx",
+          "start_line": 143,
+          "end_line": 148,
+          "start_col": 4,
+          "end_col": 40,
+          "fragment": "const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"services\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"services\"]`)!;\r\n    expect(group.textContent).toContain("
+        }
+      ],
+      "token_count": 56,
+      "line_count": 6,
+      "fingerprint": "dup:3baef2a7",
+      "suggested_name": "container",
+      "actions": [
+        {
+          "type": "extract-shared",
+          "auto_fixable": false,
+          "description": "Extract duplicated code (6 lines, 3 instances) into a shared function"
+        },
+        {
+          "type": "suppress-line",
+          "auto_fixable": false,
+          "description": "Suppress with an inline comment above the duplicated code",
+          "comment": "// fallow-ignore-next-line code-duplication"
+        }
+      ]
+    },
+    {
+      "instances": [
+        {
+          "file": "tests/graph-canvas.test.tsx",
+          "start_line": 132,
+          "end_line": 138,
+          "start_col": 26,
+          "end_col": 40,
+          "fragment": ");\r\n    const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"core\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"core\"]`)!;\r\n    expect(group.textContent).toContain("
+        },
+        {
+          "file": "tests/graph-canvas.test.tsx",
+          "start_line": 142,
+          "end_line": 148,
+          "start_col": 24,
+          "end_col": 40,
+          "fragment": ");\r\n    const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"services\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"services\"]`)!;\r\n    expect(group.textContent).toContain("
+        }
+      ],
+      "token_count": 59,
+      "line_count": 7,
+      "fingerprint": "dup:684e56bf",
+      "suggested_name": "container",
+      "actions": [
+        {
+          "type": "extract-shared",
+          "auto_fixable": false,
+          "description": "Extract duplicated code (7 lines, 2 instances) into a shared function"
+        },
+        {
+          "type": "suppress-line",
+          "auto_fixable": false,
+          "description": "Suppress with an inline comment above the duplicated code",
+          "comment": "// fallow-ignore-next-line code-duplication"
+        }
+      ]
+    },
+    {
+      "instances": [
+        {
+          "file": "tests/graph-canvas.test.tsx",
+          "start_line": 154,
+          "end_line": 162,
+          "start_col": 4,
+          "end_col": 5,
+          "fragment": "const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"app\"]`)).toBeTruthy(),\r\n    );\r\n    fireEvent.click(container.querySelector(`[data-id=\"app\"]`)!);\r\n    expect(store.getSelectedId()).toBe(\"app\");\r\n  });\r\n\r\n  it("
+        },
+        {
+          "file": "tests/graph-canvas.test.tsx",
+          "start_line": 163,
+          "end_line": 171,
+          "start_col": 4,
+          "end_col": 5,
+          "fragment": "const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"app\"]`)).toBeTruthy(),\r\n    );\r\n    fireEvent.click(container.querySelector(`[data-id=\"app\"]`)!);\r\n    expect(store.getSelectedId()).toBe(\"app\");\r\n  });\r\n\r\n  it("
+        }
+      ],
+      "token_count": 70,
+      "line_count": 9,
+      "fingerprint": "dup:6ec2ca2b",
+      "suggested_name": "container",
+      "actions": [
+        {
+          "type": "extract-shared",
+          "auto_fixable": false,
+          "description": "Extract duplicated code (9 lines, 2 instances) into a shared function"
+        },
+        {
+          "type": "suppress-line",
+          "auto_fixable": false,
+          "description": "Suppress with an inline comment above the duplicated code",
+          "comment": "// fallow-ignore-next-line code-duplication"
+        }
+      ]
+    },
+    {
+      "instances": [
+        {
+          "file": "tests/zoom-projection.test.ts",
+          "start_line": 85,
+          "end_line": 89,
+          "start_col": 66,
+          "end_col": 65,
+          "fragment": "(graph)));\r\n    // Every module belongs (directly or via nesting) to app or shared → all hidden.\r\n    expect(reduced.modules.map((m) => m.id)).toEqual([\"src/main.ts\"]); // only ungrouped survives\r\n    // app + shared remain as boxes; nested core/services/ui disappear.\r\n    expect(reduced.groups.map((g) => g.id).sort()).toEqual([\"app\""
+        },
+        {
+          "file": "tests/zoom-projection.test.ts",
+          "start_line": 93,
+          "end_line": 96,
+          "start_col": 61,
+          "end_col": 11,
+          "fragment": "(graph)));\r\n    expect(reduced.modules.map((m) => m.id)).toEqual([\"src/main.ts\"]);\r\n    expect(reduced.groups.map((g) => g.id).sort()).toEqual([\r\n      \"app\""
+        }
+      ],
+      "token_count": 71,
+      "line_count": 5,
+      "fingerprint": "dup:fcdd1ab7",
+      "actions": [
+        {
+          "type": "extract-shared",
+          "auto_fixable": false,
+          "description": "Extract duplicated code (5 lines, 2 instances) into a shared function"
+        },
+        {
+          "type": "suppress-line",
+          "auto_fixable": false,
+          "description": "Suppress with an inline comment above the duplicated code",
+          "comment": "// fallow-ignore-next-line code-duplication"
+        }
+      ]
+    }
+  ],
+  "clone_families": [
+    {
+      "files": [
+        "tests/flows/open-project.test.tsx",
+        "tests/smoke.test.tsx"
+      ],
+      "groups": [
+        {
+          "instances": [
+            {
+              "file": "tests/flows/open-project.test.tsx",
+              "start_line": 63,
+              "end_line": 70,
+              "start_col": 55,
+              "end_col": 45,
+              "fragment": ", async () => {\n    const writeText = vi.fn();\n    Object.assign(navigator, { clipboard: { writeText } });\n    renderProjectLoaderPanel(async () => \"/some/project\");\n    clickOpenFolder();\n    await waitForFacadeBypassButton();\n    fireEvent.click(screen.getByRole(\"button\", { name: \"1 facade bypass\" }));\n    const dialog = screen.getByRole(\"dialog\")"
+            },
+            {
+              "file": "tests/smoke.test.tsx",
+              "start_line": 30,
+              "end_line": 40,
+              "start_col": 64,
+              "end_col": 45,
+              "fragment": ", async () => {\r\n    const writeText = vi.fn();\r\n    Object.assign(navigator, { clipboard: { writeText } });\r\n\r\n    renderProjectLoaderPanel(async () => \"/some/project\");\r\n    clickOpenFolder();\r\n    await waitForFacadeBypassButton();\r\n\r\n    fireEvent.click(screen.getByRole(\"button\", { name: \"1 facade bypass\" }));\r\n\r\n    const dialog = screen.getByRole(\"dialog\")"
+            }
+          ],
+          "token_count": 80,
+          "line_count": 11,
+          "fingerprint": "dup:1e8e857b",
+          "actions": [
+            {
+              "type": "extract-shared",
+              "auto_fixable": false,
+              "description": "Extract duplicated code (11 lines, 2 instances) into a shared function"
+            },
+            {
+              "type": "suppress-line",
+              "auto_fixable": false,
+              "description": "Suppress with an inline comment above the duplicated code",
+              "comment": "// fallow-ignore-next-line code-duplication"
+            }
+          ]
+        }
+      ],
+      "total_duplicated_lines": 11,
+      "total_duplicated_tokens": 80,
+      "suggestions": [
+        {
+          "kind": "ExtractFunction",
+          "description": "Extract shared function (11 lines) from open-project.test.tsx, smoke.test.tsx",
+          "estimated_savings": 11
+        }
+      ],
+      "actions": [
+        {
+          "type": "extract-shared",
+          "auto_fixable": false,
+          "description": "Extract 1 duplicated code block (11 lines) into a shared module",
+          "note": "These clone groups share the same files, indicating a structural relationship; refactor together"
+        },
+        {
+          "type": "apply-suggestion",
+          "auto_fixable": false,
+          "description": "Extract shared function (11 lines) from open-project.test.tsx, smoke.test.tsx"
+        },
+        {
+          "type": "suppress-line",
+          "auto_fixable": false,
+          "description": "Suppress with an inline comment above the duplicated code",
+          "comment": "// fallow-ignore-next-line code-duplication"
+        }
+      ]
+    },
+    {
+      "files": [
+        "tests/flows/resize-inspector.test.tsx",
+        "tests/inspection-panel-resize.test.tsx"
+      ],
+      "groups": [
+        {
+          "instances": [
+            {
+              "file": "tests/flows/resize-inspector.test.tsx",
+              "start_line": 25,
+              "end_line": 31,
+              "start_col": 46,
+              "end_col": 5,
+              "fragment": ", async () => {\n    const store = await readyInspectorStore();\n    const onHide = vi.fn();\n    renderInspectionPanel(store, { onHide });\n    fireEvent.click(screen.getByRole(\"button\", { name: \"Hide inspector\" }));\n    expect(onHide).toHaveBeenCalledOnce();\n  });"
+            },
+            {
+              "file": "tests/inspection-panel-resize.test.tsx",
+              "start_line": 65,
+              "end_line": 71,
+              "start_col": 42,
+              "end_col": 5,
+              "fragment": ", async () => {\n    const store = await readyInspectorStore();\n    const onHide = vi.fn();\n    renderInspectionPanel(store, { onHide });\n    fireEvent.click(screen.getByRole(\"button\", { name: \"Hide inspector\" }));\n    expect(onHide).toHaveBeenCalledOnce();\n  });"
+            }
+          ],
+          "token_count": 65,
+          "line_count": 7,
+          "fingerprint": "dup:f0d6c67d",
+          "suggested_name": "onHide",
+          "actions": [
+            {
+              "type": "extract-shared",
+              "auto_fixable": false,
+              "description": "Extract duplicated code (7 lines, 2 instances) into a shared function"
+            },
+            {
+              "type": "suppress-line",
+              "auto_fixable": false,
+              "description": "Suppress with an inline comment above the duplicated code",
+              "comment": "// fallow-ignore-next-line code-duplication"
+            }
+          ]
+        }
+      ],
+      "total_duplicated_lines": 7,
+      "total_duplicated_tokens": 65,
+      "suggestions": [
+        {
+          "kind": "ExtractFunction",
+          "description": "Extract shared function (7 lines) from resize-inspector.test.tsx, inspection-panel-resize.test.tsx",
+          "estimated_savings": 7
+        }
+      ],
+      "actions": [
+        {
+          "type": "extract-shared",
+          "auto_fixable": false,
+          "description": "Extract 1 duplicated code block (7 lines) into a shared module",
+          "note": "These clone groups share the same files, indicating a structural relationship; refactor together"
+        },
+        {
+          "type": "apply-suggestion",
+          "auto_fixable": false,
+          "description": "Extract shared function (7 lines) from resize-inspector.test.tsx, inspection-panel-resize.test.tsx"
+        },
+        {
+          "type": "suppress-line",
+          "auto_fixable": false,
+          "description": "Suppress with an inline comment above the duplicated code",
+          "comment": "// fallow-ignore-next-line code-duplication"
+        }
+      ]
+    },
+    {
+      "files": [
+        "tests/graph-canvas.test.tsx"
+      ],
+      "groups": [
+        {
+          "instances": [
+            {
+              "file": "tests/graph-canvas.test.tsx",
+              "start_line": 69,
+              "end_line": 77,
+              "start_col": 93,
+              "end_col": 17,
+              "fragment": ", async () => {\r\n    // Regression: at L0 edges re-route onto group boxes; without handles React\r\n    // Flow drops them (error #008) and the overview shows no edges at all.\r\n    const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"app\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"app\"]`)!;\r\n    expect(group."
+            },
+            {
+              "file": "tests/graph-canvas.test.tsx",
+              "start_line": 122,
+              "end_line": 128,
+              "start_col": 69,
+              "end_col": 17,
+              "fragment": ", async () => {\r\n    const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"core\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"core\"]`)!;\r\n    expect(group."
+            }
+          ],
+          "token_count": 55,
+          "line_count": 9,
+          "fingerprint": "dup:823b1e13",
+          "suggested_name": "container",
+          "actions": [
+            {
+              "type": "extract-shared",
+              "auto_fixable": false,
+              "description": "Extract duplicated code (9 lines, 2 instances) into a shared function"
+            },
+            {
+              "type": "suppress-line",
+              "auto_fixable": false,
+              "description": "Suppress with an inline comment above the duplicated code",
+              "comment": "// fallow-ignore-next-line code-duplication"
+            }
+          ]
+        },
+        {
+          "instances": [
+            {
+              "file": "tests/graph-canvas.test.tsx",
+              "start_line": 123,
+              "end_line": 128,
+              "start_col": 4,
+              "end_col": 40,
+              "fragment": "const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"core\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"core\"]`)!;\r\n    expect(group.textContent).toContain("
+            },
+            {
+              "file": "tests/graph-canvas.test.tsx",
+              "start_line": 133,
+              "end_line": 138,
+              "start_col": 4,
+              "end_col": 40,
+              "fragment": "const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"core\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"core\"]`)!;\r\n    expect(group.textContent).toContain("
+            },
+            {
+              "file": "tests/graph-canvas.test.tsx",
+              "start_line": 143,
+              "end_line": 148,
+              "start_col": 4,
+              "end_col": 40,
+              "fragment": "const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"services\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"services\"]`)!;\r\n    expect(group.textContent).toContain("
+            }
+          ],
+          "token_count": 56,
+          "line_count": 6,
+          "fingerprint": "dup:3baef2a7",
+          "suggested_name": "container",
+          "actions": [
+            {
+              "type": "extract-shared",
+              "auto_fixable": false,
+              "description": "Extract duplicated code (6 lines, 3 instances) into a shared function"
+            },
+            {
+              "type": "suppress-line",
+              "auto_fixable": false,
+              "description": "Suppress with an inline comment above the duplicated code",
+              "comment": "// fallow-ignore-next-line code-duplication"
+            }
+          ]
+        },
+        {
+          "instances": [
+            {
+              "file": "tests/graph-canvas.test.tsx",
+              "start_line": 132,
+              "end_line": 138,
+              "start_col": 26,
+              "end_col": 40,
+              "fragment": ");\r\n    const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"core\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"core\"]`)!;\r\n    expect(group.textContent).toContain("
+            },
+            {
+              "file": "tests/graph-canvas.test.tsx",
+              "start_line": 142,
+              "end_line": 148,
+              "start_col": 24,
+              "end_col": 40,
+              "fragment": ");\r\n    const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"services\"]`)).toBeTruthy(),\r\n    );\r\n    const group = container.querySelector(`[data-id=\"services\"]`)!;\r\n    expect(group.textContent).toContain("
+            }
+          ],
+          "token_count": 59,
+          "line_count": 7,
+          "fingerprint": "dup:684e56bf",
+          "suggested_name": "container",
+          "actions": [
+            {
+              "type": "extract-shared",
+              "auto_fixable": false,
+              "description": "Extract duplicated code (7 lines, 2 instances) into a shared function"
+            },
+            {
+              "type": "suppress-line",
+              "auto_fixable": false,
+              "description": "Suppress with an inline comment above the duplicated code",
+              "comment": "// fallow-ignore-next-line code-duplication"
+            }
+          ]
+        },
+        {
+          "instances": [
+            {
+              "file": "tests/graph-canvas.test.tsx",
+              "start_line": 154,
+              "end_line": 162,
+              "start_col": 4,
+              "end_col": 5,
+              "fragment": "const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"app\"]`)).toBeTruthy(),\r\n    );\r\n    fireEvent.click(container.querySelector(`[data-id=\"app\"]`)!);\r\n    expect(store.getSelectedId()).toBe(\"app\");\r\n  });\r\n\r\n  it("
+            },
+            {
+              "file": "tests/graph-canvas.test.tsx",
+              "start_line": 163,
+              "end_line": 171,
+              "start_col": 4,
+              "end_col": 5,
+              "fragment": "const { container } = renderCanvas(store);\r\n    await waitFor(() =>\r\n      expect(container.querySelector(`[data-id=\"app\"]`)).toBeTruthy(),\r\n    );\r\n    fireEvent.click(container.querySelector(`[data-id=\"app\"]`)!);\r\n    expect(store.getSelectedId()).toBe(\"app\");\r\n  });\r\n\r\n  it("
+            }
+          ],
+          "token_count": 70,
+          "line_count": 9,
+          "fingerprint": "dup:6ec2ca2b",
+          "suggested_name": "container",
+          "actions": [
+            {
+              "type": "extract-shared",
+              "auto_fixable": false,
+              "description": "Extract duplicated code (9 lines, 2 instances) into a shared function"
+            },
+            {
+              "type": "suppress-line",
+              "auto_fixable": false,
+              "description": "Suppress with an inline comment above the duplicated code",
+              "comment": "// fallow-ignore-next-line code-duplication"
+            }
+          ]
+        }
+      ],
+      "total_duplicated_lines": 31,
+      "total_duplicated_tokens": 240,
+      "suggestions": [
+        {
+          "kind": "ExtractFunction",
+          "description": "Extract shared function (9 lines) from graph-canvas.test.tsx, graph-canvas.test.tsx",
+          "estimated_savings": 9
+        },
+        {
+          "kind": "ExtractFunction",
+          "description": "Extract shared function (7 lines) from graph-canvas.test.tsx, graph-canvas.test.tsx",
+          "estimated_savings": 7
+        },
+        {
+          "kind": "ExtractFunction",
+          "description": "Extract shared function (6 lines) from graph-canvas.test.tsx, graph-canvas.test.tsx, graph-canvas.test.tsx",
+          "estimated_savings": 12
+        },
+        {
+          "kind": "ExtractFunction",
+          "description": "Extract shared function (9 lines) from graph-canvas.test.tsx, graph-canvas.test.tsx",
+          "estimated_savings": 9
+        }
+      ],
+      "actions": [
+        {
+          "type": "extract-shared",
+          "auto_fixable": false,
+          "description": "Extract 4 duplicated code blocks (31 lines) into a shared module",
+          "note": "These clone groups share the same files, indicating a structural relationship; refactor together"
+        },
+        {
+          "type": "apply-suggestion",
+          "auto_fixable": false,
+          "description": "Extract shared function (9 lines) from graph-canvas.test.tsx, graph-canvas.test.tsx"
+        },
+        {
+          "type": "apply-suggestion",
+          "auto_fixable": false,
+          "description": "Extract shared function (7 lines) from graph-canvas.test.tsx, graph-canvas.test.tsx"
+        },
+        {
+          "type": "apply-suggestion",
+          "auto_fixable": false,
+          "description": "Extract shared function (6 lines) from graph-canvas.test.tsx, graph-canvas.test.tsx, graph-canvas.test.tsx"
+        },
+        {
+          "type": "apply-suggestion",
+          "auto_fixable": false,
+          "description": "Extract shared function (9 lines) from graph-canvas.test.tsx, graph-canvas.test.tsx"
+        },
+        {
+          "type": "suppress-line",
+          "auto_fixable": false,
+          "description": "Suppress with an inline comment above the duplicated code",
+          "comment": "// fallow-ignore-next-line code-duplication"
+        }
+      ]
+    },
+    {
+      "files": [
+        "tests/zoom-projection.test.ts"
+      ],
+      "groups": [
+        {
+          "instances": [
+            {
+              "file": "tests/zoom-projection.test.ts",
+              "start_line": 85,
+              "end_line": 89,
+              "start_col": 66,
+              "end_col": 65,
+              "fragment": "(graph)));\r\n    // Every module belongs (directly or via nesting) to app or shared → all hidden.\r\n    expect(reduced.modules.map((m) => m.id)).toEqual([\"src/main.ts\"]); // only ungrouped survives\r\n    // app + shared remain as boxes; nested core/services/ui disappear.\r\n    expect(reduced.groups.map((g) => g.id).sort()).toEqual([\"app\""
+            },
+            {
+              "file": "tests/zoom-projection.test.ts",
+              "start_line": 93,
+              "end_line": 96,
+              "start_col": 61,
+              "end_col": 11,
+              "fragment": "(graph)));\r\n    expect(reduced.modules.map((m) => m.id)).toEqual([\"src/main.ts\"]);\r\n    expect(reduced.groups.map((g) => g.id).sort()).toEqual([\r\n      \"app\""
+            }
+          ],
+          "token_count": 71,
+          "line_count": 5,
+          "fingerprint": "dup:fcdd1ab7",
+          "actions": [
+            {
+              "type": "extract-shared",
+              "auto_fixable": false,
+              "description": "Extract duplicated code (5 lines, 2 instances) into a shared function"
+            },
+            {
+              "type": "suppress-line",
+              "auto_fixable": false,
+              "description": "Suppress with an inline comment above the duplicated code",
+              "comment": "// fallow-ignore-next-line code-duplication"
+            }
+          ]
+        }
+      ],
+      "total_duplicated_lines": 5,
+      "total_duplicated_tokens": 71,
+      "suggestions": [
+        {
+          "kind": "ExtractFunction",
+          "description": "Extract shared function (5 lines) from zoom-projection.test.ts, zoom-projection.test.ts",
+          "estimated_savings": 5
+        }
+      ],
+      "actions": [
+        {
+          "type": "extract-shared",
+          "auto_fixable": false,
+          "description": "Extract 1 duplicated code block (5 lines) into a shared module",
+          "note": "These clone groups share the same files, indicating a structural relationship; refactor together"
+        },
+        {
+          "type": "apply-suggestion",
+          "auto_fixable": false,
+          "description": "Extract shared function (5 lines) from zoom-projection.test.ts, zoom-projection.test.ts"
+        },
+        {
+          "type": "suppress-line",
+          "auto_fixable": false,
+          "description": "Suppress with an inline comment above the duplicated code",
+          "comment": "// fallow-ignore-next-line code-duplication"
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "total_files": 155,
+    "files_with_clones": 6,
+    "total_lines": 13000,
+    "duplicated_lines": 90,
+    "total_tokens": 69316,
+    "duplicated_tokens": 512,
+    "clone_groups": 7,
+    "clone_instances": 15,
+    "duplication_percentage": 0.6923076923076923
+  },
+  "next_steps": [
+    {
+      "id": "setup",
+      "command": "fallow schema",
+      "reason": "fallow has no config here; the manifest lists guided-setup commands (agent guide, commit gate) to offer the user"
+    },
+    {
+      "id": "trace-clone",
+      "command": "fallow dupes --trace dup:1e8e857b",
+      "reason": "see sibling locations and an extract-function suggestion"
+    },
+    {
+      "id": "audit-changed",
+      "command": "fallow audit",
+      "reason": "gate only the files your branch changed (auto-detects the base)"
+    }
+  ],
+  "_meta": {
+    "telemetry": {
+      "analysis_run_id": "run_76a43930b281da5d"
+    }
+  }
+}

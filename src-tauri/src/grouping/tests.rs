@@ -291,7 +291,9 @@ fn folder_inference_includes_intermediate_directories() {
     ]);
     let r = resolve_groups(&fs, &[]);
     assert_eq!(
-        group(&r, "folder:crates/planning-app/src").parent_id.as_deref(),
+        group(&r, "folder:crates/planning-app/src")
+            .parent_id
+            .as_deref(),
         Some("folder:crates/planning-app")
     );
     assert_eq!(
@@ -299,7 +301,9 @@ fn folder_inference_includes_intermediate_directories() {
         Some("folder:crates")
     );
     assert_eq!(
-        group(&r, "folder:crates/planning-core/src").parent_id.as_deref(),
+        group(&r, "folder:crates/planning-core/src")
+            .parent_id
+            .as_deref(),
         Some("folder:crates/planning-core")
     );
     assert_ne!(

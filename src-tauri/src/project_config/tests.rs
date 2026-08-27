@@ -108,14 +108,12 @@ fn malformed_yaml_is_a_config_error() {
 
 #[test]
 fn description_short_hash_must_be_quoted() {
-    let unquoted =
-        "---\nid: x\ndescriptionShort: `[[path]]` and `[[path#Section]]` links\n---\n";
+    let unquoted = "---\nid: x\ndescriptionShort: `[[path]]` and `[[path#Section]]` links\n---\n";
     assert!(matches!(
         parse_group_def("x.group.md", unquoted).unwrap_err(),
         ConfigError::Yaml(_)
     ));
-    let quoted =
-        "---\nid: x\ndescriptionShort: \"`[[path]]` and `[[path#Section]]` links\"\n---\n";
+    let quoted = "---\nid: x\ndescriptionShort: \"`[[path]]` and `[[path#Section]]` links\"\n---\n";
     let def = parse_group_def("x.group.md", quoted).expect("quoted hash is valid");
     assert_eq!(
         def.description_short.as_deref(),

@@ -24,7 +24,10 @@ impl MemoryProjectSource {
     /// A source that lists more files than it can read. `listing_only` paths that also
     /// carry content are ignored — content always wins.
     pub fn with_listing(files: HashMap<String, String>, listing_only: BTreeSet<String>) -> Self {
-        Self { files, listing_only }
+        Self {
+            files,
+            listing_only,
+        }
     }
 }
 

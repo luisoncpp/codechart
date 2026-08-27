@@ -76,7 +76,11 @@ fn enter_tarjan(node: &String, state: &mut TarjanState) {
 fn visit_neighbor(node: &String, neighbor: &String, state: &mut TarjanState) {
     if !state.indices.contains_key(neighbor) {
         tarjan(neighbor, state);
-        merge_lowlink(node, state.lowlink.get(neighbor).copied().unwrap_or(0), state);
+        merge_lowlink(
+            node,
+            state.lowlink.get(neighbor).copied().unwrap_or(0),
+            state,
+        );
         return;
     }
     if state.on_stack.contains(neighbor) {

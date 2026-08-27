@@ -200,11 +200,18 @@ From the repo root:
 # Analyze a project folder → ProjectGraph JSON
 cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- analyze <path>
 
+# Architecture CI gate → diagnostics only; non-zero on selected kinds (default: cycles / facade bypass / config / parse)
+cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- check <path>
+# Optional: --fail-on=kind,...  --format=json|text  --quiet
+
 # Print the resolved group tree
 cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- groups <path>
 
 # Parse a single source file
 cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- parse <file.ts|tsx|rs|cs>
+
+# Usage for a command (also: --help / -h)
+cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- help check
 ```
 
 ## Development guidelines

@@ -3,6 +3,7 @@
 End-to-end backend sequence that turns a folder of source into a `ProjectGraph`.
 
 1. **Trigger** — CLI `analyze <dir>` (or, from Phase 7, the Tauri `analyze_project` command).
+   CI uses `check <dir>` instead: same pipeline with git metrics skipped; see [check-project.md](./check-project.md).
 2. **Entry point** — `analysis::analyze_project` / `analyze_project_with_options`
    (`src-tauri/src/analysis/mod.rs`). Options include `metrics_window_days` and
    `hide_top_level_dot_dirs` (default true). Unreal `hidePlugins` comes from
@@ -25,7 +26,7 @@ End-to-end backend sequence that turns a folder of source into a `ProjectGraph`.
 | 6e | Pair Tauri `invoke("cmd")` with `#[tauri::command] fn cmd` → `soft` edges + `unresolvedIpc` diagnostics | `classify_tauri_ipc` (via `resolve_edges`) | `analysis/mod.rs`, `references/tauri_ipc.rs` |
 | 6f | Pair interface importers with cross-group implementors → `soft` seam edges (Phase 10) | `classify_interface_seams` (via `resolve_edges`) | `analysis/mod.rs`, `references/interface_seams.rs` |
 | 7 | Build `ModuleNode`s (id/label/lang/group/facade/loc/annotation) | `build_modules` | `analysis/nodes.rs` |
-| 7b | For Git repositories, enrich modules with activity/risk metrics from the requested lookback window | `enrich_module_metrics` | `git/metrics.rs`, `git/metrics_log.rs` |
+| 7b | For Git repositories, enrich modules with activity/risk metrics from the requested lookback window (`metrics_window_days = 0` skips this and the git probe) | `enrich_module_metrics` | `git/metrics.rs`, `git/metrics_log.rs` |
 | 8 | Merge + sort diagnostics | `merge` | `diagnostics/mod.rs` |
 | 9 | Validate invariants + emit graph | `ProjectGraphBuilder::build` | `contract/builder.rs`, `contract/validate.rs` |
 

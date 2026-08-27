@@ -13,12 +13,12 @@
 
 use crate::analysis::{analyze_project_with_options as run_analysis_with_options, AnalyzeOptions};
 use crate::contract::ProjectGraph;
-use crate::git::{self, GitCommit};
-use crate::project_source::{FsProjectSource, ProjectSource};
 use crate::diff_reviews::{
     clear_diff_reviews as clear_reviews, load_diff_review as load_review,
     save_diff_review as save_review,
 };
+use crate::git::{self, GitCommit};
+use crate::project_source::{FsProjectSource, ProjectSource};
 use crate::review_notes::{
     load_review_notes as load_notes, save_review_notes as save_notes, ReviewNotesDocument,
 };
@@ -176,7 +176,10 @@ pub fn write_project_config(path: String, config: ProjectConfig) -> Result<(), S
 }
 
 #[tauri::command(async)]
-pub fn load_review_notes(root: String, module_paths: Vec<String>) -> Result<ReviewNotesDocument, String> {
+pub fn load_review_notes(
+    root: String,
+    module_paths: Vec<String>,
+) -> Result<ReviewNotesDocument, String> {
     load_notes(&root, module_paths)
 }
 
@@ -188,12 +191,20 @@ pub fn save_review_notes(root: String, document: ReviewNotesDocument) -> Result<
 /// Reviewed file paths for one diff, reconciled against the diff's current
 /// paths (stale entries are dropped and the result persisted).
 #[tauri::command(async)]
-pub fn load_diff_review(root: String, diff_id: String, diff_paths: Vec<String>) -> Result<Vec<String>, String> {
+pub fn load_diff_review(
+    root: String,
+    diff_id: String,
+    diff_paths: Vec<String>,
+) -> Result<Vec<String>, String> {
     load_review(&root, &diff_id, diff_paths)
 }
 
 #[tauri::command(async)]
-pub fn save_diff_review(root: String, diff_id: String, reviewed_paths: Vec<String>) -> Result<(), String> {
+pub fn save_diff_review(
+    root: String,
+    diff_id: String,
+    reviewed_paths: Vec<String>,
+) -> Result<(), String> {
     save_review(&root, &diff_id, reviewed_paths)
 }
 
@@ -215,4 +226,3 @@ pub fn toggle_devtools(window: tauri::WebviewWindow) {
 
 #[cfg(test)]
 mod tests;
-

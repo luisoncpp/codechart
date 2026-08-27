@@ -2,6 +2,8 @@
 
 ## Implemented
 
+**CLI `check` quality gate** — `codechart-cli check <dir>` prints diagnostics only and exits non-zero on `circularDependency` / `architectureViolation` / `configError` / `parseError`. `--fail-on`, `--format=json|text`, and `--quiet` override the gate and report. Skips git metrics; does not write `.codechart/config.json`. Architecture: [cli.md](../architecture/cli.md). Flow: [check-project.md](../flows/check-project.md).
+
 **Import-cycle detection** — solid import cycles surface as `circularDependency` diagnostics and red edges.
 
 - `references::flag_cycles` (`cycles.rs` + `cycle_scc.rs` + `cycle_witness.rs`): C++ same-stem impl/header collapse before Tarjan SCC; one finding per SCC; messages `circular include (N modules): …` with shortest witness through the highest-degree hub; `others in this cycle` = co-members; C++ paths shown without extensions; `is_violation` on cycle import edges (not pair edges). Wired after `flag_drift` in `resolve_edges`.

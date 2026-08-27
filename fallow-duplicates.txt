@@ -1,0 +1,5 @@
+﻿{
+  "error": true,
+  "message": "error: unrecognized subcommand 'duplicates'\n\nUsage: fallow.exe [OPTIONS] [COMMAND]\n\nFor more information, try '--help'.",
+  "exit_code": 2
+}

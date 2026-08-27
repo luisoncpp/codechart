@@ -66,7 +66,7 @@ pub fn retain_unignored(paths: Vec<String>, patterns: &[Pattern]) -> Vec<String>
 pub fn is_under_top_level_dot_dir(path: &str) -> bool {
     path.split_once('/')
         .map(|(first, _)| first.starts_with('.'))
-        .unwrap_or(/*top-level file=*/false)
+        .unwrap_or(/*top-level file=*/ false)
 }
 
 pub fn retain_without_top_level_dot_dirs(paths: Vec<String>) -> Vec<String> {

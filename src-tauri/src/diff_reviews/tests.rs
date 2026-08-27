@@ -20,8 +20,14 @@ fn round_trips_reviewed_paths_per_diff() {
     let root = tempdir().unwrap();
     save(&root, "commits:a..b", &["src/a.ts", "src/b.ts"]);
     save(&root, "working-tree:c", &["src/c.ts"]);
-    assert_eq!(load(&root, "commits:a..b", &["src/a.ts", "src/b.ts"]), vec!["src/a.ts", "src/b.ts"]);
-    assert_eq!(load(&root, "working-tree:c", &["src/c.ts"]), vec!["src/c.ts"]);
+    assert_eq!(
+        load(&root, "commits:a..b", &["src/a.ts", "src/b.ts"]),
+        vec!["src/a.ts", "src/b.ts"]
+    );
+    assert_eq!(
+        load(&root, "working-tree:c", &["src/c.ts"]),
+        vec!["src/c.ts"]
+    );
     assert!(root.path().join(".codechart/diff-reviews.json").exists());
 }
 
@@ -80,8 +86,10 @@ fn clear_wipes_every_persisted_entry() {
 #[test]
 fn rejects_paths_escaping_the_project() {
     let root = tempdir().unwrap();
-    let error = save_diff_review(root_str(&root), "d", vec!["../outside.ts".to_string()]).unwrap_err();
+    let error =
+        save_diff_review(root_str(&root), "d", vec!["../outside.ts".to_string()]).unwrap_err();
     assert!(error.contains("escapes"), "unexpected error: {error}");
-    let error = save_diff_review(root_str(&root), "d", vec!["src\\win.ts".to_string()]).unwrap_err();
+    let error =
+        save_diff_review(root_str(&root), "d", vec!["src\\win.ts".to_string()]).unwrap_err();
     assert!(error.contains("POSIX"), "unexpected error: {error}");
 }

@@ -113,11 +113,7 @@ fn cycle_is_better(cycle: &[String], best: &Option<Vec<String>>) -> bool {
     cycle < current.as_slice()
 }
 
-fn reconstruct_path(
-    start: &str,
-    target: &str,
-    parent: &BTreeMap<String, String>,
-) -> Vec<String> {
+fn reconstruct_path(start: &str, target: &str, parent: &BTreeMap<String, String>) -> Vec<String> {
     let mut path = vec![target.to_string()];
     let mut cur = target;
     while cur != start {

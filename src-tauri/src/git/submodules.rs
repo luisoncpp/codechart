@@ -60,7 +60,10 @@ mod tests {
         fs::write(child.join("lib.ts"), "export const child = 1;\n").unwrap();
         run_git(&child, &["add", "."]);
         run_git(&child, &["commit", "-m", "child init"]);
-        run_git(root, &["submodule", "add", child.to_str().unwrap(), "child"]);
+        run_git(
+            root,
+            &["submodule", "add", child.to_str().unwrap(), "child"],
+        );
         run_git(root, &["commit", "-m", "add submodule"]);
 
         let paths = list_submodule_paths(root.to_str().unwrap()).unwrap();

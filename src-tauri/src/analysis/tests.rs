@@ -329,10 +329,7 @@ fn unreal_defaults_hide_plugin_sources() {
             "Plugins/Inventory/Source/Inventory/Public/Inv.h",
             "class Inv {};",
         ),
-        (
-            "Plugins/Inventory/Source/Inventory/Inventory.Build.cs",
-            "",
-        ),
+        ("Plugins/Inventory/Source/Inventory/Inventory.Build.cs", ""),
     ]);
     let graph = analyze_project(&source, "mem").expect("builds");
     assert_eq!(graph.is_unreal_project, Some(true));

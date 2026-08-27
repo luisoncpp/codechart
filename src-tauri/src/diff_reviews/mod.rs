@@ -22,13 +22,20 @@ pub struct DiffReviewsDocument {
 
 impl DiffReviewsDocument {
     fn empty() -> Self {
-        Self { version: VERSION, reviews: Vec::new() }
+        Self {
+            version: VERSION,
+            reviews: Vec::new(),
+        }
     }
 }
 
 /// Reviewed paths for one diff, reconciled against the diff's current paths:
 /// entries for files no longer in the diff are dropped and the result persisted.
-pub fn load_diff_review(root: &str, diff_id: &str, diff_paths: Vec<String>) -> Result<Vec<String>, String> {
+pub fn load_diff_review(
+    root: &str,
+    diff_id: &str,
+    diff_paths: Vec<String>,
+) -> Result<Vec<String>, String> {
     let mut document = read_document(root)?;
     let current: std::collections::HashSet<&String> = diff_paths.iter().collect();
     let reviewed = document
@@ -37,9 +44,15 @@ pub fn load_diff_review(root: &str, diff_id: &str, diff_paths: Vec<String>) -> R
         .find(|review| review.diff_id == diff_id)
         .map(|review| review.reviewed_paths.clone())
         .unwrap_or_default();
-    let reconciled: Vec<String> = reviewed.into_iter().filter(|path| current.contains(path)).collect();
+    let reconciled: Vec<String> = reviewed
+        .into_iter()
+        .filter(|path| current.contains(path))
+        .collect();
     // Persist only when reconciliation actually dropped stale paths.
-    let stale = document.reviews.iter().any(|review| review.diff_id == diff_id && review.reviewed_paths != reconciled);
+    let stale = document
+        .reviews
+        .iter()
+        .any(|review| review.diff_id == diff_id && review.reviewed_paths != reconciled);
     if stale {
         upsert(&mut document, diff_id, reconciled.clone());
         write_document(root, &document)?;
@@ -47,7 +60,11 @@ pub fn load_diff_review(root: &str, diff_id: &str, diff_paths: Vec<String>) -> R
     Ok(reconciled)
 }
 
-pub fn save_diff_review(root: &str, diff_id: &str, reviewed_paths: Vec<String>) -> Result<(), String> {
+pub fn save_diff_review(
+    root: &str,
+    diff_id: &str,
+    reviewed_paths: Vec<String>,
+) -> Result<(), String> {
     let mut document = read_document(root)?;
     upsert(&mut document, diff_id, reviewed_paths);
     validate_document(&document)?;
@@ -62,7 +79,10 @@ pub fn clear_diff_reviews(root: &str) -> Result<(), String> {
 fn upsert(document: &mut DiffReviewsDocument, diff_id: &str, reviewed_paths: Vec<String>) {
     document.reviews.retain(|review| review.diff_id != diff_id);
     if !reviewed_paths.is_empty() {
-        document.reviews.push(DiffReview { diff_id: diff_id.to_string(), reviewed_paths });
+        document.reviews.push(DiffReview {
+            diff_id: diff_id.to_string(),
+            reviewed_paths,
+        });
     }
 }
 
@@ -80,7 +100,10 @@ fn read_document(root: &str) -> Result<DiffReviewsDocument, String> {
 
 fn validate_document(document: &DiffReviewsDocument) -> Result<(), String> {
     if document.version != VERSION {
-        return Err(format!("unsupported diff reviews version: {}", document.version));
+        return Err(format!(
+            "unsupported diff reviews version: {}",
+            document.version
+        ));
     }
     for review in &document.reviews {
         if review.diff_id.trim().is_empty() {
@@ -98,7 +121,14 @@ fn validate_relative_path(path: &str) -> Result<(), String> {
         return Err("diff review path must be a relative POSIX path".to_string());
     }
     let candidate = Path::new(path);
-    if candidate.is_absolute() || candidate.components().any(|part| matches!(part, Component::ParentDir | Component::RootDir | Component::Prefix(_))) {
+    if candidate.is_absolute()
+        || candidate.components().any(|part| {
+            matches!(
+                part,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        })
+    {
         return Err("diff review path escapes the project".to_string());
     }
     if path.split('/').any(|part| part.is_empty() || part == ".") {
@@ -117,14 +147,18 @@ fn display_error(error: std::io::Error) -> String {
 
 fn write_document(root: &str, document: &DiffReviewsDocument) -> Result<(), String> {
     let path = reviews_path(root);
-    let parent = path.parent().ok_or_else(|| "diff reviews path has no parent".to_string())?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| "diff reviews path has no parent".to_string())?;
     std::fs::create_dir_all(parent).map_err(display_error)?;
     let bytes = serde_json::to_vec_pretty(document).map_err(|error| error.to_string())?;
     let mut temporary = NamedTempFile::new_in(parent).map_err(display_error)?;
     use std::io::Write;
     temporary.write_all(&bytes).map_err(display_error)?;
     temporary.as_file().sync_all().map_err(display_error)?;
-    temporary.persist(path).map_err(|error| error.error.to_string())?;
+    temporary
+        .persist(path)
+        .map_err(|error| error.error.to_string())?;
     Ok(())
 }
 

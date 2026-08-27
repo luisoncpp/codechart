@@ -36,7 +36,9 @@ pub fn working_tree_diff(input: WorkingTreeDiffInput<'_>) -> Result<String, Stri
 }
 
 fn under_submodule(path: &str, roots: &[String]) -> bool {
-    roots.iter().any(|root| path == root || path.starts_with(&format!("{root}/")))
+    roots
+        .iter()
+        .any(|root| path == root || path.starts_with(&format!("{root}/")))
 }
 
 fn tracked_diff(path: &str, base_ref: &str, ignore_submodules: bool) -> Result<String, String> {
@@ -153,7 +155,10 @@ mod tests {
         fs::write(child.join("lib.ts"), "export const child = 1;\n").unwrap();
         run_git(&child, &["add", "."]);
         run_git(&child, &["commit", "-m", "child init"]);
-        run_git(root, &["submodule", "add", child.to_str().unwrap(), "child"]);
+        run_git(
+            root,
+            &["submodule", "add", child.to_str().unwrap(), "child"],
+        );
         run_git(root, &["commit", "-m", "add submodule"]);
 
         fs::write(child.join("lib.ts"), "export const child = 2;\n").unwrap();

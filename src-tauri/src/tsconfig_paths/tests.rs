@@ -10,7 +10,10 @@ fn parses_paths_and_base_url() {
     }"#;
     let aliases = parse_config(json, "");
     assert_eq!(aliases.base_url, ".");
-    assert_eq!(aliases.mappings, vec![("@/*".to_string(), "./src/*".to_string())]);
+    assert_eq!(
+        aliases.mappings,
+        vec![("@/*".to_string(), "./src/*".to_string())]
+    );
 }
 
 #[test]

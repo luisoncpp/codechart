@@ -261,10 +261,12 @@ mod tests {
             ("Game.uproject".to_string(), "sha_up".to_string()),
         ];
 
-        let (readable, listing_only) =
-            split_by_want(entries, &|path: &str| path.ends_with(".ts"));
+        let (readable, listing_only) = split_by_want(entries, &|path: &str| path.ends_with(".ts"));
 
-        assert_eq!(readable, vec![("src/a.ts".to_string(), "sha_a".to_string())]);
+        assert_eq!(
+            readable,
+            vec![("src/a.ts".to_string(), "sha_a".to_string())]
+        );
         assert_eq!(
             listing_only.into_iter().collect::<Vec<_>>(),
             vec!["Game.uproject".to_string(), "art/logo.png".to_string()]

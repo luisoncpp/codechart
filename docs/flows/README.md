@@ -42,6 +42,7 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | File | Scope |
 |------|-------|
 | [analyze-project.md](./analyze-project.md) | Folder → `ProjectGraph`: the full backend pipeline (parse → group → resolve → build) |
+| [check-project.md](./check-project.md) | `codechart-cli check` → diagnostics only + non-zero exit on `--fail-on` kinds |
 | [open-project.md](./open-project.md) | Open folder → IPC → live diagram: the UI front of the analysis pipeline (session phases) |
 | [inspect-circular-dependency.md](./inspect-circular-dependency.md) | Select a module in an import cycle → red edges + `circular include` diagnostic in the panel |
 | [expand-collapse-group.md](./expand-collapse-group.md) | Group chevron / double-click → collapse override (+ ancestor chain) → re-layout → card vs. header |

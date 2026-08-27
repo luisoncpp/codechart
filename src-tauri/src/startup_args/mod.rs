@@ -9,7 +9,8 @@ pub struct StartupProjectPath(pub Option<String>);
 /// the first non-flag positional. `--project` wins over a positional path.
 pub fn parse_startup_project_path(args: &[String]) -> Option<String> {
     let rest = args.get(1..)?;
-    flag_project_path(rest).or_else(|| positional_project_path(rest))
+    flag_project_path(rest)
+        .or_else(|| positional_project_path(rest))
         .map(|path| normalize_project_path(&path))
 }
 
@@ -29,9 +30,7 @@ fn flag_project_path(rest: &[String]) -> Option<String> {
 }
 
 fn positional_project_path(rest: &[String]) -> Option<String> {
-    rest.iter()
-        .find(|arg| !arg.starts_with('-'))
-        .cloned()
+    rest.iter().find(|arg| !arg.starts_with('-')).cloned()
 }
 
 fn normalize_project_path(path: &str) -> String {

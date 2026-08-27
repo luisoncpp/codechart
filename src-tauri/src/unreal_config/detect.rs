@@ -5,9 +5,9 @@ use super::read_project_config;
 
 /// True when the listed files look like an Unreal project or plugin.
 pub fn is_unreal_project(files: &[String]) -> bool {
-    files.iter().any(|p| {
-        p.ends_with(".uproject") || p.ends_with(".uplugin") || p.ends_with(".Build.cs")
-    })
+    files
+        .iter()
+        .any(|p| p.ends_with(".uproject") || p.ends_with(".uplugin") || p.ends_with(".Build.cs"))
 }
 
 /// Walk-time skip for `Plugins/` — Unreal root plus the persisted toggle (default on).

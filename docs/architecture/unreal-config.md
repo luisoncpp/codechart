@@ -41,7 +41,8 @@ deduced defaults:
 - each module's `Public`, `Private`, and `Classes` folders
 
 `load_project_snapshot` does not write defaults; git-ref analysis stays
-read-only.
+read-only. `codechart-cli check` also stays read-only: it reads deduced Unreal
+options in memory and never calls `ensure_unreal_defaults`.
 
 ## Analysis Behavior
 

@@ -21,7 +21,7 @@ pub enum Severity {
     Error,
 }
 
-#[derive(Serialize, Deserialize, TS, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, TS, Debug, Clone, Copy, PartialEq, Eq)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub enum DiagnosticKind {

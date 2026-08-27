@@ -1,14 +1,17 @@
-// @Architecture(descriptionShort="Headless CLI for parse, groups, and analyze")
-// Dev CLI: inspect intermediate analysis output with no UI.
+// @Architecture(descriptionShort="Headless CLI for parse, groups, analyze, check, and help")
+// Dev CLI: inspect intermediate analysis output with no UI, or gate CI on diagnostics.
 //
 //   codechart-cli parse   <file.ts|tsx|rs|cs>   — print imports + annotations
 //   codechart-cli groups  <project-dir>   — print the resolved group tree
 //   codechart-cli analyze <project-dir>   — print the full ProjectGraph as JSON
+//   codechart-cli check   <project-dir> [--fail-on=kind,...] [--format=json|text] [--quiet]
+//   codechart-cli help [command]        — usage; also --help / -h
 
 use std::process::ExitCode;
 
 use codechart_lib::analysis::analyze_project;
 use codechart_lib::analysis_fs_source;
+use codechart_lib::cli::{run_check, run_help, wants_help};
 use codechart_lib::grouping::{resolve_groups, ResolvedGroups};
 use codechart_lib::language_adapter::{registry_for_path, ParsedImport, ParsedModule};
 use codechart_lib::project_config::{
@@ -20,11 +23,23 @@ use codechart_lib::semantic_comments::parse_annotations;
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
-        Some("parse") => run_parse(args.get(2).map(String::as_str)),
-        Some("groups") => run_groups(args.get(2).map(String::as_str)),
-        Some("analyze") => run_analyze(args.get(2).map(String::as_str)),
-        Some(other) => fail(&format!("unknown subcommand: {other}")),
-        None => fail("usage: codechart-cli <parse|groups|analyze> <path>"),
+        Some("help") | Some("--help") | Some("-h") => run_help(args.get(2).map(String::as_str)),
+        Some("parse") => cmd("parse", &args[2..], run_parse),
+        Some("groups") => cmd("groups", &args[2..], run_groups),
+        Some("analyze") => cmd("analyze", &args[2..], run_analyze),
+        Some("check") => run_check(&args[2..]),
+        Some(other) => fail(&format!(
+            "unknown subcommand: {other}\ntry: codechart-cli help"
+        )),
+        None => run_help(None),
+    }
+}
+
+fn cmd(topic: &str, rest: &[String], run: fn(Option<&str>) -> ExitCode) -> ExitCode {
+    if wants_help(rest) {
+        run_help(Some(topic))
+    } else {
+        run(rest.first().map(String::as_str))
     }
 }
 

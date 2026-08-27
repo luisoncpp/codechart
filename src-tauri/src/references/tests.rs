@@ -429,10 +429,7 @@ fn resolves_tsconfig_path_alias_import() {
         mappings: vec![("@/*".to_string(), "./src/*".to_string())],
     };
     let refs = resolve_imports(&parsed, &Default::default(), Some(&aliases));
-    assert_eq!(
-        refs.edges[0].source,
-        "src/ui/App.tsx"
-    );
+    assert_eq!(refs.edges[0].source, "src/ui/App.tsx");
     assert_eq!(refs.edges[0].target, "src/core/store.ts");
     assert!(refs.diagnostics.is_empty());
 }
@@ -946,13 +943,8 @@ fn two_commands_between_same_pair_get_incrementing_ordinals() {
 
 #[test]
 fn cpp_pair_include_is_not_a_cycle() {
-    let mut edges = vec![
-        edge("Private/Foo.cpp", "Public/Foo.h"),
-    ];
-    let module_ids = vec![
-        "Private/Foo.cpp".into(),
-        "Public/Foo.h".into(),
-    ];
+    let mut edges = vec![edge("Private/Foo.cpp", "Public/Foo.h")];
+    let module_ids = vec!["Private/Foo.cpp".into(), "Public/Foo.h".into()];
     let diags = flag_cycles(&mut edges, &module_ids);
     assert!(diags.is_empty());
     assert!(!edges[0].is_violation);
@@ -960,25 +952,22 @@ fn cpp_pair_include_is_not_a_cycle() {
 
 #[test]
 fn header_include_cycle_is_reported() {
-    let mut edges = vec![
-        edge("A.h", "B.h"),
-        edge("B.h", "A.h"),
-    ];
+    let mut edges = vec![edge("A.h", "B.h"), edge("B.h", "A.h")];
     let module_ids = vec!["A.h".into(), "B.h".into()];
     let diags = flag_cycles(&mut edges, &module_ids);
     assert_eq!(diags.len(), 2);
     assert!(edges[0].is_violation);
     assert!(edges[1].is_violation);
-    assert_eq!(
-        diags[0].message,
-        "circular include (2 modules): A → B → A"
-    );
+    assert_eq!(diags[0].message, "circular include (2 modules): A → B → A");
 }
 
 #[test]
 fn unreal_public_private_stem_collapses_for_cycles() {
     let mut edges = vec![
-        edge("Source/Game/Private/Player.cpp", "Source/Game/Public/Player.h"),
+        edge(
+            "Source/Game/Private/Player.cpp",
+            "Source/Game/Public/Player.h",
+        ),
         edge("Source/Game/Public/Enemy.h", "Source/Game/Public/Player.h"),
         edge("Source/Game/Public/Player.h", "Source/Game/Public/Enemy.h"),
     ];
@@ -1003,14 +992,12 @@ fn cpp_impl_header_cycle_flags_files_but_not_pair_edge() {
         edge("B.h", "A.h"),
         edge("A.cpp", "A.h"),
     ];
-    let module_ids = vec![
-        "A.cpp".into(),
-        "A.h".into(),
-        "B.h".into(),
-    ];
+    let module_ids = vec!["A.cpp".into(), "A.h".into(), "B.h".into()];
     let diags = flag_cycles(&mut edges, &module_ids);
     assert_eq!(diags.len(), 3);
-    let pair_edge = edges.iter().find(|e| e.target == "A.h" && e.source == "A.cpp");
+    let pair_edge = edges
+        .iter()
+        .find(|e| e.target == "A.h" && e.source == "A.cpp");
     assert!(pair_edge.is_some_and(|e| !e.is_violation));
 }
 
@@ -1179,5 +1166,9 @@ fn assert_elementary_circular_include(message: &str) {
     assert_eq!(nodes.first(), nodes.last(), "{message}");
     let inner = &nodes[..nodes.len() - 1];
     let unique: BTreeSet<&str> = inner.iter().copied().collect();
-    assert_eq!(unique.len(), inner.len(), "repeated node before close: {message}");
+    assert_eq!(
+        unique.len(),
+        inner.len(),
+        "repeated node before close: {message}"
+    );
 }

@@ -28,8 +28,8 @@ use crate::project_config::{
 };
 use crate::project_source::ProjectSource;
 use crate::references::{
-    classify_interface_seams, classify_soft, classify_tauri_ipc, classify_unity_assets, flag_cycles,
-    flag_drift, resolve_imports, GroupBoundaries,
+    classify_interface_seams, classify_soft, classify_tauri_ipc, classify_unity_assets,
+    flag_cycles, flag_drift, resolve_imports, GroupBoundaries,
 };
 use crate::tsconfig_paths::load_from_source;
 use crate::unity_assets::index_meta_files;
@@ -106,10 +106,11 @@ pub fn analyze_project_with_options(
     let groups = resolve_groups(&module_paths, &defs);
     let parsed_modules: Vec<ParsedModule> = parsed.iter().map(|f| f.module.clone()).collect();
     let ts_paths = load_from_source(source);
-    let (edges, ref_diags) = resolve_edges(&parsed_modules, &groups, &meta_index, &unreal, &ts_paths);
+    let (edges, ref_diags) =
+        resolve_edges(&parsed_modules, &groups, &meta_index, &unreal, &ts_paths);
 
     let mut modules = build_modules(&parsed, &groups, &edges);
-    if crate::git::is_git_repo(root) {
+    if options.metrics_window_days > 0 && crate::git::is_git_repo(root) {
         crate::git::enrich_module_metrics(root, &mut modules, options.metrics_window_days);
     }
     let parts = GraphParts {

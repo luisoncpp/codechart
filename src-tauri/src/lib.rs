@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Crate root: Tauri bootstrap and module exports")
 
 pub mod analysis;
+pub mod cli;
 pub mod contract;
 pub mod diagnostics;
 pub mod diff_reviews;
