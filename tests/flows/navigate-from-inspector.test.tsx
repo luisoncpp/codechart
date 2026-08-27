@@ -24,7 +24,7 @@ describe("flow: navigate-from-inspector", () => {
     store.select(edge.source);
 
     renderInspectionPanel(store);
-    const imports = screen.getByText(/^Imports/).closest("div")!;
+    const imports = screen.getByText(/^Imports \(\d+\)$/).closest("div")!;
     const link = within(imports).getByRole("button", { name: edge.target });
     const item = link.closest("li")!;
     const bullet = within(item).getByText("•");

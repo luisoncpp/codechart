@@ -15,3 +15,4 @@
 
 The initial window is 90 days. Reloading the same root keeps the selected value; opening a different
 root resets it to 90. Invalid values and failed analysis leave the previous graph and window intact.
+The **Last N days** control is only on Activity/Risk; Instability has no git window.

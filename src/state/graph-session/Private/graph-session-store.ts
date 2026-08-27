@@ -20,6 +20,7 @@ import {
   groupParentMap,
   type ZoomLevel,
   type HeatmapMode,
+  heatmapModeNeedsGit,
 } from "../../../domain/graph";
 import { LayoutEngine, LayoutedGraph, LayoutOptions } from "../../../domain/layout";
 import { EventEmitter } from "./event-emitter";
@@ -198,11 +199,15 @@ export class GraphSessionStore extends EventEmitter {
   setHeatmapEnabled(enabled: boolean) {
     if (enabled === this.heatmapEnabled || this.diffOverlay) return;
     this.heatmapEnabled = enabled;
+    if (enabled && heatmapModeNeedsGit(this.heatmapMode) && this.isGitRepo !== true) {
+      this.heatmapMode = "instability";
+    }
     this.emit("heatmap-changed");
   }
 
   setHeatmapMode(mode: HeatmapMode) {
     if (mode === this.heatmapMode || this.diffOverlay) return;
+    if (heatmapModeNeedsGit(mode) && this.isGitRepo !== true) return;
     this.heatmapMode = mode;
     this.emit("heatmap-changed");
   }

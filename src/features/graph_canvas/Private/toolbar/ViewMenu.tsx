@@ -28,7 +28,7 @@ export function ViewMenu({ store, ui, plugins }: ViewMenuProps) {
   const gitAvailable = session.getIsGitRepo() === true;
   const loading = session.getPhase() === "loading";
   const heatmapEnabled = session.getHeatmapEnabled();
-  const heatmapUsable = heatmapEnabled && gitAvailable && !loading;
+  const heatmapUsable = heatmapEnabled && !loading;
   const diffActive = !!session.getDiffOverlay();
   const arrowVisibility = uiState.getArrowVisibility();
 
@@ -60,13 +60,24 @@ export function ViewMenu({ store, ui, plugins }: ViewMenuProps) {
         label={loading ? "Computing heatmap…" : "Heatmap"}
         checked={heatmapEnabled}
         onChange={(enabled) => store.setHeatmapEnabled(enabled)}
-        disabled={!gitAvailable || loading}
-        disabledReason={gitAvailable ? "Computing heatmap…" : "Requires a git repository"}
+        disabled={loading}
+        disabledReason="Computing heatmap…"
       />
       {heatmapUsable && (
         <>
-          <HeatmapModeRadio store={store} mode="activity" label="Activity" />
-          <HeatmapModeRadio store={store} mode="risk" label="Risk" />
+          <HeatmapModeRadio
+            store={store}
+            mode="activity"
+            label="Activity"
+            disabled={!gitAvailable}
+          />
+          <HeatmapModeRadio
+            store={store}
+            mode="risk"
+            label="Risk"
+            disabled={!gitAvailable}
+          />
+          <HeatmapModeRadio store={store} mode="instability" label="Instability" />
         </>
       )}
       <MenuSeparator />
@@ -111,21 +122,22 @@ function ArrowVisibilitySubmenu({ ui, current }: ArrowVisibilitySubmenuProps) {
   );
 }
 
-
-
 interface HeatmapModeRadioProps {
   store: GraphSessionStore;
   mode: HeatmapMode;
   label: string;
+  disabled?: boolean;
 }
 
-function HeatmapModeRadio({ store, mode, label }: HeatmapModeRadioProps) {
+function HeatmapModeRadio({ store, mode, label, disabled }: HeatmapModeRadioProps) {
   return (
     <MenuRadioItem
       label={label}
       checked={store.getHeatmapMode() === mode}
       onSelect={() => store.setHeatmapMode(mode)}
       indent
+      disabled={disabled}
+      disabledReason="Requires a git repository"
     />
   );
 }

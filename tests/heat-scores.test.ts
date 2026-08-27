@@ -106,4 +106,33 @@ describe("heat-scores", () => {
     expect(rawHeatValue(module, "activity")).toBe(3);
     expect(rawHeatValue(module, "risk")).toBe(5);
   });
+
+  it("ranks instability Ce/(Ce+Ca) from unique solid imports, ignoring soft edges", () => {
+    const withDup: ProjectGraph = {
+      ...base,
+      edges: [
+        ...base.edges,
+        {
+          id: "dup",
+          source: "src/core/index.ts",
+          target: "src/core/store.ts",
+          kind: "import",
+          trigger: "import",
+          isViolation: false,
+        },
+      ],
+    };
+    const ids = new Set(base.modules.map((m) => m.id));
+    const heat = computeHeatProjection(withDup, "instability", ids);
+    const main = base.modules.find((m) => m.id === "src/main.ts")!;
+    const todo = base.modules.find((m) => m.id === "src/core/todo.ts")!;
+    const app = base.modules.find((m) => m.id === "src/ui/App.tsx")!;
+    expect(rawHeatValue(main, "instability", withDup)).toBe(1);
+    expect(rawHeatValue(todo, "instability", withDup)).toBe(0);
+    expect(rawHeatValue(app, "instability", withDup)).toBe(0.75);
+    expect(heat.modules.get("src/main.ts")!.score).toBeGreaterThan(
+      heat.modules.get("src/ui/App.tsx")!.score,
+    );
+    expect(heat.modules.get("src/core/todo.ts")!.score).toBe(0);
+  });
 });

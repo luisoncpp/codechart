@@ -80,16 +80,29 @@ interface MenuRadioItemProps {
   onSelect: () => void;
   /** Visually nests the item under its parent checkbox (e.g. heatmap modes). */
   indent?: boolean;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 /** Selects one option of a set without closing the menu. */
-export function MenuRadioItem({ label, checked, onSelect, indent }: MenuRadioItemProps) {
+export function MenuRadioItem({
+  label,
+  checked,
+  onSelect,
+  indent,
+  disabled,
+  disabledReason,
+}: MenuRadioItemProps) {
+  const base = disabled ? itemDisabledStyle : itemStyle;
+  const style = indent ? { ...base, paddingLeft: 34 } : base;
   return (
     <button
       type="button"
       role="menuitemradio"
       aria-checked={checked}
-      style={indent ? { ...itemStyle, paddingLeft: 34 } : itemStyle}
+      disabled={disabled}
+      title={disabled ? disabledReason : undefined}
+      style={style}
       onClick={onSelect}
     >
       <span aria-hidden="true" style={checkSlotStyle}>
@@ -181,6 +194,4 @@ export function MenuSubmenu({ label, children }: MenuSubmenuProps) {
     </div>
   );
 }
-
-
 

@@ -1,8 +1,11 @@
-// @Architecture(descriptionShort="Maps normalized heat scores to activity/risk tints")
+// @Architecture(descriptionShort="Maps normalized heat scores to heatmap tints")
 import type { HeatmapMode } from "./heat-types";
 
-const ACTIVITY_STOPS = ["#3b82f6", "#f59e0b"] as const;
-const RISK_STOPS = ["#94a3b8", "#f43f5e"] as const;
+const STOPS: Record<HeatmapMode, readonly [string, string]> = {
+  activity: ["#3b82f6", "#f59e0b"],
+  risk: ["#94a3b8", "#f43f5e"],
+  instability: ["#2dd4bf", "#6d28d9"],
+};
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
@@ -24,9 +27,13 @@ function mixHex(from: string, to: string, t: number): string {
   return rgbToHex(lerp(r1, r2, t), lerp(g1, g2, t), lerp(b1, b2, t));
 }
 
+function stopsFor(mode: HeatmapMode): readonly [string, string] {
+  return STOPS[mode];
+}
+
 /** Heat lane color for a normalized score in [0, 1]. */
 export function heatColor(mode: HeatmapMode, score: number): string {
-  const stops = mode === "activity" ? ACTIVITY_STOPS : RISK_STOPS;
+  const stops = stopsFor(mode);
   return mixHex(stops[0], stops[1], Math.max(0, Math.min(1, score)));
 }
 
@@ -46,6 +53,6 @@ export function heatFill(mode: HeatmapMode, score: number): string {
 
 /** Gradient stops for the compact legend chip. */
 export function heatLegendGradient(mode: HeatmapMode): string {
-  const stops = mode === "activity" ? ACTIVITY_STOPS : RISK_STOPS;
+  const stops = stopsFor(mode);
   return `linear-gradient(to right, ${stops[0]}, ${stops[1]})`;
 }

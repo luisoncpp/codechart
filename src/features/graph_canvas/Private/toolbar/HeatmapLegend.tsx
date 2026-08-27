@@ -1,6 +1,10 @@
 // @Architecture(descriptionShort="Interactive heatmap legend and timeframe control")
 import { useState } from "react";
-import { heatLegendGradient } from "../../../../domain/graph";
+import {
+  heatLegendGradient,
+  heatmapModeLabel,
+  heatmapModeNeedsGit,
+} from "../../../../domain/graph";
 import type { HeatmapMode } from "../../../../domain/graph";
 import { MetricsWindowModal } from "./MetricsWindowModal";
 
@@ -10,23 +14,28 @@ interface HeatmapLegendProps {
   onApplyDays: (days: number) => Promise<void>;
 }
 
-/** Top-right canvas chip: gradient scale and configurable history window. */
+/** Top-right canvas chip: gradient scale; git modes also expose the history window. */
 export function HeatmapLegend({ mode, days, onApplyDays }: HeatmapLegendProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const gitMode = heatmapModeNeedsGit(mode);
   return (
     <>
       <div style={wrapStyle}>
         <div style={{ ...barStyle, background: heatLegendGradient(mode) }} />
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          onClick={() => setModalOpen(true)}
-          style={footStyle}
-        >
-          Last {days} days
-        </button>
+        {gitMode ? (
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => setModalOpen(true)}
+            style={footStyle}
+          >
+            Last {days} days
+          </button>
+        ) : (
+          <span style={captionStyle}>{heatmapModeLabel(mode)}</span>
+        )}
       </div>
-      {modalOpen && (
+      {modalOpen && gitMode && (
         <MetricsWindowModal
           days={days}
           onApply={onApplyDays}
@@ -67,4 +76,10 @@ const footStyle: React.CSSProperties = {
   color: "#94a3b8",
   textAlign: "right",
   cursor: "pointer",
+};
+
+const captionStyle: React.CSSProperties = {
+  ...footStyle,
+  borderBottom: 0,
+  cursor: "default",
 };

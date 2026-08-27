@@ -71,7 +71,6 @@ export function GraphCanvas({
   const heatmapEnabled = session.getHeatmapEnabled();
   const heatmapMode = session.getHeatmapMode();
   const metricsWindowDays = session.getMetricsWindowDays();
-  const heatmapGitAvailable = session.getIsGitRepo() === true;
   const heatmapLoading = session.getPhase() === "loading";
   const [contextMenu, setContextMenu] = useState<ModuleContextMenuState | null>(null);
 
@@ -226,7 +225,7 @@ export function GraphCanvas({
             onClose={() => store.closeDiffNotesWarning()}
           />
         )}
-        {heatmapEnabled && heatmapGitAvailable && !heatmapLoading && !diffOverlay && (
+        {heatmapEnabled && !heatmapLoading && !diffOverlay && (
           <HeatmapLegend
             mode={heatmapMode}
             days={metricsWindowDays}

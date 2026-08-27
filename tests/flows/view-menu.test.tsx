@@ -112,14 +112,22 @@ describe("flow: view-menu", () => {
     );
   });
 
-  it("disables the Heatmap item when the project is not a git repository", async () => {
+  it("enables the Instability heatmap when the project is not a git repository", async () => {
     const store = await readyGraphStore();
     renderGraphCanvas(store);
     openViewMenu();
 
     const item = screen.getByRole("menuitemcheckbox", { name: "Heatmap" });
-    expect(item).toBeDisabled();
-    expect(item).toHaveAttribute("title", "Requires a git repository");
+    expect(item).not.toBeDisabled();
+    fireEvent.click(item);
+
+    expect(store.getHeatmapEnabled()).toBe(true);
+    expect(store.getHeatmapMode()).toBe("instability");
+    expect(screen.getByRole("menuitemradio", { name: "Activity" })).toBeDisabled();
+    expect(screen.getByRole("menuitemradio", { name: "Risk" })).toBeDisabled();
+    expect(screen.getByRole("menuitemradio", { name: "Instability" }))
+      .toHaveAttribute("aria-checked", "true");
+    expect(screen.queryByRole("button", { name: "Last 90 days" })).toBeNull();
   });
 
   it("enabling the heatmap reveals mode radios and the canvas legend", async () => {
@@ -133,10 +141,15 @@ describe("flow: view-menu", () => {
     expect(store.getHeatmapEnabled()).toBe(true);
     expect(screen.getByRole("menuitemradio", { name: "Activity" }))
       .toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("menuitemradio", { name: "Instability" })).toBeInTheDocument();
     expect(screen.getByText("Last 90 days")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("menuitemradio", { name: "Risk" }));
     expect(store.getHeatmapMode()).toBe("risk");
+
+    fireEvent.click(screen.getByRole("menuitemradio", { name: "Instability" }));
+    expect(store.getHeatmapMode()).toBe("instability");
+    expect(screen.queryByRole("button", { name: "Last 90 days" })).toBeNull();
   });
 
   it("changes the heatmap timeframe from the legend modal", async () => {

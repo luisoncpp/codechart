@@ -2,6 +2,7 @@
 import type { Node, Edge as RFEdge } from "@xyflow/react";
 import type { DiffNote, FileLineDiff } from "../../../diff";
 import type { Language } from "../../model/Language";
+import type { HeatmapMode } from "../heat/heat-types";
 import type { SymbolKind } from "../symbol-kind";
 
 /** Data carried by a custom group container node. */
@@ -36,7 +37,7 @@ export interface GroupNodeData extends Record<string, unknown> {
   diffVisualizing?: boolean;
   heatScore?: number;
   heatVisible?: boolean;
-  heatMode?: "activity" | "risk";
+  heatMode?: HeatmapMode;
   heatmapActive?: boolean;
   reviewNoteCount?: number;
   /** Lines of code summed over this group's module tree (counter badge). */
@@ -76,7 +77,7 @@ export interface ModuleNodeData extends Record<string, unknown> {
   /** False when score is at or below the cold percentile. */
   heatVisible?: boolean;
   /** Active heat mode — drives tint hue. */
-  heatMode?: "activity" | "risk";
+  heatMode?: HeatmapMode;
   /** True while the heatmap overlay is enabled (cold nodes use neutral chrome). */
   heatmapActive?: boolean;
   reviewNoteCount?: number;

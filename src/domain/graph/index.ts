@@ -37,6 +37,7 @@ export {
 } from "./Private/reduction/connection-filter";
 export type { ZoomLevel } from "./Private/reduction/zoom-level";
 export type { HeatmapMode, ModuleHeat, HeatProjection } from "./Private/heat/heat-types";
+export { heatmapModeNeedsGit, heatmapModeLabel } from "./Private/heat/heat-types";
 export {
   computeHeatProjection,
   rawHeatValue,

@@ -1,15 +1,22 @@
-// @Architecture(descriptionShort="Percentile-ranks module git metrics into heat scores")
+// @Architecture(descriptionShort="Percentile-ranks module metrics into heat scores")
 import type { ModuleNode } from "../../model/ModuleNode";
 import type { ProjectGraph } from "../../model/ProjectGraph";
+import { instabilityRatio } from "./heat-coupling";
 import { groupHeatFromModules, percentileRank } from "./heat-ranking";
 import type { HeatmapMode, HeatProjection, ModuleHeat } from "./heat-types";
 
 const COLD_PERCENTILE = 0.1;
 
-/** Raw metric for the active heat mode. */
-export function rawHeatValue(module: ModuleNode, mode: HeatmapMode): number | undefined {
+/** Raw metric for the active heat mode. Instability needs the graph. */
+export function rawHeatValue(
+  module: ModuleNode,
+  mode: HeatmapMode,
+  graph?: ProjectGraph,
+): number | undefined {
   if (mode === "activity") return module.metrics.churn;
-  return module.metrics.bugRisk;
+  if (mode === "risk") return module.metrics.bugRisk;
+  if (!graph) return undefined;
+  return instabilityRatio(graph, module.id);
 }
 
 /** Normalize visible modules to [0, 1]; inactive modules score 0 (coldest hue). */
@@ -20,14 +27,14 @@ export function computeHeatProjection(
 ): HeatProjection {
   const visible = graph.modules.filter((m) => moduleIds.has(m.id));
   const active = visible
-    .map((m) => ({ id: m.id, raw: rawHeatValue(m, mode) ?? 0 }))
+    .map((m) => ({ id: m.id, raw: rawHeatValue(m, mode, graph) ?? 0 }))
     .filter((v) => v.raw > 0);
   const ranked = percentileRank(active.map((v) => v.raw));
   const rankById = new Map(active.map((v, i) => [v.id, ranked[i] ?? 0]));
 
   const modules = new Map<string, ModuleHeat>();
   for (const m of visible) {
-    const raw = rawHeatValue(m, mode) ?? 0;
+    const raw = rawHeatValue(m, mode, graph) ?? 0;
     const score = raw > 0 ? (rankById.get(m.id) ?? 0) : 0;
     modules.set(m.id, { score, visible: true });
   }

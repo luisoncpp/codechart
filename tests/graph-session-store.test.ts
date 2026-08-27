@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import goldenGraph from "./fixtures/golden/project-graph.json";
 import { GraphSessionStore } from "../src/state/graph-session";
+import { createMockGitClient } from "../src/ipc/git-client";
 import type { AnalysisClient } from "../src/ipc/analysis-client";
 import type { ProjectGraph } from "../src/domain/graph";
 import type { GitClient } from "../src/ipc/git-client";
@@ -477,7 +478,12 @@ describe("GraphSessionStore connection disconnect", () => {
 
 describe("GraphSessionStore heatmap", () => {
   it("pauses heatmap during diff overlay and restores after clear", async () => {
-    const store = newStore(clientReturning(graph));
+    const git = { ...createMockGitClient(), isGitRepo: async () => true };
+    const store = new GraphSessionStore(
+      clientReturning(graph),
+      git,
+      new ElkLayoutEngine(),
+    );
     await store.loadProject("/x");
     store.setHeatmapEnabled(true);
     store.setHeatmapMode("risk");
@@ -486,6 +492,16 @@ describe("GraphSessionStore heatmap", () => {
     store.clearDiffOverlay();
     expect(store.getHeatmapEnabled()).toBe(true);
     expect(store.getHeatmapMode()).toBe("risk");
+  });
+
+  it("falls back to Instability when enabling the heatmap without git", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    expect(store.getIsGitRepo()).toBe(false);
+    store.setHeatmapEnabled(true);
+    expect(store.getHeatmapMode()).toBe("instability");
+    store.setHeatmapMode("activity");
+    expect(store.getHeatmapMode()).toBe("instability");
   });
 });
 
