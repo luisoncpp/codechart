@@ -54,7 +54,7 @@ Both deep modules organize their implementation into subfolders, each a config s
 | `TokenText` | `features/graph_canvas/Private/highlight/TokenText.tsx` | Renders one syntax token's text with **nested** sub-spans: wiki links (`hl-wiki-link`) outside, find matches (`hl-match`) inside. Nesting — never sibling-splitting — is what keeps `hl-clickable` navigation reading a whole identifier from `textContent`. `DiffCodeLine` renders the row; `DiffCodeLines` owns rows, tokenizing, and the per-row link scan. |
 | `LineTokenizer` / `tokenizeCode` | `features/graph_canvas/Private/highlight/line-tokenizer.ts`, `highlighter.ts` | Lexical highlighter. `LineTokenizer` tokenizes **one line at a time** and is the only stateful piece: it remembers an open block comment (`getLanguageForFile().blockComment`, `/* */` for every language except Python/`.prefab`) so `/* … */` spanning lines stays `hl-comment`. Renderers that emit rows independently (`DiffCodeLines`) **must reuse one instance per document, in line order**; `remove` diff rows come from the before-snapshot and are rendered plain, so they never touch the state. `tokenizeCode(code, path)` is the stateless whole-text wrapper. Consequence: multi-line **strings** (template literals, Python docstrings) are still tokenized per line and do not carry. |
 | `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, LOC (module-tree total), child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** headings include a count (`EdgeList`); entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` and `circularDependency` diagnostics render **red** (matching violation edges); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
-| `FacadeBypassList` | `project_loader/Private/FacadeBypassList.tsx` | When `architectureViolations(graph)` is non-empty, toolbar chip **1 architecture issue** / **N architecture issues** opens a modal with copyable messages (facade bypasses + deduped import cycles). Backdrop dismiss requires the press to start on the backdrop so a vertical textarea resize that ends outside the panel does not close it. |
+| `FacadeBypassList` | `project_loader/Private/FacadeBypassList.tsx` | When `architectureViolations(graph)` is non-empty, toolbar chip **1 architecture issue** / **N architecture issues** opens a modal with copyable messages (facade bypasses, group layering, and deduped import cycles). Backdrop dismiss requires the press to start on the backdrop so a vertical textarea resize that ends outside the panel does not close it. |
 
 ## Aesthetic rules (the visual gate)
 
@@ -75,8 +75,8 @@ Both deep modules organize their implementation into subfolders, each a config s
   the box is sized to fit it (see **Module box sizing**). Group headers use a bold uppercase **sans-serif** stack. Projection
   copies the group color onto each grouped module's `data.color`
   (group `color` ?? `colorForGroup` hash); ungrouped modules fall back to slate `#64748b`.
-- **Edge:** solid grey arrow (`import`); red + thicker when `isViolation` (facade bypass
-  or import-cycle edge — both set by backend post-passes). **Dashed** (`strokeDasharray "6 4"`) when `kind === "soft"`
+- **Edge:** solid grey arrow (`import`); red + thicker when `isViolation` (facade bypass,
+  group layering, or import-cycle edge — all set by backend post-passes). **Dashed** (`strokeDasharray "6 4"`) when `kind === "soft"`
   (an event/runtime relationship — Phase 9); direction coloring still applies, so a selected soft edge
   reads its role *and* its dash. A soft edge is drawn **bowed** (`bowedPath`, a quadratic arc offset
   ~36px perpendicular to its straight line) instead of the straight bezier used by imports, so its dash
@@ -250,14 +250,15 @@ hidden by zoom collapse.
     `minChildY`/`minChildX` minima would falsely report as no space (obstacles are
     projection-computed from **visible** children only — a collapsed group's module boxes still
     exist in the L0 layout but are hidden, so they must never clamp the text; nested subgroup boxes
-    do). The chosen region's width and font are returned and rendered
-    verbatim (`collapsed-description.ts`, pure): the font prefers a counter-scaled `14 × scale`, grows
+    do). The chosen region's width and font are returned (`collapsed-description.ts`, pure): the font prefers a counter-scaled `14 × scale`, grows
     up to a 28px screen cap when the chosen text fits, and can shrink to 8px in a narrow child-free
     column. Fit counting follows the browser's wrap opportunities at spaces and hyphens; unbreakable
     tokens such as `ParsedModule` must fit the measured width instead of being treated as hard-wrapped.
     A spacious card reads large while a tight one stays clear of its subgroup. All geometry stays in world units
     consistent with the scaled font — never an unscaled px cap, which would shrink to a sliver on
-    screen at L0. The text uses the **darkened group color** (`darken(data.color)`), and its line
+    screen at L0. `CollapsedCard` paints that text with `renderInlineMarkdown` (same as L1):
+    backticks, emphasis, and `[[wiki-links]]` become HTML; the card `<p>` stays block layout so
+    inline tags wrap as prose (see `flexbox-breaks-inline-markdown-flow.md`). The text uses the **darkened group color** (`darken(data.color)`), and its line
     clamp is derived from the region height at the chosen font and applied only
     when the selected text does not fit; complete wrapped descriptions render
     without a clamp so Chromium does not add a false trailing ellipsis.

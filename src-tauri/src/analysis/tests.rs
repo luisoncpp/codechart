@@ -57,6 +57,40 @@ fn flags_the_planted_facade_bypass_with_no_false_positives() {
     assert_eq!(diag.edge_id.as_deref(), Some(violations[0].id.as_str()));
 }
 
+#[test]
+fn flags_a_layering_violation_through_a_public_facade() {
+    let source = memory(&[
+        (
+            "src/db/db.group.md",
+            "---\nid: db\nfacades: []\nmustNotImport:\n  - ui\n---\n",
+        ),
+        (
+            "src/ui/ui.group.md",
+            "---\nid: ui\nfacades:\n  - index.ts\n---\n",
+        ),
+        ("src/db/repo.ts", "import { View } from \"../ui\";\n"),
+        ("src/ui/index.ts", "export const View = 1;\n"),
+    ]);
+    let graph = analyze_project(&source, "mem").expect("builds");
+    let edge = graph
+        .edges
+        .iter()
+        .find(|e| e.source == "src/db/repo.ts" && e.target == "src/ui/index.ts")
+        .expect("import edge");
+    assert!(edge.is_violation, "layering flags a public facade import");
+    let drift = graph
+        .diagnostics
+        .iter()
+        .any(|d| d.kind == DiagnosticKind::ArchitectureViolation && !d.id.contains(":layer:"));
+    assert!(!drift, "facade-less-or-facade import is not a bypass");
+    let diag = graph
+        .diagnostics
+        .iter()
+        .find(|d| d.id.contains("architectureViolation:layer:"))
+        .expect("layering diagnostic");
+    assert!(diag.message.contains("db must not import ui"));
+}
+
 /// Phase 9 + 10: the planted soft edges — one event seam (store→App) and one
 /// interface seam (App→store via ITodoStore).
 #[test]

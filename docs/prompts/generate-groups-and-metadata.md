@@ -244,6 +244,8 @@ Data access for Stripe and internal billing tables. Callers import through index
 | `color` | Exactly `#` + 6 hex digits (e.g. `#64748b`). Used for group tinting. |
 | `icon` | One of: `cube`, `wrench`, `gear`, `bolt`, `hook`, `database`, `layers`, `panel`, `dialog`, `sidebar`, `app-window`, `plug`, `share`, `layout`, `globe`. |
 | `facades` | Public entry modules, paths **relative to this group's folder**. Omit to auto-detect `index.ts` / `index.tsx` in that folder. |
+| `mustNotImport` | Group **ids** this group's module tree must not import (denylist). Applies to descendants; named targets include their descendants. |
+| `mayImport` | When present, this group's module tree may only import these group ids (plus its own subtree). Empty list = no external groups. |
 | `match` | Membership globs (joined onto group folder) or `/regex/` on the **full repo-relative path**. |
 | `files` | Explicit module paths, **relative to group folder**. |
 | `groups` | Child group **ids** — composes/nests children; parent does **not** claim their leaf modules. |
@@ -263,7 +265,8 @@ repo-relative path.
 3. **Composition:** `groups: [core, services]` nests those groups under this one for display. The parent claims **no leaf modules** unless it also has `match`/`files`/folder ownership.
 4. **Cross-cutting modules:** Pull shared files with `match` or `files`, and add matching `exclude` on every folder-ownership group that would otherwise claim them.
 5. **Facades:** When a deep module exists, list its facade explicitly. A group with **no** facade is fully public — imports into any member are allowed (no facade-bypass warnings).
-6. **Root config-only group:** To set `ignore` without claiming files, use `match: ["/$^/"]` (regex that matches nothing).
+6. **Layering:** `mustNotImport` / `mayImport` constrain outbound **solid** imports between groups. They are independent of facades: importing a public facade can still violate layering. Declare sibling rules on the sibling groups, not on a composition parent.
+7. **Root config-only group:** To set `ignore` without claiming files, use `match: ["/$^/"]` (regex that matches nothing).
 
 ### Path rules
 

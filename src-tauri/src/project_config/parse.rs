@@ -26,6 +26,10 @@ struct RawFrontmatter {
     disconnected: Option<bool>,
     #[serde(rename = "disconnectedModules")]
     disconnected_modules: Option<Vec<String>>,
+    #[serde(rename = "mustNotImport")]
+    must_not_import: Option<Vec<String>>,
+    #[serde(rename = "mayImport")]
+    may_import: Option<Vec<String>>,
 }
 
 /// Split a `*.group.md` file into (frontmatter yaml, body markdown). The body is
@@ -79,6 +83,8 @@ pub fn parse_group_def(path: &str, content: &str) -> Result<GroupDef, ConfigErro
         architecture_doc: raw.architecture_doc,
         disconnected: raw.disconnected.unwrap_or(false),
         disconnected_modules: raw.disconnected_modules.unwrap_or_default(),
+        must_not_import: raw.must_not_import.unwrap_or_default(),
+        may_import: raw.may_import,
     })
 }
 

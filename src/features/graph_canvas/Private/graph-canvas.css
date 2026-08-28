@@ -558,6 +558,15 @@
   text-decoration: underline solid currentColor;
 }
 
+/* L0 collapsed-card description: inline markdown (`code`, links) on tinted cards */
+.group-collapsed-desc code {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
+  font-size: 0.9em;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+
 .group-markdown-body a.hl-wiki-link {
   color: #2563eb;
   text-decoration: underline dotted currentColor;

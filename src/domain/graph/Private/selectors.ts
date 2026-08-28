@@ -153,7 +153,7 @@ export function diagnosticsFor(graph: ProjectGraph, id: string): Diagnostic[] {
   return graph.diagnostics.filter((d) => d.moduleId === id);
 }
 
-/** Every architecture issue in the project: facade bypasses + import cycles. */
+/** Every architecture issue in the project: facade bypasses, layering, and import cycles. */
 export function architectureViolations(graph: ProjectGraph): Diagnostic[] {
   const bypasses = graph.diagnostics.filter(
     (d) => d.kind === "architectureViolation" && !isTestImporter(graph, d),

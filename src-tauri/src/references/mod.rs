@@ -7,6 +7,8 @@
 //
 // `flag_drift` (Phase 8) is a second pass over the resolved edges: it marks
 // facade-bypass edges `is_violation` + emits `architectureViolation`s.
+// `flag_layering` flags group→group `mustNotImport` / `mayImport` breaks the
+// same way (distinct diagnostic ids so both can apply to one edge).
 // `classify_soft` (Phase 9) pairs event emit/listen signals into `soft` edges.
 // `classify_interface_seams` (Phase 10) pairs interface importers with
 // cross-group implementors into `soft` seam edges (TDD §2.4).
@@ -18,6 +20,7 @@ mod cycle_witness;
 mod cycles;
 mod drift;
 mod interface_seams;
+mod layering;
 mod resolve;
 mod rust;
 mod soft;
@@ -32,6 +35,7 @@ pub use cpp::is_paired_cpp_header;
 pub use cycles::flag_cycles;
 pub use drift::{flag_drift, GroupBoundaries};
 pub use interface_seams::classify_interface_seams;
+pub use layering::{flag_layering, LayeringRule};
 pub use soft::classify_soft;
 pub use tauri_ipc::classify_tauri_ipc;
 pub use unity::classify_unity_assets;

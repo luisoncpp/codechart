@@ -39,9 +39,9 @@ Ids are path-derived; edge id = `${source}->${target}:${kind}:${ordinal}`. No
 timestamps/random in graph data, so golden-fixture diffs and layout snapshots are
 meaningful. Analyzers (Phase 4+) must emit in a deterministic order.
 
-`DiagnosticKind` includes `architectureViolation` (facade bypass) and
-`circularDependency` (import cycle). Both set participating import edges
-`isViolation` and surface in the toolbar **architecture issues** list.
+`DiagnosticKind` includes `architectureViolation` (facade bypass or group
+layering) and `circularDependency` (import cycle). Both set participating import
+edges `isViolation` and surface in the toolbar **architecture issues** list.
 
 `ProjectGraph.isUnrealProject` is optional and omitted when false (Unreal
 detection from the pre-filter file list). The golden TS fixture stays unchanged.

@@ -29,6 +29,7 @@ pub fn infer_groups(files: &[String]) -> ResolvedGroups {
         groups,
         module_group,
         facades,
+        layering: BTreeMap::new(),
         diagnostics: Vec::new(),
     }
 }

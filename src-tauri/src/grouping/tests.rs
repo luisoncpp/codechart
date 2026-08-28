@@ -256,6 +256,32 @@ fn unknown_explicit_facade_is_a_config_error() {
 }
 
 #[test]
+fn unknown_layering_group_id_is_a_config_error() {
+    let mut db = def("db", "src/db");
+    db.must_not_import = vec!["ui".into(), "ghost".into()];
+    let ui = def("ui", "src/ui");
+    let fs = files(&["src/db/repo.ts", "src/ui/view.ts"]);
+    let r = resolve_groups(&fs, &[db, ui]);
+    assert_eq!(r.diagnostics.len(), 1);
+    assert_eq!(r.diagnostics[0].id, "configError:layer:db:ghost");
+    let rule = r.layering.get("db").expect("db still has a denylist");
+    assert!(rule.must_not_import.contains("ui"));
+    assert!(!rule.must_not_import.contains("ghost"));
+}
+
+#[test]
+fn may_import_allowlist_is_kept_on_resolved_groups() {
+    let mut ui = def("ui", "src/ui");
+    ui.may_import = Some(vec!["domain".into()]);
+    let domain = def("domain", "src/domain");
+    let fs = files(&["src/ui/view.ts", "src/domain/model.ts"]);
+    let r = resolve_groups(&fs, &[ui, domain]);
+    assert!(r.diagnostics.is_empty());
+    let rule = r.layering.get("ui").expect("allowlist stored");
+    assert!(rule.may_import.as_ref().unwrap().contains("domain"));
+}
+
+#[test]
 fn unmatched_file_falls_back_to_no_group() {
     let core = def("core", "src/core");
     let fs = files(&["src/core/x.ts", "src/main.ts"]);

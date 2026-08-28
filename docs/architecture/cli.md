@@ -37,7 +37,7 @@ codechart-cli check <dir> [--fail-on=kind,...] [--format=json|text] [--quiet]
 
 SARIF / GitHub annotations stay out of scope: findings are module/edge scoped, not line-scoped.
 
-Treat `check` as an **architecture gate**, not a compiler. Cycles work with no `*.group.md`. Facade bypass needs explicit group `facades` — inferred folder groups are public.
+Treat `check` as an **architecture gate**, not a compiler. Cycles work with no `*.group.md`. Facade bypass needs explicit group `facades` — inferred folder groups are public. Group layering needs `mustNotImport` / `mayImport` on `*.group.md`.
 
 ## Why not `analyze | jq .diagnostics`
 
