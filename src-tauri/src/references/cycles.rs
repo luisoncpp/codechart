@@ -7,6 +7,7 @@ use crate::contract::{Diagnostic, DiagnosticKind, Edge, EdgeKind, Severity};
 use super::cpp::{display_cycle_unit, is_paired_cpp_header};
 use super::cycle_scc::find_cycle_sccs;
 use super::cycle_witness::witness_cycle;
+use super::rust::is_paired_rust_parent_child;
 
 /// Flag import-cycle edges and emit `circularDependency` diagnostics per cycled unit.
 pub fn flag_cycles(edges: &mut [Edge], module_ids: &[String]) -> Vec<Diagnostic> {
@@ -126,6 +127,10 @@ fn unit_adjacency(
     adj
 }
 
+fn is_cycle_pair_edge(source: &str, target: &str) -> bool {
+    is_paired_cpp_header(source, target) || is_paired_rust_parent_child(source, target)
+}
+
 fn project_edge(edge: &Edge, units: &BTreeMap<String, String>) -> ProjectedEdge {
     let unit_source = units
         .get(&edge.source)
@@ -138,7 +143,7 @@ fn project_edge(edge: &Edge, units: &BTreeMap<String, String>) -> ProjectedEdge 
     ProjectedEdge {
         unit_source,
         unit_target,
-        is_pair_self: is_paired_cpp_header(&edge.source, &edge.target),
+        is_pair_self: is_cycle_pair_edge(&edge.source, &edge.target),
     }
 }
 

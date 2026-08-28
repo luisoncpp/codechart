@@ -6,7 +6,7 @@
 
 **Import-cycle detection** — solid import cycles surface as `circularDependency` diagnostics and red edges.
 
-- `references::flag_cycles` (`cycles.rs` + `cycle_scc.rs` + `cycle_witness.rs`): C++ same-stem impl/header collapse before Tarjan SCC; one finding per SCC; messages `circular include (N modules): …` with shortest witness through the highest-degree hub; `others in this cycle` = co-members; C++ paths shown without extensions; `is_violation` on cycle import edges (not pair edges). Wired after `flag_drift` in `resolve_edges`.
+- `references::flag_cycles` (`cycles.rs` + `cycle_scc.rs` + `cycle_witness.rs`): C++ same-stem impl/header collapse before Tarjan SCC; Rust parent/`mod.rs`/`lib.rs`/`main.rs` ↔ direct-child edges skipped (not unit-collapsed) so `mod` + `use super` is not a circular include; one finding per SCC; messages `circular include (N modules): …` with shortest witness through the highest-degree hub; `others in this cycle` = co-members; C++ paths shown without extensions; `is_violation` on cycle import edges (not pair edges). Wired after `flag_drift` in `resolve_edges`.
 - Contract: `DiagnosticKind::CircularDependency`. Frontend: `architectureViolations` adds deduped cycle rows; toolbar chip **N architecture issues** (`FacadeBypassList`); inspector colors `circularDependency` red. Golden TS fixture unchanged.
 - Tests: Rust cycle units (hub witness + display) + selector/toolbar/inspector vitest. Flow: [inspect-circular-dependency.md](../flows/inspect-circular-dependency.md).
 

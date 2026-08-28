@@ -1152,6 +1152,98 @@ fn cpp_cycle_message_omits_extensions_ts_keeps_them() {
     assert_eq!(ts_msg, "circular include (2 modules): a.ts → b.ts → a.ts");
 }
 
+#[test]
+fn rust_lib_tests_pair_is_not_a_cycle() {
+    let mut edges = vec![
+        edge("src-tauri/src/lib.rs", "src-tauri/src/tests.rs"),
+        edge("src-tauri/src/tests.rs", "src-tauri/src/lib.rs"),
+    ];
+    let module_ids = vec![
+        "src-tauri/src/lib.rs".into(),
+        "src-tauri/src/tests.rs".into(),
+    ];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert!(diags.is_empty());
+    assert!(edges.iter().all(|e| !e.is_violation));
+}
+
+#[test]
+fn rust_mod_child_pair_is_not_a_cycle() {
+    let mut edges = vec![
+        edge("src-tauri/src/eos/mod.rs", "src-tauri/src/eos/connect.rs"),
+        edge("src-tauri/src/eos/connect.rs", "src-tauri/src/eos/mod.rs"),
+    ];
+    let module_ids = vec![
+        "src-tauri/src/eos/mod.rs".into(),
+        "src-tauri/src/eos/connect.rs".into(),
+    ];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn rust_nested_dir_module_pair_is_not_a_cycle() {
+    let mut edges = vec![
+        edge("src-tauri/src/eos/mod.rs", "src-tauri/src/eos/lobby/mod.rs"),
+        edge("src-tauri/src/eos/lobby/mod.rs", "src-tauri/src/eos/mod.rs"),
+    ];
+    let module_ids = vec![
+        "src-tauri/src/eos/mod.rs".into(),
+        "src-tauri/src/eos/lobby/mod.rs".into(),
+    ];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn rust_cycle_only_through_parent_is_not_a_finding() {
+    let mut edges = vec![
+        edge("eos/mod.rs", "eos/a.rs"),
+        edge("eos/a.rs", "eos/b.rs"),
+        edge("eos/b.rs", "eos/mod.rs"),
+    ];
+    let module_ids = vec!["eos/mod.rs".into(), "eos/a.rs".into(), "eos/b.rs".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn rust_sibling_cycle_is_still_reported() {
+    let mut edges = vec![
+        edge("eos/mod.rs", "eos/a.rs"),
+        edge("eos/mod.rs", "eos/b.rs"),
+        edge("eos/a.rs", "eos/b.rs"),
+        edge("eos/b.rs", "eos/a.rs"),
+    ];
+    let module_ids = vec!["eos/mod.rs".into(), "eos/a.rs".into(), "eos/b.rs".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 2);
+    assert_eq!(
+        diags[0].message,
+        "circular include (2 modules): eos/a.rs → eos/b.rs → eos/a.rs"
+    );
+    let parent_edge = edges
+        .iter()
+        .find(|e| e.source == "eos/mod.rs" && e.target == "eos/a.rs")
+        .expect("parent edge");
+    assert!(!parent_edge.is_violation);
+}
+
+#[test]
+fn rust_grandchild_to_grandparent_is_not_a_pair() {
+    let mut edges = vec![
+        edge("eos/lobby/create.rs", "eos/mod.rs"),
+        edge("eos/mod.rs", "eos/lobby/create.rs"),
+    ];
+    let module_ids = vec!["eos/lobby/create.rs".into(), "eos/mod.rs".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 2);
+    assert_eq!(
+        diags[0].message,
+        "circular include (2 modules): eos/lobby/create.rs → eos/mod.rs → eos/lobby/create.rs"
+    );
+}
+
 fn assert_elementary_circular_include(message: &str) {
     let after_size = message
         .split_once("): ")

@@ -19,6 +19,7 @@ mod cycles;
 mod drift;
 mod interface_seams;
 mod resolve;
+mod rust;
 mod soft;
 mod tauri_ipc;
 mod test_module;

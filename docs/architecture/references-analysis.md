@@ -174,6 +174,13 @@ import edge `impl → header` exists (`cpp.rs` stem helpers — same rule as
 unpaired files keep their own path. `Player.cpp → Player.h` projects to a unit
 self-edge and is dropped (never a finding, never flagged `is_violation`).
 
+**Rust parent/child pairs:** do **not** collapse children onto the parent unit.
+Skip import edges between a directory module (`mod.rs` / `lib.rs` / `main.rs`)
+and a **direct** child (`D/name.rs` or `D/name/mod.rs`) in both directions
+(`rust.rs` `is_paired_rust_parent_child`). That drops `mod child;` plus
+`use super::…` 2-cycles without hiding sibling `A.rs ↔ B.rs` cycles.
+Grandchildren (`D/name/create.rs` ↔ `D/mod.rs`) stay in the graph.
+
 **Algorithm:** project import edges to unit→unit; Tarjan SCC on a `BTreeMap`
 adjacency; report SCCs with ≥2 units plus size-1 units with a true self-include
 (`A.h → A.h`). One diagnostic per **file** that maps to a cycled unit; toolbar

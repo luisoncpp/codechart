@@ -21,7 +21,9 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [overlay-click-is-lca-of-press-and-release.md](./overlay-click-is-lca-of-press-and-release.md) | Overlay `click` is the LCA of mousedown and mouseup; inner `stopPropagation` does not cover a drag that ends outside | 2026-08-27 |
 | [cycle-witness-must-be-elementary.md](./cycle-witness-must-be-elementary.md) | Cycle messages: hub-shortest elementary witness, `(N modules)` size, `others in this cycle`, C++ paths without extensions | 2026-08-26 |
+| [rust-mod-use-super-is-not-a-cycle.md](./rust-mod-use-super-is-not-a-cycle.md) | `mod` + `use super` parent/child edges are not circular includes; sibling cycles still count | 2026-08-27 |
 | [flexbox-breaks-inline-markdown-flow.md](./flexbox-breaks-inline-markdown-flow.md) | Flexbox on inline markdown containers turns text nodes and inline tags into flex item columns | 2026-08-20 |
 | [relaxed-diff-hunk-context-lines.md](./relaxed-diff-hunk-context-lines.md) | Treat non-change/non-marker lines in diff hunks as context to avoid line drift in LLM-generated patches | 2026-08-20 |
 | [imperative-dom-mutations-break-react-reconciliation.md](./imperative-dom-mutations-break-react-reconciliation.md) | Imperative DOM child mutations inside React components cause removeChild crashes during commit phase | 2026-08-19 |

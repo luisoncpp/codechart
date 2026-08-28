@@ -42,6 +42,7 @@ function FacadeBypassModal({
   onClose: () => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pressOnBackdrop = useRef(false);
   const text = violations.map((d) => d.message).join("\n");
 
   const copy = async () => {
@@ -50,7 +51,10 @@ function FacadeBypassModal({
   };
 
   return (
-    <div style={backdropStyle} onClick={onClose}>
+    <div
+      style={backdropStyle}
+      {...backdropDismiss(pressOnBackdrop, onClose)}
+    >
       <div
         role="dialog"
         aria-labelledby="facade-bypass-modal-title"
@@ -78,6 +82,20 @@ function FacadeBypassModal({
       </div>
     </div>
   );
+}
+
+function backdropDismiss(
+  pressOnBackdrop: React.MutableRefObject<boolean>,
+  onClose: () => void,
+) {
+  return {
+    onMouseDown: (e: React.MouseEvent) => {
+      pressOnBackdrop.current = e.target === e.currentTarget;
+    },
+    onClick: (e: React.MouseEvent) => {
+      if (pressOnBackdrop.current && e.target === e.currentTarget) onClose();
+    },
+  };
 }
 
 const labelButtonStyle = {

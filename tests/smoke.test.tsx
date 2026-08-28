@@ -54,6 +54,18 @@ describe("ProjectLoaderPanel", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("keeps the architecture issues modal open when a textarea resize ends on the backdrop", async () => {
+    const dialog = await openArchitectureIssuesDialog();
+    const backdrop = dialog.parentElement!;
+    fireEvent.mouseDown(within(dialog).getByRole("textbox"));
+    fireEvent.click(backdrop);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.mouseDown(backdrop);
+    fireEvent.click(backdrop);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("stays idle when the picker is cancelled", async () => {
     renderProjectLoaderPanel(async () => null);
     clickOpenFolder();
