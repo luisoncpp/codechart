@@ -52,7 +52,7 @@ diagnostics }`. Pure; the set of known module ids is the parsed paths themselves
 **Edge id** = `${source}->${target}:import:${ordinal}`. Edges are sorted by
 `(source, target)`; `ordinal` disambiguates repeated same-pair imports (0-based).
 `kind = import`, `trigger = "import"`. `is_violation` starts `false` and is set
-by the drift pass below. Soft (dashed) edges are emitted by `classify_soft`.
+by the drift and layering passes below. Soft (dashed) edges are emitted by `classify_soft`.
 
 ## `references::classify_soft` — event soft edges (Phase 9)
 
@@ -162,17 +162,46 @@ and `edge_id`, and reads `"<S> imports <T>, bypassing the <group> facade"`.
 derived by `analysis::group_boundaries` from the `ResolvedGroups` — `references`
 owns the input type so it stays decoupled from `grouping`.
 
+## `references::flag_layering` — group→group layering
+
+`flag_layering(&mut edges, &GroupBoundaries, &BTreeMap<String, LayeringRule>)`
+(`layering.rs`). Post-pass immediately after `flag_drift`, before `flag_cycles`.
+Solid `import` edges only (soft / IPC / seam ignored). Test importers skipped
+(same as `flag_drift`). Does not clear existing facade-bypass flags.
+
+A rule lives on an **importer** group (`mustNotImport` / `mayImport` from
+`*.group.md`). It applies to every module whose group is that id or a descendant.
+A named target matches that group or a descendant. Imports that stay inside the
+rule-holder's subtree are never flagged. Ungrouped targets: allowlist flags them
+(`… may not import ungrouped`); denylist does not.
+
+Diagnostic (`Severity::Warning`, `kind: ArchitectureViolation`) is keyed
+`architectureViolation:layer:<edge-id>` so a bypass and a layering break on the
+same edge both survive `diagnostics::merge`. Message:
+`"<S> imports <T>, violating layering: <from> must not import <to>"` (or
+`may not import`). `<from>` / `<to>` are the **named** group ids.
+
+`LayeringRule` is built in `analysis` from `ResolvedGroups.layering` (validated
+in `grouping`); unknown config ids never reach this pass.
+
 ## `references::flag_cycles` — import-cycle detection
 
 `flag_cycles(&mut edges, module_ids) -> Vec<Diagnostic>` (`cycles.rs`). Third
 post-pass on resolved **import** edges, wired in `analysis::resolve_edges`
-immediately after `flag_drift`, before soft/IPC/seam classifiers.
+immediately after `flag_layering`, before soft/IPC/seam classifiers.
 
 **C++ logical units:** before SCC, collapse same-stem impl/header pairs when an
 import edge `impl → header` exists (`cpp.rs` stem helpers — same rule as
 `analysis/nodes` header-export copy). Unit id = header path for a paired impl;
 unpaired files keep their own path. `Player.cpp → Player.h` projects to a unit
 self-edge and is dropped (never a finding, never flagged `is_violation`).
+
+**Rust parent/child pairs:** do **not** collapse children onto the parent unit.
+Skip import edges between a directory module (`mod.rs` / `lib.rs` / `main.rs`)
+and a **direct** child (`D/name.rs` or `D/name/mod.rs`) in both directions
+(`rust.rs` `is_paired_rust_parent_child`). That drops `mod child;` plus
+`use super::…` 2-cycles without hiding sibling `A.rs ↔ B.rs` cycles.
+Grandchildren (`D/name/create.rs` ↔ `D/mod.rs`) stay in the graph.
 
 **Algorithm:** project import edges to unit→unit; Tarjan SCC on a `BTreeMap`
 adjacency; report SCCs with ≥2 units plus size-1 units with a true self-include
@@ -208,8 +237,9 @@ sort by id, dedup by id — for deterministic final output.
    the rest of the graph still builds.
 3. `resolve_groups(parsed_paths, defs)` — group tree, membership, facades.
 4. `resolve_edges(parsed_modules, &groups)` — `resolve_references` for edges +
-   unresolved diagnostics, then `flag_drift`, then `flag_cycles`, then
-   `classify_soft` appends event soft edges (imports stay sorted first).
+   unresolved diagnostics, then `flag_drift`, then `flag_layering`, then
+   `flag_cycles`, then `classify_soft` appends event soft edges (imports stay
+   sorted first).
 5. Build `ModuleNode`s (`nodes.rs`): id = path, label = basename, language from
    extension (`tsx` → `Tsx`, else `TypeScript`), `group_id`/`is_facade` from the
    resolved groups, `loc` from the parse, annotation = first `@Architecture` block.

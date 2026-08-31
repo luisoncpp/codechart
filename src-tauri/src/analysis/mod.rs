@@ -31,7 +31,7 @@ use crate::project_config::{
 use crate::project_source::ProjectSource;
 use crate::references::{
     classify_interface_seams, classify_soft, classify_tauri_ipc, classify_unity_assets,
-    flag_cycles, flag_drift, resolve_imports, GroupBoundaries,
+    flag_cycles, flag_drift, flag_layering, resolve_imports, GroupBoundaries, LayeringRule,
 };
 use crate::tsconfig_paths::load_from_source;
 use crate::unity_assets::index_meta_files;
@@ -154,9 +154,9 @@ fn listed_files(
     (files, is_unreal)
 }
 
-/// Resolve import edges, flag facade-bypass drift (Phase 8), then append
-/// event-driven `soft` edges (Phase 9), interface-seam `soft` edges (Phase
-/// 10), and Tauri IPC `soft` edges. Imports stay sorted first; soft edges follow.
+/// Resolve import edges, flag facade-bypass drift, then group layering, then
+/// import cycles; then append event-driven `soft` edges, interface-seam `soft`
+/// edges, and Tauri IPC `soft` edges. Imports stay sorted first; soft edges follow.
 fn resolve_edges(
     parsed: &[ParsedModule],
     groups: &ResolvedGroups,
@@ -172,6 +172,7 @@ fn resolve_edges(
     let mut refs = resolve_imports(parsed, unreal, aliases);
     let bounds = group_boundaries(groups);
     let violations = flag_drift(&mut refs.edges, &bounds);
+    let layer_diags = flag_layering(&mut refs.edges, &bounds, &layering_rules(groups));
     let module_ids: Vec<String> = parsed.iter().map(|m| m.path.clone()).collect();
     let cycle_diags = flag_cycles(&mut refs.edges, &module_ids);
     let import_pairs = collect_import_pairs(&refs.edges);
@@ -184,6 +185,7 @@ fn resolve_edges(
     refs.edges.extend(unity_edges);
     let mut diagnostics = refs.diagnostics;
     diagnostics.extend(violations);
+    diagnostics.extend(layer_diags);
     diagnostics.extend(cycle_diags);
     diagnostics.extend(ipc_diags);
     diagnostics.extend(unity_diags);
@@ -218,6 +220,22 @@ fn group_boundaries(groups: &ResolvedGroups) -> GroupBoundaries {
         faceted_groups,
         facades: groups.facades.clone(),
     }
+}
+
+fn layering_rules(groups: &ResolvedGroups) -> BTreeMap<String, LayeringRule> {
+    groups
+        .layering
+        .iter()
+        .map(|(id, rule)| {
+            (
+                id.clone(),
+                LayeringRule {
+                    must_not_import: rule.must_not_import.clone(),
+                    may_import: rule.may_import.clone(),
+                },
+            )
+        })
+        .collect()
 }
 
 /// Parse every adapter-supported, non-config file. Read/parse failures become

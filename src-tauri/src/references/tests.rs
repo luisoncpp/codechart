@@ -676,6 +676,192 @@ fn import_from_a_nested_subgroup_into_its_ancestor_private_is_allowed() {
     assert!(diags.is_empty());
 }
 
+// ---- group layering ------------------------------------------------------
+
+fn layer_rule(must_not: &[&str], may: Option<&[&str]>) -> LayeringRule {
+    LayeringRule {
+        must_not_import: must_not.iter().map(|s| (*s).into()).collect(),
+        may_import: may.map(|list| list.iter().map(|s| (*s).into()).collect()),
+    }
+}
+
+fn layer_map(pairs: &[(&str, LayeringRule)]) -> BTreeMap<String, LayeringRule> {
+    pairs
+        .iter()
+        .map(|(id, r)| ((*id).into(), r.clone()))
+        .collect()
+}
+
+#[test]
+fn denylist_flags_import_of_a_public_facade() {
+    let bounds = boundaries(
+        &[("db/repo.ts", "db"), ("ui/index.ts", "ui")],
+        &["ui/index.ts"],
+        &[],
+    );
+    let rules = layer_map(&[("db", layer_rule(&["ui"], None))]);
+    let mut edges = vec![edge("db/repo.ts", "ui/index.ts")];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(edges[0].is_violation);
+    assert_eq!(diags.len(), 1);
+    assert_eq!(
+        diags[0].id,
+        "architectureViolation:layer:db/repo.ts->ui/index.ts:import:0"
+    );
+    assert!(diags[0].message.contains("db must not import ui"));
+}
+
+#[test]
+fn allowlist_miss_is_a_violation_hit_is_not() {
+    let bounds = boundaries(
+        &[
+            ("ui/view.ts", "ui"),
+            ("domain/model.ts", "domain"),
+            ("db/repo.ts", "db"),
+        ],
+        &[],
+        &[],
+    );
+    let rules = layer_map(&[("ui", layer_rule(&[], Some(&["domain"])))]);
+    let mut miss = vec![edge("ui/view.ts", "db/repo.ts")];
+    let miss_diags = flag_layering(&mut miss, &bounds, &rules);
+    assert!(miss[0].is_violation);
+    assert!(miss_diags[0].message.contains("ui may not import db"));
+    let mut hit = vec![edge("ui/view.ts", "domain/model.ts")];
+    let hit_diags = flag_layering(&mut hit, &bounds, &rules);
+    assert!(!hit[0].is_violation);
+    assert!(hit_diags.is_empty());
+}
+
+#[test]
+fn own_subtree_imports_are_allowed_under_an_allowlist() {
+    let bounds = boundaries(
+        &[("ui/view.ts", "ui"), ("ui/widgets/btn.ts", "widgets")],
+        &[],
+        &[("widgets", "ui")],
+    );
+    let rules = layer_map(&[("ui", layer_rule(&[], Some(&["domain"])))]);
+    let mut edges = vec![edge("ui/view.ts", "ui/widgets/btn.ts")];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(!edges[0].is_violation);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn nested_importer_and_target_inherit_the_named_group_rule() {
+    let bounds = boundaries(
+        &[
+            ("db/pg/client.ts", "postgres"),
+            ("ui/widgets/btn.ts", "widgets"),
+        ],
+        &[],
+        &[("postgres", "db"), ("widgets", "ui")],
+    );
+    let rules = layer_map(&[("db", layer_rule(&["ui"], None))]);
+    let mut edges = vec![edge("db/pg/client.ts", "ui/widgets/btn.ts")];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(edges[0].is_violation);
+    assert!(diags[0].message.contains("db must not import ui"));
+}
+
+#[test]
+fn parent_allowlist_does_not_forbid_sibling_groups() {
+    let bounds = boundaries(
+        &[
+            ("db/repo.ts", "db"),
+            ("ui/view.ts", "ui"),
+            ("app/main.ts", "app"),
+        ],
+        &[],
+        &[("db", "app"), ("ui", "app")],
+    );
+    let rules = layer_map(&[("app", layer_rule(&[], Some(&["shared"])))]);
+    let mut edges = vec![edge("db/repo.ts", "ui/view.ts")];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(!edges[0].is_violation, "sibling import stays inside app");
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn soft_edges_are_ignored_by_layering() {
+    let bounds = boundaries(&[("db/repo.ts", "db"), ("ui/view.ts", "ui")], &[], &[]);
+    let rules = layer_map(&[("db", layer_rule(&["ui"], None))]);
+    let mut edges = vec![Edge {
+        id: "db/repo.ts->ui/view.ts:soft:0".into(),
+        source: "db/repo.ts".into(),
+        target: "ui/view.ts".into(),
+        kind: EdgeKind::Soft,
+        trigger: "event:x".into(),
+        is_violation: false,
+    }];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(!edges[0].is_violation);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn test_importer_is_skipped_by_layering() {
+    let bounds = boundaries(&[("db/repo.test.ts", "db"), ("ui/view.ts", "ui")], &[], &[]);
+    let rules = layer_map(&[("db", layer_rule(&["ui"], None))]);
+    let mut edges = vec![edge("db/repo.test.ts", "ui/view.ts")];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(!edges[0].is_violation);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn layering_and_drift_can_both_flag_the_same_edge() {
+    let bounds = boundaries(
+        &[
+            ("ui/view.ts", "ui"),
+            ("core/index.ts", "core"),
+            ("core/store.ts", "core"),
+        ],
+        &["core/index.ts"],
+        &[],
+    );
+    let rules = layer_map(&[("ui", layer_rule(&["core"], None))]);
+    let mut edges = vec![edge("ui/view.ts", "core/store.ts")];
+    let drift = flag_drift(&mut edges, &bounds);
+    let layer = flag_layering(&mut edges, &bounds, &rules);
+    assert!(edges[0].is_violation);
+    assert_eq!(drift.len(), 1);
+    assert_eq!(layer.len(), 1);
+    assert_eq!(
+        drift[0].id,
+        "architectureViolation:ui/view.ts->core/store.ts:import:0"
+    );
+    assert_eq!(
+        layer[0].id,
+        "architectureViolation:layer:ui/view.ts->core/store.ts:import:0"
+    );
+}
+
+#[test]
+fn denylist_wins_over_allowlist_for_the_same_target() {
+    let bounds = boundaries(&[("db/repo.ts", "db"), ("ui/view.ts", "ui")], &[], &[]);
+    let rules = layer_map(&[("db", layer_rule(&["ui"], Some(&["ui"])))]);
+    let mut edges = vec![edge("db/repo.ts", "ui/view.ts")];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(edges[0].is_violation);
+    assert!(diags[0].message.contains("must not import"));
+}
+
+#[test]
+fn allowlist_flags_ungrouped_targets_denylist_does_not() {
+    let bounds = boundaries(&[("ui/view.ts", "ui")], &[], &[]);
+    let allow = layer_map(&[("ui", layer_rule(&[], Some(&["domain"])))]);
+    let mut allow_edges = vec![edge("ui/view.ts", "src/main.ts")];
+    let allow_diags = flag_layering(&mut allow_edges, &bounds, &allow);
+    assert!(allow_edges[0].is_violation);
+    assert!(allow_diags[0].message.contains("may not import ungrouped"));
+    let deny = layer_map(&[("ui", layer_rule(&["db"], None))]);
+    let mut deny_edges = vec![edge("ui/view.ts", "src/main.ts")];
+    let deny_diags = flag_layering(&mut deny_edges, &bounds, &deny);
+    assert!(!deny_edges[0].is_violation);
+    assert!(deny_diags.is_empty());
+}
+
 // ---- soft edges (Phase 9) ------------------------------------------------
 
 /// A `ParsedModule` at `path` carrying the given `(role, token)` signals.
@@ -1150,6 +1336,98 @@ fn cpp_cycle_message_omits_extensions_ts_keeps_them() {
     let ts_ids = vec!["a.ts".into(), "b.ts".into()];
     let ts_msg = flag_cycles(&mut ts, &ts_ids)[0].message.clone();
     assert_eq!(ts_msg, "circular include (2 modules): a.ts → b.ts → a.ts");
+}
+
+#[test]
+fn rust_lib_tests_pair_is_not_a_cycle() {
+    let mut edges = vec![
+        edge("src-tauri/src/lib.rs", "src-tauri/src/tests.rs"),
+        edge("src-tauri/src/tests.rs", "src-tauri/src/lib.rs"),
+    ];
+    let module_ids = vec![
+        "src-tauri/src/lib.rs".into(),
+        "src-tauri/src/tests.rs".into(),
+    ];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert!(diags.is_empty());
+    assert!(edges.iter().all(|e| !e.is_violation));
+}
+
+#[test]
+fn rust_mod_child_pair_is_not_a_cycle() {
+    let mut edges = vec![
+        edge("src-tauri/src/eos/mod.rs", "src-tauri/src/eos/connect.rs"),
+        edge("src-tauri/src/eos/connect.rs", "src-tauri/src/eos/mod.rs"),
+    ];
+    let module_ids = vec![
+        "src-tauri/src/eos/mod.rs".into(),
+        "src-tauri/src/eos/connect.rs".into(),
+    ];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn rust_nested_dir_module_pair_is_not_a_cycle() {
+    let mut edges = vec![
+        edge("src-tauri/src/eos/mod.rs", "src-tauri/src/eos/lobby/mod.rs"),
+        edge("src-tauri/src/eos/lobby/mod.rs", "src-tauri/src/eos/mod.rs"),
+    ];
+    let module_ids = vec![
+        "src-tauri/src/eos/mod.rs".into(),
+        "src-tauri/src/eos/lobby/mod.rs".into(),
+    ];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn rust_cycle_only_through_parent_is_not_a_finding() {
+    let mut edges = vec![
+        edge("eos/mod.rs", "eos/a.rs"),
+        edge("eos/a.rs", "eos/b.rs"),
+        edge("eos/b.rs", "eos/mod.rs"),
+    ];
+    let module_ids = vec!["eos/mod.rs".into(), "eos/a.rs".into(), "eos/b.rs".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert!(diags.is_empty());
+}
+
+#[test]
+fn rust_sibling_cycle_is_still_reported() {
+    let mut edges = vec![
+        edge("eos/mod.rs", "eos/a.rs"),
+        edge("eos/mod.rs", "eos/b.rs"),
+        edge("eos/a.rs", "eos/b.rs"),
+        edge("eos/b.rs", "eos/a.rs"),
+    ];
+    let module_ids = vec!["eos/mod.rs".into(), "eos/a.rs".into(), "eos/b.rs".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 2);
+    assert_eq!(
+        diags[0].message,
+        "circular include (2 modules): eos/a.rs → eos/b.rs → eos/a.rs"
+    );
+    let parent_edge = edges
+        .iter()
+        .find(|e| e.source == "eos/mod.rs" && e.target == "eos/a.rs")
+        .expect("parent edge");
+    assert!(!parent_edge.is_violation);
+}
+
+#[test]
+fn rust_grandchild_to_grandparent_is_not_a_pair() {
+    let mut edges = vec![
+        edge("eos/lobby/create.rs", "eos/mod.rs"),
+        edge("eos/mod.rs", "eos/lobby/create.rs"),
+    ];
+    let module_ids = vec!["eos/lobby/create.rs".into(), "eos/mod.rs".into()];
+    let diags = flag_cycles(&mut edges, &module_ids);
+    assert_eq!(diags.len(), 2);
+    assert_eq!(
+        diags[0].message,
+        "circular include (2 modules): eos/lobby/create.rs → eos/mod.rs → eos/lobby/create.rs"
+    );
 }
 
 fn assert_elementary_circular_include(message: &str) {

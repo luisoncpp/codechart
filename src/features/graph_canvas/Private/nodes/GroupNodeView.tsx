@@ -13,6 +13,7 @@ import { groupShellStyle, groupTextColors } from "./heat-node-styles";
 import { darkenHex } from "./color-utils";
 import { collapsedDescription, collapsedLabelLayout } from "../descriptions/collapsed-description";
 import { GroupDescription } from "../descriptions/GroupDescription";
+import { renderInlineMarkdown } from "../descriptions/render-markdown";
 
 const SANS = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const HANDLE_STYLE = { opacity: 0, width: 1, height: 1 } as const;
@@ -174,13 +175,15 @@ function CollapsedCard({
       </div>
       {description && (
         <p
+          className="group-collapsed-desc"
           style={{
             ...cardDescriptionStyle(descColor, description),
             opacity: groupLabelOpacity(data),
           }}
-        >
-          {description.text}
-        </p>
+          dangerouslySetInnerHTML={{
+            __html: renderInlineMarkdown(description.text),
+          }}
+        />
       )}
     </div>
   );

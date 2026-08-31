@@ -16,6 +16,11 @@ color: "#3b82f6"
 icon: layout
 facades:
   - index.ts
+mustNotImport:
+  - db
+mayImport:
+  - domain
+  - shared
 match:
   - "**/*.tsx"
   - "!**/*.test.tsx"
@@ -37,6 +42,8 @@ design patterns, and subsystem boundaries.
 | \`color\` | string | Hex color used for node borders, headers, and accents. |
 | \`icon\` | string | Optional icon name. |
 | \`facades\` | string[] | Entrypoint modules (defaults to \`index.ts\` / \`index.tsx\` if present). |
+| \`mustNotImport\` | string[] | Group ids this group's module tree must not import (denylist). |
+| \`mayImport\` | string[] | When present, only these group ids may be imported (plus this group's own subtree). |
 | \`match\` | string[] | Glob patterns or \`/regex/\` claiming modules (relative to group directory). |
 | \`files\` | string[] | Explicit list of file paths belonging to this group. |
 | \`groups\` | string[] | Child group IDs for composition groups (parent-child nesting). |
@@ -61,5 +68,6 @@ design patterns, and subsystem boundaries.
 - **Nested Groups vs Partial Overlap**: Multiple groups can claim the same file **only when they are nested** (a nested explicit child group supersedes an ancestor's folder ownership; the innermost group wins). **Partial overlap** between competing, non-nested explicit groups is forbidden and produces \`configError:overlap:<module>\`. Cross-cutting claims require the folder owner to cede files via \`exclude\`.
 - **Folder Ownership**: A group without \`match\`, \`files\`, or \`groups\` automatically claims all files in its directory.
 - **Sibling Facades**: A group in \`domain/widget/\` can own \`domain/widget.ts\` using \`match: ["../widget.ts", "**"]\` and \`facades: ["../widget.ts"]\`.
+- **Layering**: \`mustNotImport\` / \`mayImport\` constrain outbound solid imports between groups. They are independent of facades — importing a public facade can still be a violation. Nested groups inherit a parent's rule; named targets include their descendants. Sibling rules belong on those groups, not on a composition parent. Unknown ids are \`configError\`s.
 - **YAML Escaping**: Always quote string values containing \`#\` (e.g. \`descriptionShort: "See [[#Section]]"\`) to avoid YAML comment syntax.
 `;

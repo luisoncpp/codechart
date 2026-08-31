@@ -35,6 +35,7 @@ User selects a module that belongs to a cycled **logical unit** (after analyze).
 ## Files to inspect
 
 - `src-tauri/src/references/cycles.rs` — diagnostics + edge flagging + message text
+- `src-tauri/src/references/rust.rs` — parent/`mod.rs` ↔ direct-child pair skip
 - `src-tauri/src/references/cycle_scc.rs` — Tarjan SCC
 - `src-tauri/src/references/cycle_witness.rs` — hub-shortest elementary witness
 - `src/domain/graph/Private/selectors.ts` — `architectureViolations`, `diagnosticsFor`
@@ -46,5 +47,6 @@ User selects a module that belongs to a cycled **logical unit** (after analyze).
 - **Cycle on canvas but no panel text** → file not in `module_ids` passed to `flag_cycles`, or diagnostic `moduleId` mismatch.
 - **Two toolbar rows for one cycle** → `architectureViolations` should dedupe by `cycle-key` in the diagnostic id.
 - **Red `Foo.cpp → Foo.h` edge** → pair self-edge incorrectly flagged; should stay grey.
+- **Red `mod.rs → child.rs` (or `lib.rs ↔ tests.rs`)** → Rust parent–direct-child pair incorrectly flagged; should stay grey. Sibling `A.rs ↔ B.rs` under the same facade should still go red.
 - **Unrolled / fabricated chain** → witness must stay elementary (`cycle_witness`); inbound-only predecessors must not appear.
 - **Huge `others in this cycle` list** → those ids are co-members of the SCC (often via a hub like a character/controller unit), not “unrelated extras”; the `(N modules)` headline is the size signal.

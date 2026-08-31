@@ -1,7 +1,8 @@
 // @Architecture(descriptionShort="Resolves modules into nested groups and facades")
 // grouping — assign modules to a nested group tree and designate facades
 // (Phase 3). Pure: takes the file list + parsed `GroupDef`s, returns group nodes,
-// per-module group assignment, the facade set, and configError diagnostics.
+// per-module group assignment, the facade set, layering rules, and configError
+// diagnostics.
 //
 // Membership sources (`match`/`files`/`groups`) and folder ownership are resolved
 // in `claim`; parentId in `nesting`; the no-config fallback in `infer`. Competing
@@ -11,6 +12,7 @@
 mod claim;
 mod disconnect;
 mod infer;
+mod layering;
 mod matcher;
 mod nesting;
 
@@ -25,7 +27,10 @@ use crate::project_config::GroupDef;
 use claim::{assign_modules, facades_for};
 use disconnect::resolve_disconnect;
 use infer::infer_groups;
+use layering::resolve_layering;
 use nesting::resolve_nesting;
+
+pub use layering::GroupLayering;
 
 /// The grouping result consumed by `analysis` (Phase 4) to stamp `ModuleNode`s.
 pub struct ResolvedGroups {
@@ -35,7 +40,10 @@ pub struct ResolvedGroups {
     pub module_group: BTreeMap<String, String>,
     /// Module paths designated as a facade of their group.
     pub facades: BTreeSet<String>,
-    /// configErrors from overlaps, unknown facades, and unknown `groups` refs.
+    /// Validated importer-group layering rules (`mustNotImport` / `mayImport`).
+    pub layering: BTreeMap<String, GroupLayering>,
+    /// configErrors from overlaps, unknown facades, unknown `groups` refs, and
+    /// unknown layering group ids.
     pub diagnostics: Vec<Diagnostic>,
 }
 
@@ -53,6 +61,8 @@ fn build_from_defs(files: &[String], defs: &[GroupDef]) -> ResolvedGroups {
     let nesting = resolve_nesting(defs);
     let mut diagnostics = assignment.diagnostics;
     diagnostics.extend(nesting.diagnostics);
+    let (layering, layer_diags) = resolve_layering(defs);
+    diagnostics.extend(layer_diags);
     let mut facades = BTreeSet::new();
     let mut groups = Vec::new();
     for def in defs {
@@ -75,6 +85,7 @@ fn build_from_defs(files: &[String], defs: &[GroupDef]) -> ResolvedGroups {
         groups,
         module_group: assignment.module_group,
         facades,
+        layering,
         diagnostics,
     }
 }

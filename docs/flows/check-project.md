@@ -27,7 +27,7 @@ Default fail-on kinds: `circularDependency`, `architectureViolation`, `configErr
 - None. Does not persist `.codechart/config.json` (`ensure_unreal_defaults` is GUI-only).
 
 ## Common failure modes
-- **Exit 1 with `architectureViolation`** — an import bypassed a group facade. Add/fix `facades` in `*.group.md`, or route through the facade.
+- **Exit 1 with `architectureViolation`** — facade bypass (import of a private member) or group layering (`mustNotImport` / `mayImport`). Route through the facade, or drop the forbidden cross-group import.
 - **Exit 1 with `circularDependency`** — solid import cycle. Works with inferred folders; no group files required.
 - **Exit 0 with `unresolvedImport` lines** — expected default. Pass `--fail-on=…,unresolvedImport` to opt in.
 - **`unknown diagnostic kind` / `unknown format`** — flag parse error on stderr; analysis is not run.

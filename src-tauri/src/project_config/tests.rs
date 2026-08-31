@@ -86,6 +86,23 @@ fn architecture_doc_parses() {
 }
 
 #[test]
+fn layering_fields_parse() {
+    let md = "---\nid: db\nmustNotImport:\n  - ui\nmayImport:\n  - domain\n---\n";
+    let def = parse_group_def("src/db/db.group.md", md).expect("valid");
+    assert_eq!(def.must_not_import, vec!["ui".to_string()]);
+    assert_eq!(def.may_import, Some(vec!["domain".to_string()]));
+}
+
+#[test]
+fn omitted_may_import_is_none_empty_allowlist_is_some() {
+    let omitted = parse_group_def("db.group.md", "---\nid: db\n---\n").expect("valid");
+    assert!(omitted.must_not_import.is_empty());
+    assert!(omitted.may_import.is_none());
+    let empty = parse_group_def("ui.group.md", "---\nid: ui\nmayImport: []\n---\n").expect("valid");
+    assert_eq!(empty.may_import, Some(vec![]));
+}
+
+#[test]
 fn disconnected_config_parses() {
     let md = "---\nid: shared\ndisconnected: true\n\
               disconnectedModules:\n  - types.ts\n---\n";

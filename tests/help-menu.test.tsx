@@ -40,6 +40,7 @@ describe("HelpMenu dropdown and modals", () => {
     expect(screen.getByRole("heading", { name: "Help: Groups format" })).toBeInTheDocument();
     expect(screen.getByText(/In CodeChart, architectural boundaries/)).toBeInTheDocument();
     expect(screen.getByText("Frontmatter Configuration")).toBeInTheDocument();
+    expect(screen.getByText(/constrain outbound solid imports/)).toBeInTheDocument();
   });
 
   it("opens the Architecture tags documentation modal and renders content", () => {

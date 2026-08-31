@@ -20,7 +20,8 @@ Public surface (`project_config::`):
   color, icon, `facades`, membership (`match_globs`/`files`/`group_refs`/`exclude`),
   root-only `ignore`, `description_short`/`description_long`, `disconnected` (hide all
   group connections by default), `disconnected_modules` (module paths relative to `dir`),
-  `architecture_doc` (repo-relative path to extended markdown for L2 canvas).
+  `architecture_doc` (repo-relative path to extended markdown for L2 canvas),
+  `must_not_import` / `may_import` (group→group layering; enforced in `references`).
 - `parse_group_def(path, content) -> Result<GroupDef, ConfigError>` — one file.
 - `discover_group_defs(source) -> (Vec<GroupDef>, Vec<Diagnostic>)` — walk a
   `ProjectSource`, parse every `*.group.md`, parse failures → `configError`s.
@@ -47,7 +48,7 @@ L2). Missing/invalid frontmatter → `ConfigError` (becomes a per-file `configEr
 ## `grouping`
 
 `resolve_groups(files, defs) -> ResolvedGroups` (`{ groups, module_group,
-facades, diagnostics }`). Pure; deterministic (sorted iteration, `BTree*`).
+facades, layering, diagnostics }`). Pure; deterministic (sorted iteration, `BTree*`).
 
 **Membership (TDD §7), resolved in `claim.rs`:**
 - A group with **no source** (`match`/`files`/`groups` all empty) defaults to
@@ -77,6 +78,16 @@ parent. `exclude` is a *membership* filter only — it does not affect nesting.
 `configError:facade:…`), else default to `index.ts`/`index.tsx` in `dir` when
 present. Facade paths are normalized like `files`, so they may use `..`. A
 facade-less group is public (§10 drift never flags imports into it).
+
+**Layering (`mustNotImport` / `mayImport`):** constraints on **outbound** solid
+imports from this group's module tree (the group plus descendants). A named
+target matches that group **or its descendants**. Own-subtree imports are always
+allowed. `mustNotImport` is a denylist; `mayImport` (when present, including `[]`)
+is an allowlist of other groups. Both: allowed iff own-subtree or (in `mayImport`
+and not in `mustNotImport`). Unknown ids → `configError:layer:{group}:{id}` and
+are dropped from the rule. Sibling layering is declared on those groups — a
+parent's allowlist does not forbid imports between its children. Enforcement is
+`references::flag_layering`, not grouping.
 
 **Disconnect defaults:** `disconnected: true` marks the whole group disconnected
 by default (canvas hides its edges on load). `disconnectedModules` lists module

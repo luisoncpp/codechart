@@ -279,6 +279,10 @@ color: "#7c3aed"         # optional; hex string (GroupNode.color)
 icon: cube               # optional
 facades:                 # optional; default = index.ts/index.tsx in this folder
   - index.ts
+mustNotImport:           # optional; group ids this tree must not import
+  - ui
+mayImport:               # optional; when present, only these groups (+ own subtree)
+  - domain
 descriptionShort: Domain types & state   # optional; default = first body paragraph
 # membership fields (match / files / groups / exclude) — see below; omit for folder ownership
 ---
@@ -326,6 +330,8 @@ globs, merged with the built-in defaults above).
 as fully public — every member is importable from anywhere and drift detection (§10) never flags
 imports into it. This is the intended mode for cross-cutting/shared groups assembled via
 `match`/`files`. A group *with* a facade keeps its non-facade members private (the §10 bypass rule).
+Group **layering** (`mustNotImport` / `mayImport`) is separate: a public facade import can still
+be an `architectureViolation` if it breaks a layering rule.
 
 **Body → `Annotation`:** the markdown body and `descriptionShort`/`icon` populate the group's
 `GroupNode.annotation` (`descriptionLong` = body, `descriptionShort` = frontmatter or first

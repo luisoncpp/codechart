@@ -58,6 +58,11 @@ pub struct GroupDef {
     pub disconnected: bool,
     /// Module paths (relative to `dir`) whose connections are hidden by default.
     pub disconnected_modules: Vec<String>,
+    /// Group ids this group's module tree must not import (denylist).
+    pub must_not_import: Vec<String>,
+    /// When `Some`, this group's module tree may only import these groups
+    /// (plus its own subtree). `None` means no allowlist.
+    pub may_import: Option<Vec<String>>,
 }
 
 impl GroupDef {

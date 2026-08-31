@@ -1,3 +1,4 @@
+/// <reference types="@testing-library/jest-dom" />
 import { describe, expect, it } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import {
@@ -143,6 +144,27 @@ describe("L0 collapsed-card title fits its card (regression)", () => {
     expect(desc?.truncate).toBe(false);
   });
 
+  it("renders inline markdown in the collapsed card description", async () => {
+    const store = testGraphSessionStore({
+      analyzeProject: async () =>
+        markdownDescriptionGraph("Owns behavior via `RexAIWorldSubsystem` and **task** trees."),
+      readModuleSource: async () => "",
+    });
+    await store.loadProject("/x");
+    store.setZoomLevel(0);
+    const { container } = renderGraphCanvas(store);
+    const group = await waitFor(/*findCollapsedCard=*/ () => {
+      const el = container.querySelector('[data-id="g"]');
+      expect(el).toBeTruthy();
+      return el as HTMLElement;
+    });
+    expect(group.querySelector("code")).toHaveTextContent("RexAIWorldSubsystem");
+    expect(group.querySelector("strong")).toHaveTextContent("task");
+    expect(group.textContent).not.toContain("`RexAIWorldSubsystem`");
+    const desc = group.querySelector(".group-collapsed-desc") as HTMLElement;
+    expect(desc.style.display).not.toBe("flex");
+  });
+
   it("renders the collapsed card title at the fitted font, not the base 15px", async () => {
     const label = "PaneLocalRevisionListCoordination";
     const store = testGraphSessionStore({
@@ -165,6 +187,35 @@ describe("L0 collapsed-card title fits its card (regression)", () => {
     expect(span.style.textOverflow).toBe("ellipsis");
   });
 });
+
+function markdownDescriptionGraph(descriptionLong: string): ProjectGraph {
+  return {
+    root: "/x",
+    groups: [
+      {
+        id: "g",
+        label: "AI System",
+        parentId: null,
+        facadeModuleIds: [],
+        annotation: { descriptionShort: "AI behavior", descriptionLong },
+      },
+    ],
+    modules: [
+      {
+        id: "m",
+        path: "m.ts",
+        label: "m.ts",
+        language: "ts",
+        groupId: "g",
+        isFacade: false,
+        metrics: { loc: 1 },
+        exportedSymbols: [],
+      },
+    ],
+    edges: [],
+    diagnostics: [],
+  } as unknown as ProjectGraph;
+}
 
 /** One small group whose title is far wider than its expanded footprint. */
 function longTitledGroupGraph(label: string): ProjectGraph {
