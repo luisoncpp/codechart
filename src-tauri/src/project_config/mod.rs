@@ -8,6 +8,7 @@
 // The frontmatter/body parser stays private behind this boundary.
 
 mod ignore;
+mod ignored_paths;
 mod parse;
 
 #[cfg(test)]
@@ -18,6 +19,7 @@ pub use ignore::{
     is_under_top_level_dot_dir, retain_unignored, retain_without_plugins_dirs,
     retain_without_top_level_dot_dirs,
 };
+pub use ignored_paths::{ignored_path_globs, normalize_ignored_path, retain_without_ignored_paths};
 pub use parse::parse_group_def;
 
 use std::collections::BTreeSet;

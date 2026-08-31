@@ -119,6 +119,7 @@ export function App() {
                   client={config}
                   onEditorSaved={setEditor}
                   onCppConfigSaved={() => store.loadProject(projectRoot)}
+                  onIgnoredPathsSaved={() => store.loadProject(projectRoot)}
                   onClearReviewInfo={/*clear notes and checkmarks*/ async () => {
                     reviewNotes.clearAll();
                     await store.clearAllDiffReviews();

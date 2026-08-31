@@ -24,7 +24,8 @@ pub use search::{search_sources, SearchResult};
 pub use startup_args::StartupProjectPath;
 pub use unreal_config::{
     analysis_fs_source, ensure_unreal_defaults, read_project_config, should_skip_plugins_walk,
-    unreal_options_from_source, write_project_config, ProjectConfig, UnrealOptions,
+    source_config, unreal_options_from_source, write_project_config, ProjectConfig, SourceConfig,
+    UnrealOptions,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

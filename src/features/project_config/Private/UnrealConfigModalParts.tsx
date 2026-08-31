@@ -4,9 +4,11 @@ import type { UnrealConfig } from "../../../ipc/project-config-client";
 interface PathListProps {
   paths: string[];
   onChange: (paths: string[]) => void;
+  /** Copy differs per modal (include paths vs ignored directories). */
+  labels: { placeholder: string; add: string };
 }
 
-export function PathList({ paths, onChange }: PathListProps) {
+export function PathList({ paths, onChange, labels }: PathListProps) {
   const update = (index: number, value: string) => {
     onChange(paths.map((path, i) => (i === index ? value : path)));
   };
@@ -20,7 +22,7 @@ export function PathList({ paths, onChange }: PathListProps) {
           <input
             value={path}
             onChange={(e) => update(index, e.target.value)}
-            placeholder="path/to/include"
+            placeholder={labels.placeholder}
             style={inputStyle}
           />
           <button type="button" onClick={() => remove(index)}>
@@ -29,7 +31,7 @@ export function PathList({ paths, onChange }: PathListProps) {
         </div>
       ))}
       <button type="button" onClick={() => onChange([...paths, ""])}>
-        Add include path
+        {labels.add}
       </button>
     </div>
   );

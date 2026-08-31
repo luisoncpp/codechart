@@ -21,6 +21,10 @@ const IGNORED_DIRS: &[&str] = &[
 pub struct FsProjectSource {
     root: PathBuf,
     skip_plugins: bool,
+    /// Repo-relative POSIX directory paths never entered. Unlike `skip_plugins`
+    /// (a directory *name*, matched at any depth), these are exact paths, so
+    /// `Source/ThirdParty` leaves `Other/ThirdParty` alone.
+    ignored_dirs: Vec<String>,
 }
 
 impl FsProjectSource {
@@ -28,14 +32,24 @@ impl FsProjectSource {
         Self {
             root: root.into(),
             skip_plugins: false,
+            ignored_dirs: Vec::new(),
         }
     }
 
     /// Same walk as [`Self::new`], but directories named `Plugins` are not entered.
     pub fn skipping_plugins(root: impl Into<PathBuf>) -> Self {
         Self {
-            root: root.into(),
             skip_plugins: true,
+            ..Self::new(root)
+        }
+    }
+
+    /// Never enter these repo-relative directories (project config `ignoredPaths`).
+    /// A pure walk optimization — the glob ignore set stays the source of truth.
+    pub fn with_ignored_dirs(self, ignored_dirs: Vec<String>) -> Self {
+        Self {
+            ignored_dirs,
+            ..self
         }
     }
 }
@@ -62,24 +76,36 @@ fn walk(
 ) -> Result<(), ProjectSourceError> {
     for entry in std::fs::read_dir(dir)? {
         let entry = entry?;
+        let path = entry.path();
         if entry.file_type()?.is_dir() {
-            if !skip_dir(source, &entry.file_name().to_string_lossy()) {
-                walk(source, &entry.path(), out)?;
+            if !skip_dir(source, &path) {
+                walk(source, &path, out)?;
             }
             continue;
         }
-        if let Some(rel) = relative_posix(&source.root, &entry.path()) {
+        if let Some(rel) = relative_posix(&source.root, &path) {
             out.push(rel);
         }
     }
     Ok(())
 }
 
-fn skip_dir(source: &FsProjectSource, name: &str) -> bool {
-    if IGNORED_DIRS.contains(&name) {
+/// `dir` is the absolute directory path so configured `ignored_dirs` can be
+/// matched as repo-relative paths rather than bare names.
+fn skip_dir(source: &FsProjectSource, dir: &Path) -> bool {
+    let name = dir
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+    if IGNORED_DIRS.contains(&name.as_str()) {
         return true;
     }
-    source.skip_plugins && name == "Plugins"
+    if source.skip_plugins && name == "Plugins" {
+        return true;
+    }
+    relative_posix(&source.root, dir)
+        .map(|rel| source.ignored_dirs.contains(&rel))
+        .unwrap_or(/*outside the root=*/ false)
 }
 
 fn relative_posix(root: &Path, path: &Path) -> Option<String> {
@@ -106,6 +132,21 @@ mod tests {
             .expect("list");
         assert!(listed.iter().any(|p| p.ends_with("Game.cpp")));
         assert!(listed.iter().all(|p| !p.contains("Plugins")));
+    }
+
+    #[test]
+    fn ignored_dirs_are_never_entered_but_same_named_siblings_are() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let root = temp.path();
+        std::fs::create_dir_all(root.join("src/vendor")).expect("src vendor");
+        std::fs::create_dir_all(root.join("tools/vendor")).expect("tools vendor");
+        std::fs::write(root.join("src/vendor/a.ts"), "").expect("a");
+        std::fs::write(root.join("tools/vendor/b.ts"), "").expect("b");
+        let listed = FsProjectSource::new(root)
+            .with_ignored_dirs(vec!["src/vendor".to_string()])
+            .list_files()
+            .expect("list");
+        assert_eq!(listed, vec!["tools/vendor/b.ts".to_string()]);
     }
 
     #[test]

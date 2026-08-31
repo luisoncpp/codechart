@@ -79,6 +79,7 @@ fn read_write_project_config_round_trips() {
     let root = temp.path().to_string_lossy().to_string();
     let config = ProjectConfig {
         editor: "code-insiders".into(),
+        ignored_paths: vec!["vendor".into()],
         unreal: UnrealConfig {
             known_paths: vec!["Source/Game/Public".into()],
             hide_generated_files: false,
@@ -108,6 +109,7 @@ fn ensure_defaults_fills_empty_existing_config() {
                 exclude_engine_references: false,
                 hide_plugins: false,
             },
+            ..ProjectConfig::default()
         },
     )
     .expect("write empty config");
@@ -157,4 +159,45 @@ fn skip_plugins_walk_ignores_non_unreal_roots() {
     let temp = tempfile::tempdir().expect("tempdir");
     let root = temp.path().to_string_lossy().to_string();
     assert!(!should_skip_plugins_walk(&root));
+}
+
+#[test]
+fn a_config_without_ignored_paths_reads_as_an_empty_list() {
+    let source = memory(&[(
+        CONFIG_PATH,
+        r#"{"editor":"code","unreal":{"knownPaths":[],"hideGeneratedFiles":true,"excludeEngineReferences":true,"hidePlugins":true}}"#,
+    )]);
+    assert!(source_config(&source).ignored_paths.is_empty());
+}
+
+#[test]
+fn ignored_paths_are_normalized_and_deduped() {
+    let source = memory(&[(
+        CONFIG_PATH,
+        r#"{"ignoredPaths":["  Source\\ThirdParty/ ","Source/ThirdParty","","vendor/"]}"#,
+    )]);
+    assert_eq!(
+        source_config(&source).ignored_paths,
+        vec!["Source/ThirdParty".to_string(), "vendor".to_string()]
+    );
+}
+
+/// `unreal` is `#[serde(default)]`, so a hand-written partial config keeps its
+/// `ignoredPaths` instead of failing to parse and losing them to
+/// `ProjectConfig::default()`. The Unreal toggles still land on their (on)
+/// defaults — the app's modals always write the whole config, so only hand-edits
+/// see this.
+#[test]
+fn a_partial_config_keeps_its_ignored_paths() {
+    let source = memory(&[(CONFIG_PATH, r#"{"ignoredPaths":["vendor"]}"#)]);
+    assert_eq!(
+        source_config(&source).ignored_paths,
+        vec!["vendor".to_string()]
+    );
+}
+
+#[test]
+fn no_config_file_means_ignore_nothing() {
+    let source = memory(&[("src/a.ts", "")]);
+    assert!(source_config(&source).ignored_paths.is_empty());
 }

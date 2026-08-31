@@ -6,13 +6,15 @@
 ## Responsibility
 
 CodeChart stores project-local application settings at `.codechart/config.json`.
-The Settings menu edits the preferred editor for module files and, for C++
-projects, opens the existing include-path configuration modal. Unreal support
-layers project-local include-path configuration on top of the C++ adapter.
+The Settings menu edits the preferred editor for module files, the list of
+ignored directories, and, for C++ projects, opens the existing include-path
+configuration modal. Unreal support layers project-local include-path
+configuration on top of the C++ adapter.
 
 ```json
 {
   "editor": "code",
+  "ignoredPaths": ["vendor", "Source/ThirdParty"],
   "unreal": {
     "knownPaths": ["Source/Game/Public", "Source/Game/Private"],
     "hideGeneratedFiles": true,
@@ -28,6 +30,35 @@ backward compatible. `hidePlugins` missing from an old file deserializes as
 `true`. Editor and Unreal modal saves use read-modify-write so neither setting
 replaces the other. View ▾ **Hide plugins** also read-modify-writes only that
 flag, then reloads analysis.
+
+`unreal` is also `#[serde(default)]`, so a hand-written config that sets only
+`editor` or `ignoredPaths` still parses (before, a missing `unreal` key silently
+discarded the whole file). Such a partial file gets the Unreal-on defaults; the
+app's modals always write the complete config, so only hand-edits see this.
+
+## Ignored Paths
+
+`ignoredPaths` are repo-relative **directory paths** — not globs. Each entry
+ignores that directory and its whole subtree, so `Source/ThirdParty` never
+affects `Other/ThirdParty`. Entries are trimmed, `\` becomes `/`, surrounding
+slashes are stripped, blanks dropped, and the list is deduped
+(`project_config::normalize_ignored_path`).
+
+Two layers enforce it and must agree:
+
+- **Correctness** — `analysis::listed_files` drops ignored paths *before*
+  `discover_group_defs_from`, so a `*.group.md` inside an ignored directory
+  declares no group and emits no `configError`. The globs (`<p>/**` and `<p>`)
+  also join the `ignore_patterns_with_unreal` set.
+- **Performance** — `analysis_fs_source` passes the same entries to
+  `FsProjectSource::with_ignored_dirs`, so the walk never descends into them.
+  Unlike the `Plugins` rule (a directory *name*, matched at any depth), these are
+  exact paths.
+
+An ignored directory contributes no modules, groups, edges, or diagnostics.
+Imports that used to resolve into it become `unresolvedImport` like any other
+missing relative target. Both the app and `codechart-cli` read the same list —
+there is no CLI flag.
 
 ## Unreal Defaults
 

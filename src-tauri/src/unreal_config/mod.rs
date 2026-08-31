@@ -5,11 +5,14 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::project_source::ProjectSource;
 
+mod deduce;
 mod detect;
+
+use deduce::deduced_config;
 
 pub const CONFIG_PATH: &str = ".codechart/config.json";
 pub const DEFAULT_EDITOR: &str = "code";
@@ -21,6 +24,14 @@ pub use detect::{analysis_fs_source, is_unreal_project, should_skip_plugins_walk
 pub struct ProjectConfig {
     #[serde(default = "default_editor")]
     pub editor: String,
+    /// Repo-relative directories excluded from visualization and analysis.
+    /// Missing in older config files, so it must default.
+    #[serde(default)]
+    pub ignored_paths: Vec<String>,
+    /// Defaulted so a hand-written config that sets only `editor` or
+    /// `ignoredPaths` still parses instead of silently falling back to
+    /// `ProjectConfig::default()` (which turns every Unreal filter on).
+    #[serde(default)]
     pub unreal: UnrealConfig,
 }
 
@@ -46,6 +57,7 @@ impl Default for ProjectConfig {
     fn default() -> Self {
         Self {
             editor: default_editor(),
+            ignored_paths: Vec::new(),
             unreal: UnrealConfig::default(),
         }
     }
@@ -63,6 +75,11 @@ impl Default for UnrealConfig {
 }
 
 impl ProjectConfig {
+    /// The `ignoredPaths` entries, normalized and deduped. Empty means "ignore nothing".
+    pub fn ignored_paths(&self) -> Vec<String> {
+        normalized_paths(&self.ignored_paths)
+    }
+
     pub fn unreal_options(&self) -> UnrealOptions {
         UnrealOptions {
             known_paths: normalized_paths(&self.unreal.known_paths),
@@ -91,15 +108,35 @@ pub fn config_from_source(source: &dyn ProjectSource) -> ProjectConfig {
     }
 }
 
-pub fn unreal_options_from_source(source: &dyn ProjectSource) -> UnrealOptions {
-    match source.read_file(CONFIG_PATH) {
-        Ok(content) => serde_json::from_str::<ProjectConfig>(&content)
-            .unwrap_or_default()
-            .unreal_options(),
-        Err(_) => deduced_config(source)
-            .map(|config| config.unreal_options())
-            .unwrap_or_default(),
+/// Everything analysis reads out of `.codechart/config.json`, from **one** read.
+///
+/// `unreal` is deliberately not `config_from_source().unreal_options()`: with no
+/// config file and a non-Unreal project the fallback is `UnrealOptions::default()`
+/// (every Unreal filter **off**), whereas `ProjectConfig::default()` has them on.
+/// `ignored_paths` has no such deduction — absent config means ignore nothing.
+pub struct SourceConfig {
+    pub unreal: UnrealOptions,
+    pub ignored_paths: Vec<String>,
+}
+
+pub fn source_config(source: &dyn ProjectSource) -> SourceConfig {
+    let Ok(content) = source.read_file(CONFIG_PATH) else {
+        return SourceConfig {
+            unreal: deduced_config(source)
+                .map(|config| config.unreal_options())
+                .unwrap_or_default(),
+            ignored_paths: Vec::new(),
+        };
+    };
+    let config: ProjectConfig = serde_json::from_str(&content).unwrap_or_default();
+    SourceConfig {
+        unreal: config.unreal_options(),
+        ignored_paths: config.ignored_paths(),
     }
+}
+
+pub fn unreal_options_from_source(source: &dyn ProjectSource) -> UnrealOptions {
+    source_config(source).unreal
 }
 
 pub fn read_project_config(root: &str) -> Result<ProjectConfig, String> {
@@ -140,57 +177,10 @@ pub fn ensure_unreal_defaults(root: &str) -> Result<(), String> {
     write_project_config(root, config)
 }
 
-fn deduced_config(source: &dyn ProjectSource) -> Option<ProjectConfig> {
-    let files = source.list_files().ok()?;
-    if !is_unreal_project(&files) {
-        return None;
-    }
-    let paths = deduce_known_paths(&files);
-    Some(ProjectConfig {
-        unreal: UnrealConfig {
-            known_paths: paths,
-            ..UnrealConfig::default()
-        },
-        ..ProjectConfig::default()
-    })
-}
-
-fn deduce_known_paths(files: &[String]) -> Vec<String> {
-    let mut paths = BTreeSet::new();
-    if files.iter().any(|p| p.starts_with("Source/")) {
-        paths.insert("Source".to_string());
-    }
-    for file in files.iter().filter(|p| p.ends_with(".Build.cs")) {
-        add_module_paths(file, &mut paths);
-    }
-    paths.into_iter().collect()
-}
-
-fn add_module_paths(file: &str, paths: &mut BTreeSet<String>) {
-    let Some(dir) = parent_dir(file) else {
-        return;
-    };
-    paths.insert(dir.clone());
-    for child in ["Public", "Private", "Classes"] {
-        paths.insert(format!("{dir}/{child}"));
-    }
-}
-
-fn parent_dir(path: &str) -> Option<String> {
-    let path = PathBuf::from(path.replace('\\', "/"));
-    let parent = path.parent()?;
-    let text = parent.to_string_lossy().replace('\\', "/");
-    if text.is_empty() || text == "." {
-        None
-    } else {
-        Some(text)
-    }
-}
-
 fn normalized_paths(paths: &[String]) -> Vec<String> {
     paths
         .iter()
-        .map(|p| p.trim().replace('\\', "/").trim_matches('/').to_string())
+        .map(|p| crate::project_config::normalize_ignored_path(p))
         .filter(|p| !p.is_empty())
         .collect::<BTreeSet<_>>()
         .into_iter()

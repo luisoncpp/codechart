@@ -29,6 +29,12 @@ Public surface (`project_config::`):
 - `retain_without_top_level_dot_dirs` / `is_under_top_level_dot_dir` — drop files
   under top-level directories whose names start with `.` (View ▾ **Hide dot directories**,
   default on, session-only; not the same as built-in ignore globs).
+- `ignored_path_globs` / `retain_without_ignored_paths` / `normalize_ignored_path` —
+  the project-scoped `ignoredPaths` list from `.codechart/config.json` (exact
+  directory paths, UI- and CLI-honored; see
+  [unreal-config.md](./unreal-config.md)). Distinct from root-group `ignore:`,
+  which is committed glob config living in the `*.group.md`; both merge into the
+  same pattern set.
 - `is_group_file(path)`, `config_error(path, msg)` helpers.
 
 A `*.group.md` is **YAML frontmatter + markdown body**. Frontmatter parsing

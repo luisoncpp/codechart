@@ -16,6 +16,7 @@ function renderMenu(onClearReviewInfo = vi.fn().mockResolvedValue(undefined)) {
       client={client}
       onEditorSaved={() => {}}
       onCppConfigSaved={() => {}}
+      onIgnoredPathsSaved={() => {}}
       onClearReviewInfo={onClearReviewInfo}
     />,
   );

@@ -6,24 +6,27 @@
 //   codechart-cli analyze <project-dir>   — print the full ProjectGraph as JSON
 //   codechart-cli check   <project-dir> [--fail-on=kind,...] [--format=json|text] [--quiet]
 //   codechart-cli help [command]        — usage; also --help / -h
+//   codechart-cli version               — print the version; also --version / -V
 
 use std::process::ExitCode;
 
 use codechart_lib::analysis::analyze_project;
-use codechart_lib::analysis_fs_source;
-use codechart_lib::cli::{run_check, run_help, wants_help};
+use codechart_lib::cli::{run_check, run_help, run_version, wants_help};
 use codechart_lib::grouping::{resolve_groups, ResolvedGroups};
 use codechart_lib::language_adapter::{registry_for_path, ParsedImport, ParsedModule};
 use codechart_lib::project_config::{
-    discover_group_defs, ignore_patterns, is_group_file, retain_unignored,
+    discover_group_defs_from, ignore_patterns_with_unreal, is_group_file, retain_unignored,
+    retain_without_ignored_paths,
 };
-use codechart_lib::project_source::{FsProjectSource, ProjectSource};
+use codechart_lib::project_source::ProjectSource;
 use codechart_lib::semantic_comments::parse_annotations;
+use codechart_lib::{analysis_fs_source, source_config};
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
         Some("help") | Some("--help") | Some("-h") => run_help(args.get(2).map(String::as_str)),
+        Some("version") | Some("--version") | Some("-V") => run_version(),
         Some("parse") => cmd("parse", &args[2..], run_parse),
         Some("groups") => cmd("groups", &args[2..], run_groups),
         Some("analyze") => cmd("analyze", &args[2..], run_analyze),
@@ -115,10 +118,18 @@ fn run_groups(path: Option<&str>) -> ExitCode {
     let Some(path) = path else {
         return fail("usage: codechart-cli groups <project-dir>");
     };
-    let source = FsProjectSource::new(path);
-    let (defs, mut diagnostics) = discover_group_defs(&source);
-    let patterns = ignore_patterns(&defs);
-    let all_files = retain_unignored(source.list_files().unwrap_or_default(), &patterns);
+    // Mirrors `analysis::analyze_project` so `groups` and `analyze` agree on the
+    // file set: project-config `ignoredPaths` drop out before group discovery,
+    // and Unreal generated/plugin filters apply.
+    let source = analysis_fs_source(path);
+    let config = source_config(&source);
+    let listed = retain_without_ignored_paths(
+        source.list_files().unwrap_or_default(),
+        &config.ignored_paths,
+    );
+    let (defs, mut diagnostics) = discover_group_defs_from(&source, listed.clone());
+    let patterns = ignore_patterns_with_unreal(&defs, &config.unreal, &config.ignored_paths);
+    let all_files = retain_unignored(listed, &patterns);
     let modules = source_modules(&all_files);
     let resolved = resolve_groups(&modules, &defs);
     diagnostics.extend(resolved.diagnostics.iter().cloned());

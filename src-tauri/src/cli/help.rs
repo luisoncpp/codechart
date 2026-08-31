@@ -15,8 +15,9 @@ Commands:
   analyze <dir>     Full ProjectGraph as pretty JSON (debug dump)
   check <dir>       Architecture CI gate: diagnostics only
   help [command]    This text, or help for one command
+  version           Print the CLI version
 
-Also accepted: --help and -h (root or after a command).
+Also accepted: --help and -h (root or after a command), --version and -V.
 ";
 
 const PARSE: &str = "\
@@ -129,7 +130,7 @@ mod tests {
     #[test]
     fn root_help_lists_every_command() {
         let text = help_text(None).unwrap();
-        for name in ["parse", "groups", "analyze", "check", "help"] {
+        for name in ["parse", "groups", "analyze", "check", "help", "--version"] {
             assert!(text.contains(name), "root help should mention {name}");
         }
     }

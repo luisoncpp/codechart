@@ -10,6 +10,8 @@ mod nodes;
 mod options;
 
 #[cfg(test)]
+mod ignored_paths_tests;
+#[cfg(test)]
 mod tests;
 
 pub use options::AnalyzeOptions;
@@ -24,7 +26,7 @@ use crate::grouping::{resolve_groups, ResolvedGroups};
 use crate::language_adapter::{registry_for_path, ParsedModule};
 use crate::project_config::{
     discover_group_defs_from, ignore_patterns_with_unreal, is_group_file, retain_unignored,
-    retain_without_plugins_dirs, retain_without_top_level_dot_dirs,
+    retain_without_ignored_paths, retain_without_plugins_dirs, retain_without_top_level_dot_dirs,
 };
 use crate::project_source::ProjectSource;
 use crate::references::{
@@ -33,7 +35,8 @@ use crate::references::{
 };
 use crate::tsconfig_paths::load_from_source;
 use crate::unity_assets::index_meta_files;
-use crate::{unreal_options_from_source, UnrealOptions};
+use crate::unreal_config::{source_config, SourceConfig};
+use crate::UnrealOptions;
 
 use nodes::{build_modules, language_for, ParsedFile};
 
@@ -94,10 +97,11 @@ pub fn analyze_project_with_options(
     root: &str,
     options: AnalyzeOptions,
 ) -> Result<ProjectGraph, BuildError> {
-    let unreal = unreal_options_from_source(source);
-    let (files, is_unreal_project) = listed_files(source, &options, &unreal);
+    let config = source_config(source);
+    let unreal = &config.unreal;
+    let (files, is_unreal_project) = listed_files(source, &options, &config);
     let (defs, config_diags) = discover_group_defs_from(source, files.clone());
-    let patterns = ignore_patterns_with_unreal(&defs, &unreal);
+    let patterns = ignore_patterns_with_unreal(&defs, unreal, &config.ignored_paths);
     let files = retain_unignored(files, &patterns);
     let meta_index = index_meta_files(source, &files);
     let (parsed, parse_diags) = parse_sources(source, &files);
@@ -107,7 +111,7 @@ pub fn analyze_project_with_options(
     let parsed_modules: Vec<ParsedModule> = parsed.iter().map(|f| f.module.clone()).collect();
     let ts_paths = load_from_source(source);
     let (edges, ref_diags) =
-        resolve_edges(&parsed_modules, &groups, &meta_index, &unreal, &ts_paths);
+        resolve_edges(&parsed_modules, &groups, &meta_index, unreal, &ts_paths);
 
     let mut modules = build_modules(&parsed, &groups, &edges);
     if options.metrics_window_days > 0 && crate::git::is_git_repo(root) {
@@ -128,19 +132,23 @@ pub fn analyze_project_with_options(
     assemble(root, parts)
 }
 
-/// List, then apply session and Unreal plugin filters. Unreal detection runs on
-/// the pre-plugin list so hiding Plugins does not hide the View-menu checkbox.
+/// List, then apply session, configured-ignore, and Unreal plugin filters. Unreal
+/// detection runs on the pre-plugin list so hiding Plugins does not hide the
+/// View-menu checkbox. Configured `ignoredPaths` are dropped here — before
+/// `discover_group_defs_from` — so a `*.group.md` under an ignored directory
+/// neither declares a group nor emits a `configError`.
 fn listed_files(
     source: &dyn ProjectSource,
     options: &AnalyzeOptions,
-    unreal: &UnrealOptions,
+    config: &SourceConfig,
 ) -> (Vec<String>, bool) {
     let mut files = source.list_files().unwrap_or_default();
     if options.hide_top_level_dot_dirs {
         files = retain_without_top_level_dot_dirs(files);
     }
+    files = retain_without_ignored_paths(files, &config.ignored_paths);
     let is_unreal = crate::unreal_config::is_unreal_project(&files);
-    if unreal.hide_plugins {
+    if config.unreal.hide_plugins {
         files = retain_without_plugins_dirs(files);
     }
     (files, is_unreal)

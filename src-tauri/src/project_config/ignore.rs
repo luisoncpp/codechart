@@ -2,6 +2,7 @@
 
 use glob::Pattern;
 
+use super::ignored_paths::ignored_path_globs;
 use super::GroupDef;
 use crate::UnrealOptions;
 
@@ -19,10 +20,16 @@ const DEFAULT_IGNORE: &[&str] = &[
 
 /// Built-in ignore globs merged with root-placed group `ignore` fields.
 pub fn ignore_patterns(defs: &[GroupDef]) -> Vec<Pattern> {
-    ignore_patterns_with_unreal(defs, &UnrealOptions::default())
+    ignore_patterns_with_unreal(defs, &UnrealOptions::default(), /*ignored_paths=*/ &[])
 }
 
-pub fn ignore_patterns_with_unreal(defs: &[GroupDef], unreal: &UnrealOptions) -> Vec<Pattern> {
+/// The full ignore set: built-ins, Unreal generated globs, root-placed group
+/// `ignore` fields, and the project config's `ignoredPaths` directories.
+pub fn ignore_patterns_with_unreal(
+    defs: &[GroupDef],
+    unreal: &UnrealOptions,
+    ignored_paths: &[String],
+) -> Vec<Pattern> {
     let mut globs: Vec<String> = DEFAULT_IGNORE.iter().map(|s| (*s).to_string()).collect();
     if unreal.hide_generated_files {
         globs.extend(unreal_generated_globs());
@@ -32,6 +39,7 @@ pub fn ignore_patterns_with_unreal(defs: &[GroupDef], unreal: &UnrealOptions) ->
             globs.extend(def.ignore.iter().cloned());
         }
     }
+    globs.extend(ignored_path_globs(ignored_paths));
     globs.iter().filter_map(|g| Pattern::new(g).ok()).collect()
 }
 

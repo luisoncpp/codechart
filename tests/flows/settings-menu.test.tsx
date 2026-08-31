@@ -12,6 +12,7 @@ function renderSettings(config: ProjectConfig, hasCppModules = false) {
   const writeProjectConfig = vi.fn(async () => {});
   const onEditorSaved = vi.fn();
   const onCppConfigSaved = vi.fn();
+  const onIgnoredPathsSaved = vi.fn();
   render(
     <SettingsMenu
       root="/my/project"
@@ -20,6 +21,8 @@ function renderSettings(config: ProjectConfig, hasCppModules = false) {
       client={{ readProjectConfig, writeProjectConfig }}
       onEditorSaved={onEditorSaved}
       onCppConfigSaved={onCppConfigSaved}
+      onIgnoredPathsSaved={onIgnoredPathsSaved}
+      onClearReviewInfo={async () => {}}
     />,
   );
   return {
@@ -27,11 +30,22 @@ function renderSettings(config: ProjectConfig, hasCppModules = false) {
     writeProjectConfig,
     onEditorSaved,
     onCppConfigSaved,
+    onIgnoredPathsSaved,
   };
 }
 
 function openSettings() {
   fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+}
+
+async function openIgnoredDirectories(readProjectConfig: unknown) {
+  openSettings();
+  fireEvent.click(
+    screen.getByRole("menuitem", { name: "Ignored directories..." }),
+  );
+  await waitFor(() =>
+    expect(readProjectConfig).toHaveBeenCalledWith("/my/project"),
+  );
 }
 
 describe("flow: project settings", () => {
@@ -81,6 +95,7 @@ describe("flow: project settings", () => {
       "/my/project",
       {
         editor: "zed",
+        ignoredPaths: [],
         unreal: {
           ...config.unreal,
           knownPaths: ["Source/Game/Public"],
@@ -88,5 +103,67 @@ describe("flow: project settings", () => {
       },
     ));
     expect(spies.onCppConfigSaved).toHaveBeenCalledOnce();
+  });
+
+  it("saves ignored directories without replacing the editor or C++ settings", async () => {
+    const config = {
+      ...defaultProjectConfig(),
+      editor: "zed",
+      unreal: {
+        ...defaultProjectConfig().unreal,
+        knownPaths: ["Source/Game/Public"],
+      },
+    };
+    const spies = renderSettings(config);
+    await openIgnoredDirectories(spies.readProjectConfig);
+    fireEvent.click(screen.getByRole("button", { name: "Add directory" }));
+    fireEvent.change(screen.getByPlaceholderText("path/to/directory"), {
+      target: { value: "  Source/ThirdParty  " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save and reload" }));
+
+    await waitFor(() =>
+      expect(spies.writeProjectConfig).toHaveBeenCalledWith("/my/project", {
+        ...config,
+        ignoredPaths: ["Source/ThirdParty"],
+      }),
+    );
+    expect(spies.onIgnoredPathsSaved).toHaveBeenCalledOnce();
+  });
+
+  it("drops a blank row instead of writing an empty ignored directory", async () => {
+    const spies = renderSettings(defaultProjectConfig());
+    await openIgnoredDirectories(spies.readProjectConfig);
+    fireEvent.click(screen.getByRole("button", { name: "Add directory" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save and reload" }));
+
+    await waitFor(() =>
+      expect(spies.writeProjectConfig).toHaveBeenCalledWith("/my/project", {
+        ...defaultProjectConfig(),
+        ignoredPaths: [],
+      }),
+    );
+  });
+
+  it("removes an existing ignored directory", async () => {
+    const config = {
+      ...defaultProjectConfig(),
+      ignoredPaths: ["vendor", "generated"],
+    };
+    const spies = renderSettings(config);
+    openSettings();
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Ignored directories..." }),
+    );
+    await waitFor(() => expect(screen.getAllByDisplayValue(/vendor/)).toHaveLength(1));
+    fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Save and reload" }));
+
+    await waitFor(() =>
+      expect(spies.writeProjectConfig).toHaveBeenCalledWith("/my/project", {
+        ...config,
+        ignoredPaths: ["generated"],
+      }),
+    );
   });
 });

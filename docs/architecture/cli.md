@@ -5,7 +5,7 @@
 Headless entry to the analysis pipeline. `analyze` dumps the full `ProjectGraph`; `check` is the CI quality gate.
 
 ```bash
-cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- <parse|groups|analyze|check|help> [path]
+cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- <parse|groups|analyze|check|help|version> [path]
 ```
 
 | Subcommand | Output | Exit |
@@ -15,8 +15,16 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- <parse|gro
 | `analyze <dir>` | pretty `ProjectGraph` JSON (debug dump) | 0 when analysis succeeds |
 | `check <dir>` | diagnostics only; no graph | **non-zero** when a fail-on kind is present |
 | `help [command]` | usage for the CLI or one command | 0 (`--help` / `-h` are aliases) |
+| `version` | `codechart-cli <CARGO_PKG_VERSION>` | 0 (`--version` / `-V` are aliases) |
 
-No args prints the same root help as `help`. `codechart-cli help check` (or `check --help`) lists `check` flags and `DiagnosticKind` names.
+`groups`, `analyze`, and `check` all honor `.codechart/config.json`
+`ignoredPaths` — the same project-scoped ignored directories the app's Settings ▾
+**Ignored directories...** modal edits. There is no flag: one source of truth
+means a CI gate sees exactly what the user sees on the canvas. (`groups`
+previously used a bare `FsProjectSource` and so ignored the Unreal
+generated/plugin filters too; it now shares `analyze`'s file set.)
+
+The version string comes from `src-tauri/Cargo.toml`'s `package.version` at compile time. CLI-only GitHub releases use the deploy date as that version (`YYYY.M.D`, no leading zeros — Cargo semver). That is independent of the desktop installer version in `tauri.conf.json`. No args prints the same root help as `help`. `codechart-cli help check` (or `check --help`) lists `check` flags and `DiagnosticKind` names.
 
 ## `check`
 
