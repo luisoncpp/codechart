@@ -17,6 +17,8 @@ export interface DiffCodeLineProps {
   links: readonly WikiLinkSpan[];
   linkEveryToken: boolean;
   anchored?: boolean;
+  /** Soft-wrap long rows instead of scrolling sideways (preview frames). */
+  wrapLines?: boolean;
   onLineClick?: (line: number, extend: boolean) => void;
   matchRanges?: readonly LineMatchRange[];
   activeMatchRef?: React.RefObject<HTMLElement | null>;
@@ -32,7 +34,7 @@ function tokenClass(token: Token, clickableNames?: ReadonlySet<string>): string 
 }
 
 export function DiffCodeLine(props: DiffCodeLineProps) {
-  const { row, zoom, prefix, active, lineRef, anchored, onLineClick } = props;
+  const { row, zoom, prefix, active, lineRef, anchored, wrapLines, onLineClick } = props;
   const fontSize = 12.5 / zoom;
   const isAdd = row.kind === "add" || row.kind === "move-add";
   const isRemove = row.kind === "remove" || row.kind === "move-remove";
@@ -55,7 +57,9 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
         display: "flex",
         alignItems: "flex-start",
         padding: `0 ${4 / zoom}px`,
-        whiteSpace: "pre",
+        // `pre` here would beat the stylesheet's wrapping rule for the prefix.
+        whiteSpace: wrapLines ? "pre-wrap" : "pre",
+        ...(wrapLines ? { overflowWrap: "anywhere" as const } : {}),
         fontSize,
         lineHeight: 1.4,
       }}

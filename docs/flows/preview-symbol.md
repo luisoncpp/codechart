@@ -25,4 +25,10 @@
 
 Review Note navigation opens or raises the document frame for the anchored module and centers the selected range. Document frames use the shared inline source notes.
 
+Frame code rows **soft-wrap**: `FrameBody` passes `wrapLines` to `DiffCodeLines`/`L2CodeBlock`, which
+makes `DiffCodeLine` set `white-space: pre-wrap` + `overflow-wrap: anywhere` inline, so no line
+length can scroll the frame body sideways (L2 cards keep `pre`). Wrapping cannot be changed from
+`graph-canvas.css` — the row's `white-space` is an inline style; see
+`docs/lessons-learned/inline-white-space-outranks-the-stylesheet-wrap-rule.md`.
+
 The default frame is 680 by 360 pixels (document preview frames opened via **Open file preview** in the context menu use a taller default height of 720 pixels); user drag and resize behavior remains unchanged.

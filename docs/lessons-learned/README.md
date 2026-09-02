@@ -21,6 +21,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [inline-white-space-outranks-the-stylesheet-wrap-rule.md](./inline-white-space-outranks-the-stylesheet-wrap-rule.md) | `.symbol-widget__line`'s `pre-wrap` was dead for the frame's whole life — `DiffCodeLine` sets `white-space` inline, so per-prefix CSS can't vary it; make it a prop, and don't trust a "resize" symptom over a `scrollWidth` measurement | 2026-09-02 |
 | [overlay-click-is-lca-of-press-and-release.md](./overlay-click-is-lca-of-press-and-release.md) | Overlay `click` is the LCA of mousedown and mouseup; inner `stopPropagation` does not cover a drag that ends outside | 2026-08-27 |
 | [cycle-witness-must-be-elementary.md](./cycle-witness-must-be-elementary.md) | Cycle messages: hub-shortest elementary witness, `(N modules)` size, `others in this cycle`, C++ paths without extensions | 2026-08-26 |
 | [rust-mod-use-super-is-not-a-cycle.md](./rust-mod-use-super-is-not-a-cycle.md) | `mod` + `use super` parent/child edges are not circular includes; sibling cycles still count | 2026-08-27 |

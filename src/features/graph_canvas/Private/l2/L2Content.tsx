@@ -109,6 +109,8 @@ interface CodeBlockProps {
   diffNotes?: readonly DiffNote[];
   clickableNames?: ReadonlySet<string>;
   lineClassPrefix?: string;
+  /** Soft-wrap long rows instead of scrolling sideways (preview frames). */
+  wrapLines?: boolean;
   matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
   activeMatchRef?: React.RefObject<HTMLElement | null>;
   activeLine?: number;
@@ -123,6 +125,7 @@ export const L2CodeBlock = memo(function L2CodeBlock({
   diffNotes,
   clickableNames,
   lineClassPrefix,
+  wrapLines,
   matchesByLine,
   activeMatchRef,
   activeLine,
@@ -170,6 +173,7 @@ export const L2CodeBlock = memo(function L2CodeBlock({
             diffNotes={diffNotes}
             zoom={zoom}
             lineClassPrefix={lineClassPrefix ?? "diff-code"}
+            wrapLines={wrapLines}
             clickableNames={clickableNames}
             matchesByLine={matchesByLine}
             activeMatchRef={activeMatchRef}

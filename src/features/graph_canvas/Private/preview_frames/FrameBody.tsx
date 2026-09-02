@@ -54,6 +54,7 @@ function SymbolCode(
         fileDiff={props.fileDiff}
         diffNotes={props.diffNotes}
         lineClassPrefix="symbol-widget"
+        wrapLines
         activeLine={props.targetLine}
         activeLineRef={props.lineRef}
         clickableNames={props.clickableSymbols}
@@ -90,6 +91,7 @@ function DocumentContent({
         diffNotes={diffNotes}
         clickableNames={clickableSymbols}
         lineClassPrefix="symbol-widget"
+        wrapLines
         matchesByLine={matchProps.matchesByLine}
         activeMatchRef={matchProps.activeMatchRef}
         activeLine={highlightLine}

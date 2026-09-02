@@ -514,8 +514,10 @@
   display: flex;
   align-items: flex-start;
   padding: 0 12px;
+  /* Wrapping itself is set inline by DiffCodeLine (`wrapLines`), which would
+     otherwise override these; `break-all` would split identifiers that fit. */
   white-space: pre-wrap;
-  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .symbol-widget__line--active {

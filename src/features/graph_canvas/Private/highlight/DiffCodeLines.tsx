@@ -20,6 +20,8 @@ interface DiffCodeLinesProps {
   diffNotes?: readonly DiffNote[];
   zoom?: number;
   lineClassPrefix?: string;
+  /** Soft-wrap long rows instead of scrolling sideways (preview frames). */
+  wrapLines?: boolean;
   activeLine?: number;
   activeLineRef?: React.RefObject<HTMLDivElement | null>;
   /** Identifiers to render as clickable (`hl-clickable`) navigation targets. */
@@ -38,6 +40,7 @@ export function DiffCodeLines({
   diffNotes,
   zoom = 1,
   lineClassPrefix = "diff-code",
+  wrapLines,
   activeLine,
   activeLineRef,
   clickableNames,
@@ -66,6 +69,7 @@ export function DiffCodeLines({
           tokens={tokenized[idx]!}
           zoom={zoom}
           prefix={lineClassPrefix}
+          wrapLines={wrapLines}
           activeLine={activeLine}
           activeLineRef={activeLineRef}
           clickableNames={clickableNames}
@@ -89,6 +93,7 @@ interface DiffRowItemProps {
   tokens: Token[];
   zoom: number;
   prefix: string;
+  wrapLines?: boolean;
   activeLine?: number;
   activeLineRef?: React.RefObject<HTMLDivElement | null>;
   clickableNames?: ReadonlySet<string>;
@@ -104,7 +109,7 @@ interface DiffRowItemProps {
 }
 
 function DiffRowItem(props: DiffRowItemProps) {
-  const { row, tokens, zoom, prefix, activeLine, activeLineRef, clickableNames, path, links, linkEveryToken, matchesByLine, activeMatchRef, notes, draft, diffNotes, onLineClick } = props;
+  const { row, tokens, zoom, prefix, wrapLines, activeLine, activeLineRef, clickableNames, path, links, linkEveryToken, matchesByLine, activeMatchRef, notes, draft, diffNotes, onLineClick } = props;
   const isRem = row.kind === "remove" || row.kind === "move-remove";
   const matchingDiffNotes = matchingDiffNotesForRow(row, diffNotes);
 
@@ -116,6 +121,7 @@ function DiffRowItem(props: DiffRowItemProps) {
           tokens={tokens}
           zoom={zoom}
           prefix={prefix}
+          wrapLines={wrapLines}
           clickableNames={clickableNames}
           path={path}
           links={links}
@@ -139,6 +145,7 @@ function DiffRowItem(props: DiffRowItemProps) {
         tokens={tokens}
         zoom={zoom}
         prefix={prefix}
+        wrapLines={wrapLines}
         active={isActive}
         lineRef={isActive ? activeLineRef : undefined}
         clickableNames={clickableNames}
