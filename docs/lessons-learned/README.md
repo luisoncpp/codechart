@@ -21,6 +21,7 @@ Avoid: "bug description + fix". Prefer: "what I learned that applies to future w
 
 | File | Topic | Date |
 |------|-------|------|
+| [four-parsers-read-the-same-diff-text.md](./four-parsers-read-the-same-diff-text.md) | A pasted diff is walked by 4 independent parsers that must share ONE file-boundary rule (`scan-diff-lines.ts`): `diff --git` is a hint, not a delimiter, and a prefix does not identify a header — only the `---`/`+++` **pair** does. Bare `diff -u` patches highlighted one card, drew zero edges, and rendered a phantom `-- /dev/null` removed row | 2026-09-08 |
 | [inline-white-space-outranks-the-stylesheet-wrap-rule.md](./inline-white-space-outranks-the-stylesheet-wrap-rule.md) | `.symbol-widget__line`'s `pre-wrap` was dead for the frame's whole life — `DiffCodeLine` sets `white-space` inline, so per-prefix CSS can't vary it; make it a prop, and don't trust a "resize" symptom over a `scrollWidth` measurement | 2026-09-02 |
 | [overlay-click-is-lca-of-press-and-release.md](./overlay-click-is-lca-of-press-and-release.md) | Overlay `click` is the LCA of mousedown and mouseup; inner `stopPropagation` does not cover a drag that ends outside | 2026-08-27 |
 | [cycle-witness-must-be-elementary.md](./cycle-witness-must-be-elementary.md) | Cycle messages: hub-shortest elementary witness, `(N modules)` size, `others in this cycle`, C++ paths without extensions | 2026-08-26 |

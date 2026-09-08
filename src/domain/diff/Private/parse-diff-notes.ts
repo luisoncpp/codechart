@@ -1,5 +1,6 @@
 // @Architecture(descriptionShort="Parses Diff Note markers (# ...) from unified diffs into bound DiffNotes")
 import { parseHeaderPath, parseHunkHeader, pathFromDiffGit } from "./parse-line-diff";
+import { scanDiffLines } from "./scan-diff-lines";
 import type { DiffNote, DiffNoteParseResult, DiffNoteSide } from "./types";
 
 interface PrefixRun {
@@ -23,12 +24,12 @@ interface ParseContext {
 /** Parse Diff Note markers (`# ...` in column 0) from unified diff text. */
 export function parseDiffNotes(text: string): DiffNoteParseResult {
   const ctx = newParseContext();
-  for (const raw of text.split(/\r?\n/)) {
+  for (const { text: raw, header } of scanDiffLines(text)) {
     if (raw.startsWith("diff --git ")) {
       handleDiffGit(ctx, raw);
       continue;
     }
-    if (raw.startsWith("--- ") || raw.startsWith("+++ ")) {
+    if (header) {
       handlePathHeader(ctx, raw);
       continue;
     }
@@ -67,9 +68,17 @@ function handleDiffGit(ctx: ParseContext, line: string) {
   ctx.inHunk = false;
 }
 
+/**
+ * In a bare diff the header pair is also the file boundary, so pending markers must bind
+ * to the section that just ended — before `currentPath` moves on.
+ */
 function handlePathHeader(ctx: ParseContext, line: string) {
   const path = parseHeaderPath(line.slice(4));
-  if (path && path !== "/dev/null") ctx.currentPath = path;
+  if (!path || path === "/dev/null" || path === ctx.currentPath) return;
+  flushMarkers(ctx);
+  ctx.currentPath = path;
+  ctx.currentRun = null;
+  ctx.inHunk = false;
 }
 
 function handleHunkHeader(

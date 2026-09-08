@@ -1,4 +1,5 @@
 // @Architecture(descriptionShort="Extracts added, modified, deleted, and renamed paths from unified diffs")
+import { scanDiffLines, type DiffLine } from "./scan-diff-lines";
 import type { ParsedDiffPaths, RenamePair } from "./types";
 
 /** Normalize a path from a diff header (`a/foo`, `b/foo`, `foo`). */
@@ -20,6 +21,8 @@ interface DiffPathState {
   oldPath: string | null;
   newPath: string | null;
   isCopy: boolean;
+  /** A `+++ ` was already seen for this section, so the next `--- ` starts a new file. */
+  sawNewHeader: boolean;
 }
 
 /** Extract repo-relative file paths touched by a unified diff. */
@@ -30,9 +33,14 @@ export function pathsFromUnifiedDiff(text: string): ParsedDiffPaths {
     added: new Set(),
     renames: [],
   };
-  const state: DiffPathState = { oldPath: null, newPath: null, isCopy: false };
+  const state: DiffPathState = {
+    oldPath: null,
+    newPath: null,
+    isCopy: false,
+    sawNewHeader: false,
+  };
 
-  for (const line of text.split(/\r?\n/)) {
+  for (const line of scanDiffLines(text)) {
     processDiffLine(line, state, buckets);
   }
   applyFilePaths(state, buckets);
@@ -45,11 +53,18 @@ export function pathsFromUnifiedDiff(text: string): ParsedDiffPaths {
   };
 }
 
-function processDiffLine(line: string, state: DiffPathState, buckets: PathBuckets): void {
-  if (line.startsWith("diff --git ")) {
+function processDiffLine(line: DiffLine, state: DiffPathState, buckets: PathBuckets): void {
+  if (line.text.startsWith("diff --git ")) {
     applyFilePaths(state, buckets);
-    resetPathState(state, line);
+    resetPathState(state, line.text);
     return;
+  }
+  // A bare unified diff (`diff -u`, most LLM-generated patches) has no `diff --git`
+  // separator, so an old-path header following this section's new-path header is the
+  // only file boundary there is.
+  if (line.header === "old" && state.sawNewHeader) {
+    applyFilePaths(state, buckets);
+    resetPathState(state, /*gitLine=*/ "");
   }
   applyModeLine(line, state);
 }
@@ -58,32 +73,34 @@ function resetPathState(state: DiffPathState, gitLine: string): void {
   state.oldPath = null;
   state.newPath = null;
   state.isCopy = false;
+  state.sawNewHeader = false;
   const gitPaths = pathsFromDiffGitLine(gitLine);
   if (!gitPaths) return;
   state.oldPath = gitPaths.oldPath;
   state.newPath = gitPaths.newPath;
 }
 
-function applyModeLine(line: string, state: DiffPathState): void {
-  if (line.startsWith("deleted file mode ")) {
+function applyModeLine(line: DiffLine, state: DiffPathState): void {
+  if (line.text.startsWith("deleted file mode ")) {
     state.newPath = "/dev/null";
     return;
   }
-  if (line.startsWith("new file mode ")) {
+  if (line.text.startsWith("new file mode ")) {
     state.oldPath = "/dev/null";
     return;
   }
-  if (line.startsWith("copy from ") || line.startsWith("copy to ")) {
+  if (line.text.startsWith("copy from ") || line.text.startsWith("copy to ")) {
     state.isCopy = true;
     return;
   }
-  if (line.startsWith("--- ")) {
-    const updated = headerPathUpdate(line.slice(4));
+  if (line.header === "old") {
+    const updated = headerPathUpdate(line.text.slice(4));
     if (updated !== undefined) state.oldPath = updated;
     return;
   }
-  if (!line.startsWith("+++ ")) return;
-  const updated = headerPathUpdate(line.slice(4));
+  if (line.header !== "new") return;
+  state.sawNewHeader = true;
+  const updated = headerPathUpdate(line.text.slice(4));
   if (updated !== undefined) state.newPath = updated;
 }
 

@@ -2,6 +2,7 @@
 import { normalizeDiffPath } from "./parse-unified-diff";
 import type { FileLineDiff } from "./line-diff-types";
 import { detectMovedLines } from "./detect-moved-lines";
+import { scanDiffLines } from "./scan-diff-lines";
 
 interface FileBuilder {
   added: Set<number>;
@@ -20,16 +21,18 @@ export function lineDiffsFromUnified(text: string): Map<string, FileLineDiff> {
   let currentPath: string | null = null;
   let builder: FileBuilder | null = null;
 
-  for (const raw of text.split(/\r?\n/)) {
-    if (raw.startsWith("diff --git ")) {
+  for (const line of scanDiffLines(text)) {
+    if (line.text.startsWith("diff --git ")) {
       flushFile(out, currentPath, builder);
-      currentPath = pathFromDiffGit(raw);
+      currentPath = pathFromDiffGit(line.text);
       builder = newFileBuilder();
       continue;
     }
-    const headerPath = parseHeaderPathLine(raw);
-    if (headerPath) {
-      if (!builder || currentPath !== headerPath) {
+    // Consume the header — including `/dev/null`, which names no file but must never
+    // reach `consumeDiffLine` and be recorded as a removed `-- /dev/null` row.
+    if (line.header) {
+      const headerPath = namedHeaderPath(line.text);
+      if (headerPath && (!builder || currentPath !== headerPath)) {
         flushFile(out, currentPath, builder);
         currentPath = headerPath;
         builder = newFileBuilder();
@@ -37,14 +40,14 @@ export function lineDiffsFromUnified(text: string): Map<string, FileLineDiff> {
       continue;
     }
     if (!builder || !currentPath) continue;
-    consumeDiffLine(raw, builder);
+    consumeDiffLine(line.text, builder);
   }
   flushFile(out, currentPath, builder);
   return detectMovedLines(out);
 }
 
-function parseHeaderPathLine(raw: string): string | null {
-  if (!raw.startsWith("--- ") && !raw.startsWith("+++ ")) return null;
+/** The path a header names, or null for `/dev/null` (the file does not exist on that side). */
+function namedHeaderPath(raw: string): string | null {
   const path = parseHeaderPath(raw.slice(4));
   return path && path !== "/dev/null" ? path : null;
 }
