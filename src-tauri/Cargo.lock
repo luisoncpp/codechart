@@ -467,7 +467,7 @@ dependencies = [
 
 [[package]]
 name = "codechart"
-version = "2026.8.31"
+version = "2026.9.11"
 dependencies = [
  "glob",
  "regex",

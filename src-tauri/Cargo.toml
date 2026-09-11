@@ -1,6 +1,6 @@
 [package]
 name = "codechart"
-version = "2026.8.31"
+version = "2026.9.11"
 description = "Codechart — interactive architecture maps for code review"
 authors = ["you"]
 edition = "2021"
