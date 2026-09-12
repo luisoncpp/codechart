@@ -54,6 +54,7 @@ export function DiffCodeLines({
     () => buildModuleDiffDisplay(source, fileDiff),
     [source, fileDiff],
   );
+  const numberDigits = useMemo(() => gutterDigits(rows), [rows]);
   const tokenized = useMemo(() => tokenizeRows(rows, path), [rows, path]);
   const wikiLinks = useMemo(() => wikiLinksPerRow(rows), [rows]);
   // Code only links inside comments (a literal `[[a,b]]` in source is not a
@@ -68,6 +69,7 @@ export function DiffCodeLines({
           row={row}
           tokens={tokenized[idx]!}
           zoom={zoom}
+          numberDigits={numberDigits}
           prefix={lineClassPrefix}
           wrapLines={wrapLines}
           activeLine={activeLine}
@@ -92,6 +94,7 @@ interface DiffRowItemProps {
   row: DiffDisplayRow;
   tokens: Token[];
   zoom: number;
+  numberDigits: number;
   prefix: string;
   wrapLines?: boolean;
   activeLine?: number;
@@ -109,7 +112,7 @@ interface DiffRowItemProps {
 }
 
 function DiffRowItem(props: DiffRowItemProps) {
-  const { row, tokens, zoom, prefix, wrapLines, activeLine, activeLineRef, clickableNames, path, links, linkEveryToken, matchesByLine, activeMatchRef, notes, draft, diffNotes, onLineClick } = props;
+  const { row, tokens, zoom, numberDigits, prefix, wrapLines, activeLine, activeLineRef, clickableNames, path, links, linkEveryToken, matchesByLine, activeMatchRef, notes, draft, diffNotes, onLineClick } = props;
   const isRem = row.kind === "remove" || row.kind === "move-remove";
   const matchingDiffNotes = matchingDiffNotesForRow(row, diffNotes);
 
@@ -120,6 +123,7 @@ function DiffRowItem(props: DiffRowItemProps) {
           row={row}
           tokens={tokens}
           zoom={zoom}
+          numberDigits={numberDigits}
           prefix={prefix}
           wrapLines={wrapLines}
           clickableNames={clickableNames}
@@ -144,6 +148,7 @@ function DiffRowItem(props: DiffRowItemProps) {
         row={row}
         tokens={tokens}
         zoom={zoom}
+        numberDigits={numberDigits}
         prefix={prefix}
         wrapLines={wrapLines}
         active={isActive}
@@ -170,6 +175,13 @@ function matchingDiffNotesForRow(
   if (!diffNotes || diffNotes.length === 0) return [];
   const side = row.kind === "remove" || row.kind === "move-remove" ? "before" : "after";
   return diffNotes.filter((n) => n.side === side && n.endLine === row.lineNumber);
+}
+
+/** Digits of the widest number in the gutter (`remove` rows count too). */
+function gutterDigits(rows: readonly DiffDisplayRow[]): number {
+  let widest = 1;
+  for (const row of rows) widest = Math.max(widest, row.lineNumber);
+  return String(widest).length;
 }
 
 /** One tokenizer for the whole document so block comments span rows. */

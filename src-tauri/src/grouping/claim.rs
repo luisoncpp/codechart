@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contract::Diagnostic;
-use crate::project_config::{config_error, GroupDef};
+use crate::project_config::{config_error, FacadeDef, GroupDef};
 
 use super::matcher::{build_exclude, build_matcher, is_ancestor_dir, join_rel};
 
@@ -120,37 +120,49 @@ fn is_excluded(def: &GroupDef, path: &str) -> bool {
         .any(|m| m.matches(path))
 }
 
+/// A group's resolved facades: the module ids, plus the per-facade tag
+/// *overrides* declared with the object form of a `facades:` entry.
+#[derive(Default)]
+pub struct ResolvedFacades {
+    pub ids: Vec<String>,
+    /// Facade module id → the tags that replace its group's for layering.
+    pub tags: BTreeMap<String, Vec<String>>,
+    pub diagnostics: Vec<Diagnostic>,
+}
+
 /// Facade module ids for a group, given the modules assigned to it. Explicit
 /// `facades` that name a non-member produce a configError; absent `facades`
 /// defaults to `index.ts`/`index.tsx` in the group folder when present.
-pub fn facades_for(def: &GroupDef, members: &BTreeSet<String>) -> (Vec<String>, Vec<Diagnostic>) {
-    let mut facades = Vec::new();
-    let mut diagnostics = Vec::new();
+pub fn facades_for(def: &GroupDef, members: &BTreeSet<String>) -> ResolvedFacades {
+    let mut resolved = ResolvedFacades::default();
     match &def.facades {
-        Some(list) => resolve_explicit(def, list, members, &mut facades, &mut diagnostics),
+        Some(list) => resolve_explicit(def, list, members, &mut resolved),
         None => {
             for candidate in ["index.ts", "index.tsx", "mod.rs", "lib.rs"] {
                 let id = join_rel(&def.dir, candidate);
                 if members.contains(&id) {
-                    facades.push(id);
+                    resolved.ids.push(id);
                 }
             }
         }
     }
-    facades.sort();
-    (facades, diagnostics)
+    resolved.ids.sort();
+    resolved
 }
 
 fn resolve_explicit(
     def: &GroupDef,
-    list: &[String],
+    list: &[FacadeDef],
     members: &BTreeSet<String>,
-    facades: &mut Vec<String>,
-    diagnostics: &mut Vec<Diagnostic>,
+    resolved: &mut ResolvedFacades,
 ) {
+    let (facades, diagnostics) = (&mut resolved.ids, &mut resolved.diagnostics);
     for entry in list {
-        let id = join_rel(&def.dir, entry);
+        let id = join_rel(&def.dir, &entry.path);
         if members.contains(&id) {
+            if let Some(tags) = &entry.tags {
+                resolved.tags.insert(id.clone(), tags.clone());
+            }
             facades.push(id);
             continue;
         }

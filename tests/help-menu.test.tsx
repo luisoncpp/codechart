@@ -106,6 +106,25 @@ describe("HelpMenu dropdown and modals", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  // A literal `|` inside a Groups-format table cell (e.g. spelling a union
+  // type) splits the cell even when backslash-escaped: marked then truncates
+  // the row to the header width and the description column disappears.
+  it("keeps every cell of the facades row in the Groups format table", () => {
+    renderHelpMenu();
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Groups format..." }));
+
+    const dialog = screen.getByRole("dialog");
+    const header = dialog.querySelector("thead tr")!;
+    const row = [...dialog.querySelectorAll("tbody tr")].find(
+      (tr) => tr.querySelector("td")?.textContent === "facades",
+    )!;
+    expect(row.querySelectorAll("td")).toHaveLength(
+      header.querySelectorAll("th").length,
+    );
+    expect(row.textContent).toContain("Entrypoint modules");
+  });
+
   it("closes the modal on Escape keydown", () => {
     renderHelpMenu();
     openHelpMenu();

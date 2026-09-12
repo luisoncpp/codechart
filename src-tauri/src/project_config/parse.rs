@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-use super::{ConfigError, GroupDef};
+use super::{ConfigError, FacadeDef, GroupDef};
 
 /// YAML frontmatter shape. Every field is optional so a minimal block parses;
 /// unknown keys are ignored (forward-compatible).
@@ -12,7 +12,8 @@ struct RawFrontmatter {
     label: Option<String>,
     color: Option<String>,
     icon: Option<String>,
-    facades: Option<Vec<String>>,
+    facades: Option<Vec<RawFacade>>,
+    tags: Option<Vec<String>>,
     #[serde(rename = "match")]
     match_globs: Option<Vec<String>>,
     files: Option<Vec<String>>,
@@ -28,8 +29,30 @@ struct RawFrontmatter {
     disconnected_modules: Option<Vec<String>>,
     #[serde(rename = "mustNotImport")]
     must_not_import: Option<Vec<String>>,
+    #[serde(rename = "mustNotImportTags")]
+    must_not_import_tags: Option<Vec<String>>,
     #[serde(rename = "mayImport")]
     may_import: Option<Vec<String>>,
+}
+
+/// A `facades:` entry: either a bare path or `{ path, tags }`.
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum RawFacade {
+    Path(String),
+    Tagged {
+        path: String,
+        tags: Option<Vec<String>>,
+    },
+}
+
+impl From<RawFacade> for FacadeDef {
+    fn from(raw: RawFacade) -> Self {
+        match raw {
+            RawFacade::Path(path) => FacadeDef { path, tags: None },
+            RawFacade::Tagged { path, tags } => FacadeDef { path, tags },
+        }
+    }
 }
 
 /// Split a `*.group.md` file into (frontmatter yaml, body markdown). The body is
@@ -72,7 +95,10 @@ pub fn parse_group_def(path: &str, content: &str) -> Result<GroupDef, ConfigErro
         dir,
         color: raw.color,
         icon: raw.icon,
-        facades: raw.facades,
+        facades: raw
+            .facades
+            .map(|list| list.into_iter().map(FacadeDef::from).collect()),
+        tags: raw.tags.unwrap_or_default(),
         match_globs: raw.match_globs.unwrap_or_default(),
         files: raw.files.unwrap_or_default(),
         group_refs: raw.groups.unwrap_or_default(),
@@ -84,6 +110,7 @@ pub fn parse_group_def(path: &str, content: &str) -> Result<GroupDef, ConfigErro
         disconnected: raw.disconnected.unwrap_or(false),
         disconnected_modules: raw.disconnected_modules.unwrap_or_default(),
         must_not_import: raw.must_not_import.unwrap_or_default(),
+        must_not_import_tags: raw.must_not_import_tags.unwrap_or_default(),
         may_import: raw.may_import,
     })
 }

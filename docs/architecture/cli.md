@@ -39,6 +39,8 @@ codechart-cli check <dir> [--fail-on=kind,...] [--format=json|text] [--quiet]
 - `--fail-on=kind,…` **replaces** the default fail set. Kinds are the camelCase `DiagnosticKind` names. `--fail-on=a,b` and `--fail-on a,b` are both accepted. Last `--fail-on` wins.
 - Default fail-on: `circularDependency`, `architectureViolation`, `configError`, `parseError`.
 - `unresolvedImport` / `unresolvedIpc` / `unresolvedUnityAsset` print but do not fail unless listed. Opt-in example: `--fail-on=circularDependency,architectureViolation,configError,parseError,unresolvedImport`.
+  - **Why they are never a default failure:** compilers/type checkers resolve imports better, and an unresolved target is expected here — `ignoredPaths` can exclude files on purpose, and the target may be external to the analysis root (npm packages, C++ dependency headers). Treat an unresolved finding as information, not a gate. If `check` exits 1 while printing `unresolvedImport` lines, another kind in the same output caused it — read the first token of each line.
+  - `parseError` stays in the default set because it is **not** an import finding: it means a file in the analyzed set could not be read/parsed at all (malformed source alone never yields one — see `tree-sitter-error-tolerant-no-parse-error`), so the graph is silently incomplete.
 - Flags may appear before or after `<dir>`.
 - Uses `AnalyzeOptions.metrics_window_days = 0`, which skips the git probe — no churn / bug-risk, no git history required in CI.
 - Uses `analysis_fs_source` + `analyze_project_with_options`. Does **not** call `ensure_unreal_defaults`; deduced Unreal options stay in-memory.

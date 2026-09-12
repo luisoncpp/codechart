@@ -13,6 +13,10 @@ pub struct GroupBoundaries {
     pub module_group: BTreeMap<String, String>,
     /// Group id → parent group id (for subtree containment checks).
     pub parent_of: BTreeMap<String, String>,
+    /// Group id → its `tags` (layering by tag; a tag covers the group's subtree).
+    pub group_tags: BTreeMap<String, BTreeSet<String>>,
+    /// Facade module id → tags that **replace** its group's for that target.
+    pub facade_tags: BTreeMap<String, BTreeSet<String>>,
     /// Groups with ≥1 facade — their non-facade members are private.
     pub faceted_groups: BTreeSet<String>,
     /// Module ids designated as a facade of their group.

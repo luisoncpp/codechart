@@ -41,6 +41,10 @@ export const FRAME_WIDTH = 680;
 export const FRAME_HEIGHT = 360;
 export const DOCUMENT_FRAME_HEIGHT = 720;
 
+/** Resize floor — must match `.symbol-widget`'s `min-width` / `min-height`. */
+export const MIN_FRAME_WIDTH = 250;
+export const MIN_FRAME_HEIGHT = 180;
+
 function topZIndex(frames: readonly PreviewFrame[]): number {
   return frames.reduce((max, f) => Math.max(max, f.zIndex), 0);
 }

@@ -12,6 +12,8 @@ use super::test_module::is_test_module;
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct LayeringRule {
     pub must_not_import: BTreeSet<String>,
+    /// Tags whose carrier groups (and their descendants) may not be imported.
+    pub must_not_import_tags: BTreeSet<String>,
     pub may_import: Option<BTreeSet<String>>,
 }
 
@@ -59,7 +61,11 @@ fn violating_rule(
         if in_subtree(target_group, &holder, bounds) {
             continue;
         }
-        if let Some(hit) = rule_hit(rule, target_group, bounds) {
+        let target = Target {
+            module: &edge.target,
+            group: target_group,
+        };
+        if let Some(hit) = rule_hit(rule, &target, bounds) {
             return Some(LayerHit {
                 from: holder,
                 to: hit.to,
@@ -75,25 +81,34 @@ struct NamedHit {
     deny: bool,
 }
 
-fn rule_hit(
-    rule: &LayeringRule,
-    target_group: Option<&str>,
-    bounds: &GroupBoundaries,
-) -> Option<NamedHit> {
-    if let Some(named) = denied_name(rule, target_group, bounds) {
+/// The imported end of an edge. The module matters as well as its group: a
+/// facade can override its group's tags.
+struct Target<'a> {
+    module: &'a str,
+    group: Option<&'a str>,
+}
+
+fn rule_hit(rule: &LayeringRule, target: &Target, bounds: &GroupBoundaries) -> Option<NamedHit> {
+    if let Some(named) = denied_name(rule, target.group, bounds) {
         return Some(NamedHit {
             to: named,
+            deny: true,
+        });
+    }
+    if let Some(tag) = denied_tag(rule, target, bounds) {
+        return Some(NamedHit {
+            to: format!("tag {tag}"),
             deny: true,
         });
     }
     if rule.may_import.is_none() {
         return None;
     }
-    if allowed_by_list(rule, target_group, bounds) {
+    if allowed_by_list(rule, target.group, bounds) {
         return None;
     }
     Some(NamedHit {
-        to: target_group.unwrap_or("ungrouped").to_string(),
+        to: target.group.unwrap_or("ungrouped").to_string(),
         deny: false,
     })
 }
@@ -107,6 +122,34 @@ fn denied_name(
         .iter()
         .find(|named| in_subtree(target_group, named, bounds))
         .cloned()
+}
+
+/// The forbidden tag the target carries, if any.
+fn denied_tag(rule: &LayeringRule, target: &Target, bounds: &GroupBoundaries) -> Option<String> {
+    if rule.must_not_import_tags.is_empty() {
+        return None;
+    }
+    let carried = tags_carried_by(target, bounds);
+    rule.must_not_import_tags
+        .iter()
+        .find(|tag| carried.contains(tag.as_str()))
+        .cloned()
+}
+
+/// Tags that apply to the imported module. A facade with an explicit `tags:`
+/// **replaces** its group's set (so a group can export one tagged and one
+/// untagged entry point); otherwise a group tag applies to the group that
+/// declares it *and every descendant*, so the whole ancestor chain is inspected.
+fn tags_carried_by<'a>(target: &Target, bounds: &'a GroupBoundaries) -> BTreeSet<&'a str> {
+    if let Some(own) = bounds.facade_tags.get(target.module) {
+        return own.iter().map(String::as_str).collect();
+    }
+    ancestor_chain(target.group, bounds)
+        .iter()
+        .filter_map(|g| bounds.group_tags.get(g))
+        .flatten()
+        .map(String::as_str)
+        .collect()
 }
 
 fn allowed_by_list(

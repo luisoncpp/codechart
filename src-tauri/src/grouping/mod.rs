@@ -67,17 +67,20 @@ fn build_from_defs(files: &[String], defs: &[GroupDef]) -> ResolvedGroups {
     let mut groups = Vec::new();
     for def in defs {
         let members = members_of(&def.id, &assignment.module_group);
-        let (facade_ids, facade_diags) = facades_for(def, &members);
-        diagnostics.extend(facade_diags);
+        let facade = facades_for(def, &members);
+        diagnostics.extend(facade.diagnostics);
         let disconnect = resolve_disconnect(def, &members);
         diagnostics.extend(disconnect.diagnostics);
-        facades.extend(facade_ids.iter().cloned());
+        facades.extend(facade.ids.iter().cloned());
         groups.push(build_node(
             def,
             &nesting.parent_of,
-            facade_ids,
-            disconnect.by_default,
-            disconnect.module_ids,
+            Facets {
+                facade_module_ids: facade.ids,
+                facade_tags: facade.tags,
+                disconnected_by_default: disconnect.by_default,
+                disconnected_module_ids: disconnect.module_ids,
+            },
         ));
     }
     groups.sort_by(|a, b| a.id.cmp(&b.id));
@@ -98,21 +101,26 @@ fn members_of(group_id: &str, module_group: &BTreeMap<String, String>) -> BTreeS
         .collect()
 }
 
-fn build_node(
-    def: &GroupDef,
-    parent_of: &BTreeMap<String, String>,
+/// The per-group facts resolved by the passes above, bundled so `build_node`
+/// keeps a small signature.
+struct Facets {
     facade_module_ids: Vec<String>,
+    facade_tags: BTreeMap<String, Vec<String>>,
     disconnected_by_default: bool,
     disconnected_module_ids: Vec<String>,
-) -> GroupNode {
+}
+
+fn build_node(def: &GroupDef, parent_of: &BTreeMap<String, String>, facets: Facets) -> GroupNode {
     GroupNode {
         id: def.id.clone(),
         label: def.label.clone(),
         parent_id: parent_of.get(&def.id).cloned(),
         color: def.color.clone(),
-        facade_module_ids,
-        disconnected_by_default,
-        disconnected_module_ids,
+        facade_module_ids: facets.facade_module_ids,
+        facade_tags: facets.facade_tags,
+        tags: def.tags.clone(),
+        disconnected_by_default: facets.disconnected_by_default,
+        disconnected_module_ids: facets.disconnected_module_ids,
         annotation: annotation_from(def),
         architecture_doc: def.architecture_doc.clone(),
     }

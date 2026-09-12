@@ -36,6 +36,8 @@ fn seam_bounds(members: &[(&str, &str)]) -> GroupBoundaries {
     GroupBoundaries {
         module_group,
         parent_of: BTreeMap::new(),
+        group_tags: BTreeMap::new(),
+        facade_tags: BTreeMap::new(),
         faceted_groups: BTreeSet::new(),
         facades: BTreeSet::new(),
     }

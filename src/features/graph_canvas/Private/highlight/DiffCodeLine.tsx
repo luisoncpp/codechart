@@ -17,6 +17,8 @@ export interface DiffCodeLineProps {
   links: readonly WikiLinkSpan[];
   linkEveryToken: boolean;
   anchored?: boolean;
+  /** Digits of the widest line number, so every gutter cell reserves one width. */
+  numberDigits: number;
   /** Soft-wrap long rows instead of scrolling sideways (preview frames). */
   wrapLines?: boolean;
   onLineClick?: (line: number, extend: boolean) => void;
@@ -40,9 +42,15 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
   const isRemove = row.kind === "remove" || row.kind === "move-remove";
   const gutter = isAdd ? "+" : isRemove ? "-" : " ";
   const numStyle = {
-    flex: `0 0 ${18 / zoom}px`,
+    // `ch` tracks this cell's own monospace font-size, so the reserved width
+    // always fits the file's widest number. The row's `pre-wrap` +
+    // `overflow-wrap: anywhere` inherit here and would otherwise break a
+    // multi-digit number one digit per row.
+    flex: `0 0 calc(${props.numberDigits}ch + ${4 / zoom}px)`,
     textAlign: "right" as const,
-    paddingRight: 4 / zoom,
+    padding: `0 ${4 / zoom}px 0 0`,
+    whiteSpace: "pre" as const,
+    overflowWrap: "normal" as const,
     color: "#94a3b8",
     fontSize: fontSize * 0.9,
   };

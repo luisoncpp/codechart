@@ -29,6 +29,7 @@ Default fail-on kinds: `circularDependency`, `architectureViolation`, `configErr
 ## Common failure modes
 - **Exit 1 with `architectureViolation`** — facade bypass (import of a private member) or group layering (`mustNotImport` / `mayImport`). Route through the facade, or drop the forbidden cross-group import.
 - **Exit 1 with `circularDependency`** — solid import cycle. Works with inferred folders; no group files required.
-- **Exit 0 with `unresolvedImport` lines** — expected default. Pass `--fail-on=…,unresolvedImport` to opt in.
+- **Exit 0 with `unresolvedImport` lines** — expected default. Import resolution is deliberately not a gate (compilers do it better; `ignoredPaths` and out-of-root targets make unresolved normal). Pass `--fail-on=…,unresolvedImport` to opt in.
+- **Exit 1 while `unresolvedImport` lines are printed** — the unresolved lines are not the cause; some other kind in the same output is. `--fail-on` *replaces* the default set, so opting unresolved in means re-listing every kind you still want gated.
 - **`unknown diagnostic kind` / `unknown format`** — flag parse error on stderr; analysis is not run.
 - **`analysis failed`** — `BuildError` (invariant). Same as `analyze`; not bad user input.

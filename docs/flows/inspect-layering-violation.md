@@ -1,6 +1,6 @@
 # Flow — Inspect a layering violation
 
-When a group’s `mustNotImport` / `mayImport` rule is broken, select the importer
+When a group’s `mustNotImport` / `mustNotImportTags` / `mayImport` rule is broken, select the importer
 to read the layering diagnostic; the solid import edge is red (`isViolation`),
 same stroke as facade bypass and cycles.
 
@@ -24,13 +24,14 @@ module imports a `ui` facade.
 | 3 | Toolbar chip **N architecture issues** lists the diagnostic (`architectureViolations`) | `FacadeBypassList`, `selectors.ts` |
 | 4 | User selects the importer module on the canvas | `GraphSessionStore.select` |
 | 5 | `diagnosticsFor(graph, moduleId)` returns diagnostics for that file | `selectors.ts` |
-| 6 | `architectureViolation` rows render **red** with message `… violating layering: <from> must not import <to>` (or `may not import`) | `DiagnosticsList.tsx` |
+| 6 | `architectureViolation` rows render **red** with message `… violating layering: <from> must not import <to>` (or `may not import`, or `must not import tag <tag>`) | `DiagnosticsList.tsx` |
 
 ## Reads
 
 - In-memory `ProjectGraph` (diagnostics + edges).
-- `*.group.md` frontmatter `mustNotImport` / `mayImport` (already resolved into
-  the graph’s diagnostics; not re-read by the UI).
+- `*.group.md` frontmatter `mustNotImport` / `mustNotImportTags` / `mayImport`
+  and `tags` (already resolved into the graph’s diagnostics and
+  `GroupNode.tags`; not re-read by the UI).
 
 ## Writes
 
@@ -52,4 +53,6 @@ module imports a `ui` facade.
 - **Sibling groups under `app` unexpectedly red** → a parent `mayImport` does **not** forbid children importing each other; put `mustNotImport` on the sibling (`db`, not `app`).
 - **Nested file not flagged** → rules inherit down the importer tree and named targets include descendants; if it still misses, the module may be ungrouped or a test importer (`*.test.*` / `test` segments are skipped).
 - **Two red reasons on one edge** → bypass (`architectureViolation:<edge-id>`) and layering (`architectureViolation:layer:<edge-id>`) can both apply; both should appear in the panel.
-- **`configError:layer:…` and no red edge** → unknown group id in the YAML; the bad name is dropped and never flagged.
+- **`configError:layer:…` and no red edge** → unknown group id **or unknown tag** in the YAML; the bad name is dropped and never flagged. A tag is "known" only when some `*.group.md` lists it under `tags:`.
+- **Tagged group's children not flagged** → they are: a tag covers the declaring group *and its descendants*. If a nested group looks unaffected, check it is actually nested (`parentId`) rather than a sibling that never inherited the tag.
+- **One facade of a group red, another grey** → expected when that facade declares its own `tags:`; a facade's explicit tags *replace* the group's (`tags: []` exempts it entirely). Check `GroupNode.facadeTags` for the target module id.

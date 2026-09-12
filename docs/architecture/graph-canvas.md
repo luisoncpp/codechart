@@ -359,7 +359,18 @@ hidden by zoom collapse.
   `GraphCanvas` renders `framesView` and wires `openFromSymbolNode`/`closeTransient`). Clicking an exported
   symbol box inside a module card (L1.5) selects the parent module and opens a resizable, scrollable, **draggable** (header bar)
   frame next to the symbol, centered on the symbol's definition line (centering scrolls only the frame
-  body — never `scrollIntoView`, which would scroll the window). Inside a frame, clickable identifiers
+  body — never `scrollIntoView`, which would scroll the window). Resizing is **not** native CSS
+  `resize` — pressing a native resizer makes the browser autoscroll the scrollable box under the
+  cursor (the frame body, which reaches the same corner) on a timer for as long as the button is
+  held, and nothing cancels it. `.symbol-widget__resizer` (a grip element) plus `frame-resize.ts`
+  `startFrameResize` own the size instead: `preventDefault` on the press means no native gesture and
+  therefore no autoscroll, and sizes are written straight to the element (as in `startFrameDrag`),
+  clamped to `MIN_FRAME_WIDTH`/`MIN_FRAME_HEIGHT` which mirror the CSS floors. The grip would
+  otherwise land on the body scrollbar's bottom button, so it is offset left by
+  `--frame-scrollbar-width` (`scrollbar-metrics.ts` measures the platform's bar once; `0` on overlay
+  scrollbars keeps the grip in the true corner). Reserving the space on the body instead — a
+  `margin-bottom` or a `border-bottom` — shortens the scrollport and clips the last row early, which
+  is not acceptable: the source must reach the frame's bottom edge. Inside a frame, clickable identifiers
   (`hl-clickable`) come from `combinedSymbolTargets` (pure) — the union of own-module function/method
   definitions (`scanFunctionDefinitions`, a heuristic lexical scan: keyword-declared functions plus
   `name(args) {`-shaped method lines), imported exported symbols (`importedSymbolTargets` over import

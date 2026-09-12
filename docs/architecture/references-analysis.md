@@ -169,9 +169,16 @@ owns the input type so it stays decoupled from `grouping`.
 Solid `import` edges only (soft / IPC / seam ignored). Test importers skipped
 (same as `flag_drift`). Does not clear existing facade-bypass flags.
 
-A rule lives on an **importer** group (`mustNotImport` / `mayImport` from
-`*.group.md`). It applies to every module whose group is that id or a descendant.
-A named target matches that group or a descendant. Imports that stay inside the
+A rule lives on an **importer** group (`mustNotImport` / `mustNotImportTags` /
+`mayImport` from `*.group.md`). It applies to every module whose group is that id
+or a descendant. A named target matches that group or a descendant; a
+`mustNotImportTags` entry matches any target group that carries the tag **or is
+nested under a group that does** (`GroupBoundaries.group_tags`), and reports as
+`… must not import tag <tag>`. Tag denials are checked after named denials and
+before the allowlist. A facade listed with its own `tags:` **overrides** the group
+chain for edges targeting that module (`GroupBoundaries.facade_tags`), so one
+group can expose a blocked and an unblocked entry point — the tag lookup is
+per-target-module (`tags_carried_by`), not per-group. Imports that stay inside the
 rule-holder's subtree are never flagged. Ungrouped targets: allowlist flags them
 (`… may not import ungrouped`); denylist does not.
 

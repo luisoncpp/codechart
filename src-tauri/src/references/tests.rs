@@ -569,9 +569,32 @@ fn boundaries(
     GroupBoundaries {
         module_group,
         parent_of,
+        group_tags: BTreeMap::new(),
+        facade_tags: BTreeMap::new(),
         faceted_groups,
         facades,
     }
+}
+
+/// Stamp `(group, tag)` pairs onto already-built boundaries.
+fn with_tags(mut bounds: GroupBoundaries, tags: &[(&str, &str)]) -> GroupBoundaries {
+    for (group, tag) in tags {
+        bounds
+            .group_tags
+            .entry((*group).into())
+            .or_default()
+            .insert((*tag).into());
+    }
+    bounds
+}
+
+/// Give one facade module its own tag set, overriding its group's.
+fn with_facade_tags(mut bounds: GroupBoundaries, facade: &str, tags: &[&str]) -> GroupBoundaries {
+    bounds.facade_tags.insert(
+        facade.into(),
+        tags.iter().map(|t| (*t).to_string()).collect(),
+    );
+    bounds
 }
 
 #[test]
@@ -681,7 +704,15 @@ fn import_from_a_nested_subgroup_into_its_ancestor_private_is_allowed() {
 fn layer_rule(must_not: &[&str], may: Option<&[&str]>) -> LayeringRule {
     LayeringRule {
         must_not_import: must_not.iter().map(|s| (*s).into()).collect(),
+        must_not_import_tags: BTreeSet::new(),
         may_import: may.map(|list| list.iter().map(|s| (*s).into()).collect()),
+    }
+}
+
+fn tag_rule(must_not_tags: &[&str]) -> LayeringRule {
+    LayeringRule {
+        must_not_import_tags: must_not_tags.iter().map(|s| (*s).into()).collect(),
+        ..LayeringRule::default()
     }
 }
 
@@ -709,6 +740,123 @@ fn denylist_flags_import_of_a_public_facade() {
         "architectureViolation:layer:db/repo.ts->ui/index.ts:import:0"
     );
     assert!(diags[0].message.contains("db must not import ui"));
+}
+
+#[test]
+fn tag_denylist_flags_an_import_of_a_tagged_group() {
+    let bounds = with_tags(
+        boundaries(&[("ui/view.ts", "ui"), ("db/repo.ts", "db")], &[], &[]),
+        &[("db", "infrastructure")],
+    );
+    let rules = layer_map(&[("ui", tag_rule(&["infrastructure"]))]);
+    let mut edges = vec![edge("ui/view.ts", "db/repo.ts")];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(edges[0].is_violation);
+    assert_eq!(diags.len(), 1);
+    assert!(diags[0]
+        .message
+        .contains("ui must not import tag infrastructure"));
+}
+
+#[test]
+fn tag_denylist_covers_descendants_of_the_tagged_group() {
+    let bounds = with_tags(
+        boundaries(
+            &[("ui/view.ts", "ui"), ("db/pg/client.ts", "postgres")],
+            &[],
+            &[("postgres", "db")],
+        ),
+        &[("db", "infrastructure")],
+    );
+    let rules = layer_map(&[("ui", tag_rule(&["infrastructure"]))]);
+    let mut edges = vec![edge("ui/view.ts", "db/pg/client.ts")];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(edges[0].is_violation, "a tag applies to nested groups too");
+    assert_eq!(diags.len(), 1);
+}
+
+#[test]
+fn an_untagged_facade_escapes_its_groups_tag() {
+    let bounds = with_facade_tags(
+        with_tags(
+            boundaries(
+                &[
+                    ("ui/view.ts", "ui"),
+                    ("db/index.ts", "db"),
+                    ("db/safe.ts", "db"),
+                ],
+                &["db/index.ts", "db/safe.ts"],
+                &[],
+            ),
+            &[("db", "infrastructure")],
+        ),
+        "db/safe.ts",
+        /*tags=*/ &[],
+    );
+    let rules = layer_map(&[("ui", tag_rule(&["infrastructure"]))]);
+    let mut edges = vec![
+        edge("ui/view.ts", "db/index.ts"),
+        edge("ui/view.ts", "db/safe.ts"),
+    ];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(edges[0].is_violation, "the inheriting facade stays blocked");
+    assert!(!edges[1].is_violation, "the overriding facade is exempt");
+    assert_eq!(diags.len(), 1);
+}
+
+#[test]
+fn a_tagged_facade_is_blocked_though_its_group_is_untagged() {
+    let bounds = with_facade_tags(
+        boundaries(
+            &[
+                ("ui/view.ts", "ui"),
+                ("db/index.ts", "db"),
+                ("db/raw.ts", "db"),
+            ],
+            &["db/index.ts", "db/raw.ts"],
+            &[],
+        ),
+        "db/raw.ts",
+        &["infrastructure"],
+    );
+    let rules = layer_map(&[("ui", tag_rule(&["infrastructure"]))]);
+    let mut edges = vec![
+        edge("ui/view.ts", "db/index.ts"),
+        edge("ui/view.ts", "db/raw.ts"),
+    ];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(!edges[0].is_violation);
+    assert!(edges[1].is_violation);
+    assert!(diags[0]
+        .message
+        .contains("ui must not import tag infrastructure"));
+}
+
+#[test]
+fn tag_denylist_ignores_untagged_targets_and_own_subtree() {
+    let bounds = with_tags(
+        boundaries(
+            &[
+                ("ui/view.ts", "ui"),
+                ("ui/widgets/btn.ts", "widgets"),
+                ("domain/model.ts", "domain"),
+            ],
+            &[],
+            &[("widgets", "ui")],
+        ),
+        // The rule holder itself carries the forbidden tag: own-subtree imports
+        // must still be allowed.
+        &[("ui", "infrastructure")],
+    );
+    let rules = layer_map(&[("ui", tag_rule(&["infrastructure"]))]);
+    let mut edges = vec![
+        edge("ui/view.ts", "domain/model.ts"),
+        edge("ui/view.ts", "ui/widgets/btn.ts"),
+    ];
+    let diags = flag_layering(&mut edges, &bounds, &rules);
+    assert!(!edges[0].is_violation);
+    assert!(!edges[1].is_violation);
+    assert!(diags.is_empty());
 }
 
 #[test]
