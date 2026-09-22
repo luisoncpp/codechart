@@ -35,8 +35,7 @@ use crate::references::{
 };
 use crate::tsconfig_paths::load_from_source;
 use crate::unity_assets::index_meta_files;
-use crate::unreal_config::{source_config, SourceConfig};
-use crate::UnrealOptions;
+use crate::{is_unreal_project, source_config, SourceConfig, UnrealOptions, CONFIG_PATH};
 
 use nodes::{build_modules, language_for, ParsedFile};
 
@@ -65,7 +64,7 @@ pub fn opens_file(path: &str) -> bool {
         || is_group_file(path)
         || path.ends_with(".meta")
         || crate::tsconfig_paths::is_config_path(path)
-        || path == crate::unreal_config::CONFIG_PATH
+        || path == CONFIG_PATH
 }
 
 /// Analyze a project: parse its source files, resolve groups + import edges, and
@@ -147,7 +146,7 @@ fn listed_files(
         files = retain_without_top_level_dot_dirs(files);
     }
     files = retain_without_ignored_paths(files, &config.ignored_paths);
-    let is_unreal = crate::unreal_config::is_unreal_project(&files);
+    let is_unreal = is_unreal_project(&files);
     if config.unreal.hide_plugins {
         files = retain_without_plugins_dirs(files);
     }

@@ -1,4 +1,4 @@
-import type { HeatmapMode } from "../heat/heat-types";
+import type { HeatmapMode } from "../../../graph";
 import type { ProjectionCtx } from "./rf-projection-types";
 
 export function heatFields(

@@ -36,6 +36,13 @@ flag, then reloads analysis.
 discarded the whole file). Such a partial file gets the Unreal-on defaults; the
 app's modals always write the complete config, so only hand-edits see this.
 
+`unreal_config/` has no `*.group.md`, so it belongs to the **backend_shell**
+group, whose only facade is `lib.rs`. Code outside that group (e.g. `analysis`)
+must reach it through the crate root — `use crate::{source_config, CONFIG_PATH,
+…}` — never `crate::unreal_config::…`, which `codechart-cli check` reports as an
+`architectureViolation`. Adding a new public item means re-exporting it from
+`lib.rs`.
+
 ## Ignored Paths
 
 `ignoredPaths` are repo-relative **directory paths** — not globs. Each entry

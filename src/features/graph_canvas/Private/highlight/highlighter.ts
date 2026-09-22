@@ -1,16 +1,7 @@
 // @Architecture(descriptionShort="Lightweight token-based syntax highlighter for multiple languages")
 
 import { LineTokenizer } from "./line-tokenizer";
-
-export interface Token {
-  type: string;
-  text: string;
-}
-
-export interface Rule {
-  type: string;
-  regex: RegExp;
-}
+import type { Token } from "./highlighter-types";
 
 /**
  * Tokenizes code based on language derived from file path extension.

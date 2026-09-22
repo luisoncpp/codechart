@@ -8,20 +8,7 @@ import {
   visibleWorldRect,
 } from "./edge-viewport";
 import { bucketFromVisibleSegments } from "./viewport-edge-bucket";
-
-export interface ViewportEdgeBucket {
-  style: EdgeDrawStyle;
-  mergedPath: string;
-  mergedArrowPath: string;
-  mergedCrossPath: string;
-  arrowSegments: EdgeSegment[];
-  crossSegments: EdgeSegment[];
-}
-
-export interface ViewportEdgeModel {
-  buckets: ViewportEdgeBucket[];
-  showArrows: boolean;
-}
+import type { ViewportEdgeModel } from "./viewport-edge-types";
 
 export function buildStaticEdgeModel(
   cache: { buckets: { style: EdgeDrawStyle; segments: EdgeSegment[] }[] },

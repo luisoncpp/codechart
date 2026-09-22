@@ -9,9 +9,6 @@ export type { ModuleMetrics } from "./model/ModuleMetrics";
 export type { ModuleNode } from "./model/ModuleNode";
 export type { ProjectGraph } from "./model/ProjectGraph";
 export type { Severity } from "./model/Severity";
-export { projectGraphSummary } from "./Private/projection/graph-projector";
-export { projectGraph } from "./Private/projection/rf-projection";
-export type { RenderOptions } from "./Private/projection/rf-projection";
 export { symbolBoxId, symbolNameFromId } from "./symbol-id";
 export { inferSymbolKind } from "./Private/symbol-kind";
 export type { SymbolKind } from "./Private/symbol-kind";
@@ -45,17 +42,6 @@ export {
   formatChurn,
 } from "./Private/heat/heat-scores";
 export { heatColor, heatFill, heatFillOpacity, heatLegendGradient } from "./Private/heat/heat-colors";
-export type {
-  ProjectedGraph,
-  GroupNodeData,
-  ModuleNodeData,
-  ModuleSymbolDescriptor,
-  EdgeData,
-  GroupRFNode,
-  ModuleRFNode,
-  RFNode,
-  RFEdgeT,
-} from "./Private/projection/node-data";
 export {
   findModule,
   findGroup,

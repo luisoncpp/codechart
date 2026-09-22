@@ -1,7 +1,5 @@
+import { inferSymbolKind, symbolNameFromId, type ModuleNode } from "../../../graph";
 import { type LayoutBox, type LayoutedGraph } from "../../../layout";
-import { symbolNameFromId } from "../../symbol-id";
-import type { ModuleNode } from "../../model/ModuleNode";
-import { inferSymbolKind } from "../symbol-kind";
 import type { ModuleSymbolDescriptor } from "./node-data";
 import { relativePosition } from "./rf-projection-layout";
 import type { BoxIndex, ProjectionCtx } from "./rf-projection-types";

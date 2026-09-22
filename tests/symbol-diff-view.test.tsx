@@ -1,7 +1,7 @@
 /// <reference types="@testing-library/jest-dom" />
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { ModuleNodeData, ModuleSymbolDescriptor } from "../src/domain/graph";
+import type { ModuleNodeData, ModuleSymbolDescriptor } from "../src/domain/projection";
 import { SymbolNodeView } from "../src/features/graph_canvas/Private/nodes/SymbolNodeView";
 import "../src/features/graph_canvas/Private/graph-canvas.css";
 

@@ -2,7 +2,7 @@
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 
-import type { ModuleRFNode } from "../../../../domain/graph";
+import type { ModuleRFNode } from "../../../../domain/projection";
 
 import { diffStatsSuffixLength, countLineDiffStats } from "../../../../domain/diff";
 

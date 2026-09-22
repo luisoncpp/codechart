@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="One rendered code row: gutter, line number, and syntax tokens")
 import type { DiffDisplayRow } from "../../../../domain/diff";
-import type { Token } from "./highlighter";
+import type { Token } from "./highlighter-types";
 import type { LineMatchRange } from "./match-highlight";
 import { TokenText } from "./TokenText";
 import type { RowChrome } from "./row-chrome";

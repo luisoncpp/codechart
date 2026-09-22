@@ -5,7 +5,7 @@ import type { EdgeDrawStyle, EdgeSegment } from "./edge-path";
 import { mergePathD } from "./edge-path-merge";
 import type { WorldRect } from "./edge-viewport";
 import { filterVisibleSegments } from "./edge-viewport";
-import type { ViewportEdgeBucket } from "./viewport-edge-model";
+import type { ViewportEdgeBucket } from "./viewport-edge-types";
 
 function mergeArrowHeadD(segments: EdgeSegment[]): string {
   if (segments.length === 0) return "";

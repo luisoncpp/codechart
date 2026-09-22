@@ -1,7 +1,8 @@
 // @Architecture(descriptionShort="Top toolbar: project chip, load controls, menu slot, and status")
 import type { ReactNode } from "react";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
-import { architectureViolations, projectGraphSummary } from "../../../domain/graph";
+import { architectureViolations } from "../../../domain/graph";
+import { projectGraphSummary } from "../../../domain/projection";
 import { FolderPicker, pickFolder as defaultPickFolder } from "./pick-folder";
 import { FacadeBypassList } from "./FacadeBypassList";
 import { StatusText } from "./StatusText";

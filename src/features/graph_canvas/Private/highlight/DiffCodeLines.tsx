@@ -5,7 +5,7 @@ import {
   type DiffNote,
   type FileLineDiff,
 } from "../../../../domain/diff";
-import type { Token } from "./highlighter";
+import type { Token } from "./highlighter-types";
 import { LineTokenizer } from "./line-tokenizer";
 import type { LineMatchRange } from "./match-highlight";
 import { DiffRowItem } from "./DiffRowItem";

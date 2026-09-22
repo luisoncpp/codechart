@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { styleEdge } from "../src/features/graph_canvas/Private/edges/edge-style";
 import { buildEdgeLayerModel } from "../src/features/graph_canvas/Private/edges/edge-layer-cache";
 import { boxesFromFlowNodes } from "../src/features/graph_canvas/Private/edges/node-boxes";
-import type { RFNode } from "../src/domain/graph";
+import type { RFNode } from "../src/domain/projection";
 
 describe("edge layer model", () => {
   it("builds visible segments from projected node dimensions", () => {

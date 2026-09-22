@@ -1,6 +1,7 @@
 // CI quality gate: diagnostics only, no graph dump, no git metrics, no config writes.
 
 mod args;
+mod kinds;
 mod report;
 
 #[cfg(test)]
@@ -41,7 +42,7 @@ fn execute(args: &CheckArgs) -> ExitCode {
 fn evaluate(path: &str) -> Result<report::CheckReport, String> {
     Ok(report_from_kinds(
         &analyze_diagnostics(path)?,
-        &report::DEFAULT_FAIL_ON,
+        &kinds::DEFAULT_FAIL_ON,
     ))
 }
 

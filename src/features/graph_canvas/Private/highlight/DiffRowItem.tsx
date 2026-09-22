@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="One code row plus its chrome: Diff Notes below it and Review Notes anchored to it")
 import { Fragment } from "react";
 import type { DiffDisplayRow, DiffNote } from "../../../../domain/diff";
-import type { Token } from "./highlighter";
+import type { Token } from "./highlighter-types";
 import type { LineMatchRange } from "./match-highlight";
 import { DiffCodeLine } from "./DiffCodeLine";
 import type { RowChrome } from "./row-chrome";

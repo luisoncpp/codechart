@@ -1,8 +1,9 @@
 // @Architecture(descriptionShort="Greedy placement for deleted ghost modules to prevent overlap")
-import type { GroupNodeData, ModuleNode, RFNode } from "../../graph";
-import type { LayoutBox, LayoutedGraph } from "../../layout";
-import { MODULE_BOX, moduleBoxSize } from "../../layout";
-import type { GraphDiffOverlay } from "./types";
+import type { ModuleNode } from "../../../graph";
+import type { GroupNodeData, RFNode } from "../rf/node-data";
+import type { LayoutBox, LayoutedGraph } from "../../../layout";
+import { MODULE_BOX, moduleBoxSize } from "../../../layout";
+import type { GraphDiffOverlay } from "../../../diff";
 import {
   pickBestPosition,
   type ContainerBounds,

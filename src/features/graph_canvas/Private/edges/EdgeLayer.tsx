@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useStoreApi } from "@xyflow/react";
-import type { RFEdgeT, RFNode } from "../../../../domain/graph";
+import type { RFEdgeT, RFNode } from "../../../../domain/projection";
 import type { BucketDomRefs } from "./edge-layer-dom-writer";
 import {
   EdgeLayerController,
@@ -11,7 +11,7 @@ import {
 import { subscribeEdgeLayer } from "./edge-layer-subscribe";
 import { EdgeBucketSvg } from "./EdgeBucketSvg";
 import { styleKeyFromDrawStyle } from "./edge-path";
-import type { ViewportEdgeModel } from "./viewport-edge-model";
+import type { ViewportEdgeModel } from "./viewport-edge-types";
 
 interface EdgeLayerProps {
   edges: RFEdgeT[];

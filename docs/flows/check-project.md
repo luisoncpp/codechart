@@ -9,7 +9,7 @@ End-to-end CLI sequence that turns a folder into a compact diagnostic report and
 
 | # | Step | Function | File |
 |---|------|----------|------|
-| 1 | Parse path + flags (`--fail-on`, `--format`, `--quiet`) | `args::parse` | `cli/check/args.rs` |
+| 1 | Parse path + flags (`--fail-on`, `--format`, `--quiet`) | `args::parse` | `cli/check/args.rs` (kind names via `cli/check/kinds.rs`) |
 | 2 | Open the folder read-only (Unreal `Plugins/` skip from existing config / Unreal defaults in memory) | `analysis_fs_source` | `unreal_config/detect.rs` |
 | 3 | Analyze with git metrics disabled | `analyze_project_with_options` (`metrics_window_days = 0`) | `analysis/mod.rs` |
 | 4 | Same pipeline as [analyze-project](./analyze-project.md) steps 1–6, 8–9; **skip** step 7b (git enrich) | — | — |
@@ -17,7 +17,7 @@ End-to-end CLI sequence that turns a folder into a compact diagnostic report and
 | 6 | Render text lines, compact JSON, or nothing (`--quiet`) | `render_stdout` | `cli/check/report.rs` |
 | 7 | Exit 1 if any selected fail-on kind is present | `print_report` | `cli/check/mod.rs` |
 
-Default fail-on kinds: `circularDependency`, `architectureViolation`, `configError`, `parseError`. `--fail-on` replaces that set. Other kinds are printed (unless `--quiet`) and do not fail unless listed.
+Default fail-on kinds: `circularDependency`, `architectureViolation`, `configError`, `parseError`. The kind vocabulary (`DEFAULT_FAIL_ON`, `parse_kind`, `kind_name`) lives in `cli/check/kinds.rs`, imported by both `args.rs` and `report.rs` so the flag parser does not depend on the renderer. `--fail-on` replaces that set. Other kinds are printed (unless `--quiet`) and do not fail unless listed.
 
 ## Reads
 - Disk via `ProjectSource`: source files, `*.group.md`, optional `.codechart/config.json`.

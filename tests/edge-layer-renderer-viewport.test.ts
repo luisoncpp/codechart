@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EdgeLayerRenderer } from "../src/features/graph_canvas/Private/edges/edge-layer-renderer";
 import { styleEdge } from "../src/features/graph_canvas/Private/edges/edge-style";
-import type { RFNode } from "../src/domain/graph";
+import type { RFNode } from "../src/domain/projection";
 
 function node(id: string, x: number, y: number): RFNode {
   return {

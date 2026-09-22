@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { act, waitFor } from "@testing-library/react";
 import goldenGraph from "./fixtures/golden/project-graph.json";
 import { ElkLayoutEngine } from "../src/domain/layout";
-import { groupLocTotals, formatLoc, projectGraph } from "../src/domain/graph";
+import { groupLocTotals, formatLoc } from "../src/domain/graph";
+import { projectGraph } from "../src/domain/projection";
 import type { ProjectGraph } from "../src/domain/graph";
 import { readyGraphStore, renderGraphCanvas } from "./helpers/flow-graph-canvas";
 

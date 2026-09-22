@@ -2,7 +2,7 @@
 import { useLayoutEffect, useRef } from "react";
 import type { BucketDomRefs } from "./edge-layer-dom-writer";
 import { styleKeyFromDrawStyle } from "./edge-path";
-import type { ViewportEdgeBucket } from "./viewport-edge-model";
+import type { ViewportEdgeBucket } from "./viewport-edge-types";
 
 interface EdgeBucketSvgProps {
   bucket: ViewportEdgeBucket;

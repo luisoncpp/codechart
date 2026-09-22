@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Pure fit math for the L0 collapsed card label + description")
-import type { GroupNodeData } from "../../../../domain/graph";
+import type { GroupNodeData } from "../../../../domain/projection";
 import { PRESETS } from "../../../../domain/layout";
 import { iconFontSize, iconGlyph } from "../nodes/icon-map";
 import { descriptionRegion, type DescRegion } from "./collapsed-description-region";

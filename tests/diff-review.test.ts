@@ -4,8 +4,8 @@ import { createMockAnalysisClient } from "../src/ipc/analysis-client";
 import { createMockGitClient } from "../src/ipc/git-client";
 import type { DiffReviewClient } from "../src/ipc/diff-review-client";
 import { ElkLayoutEngine } from "../src/domain/layout";
-import { withDiffReview } from "../src/domain/diff";
-import type { ModuleRFNode, ProjectedGraph, RFNode } from "../src/domain/graph";
+import { withDiffReview } from "../src/domain/projection";
+import type { ModuleRFNode, ProjectedGraph, RFNode } from "../src/domain/projection";
 
 const PASTE = "diff --git a/src/core/store.ts b/src/core/store.ts\n";
 

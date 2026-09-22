@@ -1,16 +1,8 @@
 import { describe, expect, it } from "vitest";
 import golden from "./fixtures/golden/project-graph.json";
 import type { ProjectGraph } from "../src/domain/graph";
-import {
-  applyDiffOverlay,
-  compareGraphs,
-  overlayFromPastedDiff,
-  pathsFromUnifiedDiff,
-  normalizeDiffPath,
-  mergeCommitOverlay,
-  lineDiffsFromUnified,
-  countLineDiffStats,
-} from "../src/domain/diff";
+import { compareGraphs, overlayFromPastedDiff, pathsFromUnifiedDiff, normalizeDiffPath, mergeCommitOverlay, lineDiffsFromUnified, countLineDiffStats } from "../src/domain/diff";
+import { applyDiffOverlay } from "../src/domain/projection";
 
 const base = golden as unknown as ProjectGraph;
 

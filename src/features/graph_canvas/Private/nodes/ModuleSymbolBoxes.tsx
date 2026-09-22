@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Absolutely positions exported symbol boxes inside a module card")
-import type { ModuleNodeData, ModuleSymbolDescriptor } from "../../../../domain/graph";
+import type { ModuleNodeData, ModuleSymbolDescriptor } from "../../../../domain/projection";
 import { SymbolNodeView } from "./SymbolNodeView";
 
 interface ModuleSymbolBoxesProps {

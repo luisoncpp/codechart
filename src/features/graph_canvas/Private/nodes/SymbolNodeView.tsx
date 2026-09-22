@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Renders individual exported symbol boxes inside modules")
-import type { ModuleNodeData, ModuleSymbolDescriptor } from "../../../../domain/graph";
+import type { ModuleNodeData, ModuleSymbolDescriptor } from "../../../../domain/projection";
 import { SYMBOL_KIND_DISPLAY } from "../../../../domain/graph";
 import {
   symbolBorderColor,

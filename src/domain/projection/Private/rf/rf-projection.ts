@@ -1,14 +1,7 @@
 // @Architecture(descriptionShort="Converts internal project graph model to React Flow projection")
+import { groupParentMap, isGroupDisconnected, isModuleDisconnected, isModuleExpanded, type GroupNode, type ModuleNode, type ProjectGraph } from "../../../graph";
 import type { LayoutedGraph } from "../../../layout";
-import type { ProjectGraph } from "../../model/ProjectGraph";
-import type { GroupNode } from "../../model/GroupNode";
-import type { ModuleNode } from "../../model/ModuleNode";
 import { colorForGroup } from "./colors";
-import { groupParentMap, isModuleExpanded } from "../reduction/zoom-projection";
-import {
-  isGroupDisconnected,
-  isModuleDisconnected,
-} from "../reduction/connection-filter";
 import type { ProjectedGraph, RFNode } from "./node-data";
 import { projectEdge } from "./rf-projection-edges";
 import { byParentId, sortByDepth } from "./rf-projection-layout";

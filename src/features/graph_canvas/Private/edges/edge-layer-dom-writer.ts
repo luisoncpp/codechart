@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="Imperative SVG updates for static edge strokes")
 import { styleKeyFromDrawStyle } from "./edge-path";
-import type { ViewportEdgeModel } from "./viewport-edge-model";
+import type { ViewportEdgeModel } from "./viewport-edge-types";
 
 export interface BucketDomRefs {
   strokePath: SVGPathElement;

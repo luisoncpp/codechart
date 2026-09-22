@@ -1,6 +1,6 @@
 ---
-id: graph_projection
-label: RF Projection
+id: projection_rf
+label: RF Models
 color: "#a855f7"
 icon: layout
 descriptionShort: ProjectGraph + layout → React Flow models

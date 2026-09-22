@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  applyDiffOverlay,
-  attachLineDiff,
-  attachRenames,
-  overlayFromPastedDiff,
-  pathsFromUnifiedDiff,
-} from "../src/domain/diff";
+import { attachLineDiff, attachRenames, overlayFromPastedDiff, pathsFromUnifiedDiff } from "../src/domain/diff";
+import { applyDiffOverlay } from "../src/domain/projection";
 import { bodiesFromUnifiedDiff } from "../src/domain/diff/Private/rename-bodies";
 import { styleEdge } from "../src/features/graph_canvas";
 import type { GraphDiffOverlay } from "../src/domain/diff";

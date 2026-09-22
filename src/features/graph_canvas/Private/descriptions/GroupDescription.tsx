@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="In-group description text with Markdown support and hover tooltip at L1")
 import { useEffect, useState } from "react";
 import { useStore, useStoreApi } from "@xyflow/react";
-import type { GroupNodeData } from "../../../../domain/graph";
+import type { GroupNodeData } from "../../../../domain/projection";
 import { UNCHANGED_MODULE_DIFF_OPACITY } from "../../../../domain/diff";
 import { DESC_BOX, fitDescriptionFontSize } from "../../../../domain/layout";
 import { DescriptionTooltip, type TooltipAnchor } from "./DescriptionTooltip";

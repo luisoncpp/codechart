@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Applies strokes, patterns, and colors to visual edges")
 import { MarkerType } from "@xyflow/react";
-import type { EdgeFocus, RFEdgeT } from "../../../../domain/graph";
+import type { EdgeFocus } from "../../../../domain/graph";
+import type { RFEdgeT } from "../../../../domain/projection";
 import type { ArrowVisibility } from "../controller/canvas-ui-state";
 
 

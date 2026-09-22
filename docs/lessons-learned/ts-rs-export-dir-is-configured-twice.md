@@ -7,7 +7,8 @@ frontend `src/`.
 Moving or renaming that folder requires updating `TS_RS_EXPORT_DIR` in **both**:
 
 - `.cargo/config.toml` (`[env]` — what a plain `cargo test` uses)
-- `package.json` `check` script (`cross-env TS_RS_EXPORT_DIR=…` — overrides the former)
+- `package.json` `check:rust` script (`cross-env TS_RS_EXPORT_DIR=…` — overrides the
+  former; it is the `cargo test` leg of `npm run check`, split out of it)
 
 If only one is updated, `cargo test` silently regenerates the bindings at the stale
 location, resurrecting the old files next to the moved ones. Verify a move by running

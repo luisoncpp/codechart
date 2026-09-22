@@ -1,6 +1,6 @@
 use crate::contract::DiagnosticKind;
 
-use super::report::{parse_kind, DEFAULT_FAIL_ON};
+use super::kinds::{parse_kind, DEFAULT_FAIL_ON};
 
 pub(super) const USAGE: &str =
     "usage: codechart-cli check <project-dir> [--fail-on=kind,...] [--format=json|text] [--quiet]";

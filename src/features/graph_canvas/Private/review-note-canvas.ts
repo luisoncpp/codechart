@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { moduleIdsInGroupTree, type ProjectedGraph } from "../../../domain/graph";
+import { moduleIdsInGroupTree } from "../../../domain/graph";
+import { type ProjectedGraph } from "../../../domain/projection";
 import type { ReviewNoteNavigationRequest } from "../../../ipc/review-notes-client";
 import type { GraphSessionStore } from "../../../state/graph-session";
 import type { ReviewNotesStore } from "../../../state/review-notes";

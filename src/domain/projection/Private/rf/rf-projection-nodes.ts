@@ -1,6 +1,5 @@
+import { type GroupNode, type ModuleNode } from "../../../graph";
 import { type LayoutBox } from "../../../layout";
-import type { GroupNode } from "../../model/GroupNode";
-import type { ModuleNode } from "../../model/ModuleNode";
 import { colorForGroup } from "./colors";
 import type { GroupRFNode, ModuleRFNode } from "./node-data";
 import { descriptionBoxGeometry } from "./rf-projection-desc-box";

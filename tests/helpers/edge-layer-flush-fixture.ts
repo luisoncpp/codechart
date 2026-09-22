@@ -2,7 +2,7 @@ import { vi } from "vitest";
 import { EdgeLayerController } from "../../src/features/graph_canvas/Private/edges/edge-layer-controller";
 import { drawStyleFromEdge, styleKeyFromDrawStyle } from "../../src/features/graph_canvas/Private/edges/edge-path";
 import { styleEdge } from "../../src/features/graph_canvas/Private/edges/edge-style";
-import type { RFEdgeT, RFNode } from "../../src/domain/graph";
+import type { RFEdgeT, RFNode } from "../../src/domain/projection";
 
 export function stubRafQueue(): FrameRequestCallback[] {
   const rafQueue: FrameRequestCallback[] = [];

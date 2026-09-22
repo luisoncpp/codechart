@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="Renders group boundaries, titles, and descriptions")
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import type { GroupRFNode, GroupNodeData } from "../../../../domain/graph";
+import type { GroupRFNode, GroupNodeData } from "../../../../domain/projection";
 import { UNCHANGED_MODULE_DIFF_OPACITY } from "../../../../domain/diff";
 import { expandedHeaderScale } from "../../../../domain/layout";
 import { iconFontSize, iconGlyph } from "./icon-map";

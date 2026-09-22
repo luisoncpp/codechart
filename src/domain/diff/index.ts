@@ -11,8 +11,6 @@ export { buildModuleDiffDisplay } from "./Private/module-diff-display";
 export { countLineDiffStats, diffStatsSuffixLength } from "./Private/line-diff-stats";
 export type { LineDiffStats } from "./Private/line-diff-stats";
 export { overlayFromPastedDiff } from "./Private/overlay-from-paths";
-export { applyDiffOverlay } from "./Private/apply-diff-overlay";
-export { withDiffReview } from "./Private/apply-diff-review";
 export { attachLineDiff } from "./Private/attach-line-diff";
 export { attachDeletedBeforeSources } from "./Private/attach-deleted-sources";
 export { attachRenames } from "./Private/attach-renames";

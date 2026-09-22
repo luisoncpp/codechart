@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="Builds absolute layout boxes from React Flow nodes")
 import type { InternalNode, Node } from "@xyflow/react";
-import type { RFNode } from "../../../../domain/graph";
+import type { RFNode } from "../../../../domain/projection";
 import type { Box } from "./border-anchor";
 
 export function boxesFromFlowNodes(

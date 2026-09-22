@@ -47,6 +47,18 @@ codechart-cli check <dir> [--fail-on=kind,...] [--format=json|text] [--quiet]
 
 SARIF / GitHub annotations stay out of scope: findings are module/edge scoped, not line-scoped.
 
+### Wired into `npm run check`
+
+`check` gates this repo against itself: `npm run check:arch`
+(`cd src-tauri && cargo run --quiet --bin codechart-cli -- check ..`) is the last leg of
+`npm run check`, after `check:rust`. The analysis root is the repo root, so the gate sees
+`src/` and `src-tauri/` together — run it from the repo root via npm, not from `src-tauri`
+with `check .`, which would analyze only the Rust crate.
+
+It runs with the default fail-on set and no `--quiet`, so a failure prints the offending
+diagnostics before exiting 1. This became viable only once the repo reached zero
+diagnostics; keep it there, since the gate has no baseline or allowlist.
+
 Treat `check` as an **architecture gate**, not a compiler. Cycles work with no `*.group.md`. Facade bypass needs explicit group `facades` — inferred folder groups are public. Group layering needs `mustNotImport` / `mayImport` on `*.group.md`.
 
 ## Why not `analyze | jq .diagnostics`

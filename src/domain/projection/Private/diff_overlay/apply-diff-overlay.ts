@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Stamps diff state onto projected React Flow nodes and edges")
-import type { Edge, ProjectedGraph, RFEdgeT, RFNode } from "../../graph";
-import type { GraphDiffOverlay } from "./types";
+import type { Edge } from "../../../graph";
+import type { ProjectedGraph, RFEdgeT, RFNode } from "../rf/node-data";
+import type { GraphDiffOverlay } from "../../../diff";
 import { applySymbolDiffNodes } from "./apply-symbol-diff";
 import { placeGhostModules } from "./place-ghost-modules";
 

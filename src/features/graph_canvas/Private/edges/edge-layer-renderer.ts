@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="Builds the edge layer model from flow nodes")
 import type { InternalNode, Node } from "@xyflow/react";
-import type { RFEdgeT, RFNode } from "../../../../domain/graph";
+import type { RFEdgeT, RFNode } from "../../../../domain/projection";
 import { showArrowHeadsAtZoom } from "./edge-arrow-zoom";
 import { buildEdgeLayerModel, type EdgeLayerModel } from "./edge-layer-cache";
 import { boxesFromFlowNodes } from "./node-boxes";
@@ -9,10 +9,8 @@ import {
   type ViewportInput,
   visibleWorldRect,
 } from "./edge-viewport";
-import {
-  buildStaticEdgeModel,
-  type ViewportEdgeModel,
-} from "./viewport-edge-model";
+import { buildStaticEdgeModel } from "./viewport-edge-model";
+import type { ViewportEdgeModel } from "./viewport-edge-types";
 
 export class EdgeLayerRenderer {
   private edges: RFEdgeT[] = [];
