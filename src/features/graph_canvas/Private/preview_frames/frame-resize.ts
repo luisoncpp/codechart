@@ -1,6 +1,7 @@
-// @Architecture(descriptionShort="Corner-grip pointer resize: writes the frame element's size directly, replacing the native CSS resizer")
+// @Architecture(descriptionShort="Corner-grip pointer resize: writes the frame element's size directly, commits once on release")
 import type React from "react";
 import { MIN_FRAME_HEIGHT, MIN_FRAME_WIDTH } from "./frame-list";
+import type { Size } from "./frame-placement";
 
 /**
  * Resize a frame from its bottom-right grip.
@@ -21,9 +22,14 @@ import { MIN_FRAME_HEIGHT, MIN_FRAME_WIDTH } from "./frame-list";
  * measured at 0 movement across 7 presses where the native resizer moved the
  * body in half of them. Sizes are written straight to the element, as in
  * `startFrameDrag` — a React state commit per pointermove re-renders the whole
- * canvas.
+ * canvas (React Flow nodes plus every open frame's source) and makes the
+ * gesture lag; `onResizeEnd` commits the final clamped size to React state
+ * once on release, so the model — not the DOM — owns the frame's box.
  */
-export function startFrameResize(event: React.PointerEvent) {
+export function startFrameResize(
+  event: React.PointerEvent,
+  onResizeEnd: (size: Size) => void,
+) {
   const frameEl = (event.currentTarget as HTMLElement).closest<HTMLElement>("[data-frame-id]");
   if (!frameEl) return;
   // Also stops the press from starting a text selection in the body.
@@ -32,17 +38,22 @@ export function startFrameResize(event: React.PointerEvent) {
   const startX = event.clientX;
   const startY = event.clientY;
   const start = contentBox(frameEl);
+  let last: Size | null = null;
 
   const handleMove = (e: PointerEvent) => {
-    const width = Math.max(MIN_FRAME_WIDTH, start.width + (e.clientX - startX));
-    const height = Math.max(MIN_FRAME_HEIGHT, start.height + (e.clientY - startY));
-    frameEl.style.width = `${width}px`;
-    frameEl.style.height = `${height}px`;
+    last = {
+      width: Math.max(MIN_FRAME_WIDTH, start.width + (e.clientX - startX)),
+      height: Math.max(MIN_FRAME_HEIGHT, start.height + (e.clientY - startY)),
+    };
+    frameEl.style.width = `${last.width}px`;
+    frameEl.style.height = `${last.height}px`;
   };
   const handleUp = () => {
     window.removeEventListener("pointermove", handleMove);
     window.removeEventListener("pointerup", handleUp);
     window.removeEventListener("pointercancel", handleUp);
+    if (!last) return;
+    onResizeEnd(last);
   };
   window.addEventListener("pointermove", handleMove);
   window.addEventListener("pointerup", handleUp);

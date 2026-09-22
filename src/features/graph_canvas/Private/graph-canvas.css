@@ -217,10 +217,11 @@
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   display: flex;
   flex-direction: column;
-  min-width: 250px;
-  min-height: 180px;
-  width: 680px;
-  height: 360px;
+  /* The box itself is inline, from the frame model — `frame-box-style.ts`.
+     `frame-placement.ts` needs the numbers before any element exists, so the
+     TS constants are the source of truth and publish the floors back here. */
+  min-width: var(--frame-min-width);
+  min-height: var(--frame-min-height);
   /* No `resize: both`: pressing a native resizer autoscrolls the body under it.
      `.symbol-widget__resizer` + `frame-resize.ts` drive the size instead. */
   overflow: hidden;

@@ -158,9 +158,14 @@ The diagnostic (`Severity::Warning`, `kind: ArchitectureViolation`) is keyed
 `architectureViolation:<edge-id>`, links `module_id = S` (the importer at fault)
 and `edge_id`, and reads `"<S> imports <T>, bypassing the <group> facade"`.
 
-`GroupBoundaries` (module→group, group→parent, faceted groups, facade ids) is
-derived by `analysis::group_boundaries` from the `ResolvedGroups` — `references`
-owns the input type so it stays decoupled from `grouping`.
+## `references::GroupBoundaries` — the shared group facts
+
+`boundaries.rs` owns the struct (module→group, group→parent, group/facade tags,
+faceted groups, facade ids) plus the two group-tree walks over it,
+`ancestor_chain` and `in_subtree`. It is derived by `analysis::group_boundaries`
+from the `ResolvedGroups` — `references` owns the input type so it stays
+decoupled from `grouping` — and read by `flag_drift`, `flag_layering`, and
+`classify_interface_seams`. A new field belongs here, not in a consumer.
 
 ## `references::flag_layering` — group→group layering
 

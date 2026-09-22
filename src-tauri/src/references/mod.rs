@@ -13,6 +13,7 @@
 // `classify_interface_seams` (Phase 10) pairs interface importers with
 // cross-group implementors into `soft` seam edges (TDD §2.4).
 
+mod boundaries;
 mod cpp;
 mod csharp;
 mod cycle_scc;
@@ -31,9 +32,10 @@ mod unity;
 #[cfg(test)]
 mod tests;
 
+pub use boundaries::GroupBoundaries;
 pub use cpp::is_paired_cpp_header;
 pub use cycles::flag_cycles;
-pub use drift::{flag_drift, GroupBoundaries};
+pub use drift::flag_drift;
 pub use interface_seams::classify_interface_seams;
 pub use layering::{flag_layering, LayeringRule};
 pub use soft::classify_soft;

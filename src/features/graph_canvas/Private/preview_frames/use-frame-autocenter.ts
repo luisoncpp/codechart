@@ -2,15 +2,14 @@
 import { useEffect } from "react";
 import { centerElementInBody } from "./center-in-body";
 
-interface AutocenterTarget {
+/** Heading centering needs 4 inputs, so it takes its own options object. */
+interface MarkdownSectionTarget {
   frameRef: React.RefObject<HTMLDivElement | null>;
-  /** The row to center: a review range wins over the symbol definition. */
-  lineRef: React.RefObject<HTMLDivElement | null>;
-  line?: number;
-  /** Heading id to center instead, when the frame renders markdown. */
+  /** Heading id to center, when the frame renders markdown. */
   sectionAnchor?: string;
   /** Re-centers when the source is replaced under the same frame. */
   sourceText: string;
+  enabled: boolean;
 }
 
 /**
@@ -21,8 +20,16 @@ interface AutocenterTarget {
  */
 const CENTER_DELAY_MS = 50;
 
-/** Centers a code row on open; no-op when the frame has no target line. */
-export function useCenterTargetLine({ lineRef, line, sourceText }: AutocenterTarget) {
+/**
+ * Centers a code row on open; no-op when the frame has no target line.
+ * `line` is the row to center: a review range wins over the symbol definition.
+ * `sourceText` re-centers when the source is replaced under the same frame.
+ */
+export function useCenterTargetLine(
+  lineRef: React.RefObject<HTMLDivElement | null>,
+  line: number | undefined,
+  sourceText: string,
+) {
   useEffect(() => {
     if (line === undefined) return;
     const timer = setTimeout(/*centerDefinitionLine*/ () => {
@@ -38,7 +45,7 @@ export function useCenterMarkdownSection({
   sectionAnchor,
   sourceText,
   enabled,
-}: AutocenterTarget & { enabled: boolean }) {
+}: MarkdownSectionTarget) {
   useEffect(() => {
     if (!enabled || !sectionAnchor) return;
     const timer = setTimeout(/*centerMarkdownHeading*/ () => {

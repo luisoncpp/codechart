@@ -365,7 +365,13 @@ hidden by zoom collapse.
   held, and nothing cancels it. `.symbol-widget__resizer` (a grip element) plus `frame-resize.ts`
   `startFrameResize` own the size instead: `preventDefault` on the press means no native gesture and
   therefore no autoscroll, and sizes are written straight to the element (as in `startFrameDrag`),
-  clamped to `MIN_FRAME_WIDTH`/`MIN_FRAME_HEIGHT` which mirror the CSS floors. The grip would
+  clamped to `MIN_FRAME_WIDTH`/`MIN_FRAME_HEIGHT`, then committed to `PreviewFrame.width`/`height`
+  once on release (`onResize` → `resizeFrame`) — the same ownership split as drag's `onDrop` →
+  `moveFrame`. The frame box has a **single source of truth in TypeScript**: `frame-placement.ts`
+  needs `FRAME_WIDTH`/`FRAME_HEIGHT` before any element exists, so `frame-list.ts` holds the numbers,
+  `frame-box-style.ts` renders the committed box inline and publishes the floors as
+  `--frame-min-width`/`--frame-min-height`, and `.symbol-widget` declares no `width`/`height` at all.
+  A re-open never copies the incoming size onto an existing frame (see `mergeOnDedupe`). The grip would
   otherwise land on the body scrollbar's bottom button, so it is offset left by
   `--frame-scrollbar-width` (`scrollbar-metrics.ts` measures the platform's bar once; `0` on overlay
   scrollbars keeps the grip in the true corner). Reserving the space on the body instead — a

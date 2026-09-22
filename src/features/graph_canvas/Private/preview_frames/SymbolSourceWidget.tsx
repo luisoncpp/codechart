@@ -3,10 +3,10 @@ import { useMemo, useRef, useState } from "react";
 import type { DiffNote, FileLineDiff } from "../../../../domain/diff";
 import { findSymbolLine } from "./symbol-source-utils";
 import type { PreviewFrame } from "./frame-list";
-import type { Position } from "./frame-placement";
+import type { Position, Size } from "./frame-placement";
 import { startFrameDrag } from "./frame-drag";
 import { startFrameResize } from "./frame-resize";
-import { nativeScrollbarWidth } from "./scrollbar-metrics";
+import { frameBoxStyle } from "./frame-box-style";
 import { useCenterMarkdownSection, useCenterTargetLine } from "./use-frame-autocenter";
 import { FrameContent } from "./FrameBody";
 import { FrameHeader } from "./FrameHeader";
@@ -20,6 +20,7 @@ import { useFrameCopyMenu } from "./use-frame-copy-menu";
 export interface FrameHandlers {
   onClose: (id: number) => void;
   onMove: (id: number, pos: Position) => void;
+  onResize: (id: number, size: Size) => void;
   onActivate: (id: number) => void;
   onTogglePin: (id: number) => void;
   onToggleDiffReview?: (moduleId: string) => void;
@@ -67,21 +68,23 @@ export function SymbolSourceWidget({
     enabled: !renderMarkdown,
   });
 
-  const autocenter = {
+  useCenterTargetLine(lineRef, /*line=*/ reviewLine ?? targetLine, frame.sourceText);
+  useCenterMarkdownSection({
     frameRef,
-    lineRef,
-    line: reviewLine ?? targetLine,
     sectionAnchor: frame.sectionAnchor,
     sourceText: frame.sourceText,
-  };
-  useCenterTargetLine(autocenter);
-  useCenterMarkdownSection({ ...autocenter, enabled: renderMarkdown });
+    enabled: renderMarkdown,
+  });
 
   const onHeaderPointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("button, label, input")) return;
     startFrameDrag(e, { top: frame.top, left: frame.left }, /*commitDropPosition*/ (pos) =>
       handlers.onMove(frame.id, pos),
     );
+  };
+
+  const onResizerPointerDown = (e: React.PointerEvent) => {
+    startFrameResize(e, /*commitFinalSize*/ (size) => handlers.onResize(frame.id, size));
   };
 
   const onCodeClick = (e: React.MouseEvent) => {
@@ -122,16 +125,7 @@ export function SymbolSourceWidget({
       className={frame.pinned ? "symbol-widget symbol-widget--pinned" : "symbol-widget"}
       data-frame-id={frame.id}
       tabIndex={-1}
-      style={
-        {
-          top: frame.top,
-          left: frame.left,
-          ...(frame.height ? { height: frame.height } : {}),
-          zIndex: 1000 + frame.zIndex,
-          // Keeps the resize grip clear of the body's scrollbar buttons.
-          "--frame-scrollbar-width": `${nativeScrollbarWidth()}px`,
-        } as React.CSSProperties
-      }
+      style={frameBoxStyle(frame)}
       onClick={(e) => e.stopPropagation()}
       onPointerDown={onFramePointerDown}
       onKeyDown={onFrameKeyDown}
@@ -189,7 +183,7 @@ export function SymbolSourceWidget({
       <div
         className="symbol-widget__resizer"
         title="Resize frame"
-        onPointerDown={startFrameResize}
+        onPointerDown={onResizerPointerDown}
       />
     </div>
   );

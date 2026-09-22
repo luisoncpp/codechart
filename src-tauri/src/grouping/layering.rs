@@ -64,12 +64,12 @@ fn has_constraint(rule: &GroupLayering) -> bool {
 fn rule_for(def: &GroupDef, declared: &Declared) -> (GroupLayering, Vec<Diagnostic>) {
     let groups = Lookup {
         group_id: &def.id,
-        kind: "group",
+        kind: NameKind::Group,
         known: &declared.ids,
     };
     let tags = Lookup {
         group_id: &def.id,
-        kind: "tag",
+        kind: NameKind::Tag,
         known: &declared.tags,
     };
     let (must_not_import, mut diagnostics) = retain_known(&def.must_not_import, &groups);
@@ -90,27 +90,47 @@ fn rule_for(def: &GroupDef, declared: &Declared) -> (GroupLayering, Vec<Diagnost
     )
 }
 
+/// Which name space a listed layering name is validated against.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum NameKind {
+    Group,
+    Tag,
+}
+
+impl NameKind {
+    /// The noun this name space is called by in a `configError` message.
+    fn noun(self) -> &'static str {
+        match self {
+            NameKind::Group => "group",
+            NameKind::Tag => "tag",
+        }
+    }
+}
+
 /// One side of the validation: whose rule is being checked, against which name
-/// space (`group` ids or `tag`s).
+/// space (group ids or tags).
 struct Lookup<'a> {
     group_id: &'a str,
-    kind: &'a str,
+    kind: NameKind,
     known: &'a BTreeSet<&'a str>,
 }
 
 /// Drop names nothing in the project declares, one `configError` each.
 fn retain_known(listed: &[String], at: &Lookup) -> (BTreeSet<String>, Vec<Diagnostic>) {
-    let (group_id, kind, known) = (at.group_id, at.kind, at.known);
     let mut kept = BTreeSet::new();
     let mut diagnostics = Vec::new();
     for name in listed {
-        if known.contains(name.as_str()) {
+        if at.known.contains(name.as_str()) {
             kept.insert(name.clone());
             continue;
         }
         diagnostics.push(config_error(
-            &format!("layer:{group_id}:{name}"),
-            &format!("group {group_id} lists unknown {kind} {name} in a layering rule"),
+            &format!("layer:{}:{name}", at.group_id),
+            &format!(
+                "group {} lists unknown {} {name} in a layering rule",
+                at.group_id,
+                at.kind.noun()
+            ),
         ));
     }
     (kept, diagnostics)

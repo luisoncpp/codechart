@@ -66,6 +66,7 @@ describe("Preview frame diff review toggle", () => {
     const handlers = {
       onClose: vi.fn(),
       onMove: vi.fn(),
+      onResize: vi.fn(),
       onActivate: vi.fn(),
       onTogglePin: vi.fn(),
       onToggleDiffReview: vi.fn(),
@@ -94,6 +95,7 @@ describe("Preview frame diff review toggle", () => {
     const handlers = {
       onClose: vi.fn(),
       onMove: vi.fn(),
+      onResize: vi.fn(),
       onActivate: vi.fn(),
       onTogglePin: vi.fn(),
       onToggleDiffReview: vi.fn(),
@@ -123,6 +125,7 @@ describe("Preview frame diff review toggle", () => {
     const handlers = {
       onClose: vi.fn(),
       onMove: vi.fn(),
+      onResize: vi.fn(),
       onActivate: vi.fn(),
       onTogglePin: vi.fn(),
       onToggleDiffReview: onToggle,
@@ -151,6 +154,7 @@ describe("Preview frame diff review toggle", () => {
     const handlers = {
       onClose: vi.fn(),
       onMove: vi.fn(),
+      onResize: vi.fn(),
       onActivate: vi.fn(),
       onTogglePin: vi.fn(),
       onToggleDiffReview: vi.fn(),
@@ -175,6 +179,7 @@ describe("Preview frame diff review toggle", () => {
     const handlers = {
       onClose: vi.fn(),
       onMove: vi.fn(),
+      onResize: vi.fn(),
       onActivate: vi.fn(),
       onTogglePin: vi.fn(),
       onToggleDiffReview: vi.fn(),

@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::contract::{Diagnostic, DiagnosticKind, Edge, EdgeKind, Severity};
 
-use super::drift::GroupBoundaries;
+use super::boundaries::{ancestor_chain, in_subtree, GroupBoundaries};
 use super::test_module::is_test_module;
 
 /// Validated importer-group constraint (mirrors grouping, kept local so this
@@ -38,10 +38,20 @@ pub fn flag_layering(
     diagnostics
 }
 
+/// Why an edge is denied, holding the name the message must quote.
+enum Denial {
+    /// `mustNotImport` named this group (an ancestor of the target's group).
+    Group(String),
+    /// `mustNotImportTags` named this tag and the target carries it.
+    Tag(String),
+    /// `mayImport` is set and covers none of the target group's ancestors.
+    NotAllowed(String),
+}
+
+/// A broken rule: the ancestor group holding it, and why it rejected the edge.
 struct LayerHit {
     from: String,
-    to: String,
-    deny: bool,
+    denial: Denial,
 }
 
 fn violating_rule(
@@ -65,20 +75,14 @@ fn violating_rule(
             module: &edge.target,
             group: target_group,
         };
-        if let Some(hit) = rule_hit(rule, &target, bounds) {
+        if let Some(denial) = rule_hit(rule, &target, bounds) {
             return Some(LayerHit {
                 from: holder,
-                to: hit.to,
-                deny: hit.deny,
+                denial,
             });
         }
     }
     None
-}
-
-struct NamedHit {
-    to: String,
-    deny: bool,
 }
 
 /// The imported end of an edge. The module matters as well as its group: a
@@ -88,29 +92,19 @@ struct Target<'a> {
     group: Option<&'a str>,
 }
 
-fn rule_hit(rule: &LayeringRule, target: &Target, bounds: &GroupBoundaries) -> Option<NamedHit> {
+fn rule_hit(rule: &LayeringRule, target: &Target, bounds: &GroupBoundaries) -> Option<Denial> {
     if let Some(named) = denied_name(rule, target.group, bounds) {
-        return Some(NamedHit {
-            to: named,
-            deny: true,
-        });
+        return Some(Denial::Group(named));
     }
     if let Some(tag) = denied_tag(rule, target, bounds) {
-        return Some(NamedHit {
-            to: format!("tag {tag}"),
-            deny: true,
-        });
+        return Some(Denial::Tag(tag));
     }
-    if rule.may_import.is_none() {
+    if rule.may_import.is_none() || allowed_by_list(rule, target.group, bounds) {
         return None;
     }
-    if allowed_by_list(rule, target.group, bounds) {
-        return None;
-    }
-    Some(NamedHit {
-        to: target.group.unwrap_or("ungrouped").to_string(),
-        deny: false,
-    })
+    Some(Denial::NotAllowed(
+        target.group.unwrap_or("ungrouped").to_string(),
+    ))
 }
 
 fn denied_name(
@@ -165,33 +159,19 @@ fn allowed_by_list(
         .any(|named| in_subtree(target_group, named, bounds))
 }
 
-fn ancestor_chain(group: Option<&str>, bounds: &GroupBoundaries) -> Vec<String> {
-    let mut chain = Vec::new();
-    let mut current = group;
-    while let Some(id) = current {
-        chain.push(id.to_string());
-        current = bounds.parent_of.get(id).map(String::as_str);
-    }
-    chain
-}
-
-fn in_subtree(member: Option<&str>, ancestor: &str, bounds: &GroupBoundaries) -> bool {
-    ancestor_chain(member, bounds).iter().any(|g| g == ancestor)
-}
-
 fn violation(edge: &Edge, hit: &LayerHit) -> Diagnostic {
-    let verb = if hit.deny {
-        "must not import"
-    } else {
-        "may not import"
+    let denial = match &hit.denial {
+        Denial::Group(id) => format!("must not import {id}"),
+        Denial::Tag(tag) => format!("must not import tag {tag}"),
+        Denial::NotAllowed(id) => format!("may not import {id}"),
     };
     Diagnostic {
         id: format!("architectureViolation:layer:{}", edge.id),
         severity: Severity::Warning,
         kind: DiagnosticKind::ArchitectureViolation,
         message: format!(
-            "{} imports {}, violating layering: {} {verb} {}",
-            edge.source, edge.target, hit.from, hit.to
+            "{} imports {}, violating layering: {} {denial}",
+            edge.source, edge.target, hit.from
         ),
         module_id: Some(edge.source.clone()),
         edge_id: Some(edge.id.clone()),

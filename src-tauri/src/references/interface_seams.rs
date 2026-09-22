@@ -2,9 +2,9 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use super::boundaries::GroupBoundaries;
 use crate::contract::{Edge, EdgeKind};
 use crate::language_adapter::ParsedModule;
-use crate::references::GroupBoundaries;
 
 /// Bundles the boundary facts needed to validate each candidate seam.
 struct SeamCtx<'a> {

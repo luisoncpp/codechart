@@ -156,17 +156,16 @@ fn resolve_explicit(
     members: &BTreeSet<String>,
     resolved: &mut ResolvedFacades,
 ) {
-    let (facades, diagnostics) = (&mut resolved.ids, &mut resolved.diagnostics);
     for entry in list {
         let id = join_rel(&def.dir, &entry.path);
         if members.contains(&id) {
             if let Some(tags) = &entry.tags {
                 resolved.tags.insert(id.clone(), tags.clone());
             }
-            facades.push(id);
+            resolved.ids.push(id);
             continue;
         }
-        diagnostics.push(config_error(
+        resolved.diagnostics.push(config_error(
             &format!("facade:{}:{id}", def.id),
             &format!(
                 "group {} lists facade {id} which is not one of its modules",

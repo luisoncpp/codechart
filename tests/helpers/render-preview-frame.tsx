@@ -25,6 +25,7 @@ export function renderPreviewFrame(overrides: Partial<PreviewFrame> = {}) {
   const handlers: FrameHandlers = {
     onClose: vi.fn(),
     onMove: vi.fn(),
+    onResize: vi.fn(),
     onActivate: vi.fn(),
     onTogglePin: vi.fn(),
     onNavigate: vi.fn(),

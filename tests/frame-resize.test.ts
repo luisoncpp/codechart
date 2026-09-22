@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { startFrameResize } from "../src/features/graph_canvas/Private/preview_frames/frame-resize";
 import {
   MIN_FRAME_HEIGHT,
@@ -20,15 +20,19 @@ function mountFrame(): { frame: HTMLElement; grip: HTMLElement } {
 /** The grip's React `onPointerDown` payload: `currentTarget` is the grip. */
 function pressGrip(grip: HTMLElement, clientX: number, clientY: number) {
   let defaultPrevented = false;
-  startFrameResize({
-    currentTarget: grip,
-    clientX,
-    clientY,
-    preventDefault: () => {
-      defaultPrevented = true;
-    },
-  } as unknown as React.PointerEvent);
-  return () => defaultPrevented;
+  const onResizeEnd = vi.fn();
+  startFrameResize(
+    {
+      currentTarget: grip,
+      clientX,
+      clientY,
+      preventDefault: () => {
+        defaultPrevented = true;
+      },
+    } as unknown as React.PointerEvent,
+    /*commitFinalSize*/ onResizeEnd,
+  );
+  return { onResizeEnd, wasDefaultPrevented: () => defaultPrevented };
 }
 
 function movePointer(clientX: number, clientY: number) {
@@ -51,7 +55,7 @@ describe("preview frame corner resize", () => {
     const { grip } = mountFrame();
 
     // A native resizer/selection gesture is what autoscrolls the body.
-    expect(pressGrip(grip, /*clientX=*/ 400, /*clientY=*/ 300)()).toBe(true);
+    expect(pressGrip(grip, /*clientX=*/ 400, /*clientY=*/ 300).wasDefaultPrevented()).toBe(true);
   });
 
   it("clamps to the CSS minimum size", () => {
@@ -74,6 +78,44 @@ describe("preview frame corner resize", () => {
 
     expect(frame.style.width).toBe("450px");
     expect(frame.style.height).toBe("330px");
+  });
+
+  it("commits the final size once on release, not per pointermove", () => {
+    const { grip } = mountFrame();
+
+    // A commit per move would re-render the whole canvas mid-gesture — the
+    // documented reason the drag gesture writes to the element directly too.
+    const { onResizeEnd } = pressGrip(grip, /*clientX=*/ 400, /*clientY=*/ 300);
+    movePointer(/*clientX=*/ 430, /*clientY=*/ 320);
+    movePointer(/*clientX=*/ 460, /*clientY=*/ 340);
+    expect(onResizeEnd).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new Event("pointerup"));
+
+    expect(onResizeEnd).toHaveBeenCalledTimes(1);
+    expect(onResizeEnd).toHaveBeenCalledWith({ width: 460, height: 340 });
+  });
+
+  it("commits the clamped size, so the model never holds a sub-minimum box", () => {
+    const { grip } = mountFrame();
+
+    const { onResizeEnd } = pressGrip(grip, /*clientX=*/ 400, /*clientY=*/ 300);
+    movePointer(/*clientX=*/ 0, /*clientY=*/ 0);
+    window.dispatchEvent(new Event("pointerup"));
+
+    expect(onResizeEnd).toHaveBeenCalledWith({
+      width: MIN_FRAME_WIDTH,
+      height: MIN_FRAME_HEIGHT,
+    });
+  });
+
+  it("commits nothing for a press with no movement", () => {
+    const { grip } = mountFrame();
+
+    const { onResizeEnd } = pressGrip(grip, /*clientX=*/ 400, /*clientY=*/ 300);
+    window.dispatchEvent(new Event("pointerup"));
+
+    expect(onResizeEnd).not.toHaveBeenCalled();
   });
 
   it("ignores a grip outside any frame", () => {
