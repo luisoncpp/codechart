@@ -1,11 +1,11 @@
 // @Architecture(descriptionShort="Coordinates edge geometry cache and DOM writes")
-import type { RFEdgeT, RFNode } from "../../../../domain/graph";
+import type { RFEdgeT, RFNode } from "../../../../domain/projection";
 import type { BucketDomRefs } from "./edge-layer-dom-writer";
 import { EdgeLayerDomWriter } from "./edge-layer-dom-writer";
 import { EdgeLayerRenderer } from "./edge-layer-renderer";
 import { readViewport } from "./edge-layer-subscribe";
 import type { ViewportInput } from "./edge-viewport";
-import type { ViewportEdgeModel } from "./viewport-edge-model";
+import type { ViewportEdgeModel } from "./viewport-edge-types";
 
 type StoreApi = {
   getState: () => {

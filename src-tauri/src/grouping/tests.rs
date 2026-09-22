@@ -1,5 +1,5 @@
 use super::*;
-use crate::project_config::parse_group_def;
+use crate::project_config::{parse_group_def, FacadeDef};
 
 fn def(id: &str, dir: &str) -> GroupDef {
     GroupDef {
@@ -167,7 +167,7 @@ fn nested_group_md_sets_parent_via_directory() {
 fn nested_group_claims_a_sibling_facade_with_parent_relative_globs() {
     let domain = def("domain", "domain");
     let mut widget = def("widget", "domain/Widget");
-    widget.facades = Some(vec!["../Widget.ts".into()]);
+    widget.facades = Some(vec![FacadeDef::plain("../Widget.ts")]);
     widget.match_globs = vec!["../Widget.ts".into(), "**".into()];
     let fs = files(&[
         "domain/Widget.ts",
@@ -233,7 +233,7 @@ fn facade_defaults_to_index_then_explicit_overrides() {
     assert!(r.facades.contains("src/core/index.ts"));
 
     let mut explicit = def("core", "src/core");
-    explicit.facades = Some(vec!["store.ts".into()]);
+    explicit.facades = Some(vec![FacadeDef::plain("store.ts")]);
     let r2 = resolve_groups(&fs, &[explicit]);
     assert_eq!(
         group(&r2, "core").facade_module_ids,
@@ -244,7 +244,7 @@ fn facade_defaults_to_index_then_explicit_overrides() {
 #[test]
 fn unknown_explicit_facade_is_a_config_error() {
     let mut core = def("core", "src/core");
-    core.facades = Some(vec!["missing.ts".into()]);
+    core.facades = Some(vec![FacadeDef::plain("missing.ts")]);
     let fs = files(&["src/core/store.ts"]);
     let r = resolve_groups(&fs, &[core]);
     assert!(group(&r, "core").facade_module_ids.is_empty());
@@ -267,6 +267,56 @@ fn unknown_layering_group_id_is_a_config_error() {
     let rule = r.layering.get("db").expect("db still has a denylist");
     assert!(rule.must_not_import.contains("ui"));
     assert!(!rule.must_not_import.contains("ghost"));
+}
+
+#[test]
+fn tags_reach_the_group_node_and_tag_rules_are_kept() {
+    let mut db = def("db", "src/db");
+    db.tags = vec!["infrastructure".into()];
+    let mut ui = def("ui", "src/ui");
+    ui.must_not_import_tags = vec!["infrastructure".into()];
+    let fs = files(&["src/db/repo.ts", "src/ui/view.ts"]);
+    let r = resolve_groups(&fs, &[db, ui]);
+    assert!(r.diagnostics.is_empty());
+    assert_eq!(group(&r, "db").tags, vec!["infrastructure".to_string()]);
+    let rule = r.layering.get("ui").expect("tag denylist stored");
+    assert!(rule.must_not_import_tags.contains("infrastructure"));
+}
+
+#[test]
+fn facade_tags_land_on_the_group_node_and_count_as_declared() {
+    let mut db = def("db", "src/db");
+    db.facades = Some(vec![
+        FacadeDef::plain("index.ts"),
+        FacadeDef {
+            path: "raw.ts".into(),
+            tags: Some(vec!["infrastructure".into()]),
+        },
+    ]);
+    let mut ui = def("ui", "src/ui");
+    // The tag exists only on a facade — it must still validate.
+    ui.must_not_import_tags = vec!["infrastructure".into()];
+    let fs = files(&["src/db/index.ts", "src/db/raw.ts", "src/ui/view.ts"]);
+    let r = resolve_groups(&fs, &[db, ui]);
+    assert!(r.diagnostics.is_empty());
+    let tags = &group(&r, "db").facade_tags;
+    assert_eq!(tags.len(), 1, "only the tagged facade is recorded");
+    assert_eq!(
+        tags.get("src/db/raw.ts"),
+        Some(&vec!["infrastructure".to_string()])
+    );
+}
+
+#[test]
+fn unknown_layering_tag_is_a_config_error() {
+    let mut ui = def("ui", "src/ui");
+    ui.must_not_import_tags = vec!["ghost".into()];
+    let fs = files(&["src/ui/view.ts"]);
+    let r = resolve_groups(&fs, &[ui]);
+    assert_eq!(r.diagnostics.len(), 1);
+    assert_eq!(r.diagnostics[0].id, "configError:layer:ui:ghost");
+    assert!(r.diagnostics[0].message.contains("unknown tag ghost"));
+    assert!(!r.layering.contains_key("ui"), "the rule is dropped");
 }
 
 #[test]

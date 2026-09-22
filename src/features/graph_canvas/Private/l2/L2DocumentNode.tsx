@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { Handle, Position, useStore } from "@xyflow/react";
-import type { ModuleNodeData } from "../../../../domain/graph";
+import type { ModuleNodeData } from "../../../../domain/projection";
 import { L2Header } from "./L2Header";
 import { L2Description, L2CodeBlock } from "./L2Content";
 import { L2ScrollableBody } from "./L2ScrollableBody";

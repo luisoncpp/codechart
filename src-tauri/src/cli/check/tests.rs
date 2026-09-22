@@ -153,6 +153,36 @@ fn import_cycle_fails_the_gate() {
         .any(|line| line.starts_with("circularDependency")));
 }
 
+/// Import resolution is not the gate's job: a compiler does it better, and a
+/// project may exclude files on purpose or import targets outside the analysis
+/// root. End-to-end guard (not just the report layer) that such a project exits
+/// 0 by default and only fails when `--fail-on` opts the kind in.
+#[test]
+fn unresolved_imports_alone_pass_the_default_gate_and_fail_only_when_opted_in() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let root = dir.path();
+    std::fs::write(
+        root.join("a.ts"),
+        "import { gone } from '../outside/thing';\nexport const a = 1;\n",
+    )
+    .expect("write a.ts");
+    let path = root.to_str().expect("utf8 path");
+    let report = evaluate(path).expect("project analyzes");
+    assert!(
+        !report.failed,
+        "unresolved imports must not gate the exit code: {:?}",
+        report.text_lines()
+    );
+    assert!(report
+        .text_lines()
+        .iter()
+        .any(|line| line.starts_with("unresolvedImport")));
+
+    let diagnostics = super::analyze_diagnostics(path).expect("project analyzes");
+    let opted_in = report_from_kinds(&diagnostics, &[DiagnosticKind::UnresolvedImport]);
+    assert!(opted_in.failed, "--fail-on=unresolvedImport must gate");
+}
+
 #[test]
 fn check_does_not_persist_unreal_config() {
     let config = std::path::Path::new(UNREAL_DIR).join(".codechart/config.json");

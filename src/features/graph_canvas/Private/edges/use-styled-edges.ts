@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Applies selection styling to projected edges for the canvas layer")
 import { useMemo } from "react";
-import type { EdgeFocus, ProjectedGraph, RFEdgeT } from "../../../../domain/graph";
+import type { EdgeFocus } from "../../../../domain/graph";
+import type { ProjectedGraph, RFEdgeT } from "../../../../domain/projection";
 import type { ArrowVisibility } from "../controller/canvas-ui-state";
 import { styleEdge } from "./edge-style";
 

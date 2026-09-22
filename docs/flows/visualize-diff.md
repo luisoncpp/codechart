@@ -54,7 +54,7 @@ User clicks **View ▾ → Visualize diff…** in the top toolbar (item hidden w
 | Shared `---`/`+++` header rule | `domain/diff/Private/scan-diff-lines.ts` |
 | Deleted-file before bodies | `domain/diff/Private/attach-deleted-sources.ts` |
 | Rename matching | `domain/diff/Private/attach-renames.ts` |
-| Overlay on RF models | `domain/diff/Private/apply-diff-overlay.ts` |
+| Overlay on RF models | `domain/projection/Private/diff_overlay/apply-diff-overlay.ts` |
 | Session API | `state/graph-session/Private/graph-session-store.ts` |
 | Modal + stop bar | `features/diff_visualizer` |
 | Edge/module styling | `edge-style.ts`, `EdgeBucketSvg.tsx`, `ModuleNodeView.tsx`, `GroupNodeView.tsx` |

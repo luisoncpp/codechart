@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useStore } from "@xyflow/react";
-import type { GroupNodeData } from "../../../../domain/graph";
+import type { GroupNodeData } from "../../../../domain/projection";
 import { DESC_BOX } from "../../../../domain/layout";
 import { L2ScrollableBody } from "../l2/L2ScrollableBody";
 import { MarkdownBody, markdownBodyStyles } from "../l2/MarkdownBody";

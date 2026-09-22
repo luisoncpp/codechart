@@ -58,4 +58,5 @@ use crate::contract::ProjectGraph;
 - **Quotes**: Quote values containing commas or spaces (e.g., \`descriptionShort="Graph canvas renderer"\`).
 - **Unknown Keys**: Unrecognized keys are ignored safely without causing parse errors.
 - **Precedence**: Module tags take precedence for individual node labels, while \`*.group.md\` defines boundary containers.
+- **Not the same as group \`tags\`**: these \`@Architecture\` annotations are documentation on a module. The \`tags:\` key in a \`*.group.md\` is a separate concept — free-form labels a layering rule can forbid (see Help → Groups format).
 `;

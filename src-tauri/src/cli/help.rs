@@ -73,7 +73,13 @@ Kinds:
   configError, architectureViolation, circularDependency
 
 unresolvedImport / unresolvedIpc / unresolvedUnityAsset print but do not fail
-unless listed. Flags may appear before or after <project-dir>.
+unless listed: compilers resolve imports better, and ignored directories or
+out-of-project targets make an unresolved import expected, not a defect.
+Flags may appear before or after <project-dir>.
+
+This is an architecture gate, not a compiler. Group layering rules
+(mustNotImport / mustNotImportTags / mayImport in *.group.md) and facade
+bypasses both report as architectureViolation.
 ";
 
 const TOPICS: &str = "usage: codechart-cli help [parse|groups|analyze|check]";
@@ -143,6 +149,17 @@ mod tests {
         assert!(text.contains("--quiet"));
         assert!(text.contains("circularDependency"));
         assert!(text.contains("unresolvedImport"));
+    }
+
+    #[test]
+    fn check_help_says_why_unresolved_imports_do_not_fail() {
+        let text = help_text(Some("check")).unwrap();
+        assert!(text.contains("do not fail"));
+        assert!(text.contains("compilers resolve imports better"));
+        assert!(
+            text.contains("mustNotImportTags"),
+            "layering keys are current"
+        );
     }
 
     #[test]

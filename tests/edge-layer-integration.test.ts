@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { projectGraph } from "../src/domain/graph";
+import { projectGraph } from "../src/domain/projection";
 import { styleEdge } from "../src/features/graph_canvas";
 import { buildEdgeLayerModel } from "../src/features/graph_canvas/Private/edges/edge-layer-cache";
 import { buildStaticEdgeModel } from "../src/features/graph_canvas/Private/edges/viewport-edge-model";

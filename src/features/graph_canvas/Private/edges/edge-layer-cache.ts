@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Builds grouped edge segments for the edge layer")
-import type { RFEdgeT } from "../../../../domain/graph";
+import type { RFEdgeT } from "../../../../domain/projection";
 import type { Box } from "./border-anchor";
 import {
   drawStyleFromEdge,

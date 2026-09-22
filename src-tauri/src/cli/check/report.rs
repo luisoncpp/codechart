@@ -1,23 +1,7 @@
 use crate::contract::{Diagnostic, DiagnosticKind};
 
 use super::args::ReportFormat;
-
-pub(super) const DEFAULT_FAIL_ON: [DiagnosticKind; 4] = [
-    DiagnosticKind::CircularDependency,
-    DiagnosticKind::ArchitectureViolation,
-    DiagnosticKind::ConfigError,
-    DiagnosticKind::ParseError,
-];
-
-const ALL_KINDS: [DiagnosticKind; 7] = [
-    DiagnosticKind::ParseError,
-    DiagnosticKind::UnresolvedImport,
-    DiagnosticKind::UnresolvedIpc,
-    DiagnosticKind::UnresolvedUnityAsset,
-    DiagnosticKind::ConfigError,
-    DiagnosticKind::ArchitectureViolation,
-    DiagnosticKind::CircularDependency,
-];
+use super::kinds::kind_name;
 
 pub(super) struct CheckReport {
     pub diagnostics: Vec<Diagnostic>,
@@ -32,7 +16,7 @@ impl CheckReport {
 
 #[cfg(test)]
 pub(super) fn report_from(diagnostics: &[Diagnostic]) -> CheckReport {
-    report_from_kinds(diagnostics, &DEFAULT_FAIL_ON)
+    report_from_kinds(diagnostics, &super::kinds::DEFAULT_FAIL_ON)
 }
 
 pub(super) fn report_from_kinds(
@@ -42,33 +26,6 @@ pub(super) fn report_from_kinds(
     CheckReport {
         diagnostics: diagnostics.to_vec(),
         failed: diagnostics.iter().any(|d| fail_on.contains(&d.kind)),
-    }
-}
-
-pub(super) fn parse_kind(name: &str) -> Result<DiagnosticKind, String> {
-    ALL_KINDS
-        .into_iter()
-        .find(|kind| kind_name(kind) == name)
-        .ok_or_else(|| unknown_kind(name))
-}
-
-fn unknown_kind(name: &str) -> String {
-    let expected: Vec<&str> = ALL_KINDS.iter().map(kind_name).collect();
-    format!(
-        "unknown diagnostic kind: {name} (expected {})",
-        expected.join(", ")
-    )
-}
-
-fn kind_name(kind: &DiagnosticKind) -> &'static str {
-    match kind {
-        DiagnosticKind::ParseError => "parseError",
-        DiagnosticKind::UnresolvedImport => "unresolvedImport",
-        DiagnosticKind::UnresolvedIpc => "unresolvedIpc",
-        DiagnosticKind::UnresolvedUnityAsset => "unresolvedUnityAsset",
-        DiagnosticKind::ConfigError => "configError",
-        DiagnosticKind::ArchitectureViolation => "architectureViolation",
-        DiagnosticKind::CircularDependency => "circularDependency",
     }
 }
 

@@ -6,7 +6,7 @@ import type { GraphDiffOverlay } from "../../../../domain/diff";
 import type { GraphSessionStore } from "../../../../state/graph-session";
 import { type FrameHandlers } from "./SymbolSourceWidget";
 import {
-  openFrame, bringToFront, moveFrame, togglePin, closeUnpinned, type PreviewFrame,
+  openFrame, bringToFront, moveFrame, resizeFrame, togglePin, closeUnpinned, type PreviewFrame,
 } from "./frame-list";
 import { computePointWidgetPosition, computeWidgetPosition } from "./frame-placement";
 import { combinedSymbolTargets, sourcePrefetchIds } from "./imported-symbol-resolver";
@@ -134,6 +134,7 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     () => ({
       onClose: (id) => setFrames((prev) => prev.filter((f) => f.id !== id)),
       onMove: (id, pos) => setFrames((prev) => moveFrame(prev, id, pos)),
+      onResize: (id, size) => setFrames((prev) => resizeFrame(prev, id, size)),
       onActivate: (id) => setFrames((prev) => bringToFront(prev, id)),
       onTogglePin: (id) => setFrames((prev) => togglePin(prev, id)),
       onToggleDiffReview: (moduleId) => store.toggleDiffReviewed(moduleId),

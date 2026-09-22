@@ -3,6 +3,11 @@
 Frontend seam that turns a coordinate-free `ProjectGraph` into positioned boxes.
 ELK is an implementation detail kept private behind `index.ts`.
 
+Depends on `domain/graph` only. It must **never** import `domain/diff` or `domain/projection` —
+see the domain layering table in [graph-canvas.md](./graph-canvas.md). Code that needs both a
+`LayoutBox` and a React Flow node (ghost-module placement, symbol diff geometry) belongs in
+`domain/projection`, not here.
+
 ## Public interface (`domain/layout/index.ts`)
 
 - `interface LayoutEngine { layout(graph: ProjectGraph): Promise<LayoutedGraph> }`

@@ -35,8 +35,7 @@ use crate::references::{
 };
 use crate::tsconfig_paths::load_from_source;
 use crate::unity_assets::index_meta_files;
-use crate::unreal_config::{source_config, SourceConfig};
-use crate::UnrealOptions;
+use crate::{is_unreal_project, source_config, SourceConfig, UnrealOptions, CONFIG_PATH};
 
 use nodes::{build_modules, language_for, ParsedFile};
 
@@ -65,7 +64,7 @@ pub fn opens_file(path: &str) -> bool {
         || is_group_file(path)
         || path.ends_with(".meta")
         || crate::tsconfig_paths::is_config_path(path)
-        || path == crate::unreal_config::CONFIG_PATH
+        || path == CONFIG_PATH
 }
 
 /// Analyze a project: parse its source files, resolve groups + import edges, and
@@ -147,7 +146,7 @@ fn listed_files(
         files = retain_without_top_level_dot_dirs(files);
     }
     files = retain_without_ignored_paths(files, &config.ignored_paths);
-    let is_unreal = crate::unreal_config::is_unreal_project(&files);
+    let is_unreal = is_unreal_project(&files);
     if config.unreal.hide_plugins {
         files = retain_without_plugins_dirs(files);
     }
@@ -206,17 +205,27 @@ fn collect_import_pairs(edges: &[Edge]) -> std::collections::BTreeSet<(String, S
 fn group_boundaries(groups: &ResolvedGroups) -> GroupBoundaries {
     let mut parent_of = BTreeMap::new();
     let mut faceted_groups = BTreeSet::new();
+    let mut group_tags = BTreeMap::new();
+    let mut facade_tags = BTreeMap::new();
     for group in &groups.groups {
+        for (facade, tags) in &group.facade_tags {
+            facade_tags.insert(facade.clone(), tags.iter().cloned().collect());
+        }
         if let Some(parent) = &group.parent_id {
             parent_of.insert(group.id.clone(), parent.clone());
         }
         if !group.facade_module_ids.is_empty() {
             faceted_groups.insert(group.id.clone());
         }
+        if !group.tags.is_empty() {
+            group_tags.insert(group.id.clone(), group.tags.iter().cloned().collect());
+        }
     }
     GroupBoundaries {
         module_group: groups.module_group.clone(),
         parent_of,
+        group_tags,
+        facade_tags,
         faceted_groups,
         facades: groups.facades.clone(),
     }
@@ -231,6 +240,7 @@ fn layering_rules(groups: &ResolvedGroups) -> BTreeMap<String, LayeringRule> {
                 id.clone(),
                 LayeringRule {
                     must_not_import: rule.must_not_import.clone(),
+                    must_not_import_tags: rule.must_not_import_tags.clone(),
                     may_import: rule.may_import.clone(),
                 },
             )

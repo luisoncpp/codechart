@@ -13,7 +13,7 @@ fn parses_full_frontmatter() {
     assert_eq!(def.label, "Core");
     assert_eq!(def.dir, "src/core");
     assert_eq!(def.color.as_deref(), Some("#7c3aed"));
-    assert_eq!(def.facades, Some(vec!["index.ts".to_string()]));
+    assert_eq!(def.facades, Some(vec![FacadeDef::plain("index.ts")]));
     assert_eq!(def.exclude, vec!["todo.ts".to_string()]);
     assert_eq!(def.description_short.as_deref(), Some("Domain types"));
     assert_eq!(def.description_long.as_deref(), Some("Domain model body."));
@@ -91,6 +91,28 @@ fn layering_fields_parse() {
     let def = parse_group_def("src/db/db.group.md", md).expect("valid");
     assert_eq!(def.must_not_import, vec!["ui".to_string()]);
     assert_eq!(def.may_import, Some(vec!["domain".to_string()]));
+}
+
+#[test]
+fn tags_and_tag_layering_fields_parse() {
+    let md = "---\nid: db\ntags:\n  - infrastructure\nmustNotImportTags:\n  - ui-layer\n---\n";
+    let def = parse_group_def("src/db/db.group.md", md).expect("valid");
+    assert_eq!(def.tags, vec!["infrastructure".to_string()]);
+    assert_eq!(def.must_not_import_tags, vec!["ui-layer".to_string()]);
+    let bare = parse_group_def("x.group.md", "---\nid: x\n---\n").expect("valid");
+    assert!(bare.tags.is_empty());
+    assert!(bare.must_not_import_tags.is_empty());
+}
+
+#[test]
+fn facade_entries_parse_as_bare_paths_or_tagged_objects() {
+    let md = "---\nid: db\nfacades:\n  - index.ts\n  - path: safe.ts\n    tags: []\n  - path: raw.ts\n    tags:\n      - infrastructure\n---\n";
+    let def = parse_group_def("src/db/db.group.md", md).expect("valid");
+    let facades = def.facades.expect("explicit facades");
+    assert_eq!(facades[0], FacadeDef::plain("index.ts"));
+    assert_eq!(facades[1].path, "safe.ts");
+    assert_eq!(facades[1].tags, Some(vec![]), "an empty override is kept");
+    assert_eq!(facades[2].tags, Some(vec!["infrastructure".to_string()]));
 }
 
 #[test]

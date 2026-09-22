@@ -1,14 +1,9 @@
 import { describe, expect, it } from "vitest";
 import golden from "./fixtures/golden/project-graph.json";
-import type { ProjectGraph, ProjectedGraph, RFNode } from "../src/domain/graph";
-import {
-  applyDiffOverlay,
-  attachLineDiff,
-  classifySymbolChanges,
-  lineDiffsFromUnified,
-  overlayFromPastedDiff,
-  type GraphDiffOverlay,
-} from "../src/domain/diff";
+import type { ProjectGraph } from "../src/domain/graph";
+import type { ProjectedGraph, RFNode } from "../src/domain/projection";
+import { attachLineDiff, classifySymbolChanges, lineDiffsFromUnified, overlayFromPastedDiff, type GraphDiffOverlay } from "../src/domain/diff";
+import { applyDiffOverlay } from "../src/domain/projection";
 
 const base = golden as unknown as ProjectGraph;
 const module = base.modules.find((item) => item.id === "src/core/store.ts")!;

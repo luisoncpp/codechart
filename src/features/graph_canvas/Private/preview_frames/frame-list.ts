@@ -14,6 +14,8 @@ export interface PreviewFrame {
   sourceText: string;
   top: number;
   left: number;
+  /** Committed box. Seeded at creation, then owned by the corner-grip resize. */
+  width?: number;
   height?: number;
   zIndex: number;
   pinned: boolean;
@@ -36,10 +38,21 @@ export type OpenFrameMode = "close-unpinned" | "keep-all";
 
 export type OpenPreviewFrame = (mode: OpenFrameMode, frame: NewPreviewFrame) => void;
 
-/** Default frame size — must match the `.symbol-widget` CSS box. */
+/**
+ * Default frame size. TypeScript owns it because `frame-placement.ts` does
+ * collision and overflow math with these before any element exists, so CSS
+ * cannot be the source of truth; `frame-box-style.ts` renders them inline.
+ */
 export const FRAME_WIDTH = 680;
 export const FRAME_HEIGHT = 360;
 export const DOCUMENT_FRAME_HEIGHT = 720;
+
+/**
+ * Resize floor. Clamped in `frame-resize.ts` and published to the stylesheet
+ * as `--frame-min-width` / `--frame-min-height` by `frame-box-style.ts`.
+ */
+export const MIN_FRAME_WIDTH = 250;
+export const MIN_FRAME_HEIGHT = 180;
 
 function topZIndex(frames: readonly PreviewFrame[]): number {
   return frames.reduce((max, f) => Math.max(max, f.zIndex), 0);
@@ -57,7 +70,9 @@ function mergeOnDedupe(
   };
   if (incoming.activeRange !== undefined) merged.activeRange = incoming.activeRange;
   if (incoming.sectionAnchor !== undefined) merged.sectionAnchor = incoming.sectionAnchor;
-  if (incoming.height !== undefined) merged.height = incoming.height;
+  // `width`/`height` are deliberately not merged, exactly like `top`/`left`:
+  // the incoming size is only a creation seed (always the same constant for a
+  // given entry point), so copying it would undo the user's corner-grip resize.
   return merged;
 }
 
@@ -104,6 +119,15 @@ export function moveFrame(
   pos: { top: number; left: number },
 ): readonly PreviewFrame[] {
   return frames.map((f) => (f.id === id ? { ...f, ...pos } : f));
+}
+
+/** Resize a frame (corner-grip drag), committed once on pointer release. */
+export function resizeFrame(
+  frames: readonly PreviewFrame[],
+  id: number,
+  size: { width: number; height: number },
+): readonly PreviewFrame[] {
+  return frames.map((f) => (f.id === id ? { ...f, ...size } : f));
 }
 
 /** Toggle whether outside clicks should keep a frame open. */

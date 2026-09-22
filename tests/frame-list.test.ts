@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { openFrame, type PreviewFrame } from "../src/features/graph_canvas/Private/preview_frames/frame-list";
+import {
+  openFrame,
+  resizeFrame,
+  type PreviewFrame,
+} from "../src/features/graph_canvas/Private/preview_frames/frame-list";
 
 const base: PreviewFrame = {
   id: 1,
@@ -68,13 +72,26 @@ describe("openFrame dedupe", () => {
     expect(next[0]?.sectionAnchor).toBe("setup");
   });
 
-  it("merges height when incoming frame specifies it", () => {
-    const next = openFrame([base], {
-      ...base,
-      id: 2,
-      sourceText: "v2",
-      height: 720,
-    });
-    expect(next[0]?.height).toBe(720);
+  it("keeps the committed size, since the incoming one is only a creation seed", () => {
+    // Re-opening a document passes the same DOCUMENT_FRAME_HEIGHT every time,
+    // so copying it would silently undo the user's corner-grip resize —
+    // `top`/`left` are preserved on dedupe for exactly the same reason.
+    const resized: PreviewFrame = { ...base, width: 420, height: 300 };
+
+    const next = openFrame([resized], { ...base, id: 2, sourceText: "v2", height: 720 });
+
+    expect(next[0]?.width).toBe(420);
+    expect(next[0]?.height).toBe(300);
+  });
+});
+
+describe("resizeFrame", () => {
+  it("commits a width and height onto the addressed frame only", () => {
+    const other: PreviewFrame = { ...base, id: 2, moduleId: "src/b.ts" };
+
+    const next = resizeFrame([base, other], 1, { width: 500, height: 400 });
+
+    expect(next[0]).toMatchObject({ width: 500, height: 400 });
+    expect(next[1]?.width).toBeUndefined();
   });
 });

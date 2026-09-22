@@ -38,7 +38,7 @@ While a diff overlay is active, user clicks the checkbox on a diffed module card
 | Piece | File |
 |-------|------|
 | Session API | `state/graph-session/Private/graph-session-store.ts`, `diff-review-tracker.ts`, `diff-review-id.ts` |
-| Node stamping | `domain/diff/Private/apply-diff-review.ts` |
+| Node stamping | `domain/projection/Private/diff_overlay/apply-diff-review.ts` |
 | Card toggle + dimming | `nodes/DiffReviewToggle.tsx`, `nodes/module-diff-style.ts`, `nodes/ModuleNodeView.tsx`, `l2/L2DocumentNode.tsx` |
 | Preview frame toggle | `preview_frames/FrameHeader.tsx`, `preview_frames/SymbolSourceWidget.tsx`, `preview_frames/PreviewFramesView.tsx`, `preview_frames/preview-file-diff.ts` |
 | Click interception | `controller/graph-canvas-node-handlers.ts` |

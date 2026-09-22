@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="Stateful line-by-line tokenizer that carries block comments across lines")
 import { getLanguageForFile, type BlockComment } from "./highlighter-language-rules";
-import type { Rule, Token } from "./highlighter";
+import type { Rule, Token } from "./highlighter-types";
 
 /**
  * Tokenizes one line at a time, remembering whether an unterminated block

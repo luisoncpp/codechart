@@ -1,6 +1,5 @@
+import { type HeatProjection, type HeatmapMode, type ModuleNode } from "../../../graph";
 import type { LayoutBox } from "../../../layout";
-import type { ModuleNode } from "../../model/ModuleNode";
-import type { HeatmapMode, HeatProjection } from "../heat/heat-types";
 import type { ModuleSymbolDescriptor } from "./node-data";
 
 export type BoxIndex = Map<string, LayoutBox>;

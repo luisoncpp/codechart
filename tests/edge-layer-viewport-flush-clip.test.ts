@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { styleEdge } from "../src/features/graph_canvas/Private/edges/edge-style";
-import type { RFNode } from "../src/domain/graph";
+import type { RFNode } from "../src/domain/projection";
 import {
   flushRaf,
   setupFlushController,

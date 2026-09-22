@@ -1,11 +1,13 @@
 // @Architecture(descriptionShort="Displays a draggable, resizable panel with the source code of a symbol")
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { DiffNote, FileLineDiff } from "../../../../domain/diff";
 import { findSymbolLine } from "./symbol-source-utils";
 import type { PreviewFrame } from "./frame-list";
-import type { Position } from "./frame-placement";
+import type { Position, Size } from "./frame-placement";
 import { startFrameDrag } from "./frame-drag";
-import { centerElementInBody } from "./center-in-body";
+import { startFrameResize } from "./frame-resize";
+import { frameBoxStyle } from "./frame-box-style";
+import { useCenterMarkdownSection, useCenterTargetLine } from "./use-frame-autocenter";
 import { FrameContent } from "./FrameBody";
 import { FrameHeader } from "./FrameHeader";
 import { FrameFindBar } from "./FrameFindBar";
@@ -18,6 +20,7 @@ import { useFrameCopyMenu } from "./use-frame-copy-menu";
 export interface FrameHandlers {
   onClose: (id: number) => void;
   onMove: (id: number, pos: Position) => void;
+  onResize: (id: number, size: Size) => void;
   onActivate: (id: number) => void;
   onTogglePin: (id: number) => void;
   onToggleDiffReview?: (moduleId: string) => void;
@@ -65,32 +68,23 @@ export function SymbolSourceWidget({
     enabled: !renderMarkdown,
   });
 
-  useEffect(() => {
-    const line = reviewLine ?? targetLine;
-    if (line === undefined) return;
-    const timer = setTimeout(/*centerDefinitionLine*/ () => {
-      centerElementInBody(lineRef.current);
-    }, /*delayInMs=*/50);
-    return () => clearTimeout(timer);
-  }, [targetLine, reviewLine, frame.sourceText]);
-
-  useEffect(() => {
-    if (!renderMarkdown || !frame.sectionAnchor) return;
-    const timer = setTimeout(/*centerMarkdownHeading*/ () => {
-      const body = frameRef.current?.querySelector(".group-markdown-body");
-      const heading = body?.querySelector(`#${CSS.escape(frame.sectionAnchor!)}`);
-      if (!(heading instanceof HTMLElement)) return;
-      heading.classList.add("hl-section-target");
-      centerElementInBody(heading);
-    }, /*delayInMs=*/50);
-    return () => clearTimeout(timer);
-  }, [renderMarkdown, frame.sectionAnchor, frame.sourceText]);
+  useCenterTargetLine(lineRef, /*line=*/ reviewLine ?? targetLine, frame.sourceText);
+  useCenterMarkdownSection({
+    frameRef,
+    sectionAnchor: frame.sectionAnchor,
+    sourceText: frame.sourceText,
+    enabled: renderMarkdown,
+  });
 
   const onHeaderPointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest("button, label, input")) return;
     startFrameDrag(e, { top: frame.top, left: frame.left }, /*commitDropPosition*/ (pos) =>
       handlers.onMove(frame.id, pos),
     );
+  };
+
+  const onResizerPointerDown = (e: React.PointerEvent) => {
+    startFrameResize(e, /*commitFinalSize*/ (size) => handlers.onResize(frame.id, size));
   };
 
   const onCodeClick = (e: React.MouseEvent) => {
@@ -131,12 +125,7 @@ export function SymbolSourceWidget({
       className={frame.pinned ? "symbol-widget symbol-widget--pinned" : "symbol-widget"}
       data-frame-id={frame.id}
       tabIndex={-1}
-      style={{
-        top: frame.top,
-        left: frame.left,
-        ...(frame.height ? { height: frame.height } : {}),
-        zIndex: 1000 + frame.zIndex,
-      }}
+      style={frameBoxStyle(frame)}
       onClick={(e) => e.stopPropagation()}
       onPointerDown={onFramePointerDown}
       onKeyDown={onFrameKeyDown}
@@ -191,6 +180,11 @@ export function SymbolSourceWidget({
         />
       </div>
       <FrameContextMenu menu={copyMenu.menu} onClose={copyMenu.closeMenu} />
+      <div
+        className="symbol-widget__resizer"
+        title="Resize frame"
+        onPointerDown={onResizerPointerDown}
+      />
     </div>
   );
 }

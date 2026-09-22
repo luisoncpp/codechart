@@ -208,6 +208,7 @@
 /* ── Symbol source code preview widget ── */
 
 .symbol-widget {
+  --frame-resizer-size: 16px;
   position: absolute;
   z-index: 1000;
   background: #ffffff;
@@ -216,11 +217,13 @@
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   display: flex;
   flex-direction: column;
-  min-width: 250px;
-  min-height: 180px;
-  width: 680px;
-  height: 360px;
-  resize: both;
+  /* The box itself is inline, from the frame model — `frame-box-style.ts`.
+     `frame-placement.ts` needs the numbers before any element exists, so the
+     TS constants are the source of truth and publish the floors back here. */
+  min-width: var(--frame-min-width);
+  min-height: var(--frame-min-height);
+  /* No `resize: both`: pressing a native resizer autoscrolls the body under it.
+     `.symbol-widget__resizer` + `frame-resize.ts` drive the size instead. */
   overflow: hidden;
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
   animation: widget-fade-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -430,6 +433,25 @@
 .symbol-widget__close:hover {
   color: #475569;
   background: #e2e8f0;
+}
+
+/* Stands in for the native resize corner — see `frame-resize.ts`. Sits beside
+   the body's scrollbar, never over it: the engine reserved that corner for a
+   native resizer, and any reservation we make instead (a margin or a border on
+   the scroll box) costs content height and clips the last row early. */
+.symbol-widget__resizer {
+  position: absolute;
+  right: var(--frame-scrollbar-width, 0px);
+  bottom: 0;
+  width: var(--frame-resizer-size);
+  height: var(--frame-resizer-size);
+  cursor: nwse-resize;
+  user-select: none;
+  /* Above the body, so the grip stays grabbable over the source. */
+  z-index: 2;
+  background-image:
+    linear-gradient(135deg, transparent 44%, #cbd5e1 44% 56%, transparent 56%),
+    linear-gradient(135deg, transparent 64%, #cbd5e1 64% 76%, transparent 76%);
 }
 
 .symbol-widget__body {

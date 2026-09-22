@@ -72,6 +72,7 @@ function renderFrame(frame: PreviewFrame, overlay: GraphDiffOverlay) {
   const handlers = {
     onClose: vi.fn(),
     onMove: vi.fn(),
+    onResize: vi.fn(),
     onActivate: vi.fn(),
     onTogglePin: vi.fn(),
     onNavigate: vi.fn(),

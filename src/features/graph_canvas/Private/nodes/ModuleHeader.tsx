@@ -1,4 +1,4 @@
-import type { ModuleNodeData } from "../../../../domain/graph";
+import type { ModuleNodeData } from "../../../../domain/projection";
 import { countLineDiffStats, type LineDiffStats } from "../../../../domain/diff";
 import { labelCharsPerLine, MODULE_BOX, wrapIdentifierLines } from "../../../../domain/layout";
 import { iconGlyph, MODULE_ICON_LAYOUT, moduleIconVisualScale, ICON_EMOJI_BOOST } from "./icon-map";

@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Child-free region picker for the L0 card description")
-import type { GroupNodeData } from "../../../../domain/graph";
+import type { GroupNodeData } from "../../../../domain/projection";
 
 export type DescRegion = { width: number; height: number };
 export type CardFrame = { cardW: number; cardH: number; descTop: number };

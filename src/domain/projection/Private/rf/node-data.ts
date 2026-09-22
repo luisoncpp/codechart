@@ -1,9 +1,7 @@
 // @Architecture(descriptionShort="TypeScript interfaces and types for projection nodes")
+import { type HeatmapMode, type Language, type SymbolKind } from "../../../graph";
 import type { Node, Edge as RFEdge } from "@xyflow/react";
 import type { DiffNote, FileLineDiff } from "../../../diff";
-import type { Language } from "../../model/Language";
-import type { HeatmapMode } from "../heat/heat-types";
-import type { SymbolKind } from "../symbol-kind";
 
 /** Data carried by a custom group container node. */
 export interface GroupNodeData extends Record<string, unknown> {

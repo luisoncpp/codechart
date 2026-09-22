@@ -16,16 +16,38 @@ GraphSessionStore  ──(graph + layout)──>  projectGraph()  ──>  Proje
         └── EdgeList click (Imports / Imported by)
 ```
 
+## Domain layering (acyclic, one-way)
+
+The four domain deep modules form a strict DAG. **Nothing points back down this list** —
+that rule is the whole reason `domain/projection` exists (see
+[lessons-learned](../lessons-learned/projection-is-the-top-of-the-domain-dag.md)):
+
+| Module | May import |
+|--------|-----------|
+| `domain/graph` | — (nothing) |
+| `domain/layout` | `graph` |
+| `domain/diff` | `graph` |
+| `domain/projection` | `graph`, `layout`, `diff` |
+
+`domain/projection` owns the React Flow view-model vocabulary (`ProjectedGraph`, `RFNode`,
+`RFEdgeT`, `ModuleNodeData`, `GroupNodeData`, `EdgeData`, `ModuleSymbolDescriptor`), the
+`projectGraph` / `projectGraphSummary` entry points, and the diff-overlay stamping
+(`applyDiffOverlay`, `withDiffReview`). Consumers import those from `domain/projection`, **not**
+from `domain/graph` or `domain/diff`. `tests/domain-layering.test.ts` guards the table.
+
 ## Internal structure (subgroups)
 
-Both deep modules organize their implementation into subfolders, each a config subgroup
+The deep modules organize their implementation into subfolders, each a config subgroup
 (`*.group.md`, facade-less = public inside the parent):
 
 - `domain/graph`: `model/` (ts-rs generated contract types — **also the `TS_RS_EXPORT_DIR`**,
-  never hand-edit), `Private/projection/` (rf-projection\* + `node-data` + palette),
+  never hand-edit),
   `Private/reduction/` (zoom projection/levels, test filtering, disconnect filtering),
   `Private/heat/` (heat scores/colors). Flat: `index.ts`, `symbol-id.ts`, `selectors.ts`,
   `symbol-kind*.ts`.
+- `domain/projection`: `Private/rf/` (rf-projection\* + `node-data` + palette +
+  `graph-projector`), `Private/diff_overlay/` (`apply-diff-overlay`, `apply-diff-review`,
+  `apply-symbol-diff`, `place-ghost-modules`, `ghost-placement-score`).
 - `features/graph_canvas/Private`: `edges/`, `nodes/`, `descriptions/`, `l2/`, `highlight/`,
   `wiki_links/`, `navigation/`, `controller/`, `toolbar/`, plus the nested deep modules
   `preview_frames/` and `project_search/` (those two keep `index.ts` facades). Flat:
@@ -38,8 +60,8 @@ Both deep modules organize their implementation into subfolders, each a config s
 
 | Piece | File | Role |
 |-------|------|------|
-| `projectGraph(graph, layout)` | `domain/graph/Private/projection/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. At L1.5 (`showSymbols`), exported symbols are **not** RF nodes — geometry is on `ModuleNodeData.symbols` and painted inside the module card when `symbolsFitOnScreen` says the card is large enough on screen (render LOD; projection still attaches descriptors). Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
-| `EdgeLayer` + `segmentForEdge` | `features/graph_canvas/Private/edges/EdgeLayer.tsx`, `edge-path.ts`, `viewport-edge-model.ts`; `EdgeLayerRenderer` / `EdgeLayerController` | Custom SVG edge layer (portal into RF's `.react-flow__edges`); React Flow receives `edges={[]}`. Merges **clipped visible** segments per style bucket into one static world-space `<path>` (`mergePathD`); the camera is React Flow's CSS transform on `.react-flow__viewport` / `.react-flow__edges`, so pan does **not** rewrite `d`. **Hysteresis clip:** `filterVisibleSegments` against `inflateClipRect(tightVisibleWorldRect, clipCellSize)`; rebuild clipped merged `d` when `clipCellKey` changes (cell index from tight rect + scale-sensitive `round(cell)` in the key — not cell-count width/height) or on geometry rebuild; pan within the same clip cell stays CSS-transform only. Arrow LOD flips only when zoom crosses `showArrowHeadsAtZoom` (≥ 1.5); that discrete `setState` is coalesced per rAF inside `EdgeLayer` — never from `GraphCanvas.onMove` `setState`. `segmentForEdge` computes endpoints via `borderAnchor` from live node boxes (`boxesFromFlowNodes`); honors `data.groupTargetId`. Geometry rebuilds (`writeGeometry`) on graph/layout changes and on clip-cell change (not every pan). |
+| `projectGraph(graph, layout)` | `domain/projection/Private/rf/rf-projection.ts` | **Pure.** Absolute layout boxes → React Flow nodes/edges. Group/module boxes become typed nodes; child positions made **parent-relative** (RF requirement); parents emitted before children. At L1.5 (`showSymbols`), exported symbols are **not** RF nodes — geometry is on `ModuleNodeData.symbols` and painted inside the module card when `symbolsFitOnScreen` says the card is large enough on screen (render LOD; projection still attaches descriptors). Tags edge `data.groupTargetId` when an edge enters a facade from outside its group (Idea 2 retarget — see Edge routing). |
+| `EdgeLayer` + `segmentForEdge` | `features/graph_canvas/Private/edges/EdgeLayer.tsx`, `edge-path.ts`, `viewport-edge-model.ts` (draw-model shapes in `viewport-edge-types.ts`); `EdgeLayerRenderer` / `EdgeLayerController` | Custom SVG edge layer (portal into RF's `.react-flow__edges`); React Flow receives `edges={[]}`. Merges **clipped visible** segments per style bucket into one static world-space `<path>` (`mergePathD`); the camera is React Flow's CSS transform on `.react-flow__viewport` / `.react-flow__edges`, so pan does **not** rewrite `d`. **Hysteresis clip:** `filterVisibleSegments` against `inflateClipRect(tightVisibleWorldRect, clipCellSize)`; rebuild clipped merged `d` when `clipCellKey` changes (cell index from tight rect + scale-sensitive `round(cell)` in the key — not cell-count width/height) or on geometry rebuild; pan within the same clip cell stays CSS-transform only. Arrow LOD flips only when zoom crosses `showArrowHeadsAtZoom` (≥ 1.5); that discrete `setState` is coalesced per rAF inside `EdgeLayer` — never from `GraphCanvas.onMove` `setState`. `segmentForEdge` computes endpoints via `borderAnchor` from live node boxes (`boxesFromFlowNodes`); honors `data.groupTargetId`. Geometry rebuilds (`writeGeometry`) on graph/layout changes and on clip-cell change (not every pan). |
 | `borderAnchor(box, toward)` / `bowedPath(from, to, bow)` | `features/graph_canvas/Private/edges/border-anchor.ts` | **Pure.** `borderAnchor`: ray-from-center → border intersection point + which side it hit. `bowedPath`: quadratic SVG arc bowed perpendicular by `bow` px (used for soft edges so the dash clears overlapping imports). The testable seams for floating edges. |
 | selectors | `domain/graph/Private/selectors.ts` | `findModule`, `findGroup`, `groupOf`, `modulesInGroup`, `childGroupsOf`, `groupImportsOf`, `groupImportedBy`, `diagnosticsForGroup`, `edgeFocusForSelection`, `importsOf`, `importedBy`, `softEdgesOf`, `diagnosticsFor`, `architectureViolations` — pure edge-list views. |
 | `GraphSessionStore` | `state/graph-session` | Owns `LayoutedGraph`, `selectedId`, and browser-style selection history. New selections truncate the forward branch; back/forward only move its pointer. Emits `phase-changed` + `selection-changed` + `focus-requested`. `focusOn(moduleId)` selects a module, expands collapsed ancestor groups when needed, and asks the canvas to center on it. Session **Hide dot directories** (default on) is passed into every `analyze_project` / snapshot load; toggling reloads the project. |
@@ -52,7 +74,7 @@ Both deep modules organize their implementation into subfolders, each a config s
 | `HeatmapLegend` | `features/graph_canvas` | Top-right gradient chip, shown only while the heatmap is on (below `LevelBadge`). Activity/Risk show a timeframe label that opens `MetricsWindowModal`; Instability shows that channel name instead. Heatmap toggles live in the View menu. |
 | `ModuleContextMenu` | `features/graph_canvas` | Fixed-position menu on module/symbol right-click; opens the module's L2 document in a preview frame, opens the absolute path in the project-configured editor, copies the graph-relative path, or reveals the file via `ShellClient`. Deleted diff files keep preview and copy; editor/explorer are disabled. |
 | `TokenText` | `features/graph_canvas/Private/highlight/TokenText.tsx` | Renders one syntax token's text with **nested** sub-spans: wiki links (`hl-wiki-link`) outside, find matches (`hl-match`) inside. Nesting — never sibling-splitting — is what keeps `hl-clickable` navigation reading a whole identifier from `textContent`. `DiffCodeLine` renders the row; `DiffCodeLines` owns rows, tokenizing, and the per-row link scan. **`wrapLines`** picks the row's `white-space` **inline** (`pre-wrap` + `overflow-wrap: anywhere` vs. `pre`): L2 cards leave it off (world-space clipping handles long lines), preview frames set it in `FrameBody` so a long line soft-wraps instead of scrolling the frame body sideways. Because the row's `white-space` is an inline style, a stylesheet rule on `.<prefix>__line` cannot change wrapping — only this prop can. |
-| `LineTokenizer` / `tokenizeCode` | `features/graph_canvas/Private/highlight/line-tokenizer.ts`, `highlighter.ts` | Lexical highlighter. `LineTokenizer` tokenizes **one line at a time** and is the only stateful piece: it remembers an open block comment (`getLanguageForFile().blockComment`, `/* */` for every language except Python/`.prefab`) so `/* … */` spanning lines stays `hl-comment`. Renderers that emit rows independently (`DiffCodeLines`) **must reuse one instance per document, in line order**; `remove` diff rows come from the before-snapshot and are rendered plain, so they never touch the state. `tokenizeCode(code, path)` is the stateless whole-text wrapper. Consequence: multi-line **strings** (template literals, Python docstrings) are still tokenized per line and do not carry. |
+| `LineTokenizer` / `tokenizeCode` | `features/graph_canvas/Private/highlight/line-tokenizer.ts`, `highlighter.ts` (`Token` / `Rule` in `highlighter-types.ts`) | Lexical highlighter. `LineTokenizer` tokenizes **one line at a time** and is the only stateful piece: it remembers an open block comment (`getLanguageForFile().blockComment`, `/* */` for every language except Python/`.prefab`) so `/* … */` spanning lines stays `hl-comment`. Renderers that emit rows independently (`DiffCodeLines`) **must reuse one instance per document, in line order**; `remove` diff rows come from the before-snapshot and are rendered plain, so they never touch the state. `tokenizeCode(code, path)` is the stateless whole-text wrapper. Consequence: multi-line **strings** (template literals, Python docstrings) are still tokenized per line and do not carry. |
 | `InspectionPanel` | `features/inspection_panel` | Routes to `ModuleInspection` or `GroupInspection` by selection kind. Module view: path, group, facade status, language, LOC, imports, imported-by, **soft-edge sections**, diagnostics. Group view: parent, facades, member modules, LOC (module-tree total), child groups, cross-boundary imports/imported-by (deduped), group diagnostics, `@Architecture` metadata. **Imports / Imported by** headings include a count (`EdgeList`); entries are clickable — they call `store.focusOn` to select and center the related module on the canvas. `architectureViolation` and `circularDependency` diagnostics render **red** (matching violation edges); other diagnostics stay amber. **Layout:** collapsible right-side panel; `App` owns `inspectorOpen` + `inspectorWidth` (default 280px, clamped 200–720px on drag); `PanelResizeHandle` on the left edge; width survives hide/show within the session via `InspectorLayoutProvider` → `PanelChrome`. |
 | `FacadeBypassList` | `project_loader/Private/FacadeBypassList.tsx` | When `architectureViolations(graph)` is non-empty, toolbar chip **1 architecture issue** / **N architecture issues** opens a modal with copyable messages (facade bypasses, group layering, and deduped import cycles). Backdrop dismiss requires the press to start on the backdrop so a vertical textarea resize that ends outside the panel does not close it. |
 
@@ -359,7 +381,24 @@ hidden by zoom collapse.
   `GraphCanvas` renders `framesView` and wires `openFromSymbolNode`/`closeTransient`). Clicking an exported
   symbol box inside a module card (L1.5) selects the parent module and opens a resizable, scrollable, **draggable** (header bar)
   frame next to the symbol, centered on the symbol's definition line (centering scrolls only the frame
-  body — never `scrollIntoView`, which would scroll the window). Inside a frame, clickable identifiers
+  body — never `scrollIntoView`, which would scroll the window). Resizing is **not** native CSS
+  `resize` — pressing a native resizer makes the browser autoscroll the scrollable box under the
+  cursor (the frame body, which reaches the same corner) on a timer for as long as the button is
+  held, and nothing cancels it. `.symbol-widget__resizer` (a grip element) plus `frame-resize.ts`
+  `startFrameResize` own the size instead: `preventDefault` on the press means no native gesture and
+  therefore no autoscroll, and sizes are written straight to the element (as in `startFrameDrag`),
+  clamped to `MIN_FRAME_WIDTH`/`MIN_FRAME_HEIGHT`, then committed to `PreviewFrame.width`/`height`
+  once on release (`onResize` → `resizeFrame`) — the same ownership split as drag's `onDrop` →
+  `moveFrame`. The frame box has a **single source of truth in TypeScript**: `frame-placement.ts`
+  needs `FRAME_WIDTH`/`FRAME_HEIGHT` before any element exists, so `frame-list.ts` holds the numbers,
+  `frame-box-style.ts` renders the committed box inline and publishes the floors as
+  `--frame-min-width`/`--frame-min-height`, and `.symbol-widget` declares no `width`/`height` at all.
+  A re-open never copies the incoming size onto an existing frame (see `mergeOnDedupe`). The grip would
+  otherwise land on the body scrollbar's bottom button, so it is offset left by
+  `--frame-scrollbar-width` (`scrollbar-metrics.ts` measures the platform's bar once; `0` on overlay
+  scrollbars keeps the grip in the true corner). Reserving the space on the body instead — a
+  `margin-bottom` or a `border-bottom` — shortens the scrollport and clips the last row early, which
+  is not acceptable: the source must reach the frame's bottom edge. Inside a frame, clickable identifiers
   (`hl-clickable`) come from `combinedSymbolTargets` (pure) — the union of own-module function/method
   definitions (`scanFunctionDefinitions`, a heuristic lexical scan: keyword-declared functions plus
   `name(args) {`-shaped method lines), imported exported symbols (`importedSymbolTargets` over import

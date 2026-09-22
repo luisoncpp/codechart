@@ -1,5 +1,4 @@
-import type { Edge } from "../../model/Edge";
-import type { ModuleNode } from "../../model/ModuleNode";
+import { type Edge, type ModuleNode } from "../../../graph";
 import type { RFEdgeT } from "./node-data";
 
 export function projectEdge(e: Edge, moduleById: Map<string, ModuleNode>): RFEdgeT {

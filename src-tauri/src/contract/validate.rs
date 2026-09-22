@@ -135,6 +135,14 @@ fn check_module_groups(
 
 fn check_facades(groups: &[GroupNode], modules: &[ModuleNode]) -> Result<(), BuildError> {
     for group in groups {
+        for tagged in group.facade_tags.keys() {
+            if !group.facade_module_ids.contains(tagged) {
+                return Err(BuildError::ForeignFacade(format!(
+                    "group {} tags {tagged}, which is not one of its facades",
+                    group.id
+                )));
+            }
+        }
         for facade_id in &group.facade_module_ids {
             let owner = modules.iter().find(|m| &m.id == facade_id);
             match owner {
@@ -247,6 +255,16 @@ mod tests {
         let groups = vec![group("core", None, &["m1"]), group("ui", None, &[])];
         let modules = vec![module("m1", Some("ui"))];
         let err = validate(&groups, &modules, &[]).unwrap_err();
+        assert!(matches!(err, BuildError::ForeignFacade(_)));
+    }
+
+    #[test]
+    fn rejects_facade_tags_on_a_module_that_is_not_a_facade() {
+        let mut core = group("core", None, &["m1"]);
+        core.facade_tags
+            .insert("m2".into(), vec!["infrastructure".into()]);
+        let modules = vec![module("m1", Some("core")), module("m2", Some("core"))];
+        let err = validate(&[core], &modules, &[]).unwrap_err();
         assert!(matches!(err, BuildError::ForeignFacade(_)));
     }
 

@@ -27,6 +27,7 @@ function makeHandlers(): FrameHandlers {
   return {
     onClose: vi.fn(),
     onMove: vi.fn(),
+    onResize: vi.fn(),
     onActivate: vi.fn(),
     onTogglePin: vi.fn(),
     onNavigate: vi.fn(),

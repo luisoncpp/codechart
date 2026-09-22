@@ -1,13 +1,8 @@
 // @Architecture(descriptionShort="Stamps and restores L1.5 symbol descriptors for diff rendering")
-import {
-  inferSymbolKind,
-  symbolNameFromId,
-  type ModuleRFNode,
-  type ModuleSymbolDescriptor,
-  type RFNode,
-} from "../../graph";
-import type { LayoutBox } from "../../layout";
-import type { GraphDiffOverlay } from "./types";
+import { inferSymbolKind, symbolNameFromId } from "../../../graph";
+import type { ModuleRFNode, ModuleSymbolDescriptor, RFNode } from "../rf/node-data";
+import type { LayoutBox } from "../../../layout";
+import type { GraphDiffOverlay } from "../../../diff";
 
 export function applySymbolDiffNodes(
   nodes: RFNode[],

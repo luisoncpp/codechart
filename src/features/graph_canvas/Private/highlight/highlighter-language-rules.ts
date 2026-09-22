@@ -10,7 +10,7 @@ import {
   STANDARD_OPERATOR_RULE,
   tokenTailRules,
 } from "./highlighter-rules";
-import type { Rule } from "./highlighter";
+import type { Rule } from "./highlighter-types";
 
 const jsRules: Rule[] = [
   { type: "comment", regex: /^\/\/.*|^\/\*[\s\S]*?\*\// },

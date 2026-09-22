@@ -1,5 +1,7 @@
 // @Architecture(descriptionShort="Serializable ProjectGraph data types shared with the frontend")
 
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -119,6 +121,15 @@ pub struct GroupNode {
     #[ts(optional)]
     pub color: Option<String>,
     pub facade_module_ids: Vec<String>,
+    /// Free-form labels from `tags:` in `*.group.md`. Layering rules may forbid
+    /// importing any group carrying a given tag.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<String>,
+    /// Facade module id → tags that **replace** this group's for imports that
+    /// target that facade, so one group can export a tagged and an untagged
+    /// entry point. Only facades with an explicit `tags:` appear here.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub facade_tags: BTreeMap<String, Vec<String>>,
     #[serde(default, skip_serializing_if = "is_false")]
     pub disconnected_by_default: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

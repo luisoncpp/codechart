@@ -1,24 +1,21 @@
 // @Architecture(descriptionShort="One rendered code row: gutter, line number, and syntax tokens")
 import type { DiffDisplayRow } from "../../../../domain/diff";
-import type { Token } from "./highlighter";
+import type { Token } from "./highlighter-types";
 import type { LineMatchRange } from "./match-highlight";
 import { TokenText } from "./TokenText";
+import type { RowChrome } from "./row-chrome";
 import type { WikiLinkSpan } from "../wiki_links";
 
 export interface DiffCodeLineProps {
   row: DiffDisplayRow;
   tokens: Token[];
-  zoom: number;
-  prefix: string;
+  /** Everything that is the same for every row of this document. */
+  chrome: RowChrome;
   active?: boolean;
   lineRef?: React.RefObject<HTMLDivElement | null>;
   clickableNames?: ReadonlySet<string>;
-  path: string;
   links: readonly WikiLinkSpan[];
-  linkEveryToken: boolean;
   anchored?: boolean;
-  /** Soft-wrap long rows instead of scrolling sideways (preview frames). */
-  wrapLines?: boolean;
   onLineClick?: (line: number, extend: boolean) => void;
   matchRanges?: readonly LineMatchRange[];
   activeMatchRef?: React.RefObject<HTMLElement | null>;
@@ -33,44 +30,54 @@ function tokenClass(token: Token, clickableNames?: ReadonlySet<string>): string 
   return `hl-${token.type}${clickable ? " hl-clickable" : ""}`;
 }
 
-export function DiffCodeLine(props: DiffCodeLineProps) {
-  const { row, zoom, prefix, active, lineRef, anchored, wrapLines, onLineClick } = props;
-  const fontSize = 12.5 / zoom;
-  const isAdd = row.kind === "add" || row.kind === "move-add";
-  const isRemove = row.kind === "remove" || row.kind === "move-remove";
-  const gutter = isAdd ? "+" : isRemove ? "-" : " ";
-  const numStyle = {
-    flex: `0 0 ${18 / zoom}px`,
+function rowStyle(chrome: RowChrome, fontSize: number): React.CSSProperties {
+  const { zoom, wrapLines } = chrome;
+  return {
+    display: "flex",
+    alignItems: "flex-start",
+    padding: `0 ${4 / zoom}px`,
+    // `pre` here would beat the stylesheet's wrapping rule for the prefix.
+    whiteSpace: wrapLines ? "pre-wrap" : "pre",
+    ...(wrapLines ? { overflowWrap: "anywhere" as const } : {}),
+    fontSize,
+    lineHeight: 1.4,
+  };
+}
+
+function lineNumberStyle(chrome: RowChrome, fontSize: number): React.CSSProperties {
+  const { zoom, numberDigits } = chrome;
+  return {
+    // `ch` tracks this cell's own monospace font-size, so the reserved width
+    // always fits the file's widest number. The row's `pre-wrap` +
+    // `overflow-wrap: anywhere` inherit here and would otherwise break a
+    // multi-digit number one digit per row.
+    flex: `0 0 calc(${numberDigits}ch + ${4 / zoom}px)`,
     textAlign: "right" as const,
-    paddingRight: 4 / zoom,
+    padding: `0 ${4 / zoom}px 0 0`,
+    whiteSpace: "pre" as const,
+    overflowWrap: "normal" as const,
     color: "#94a3b8",
     fontSize: fontSize * 0.9,
   };
+}
 
+export function DiffCodeLine(props: DiffCodeLineProps) {
+  const { row, chrome, active, lineRef, anchored, onLineClick } = props;
+  const { prefix } = chrome;
+  const fontSize = 12.5 / chrome.zoom;
   return (
     <div
       ref={lineRef}
       className={`${prefix}__line ${prefix}__line--${row.kind}${active ? ` ${prefix}__line--active` : ""}`}
       data-line={row.lineNumber}
       title={row.tooltip}
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        padding: `0 ${4 / zoom}px`,
-        // `pre` here would beat the stylesheet's wrapping rule for the prefix.
-        whiteSpace: wrapLines ? "pre-wrap" : "pre",
-        ...(wrapLines ? { overflowWrap: "anywhere" as const } : {}),
-        fontSize,
-        lineHeight: 1.4,
-      }}
+      style={rowStyle(chrome, fontSize)}
     >
-      <span
-        className={`${prefix}__gutter ${prefix}__gutter--${row.kind}`}
-        style={{ flex: `0 0 ${11 / zoom}px`, textAlign: "center", userSelect: "none", fontSize: fontSize * 0.9 }}
-      >
-        {gutter}
-      </span>
-      <LineNumber prefix={prefix} kind={row.kind} lineNumber={row.lineNumber} style={numStyle} onLineClick={onLineClick} />
+      <GutterMark kind={row.kind} chrome={chrome} />
+      <LineNumber
+        prefix={prefix} kind={row.kind} lineNumber={row.lineNumber}
+        style={lineNumberStyle(chrome, fontSize)} onLineClick={onLineClick}
+      />
       <span
         className={`${prefix}__text${anchored ? ` ${prefix}__text--review-note` : ""}`}
         style={{ flex: 1, background: anchored ? "#f3e8ff" : undefined }}
@@ -78,6 +85,22 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
         <LineTokens {...props} />
       </span>
     </div>
+  );
+}
+
+/** The `+` / `-` / blank column left of the line number. */
+function GutterMark({ kind, chrome }: { kind: DiffDisplayRow["kind"]; chrome: RowChrome }) {
+  const { zoom, prefix } = chrome;
+  const fontSize = 12.5 / zoom;
+  const isAdd = kind === "add" || kind === "move-add";
+  const isRemove = kind === "remove" || kind === "move-remove";
+  return (
+    <span
+      className={`${prefix}__gutter ${prefix}__gutter--${kind}`}
+      style={{ flex: `0 0 ${11 / zoom}px`, textAlign: "center", userSelect: "none", fontSize: fontSize * 0.9 }}
+    >
+      {isAdd ? "+" : isRemove ? "-" : " "}
+    </span>
   );
 }
 
@@ -110,7 +133,7 @@ function LineNumber({ prefix, kind, lineNumber, style, onLineClick }: LineNumber
 }
 
 /** The row's tokens, each wrapping its own link/match sub-spans. */
-function LineTokens({ tokens, clickableNames, path, links, linkEveryToken, matchRanges, activeMatchRef }: DiffCodeLineProps) {
+function LineTokens({ tokens, chrome, clickableNames, links, matchRanges, activeMatchRef }: DiffCodeLineProps) {
   if (tokens.length === 0) return <> </>;
   let tokenStart = 0;
   return (
@@ -118,13 +141,13 @@ function LineTokens({ tokens, clickableNames, path, links, linkEveryToken, match
       {tokens.map((token, i) => {
         const start = tokenStart;
         tokenStart += token.text.length;
-        const linkable = linkEveryToken || token.type === "comment";
+        const linkable = chrome.linkEveryToken || token.type === "comment";
         return (
           <span key={i} className={tokenClass(token, clickableNames)}>
             <TokenText
               text={token.text}
               tokenStart={start}
-              path={path}
+              path={chrome.path}
               links={linkable ? links : undefined}
               matchRanges={matchRanges}
               activeMatchRef={activeMatchRef}

@@ -27,6 +27,26 @@ use std::collections::BTreeSet;
 use crate::contract::{Diagnostic, DiagnosticKind, Severity};
 use crate::project_source::ProjectSource;
 
+/// One `facades:` entry. A bare string is a path with no tags of its own; the
+/// object form `{ path, tags }` **overrides** the group's tags for imports that
+/// target this facade, so one group can export both a tagged and an untagged
+/// entry point. `tags: None` = inherit the group's; `Some` (even empty) = override.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct FacadeDef {
+    pub path: String,
+    pub tags: Option<Vec<String>>,
+}
+
+impl FacadeDef {
+    /// A path-only facade entry (no tag override).
+    pub fn plain(path: &str) -> Self {
+        FacadeDef {
+            path: path.to_string(),
+            tags: None,
+        }
+    }
+}
+
 /// A parsed `*.group.md`: identity, membership rules, and documentation. Paths in
 /// `facades`/`match_globs`/`files`/`exclude` are recorded verbatim; `grouping`
 /// resolves them relative to `dir`.
@@ -39,7 +59,9 @@ pub struct GroupDef {
     pub color: Option<String>,
     pub icon: Option<String>,
     /// `None` = default to `index.ts`/`index.tsx` in `dir`; `Some` = explicit list.
-    pub facades: Option<Vec<String>>,
+    pub facades: Option<Vec<FacadeDef>>,
+    /// Free-form labels (`tags:`) other groups can forbid via `mustNotImportTags`.
+    pub tags: Vec<String>,
     /// `match` membership source — globs (or `/regex/`) over the repo-relative path.
     pub match_globs: Vec<String>,
     /// `files` membership source — explicit module paths.
@@ -60,6 +82,8 @@ pub struct GroupDef {
     pub disconnected_modules: Vec<String>,
     /// Group ids this group's module tree must not import (denylist).
     pub must_not_import: Vec<String>,
+    /// Tags this group's module tree must not import (denylist by tag).
+    pub must_not_import_tags: Vec<String>,
     /// When `Some`, this group's module tree may only import these groups
     /// (plus its own subtree). `None` means no allowlist.
     pub may_import: Option<Vec<String>>,

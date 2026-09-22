@@ -3,9 +3,9 @@ import { useMemo, useState, useRef } from "react";
 import { ReactFlow, ReactFlowProvider, Background, Controls } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./graph-canvas.css";
-import { projectGraph } from "../../../domain/graph";
-import { applyDiffOverlay, withDiffReview } from "../../../domain/diff";
-import type { RFNode, RenderOptions } from "../../../domain/graph";
+import { projectGraph } from "../../../domain/projection";
+import { applyDiffOverlay, withDiffReview } from "../../../domain/projection";
+import type { RFNode, RenderOptions } from "../../../domain/projection";
 import {
   edgeFocusForSelection,
   computeHeatProjection,

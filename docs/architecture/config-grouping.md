@@ -21,7 +21,9 @@ Public surface (`project_config::`):
   root-only `ignore`, `description_short`/`description_long`, `disconnected` (hide all
   group connections by default), `disconnected_modules` (module paths relative to `dir`),
   `architecture_doc` (repo-relative path to extended markdown for L2 canvas),
-  `must_not_import` / `may_import` (group→group layering; enforced in `references`).
+  `tags` (free-form labels; surface on `GroupNode.tags`),
+  `must_not_import` / `may_import` / `must_not_import_tags` (layering; enforced in
+  `references`).
 - `parse_group_def(path, content) -> Result<GroupDef, ConfigError>` — one file.
 - `discover_group_defs(source) -> (Vec<GroupDef>, Vec<Diagnostic>)` — walk a
   `ProjectSource`, parse every `*.group.md`, parse failures → `configError`s.
@@ -74,9 +76,9 @@ Without this, a root-level composition group (`dir = ""`, an ancestor of every
 folder) would become the implicit parent of every group that lacks an explicit
 parent. `exclude` is a *membership* filter only — it does not affect nesting.
 
-**Facades:** explicit `facades` (must name group members, else
-`configError:facade:…`), else default to `index.ts`/`index.tsx` in `dir` when
-present. Facade paths are normalized like `files`, so they may use `..`. A
+**Facades:** explicit `facades` (bare paths or `{ path, tags }`; must name group
+members, else `configError:facade:…`), else default to `index.ts`/`index.tsx` in
+`dir` when present. Facade paths are normalized like `files`, so they may use `..`. A
 facade-less group is public (§10 drift never flags imports into it).
 
 **Layering (`mustNotImport` / `mayImport`):** constraints on **outbound** solid
@@ -85,7 +87,38 @@ target matches that group **or its descendants**. Own-subtree imports are always
 allowed. `mustNotImport` is a denylist; `mayImport` (when present, including `[]`)
 is an allowlist of other groups. Both: allowed iff own-subtree or (in `mayImport`
 and not in `mustNotImport`). Unknown ids → `configError:layer:{group}:{id}` and
-are dropped from the rule. Sibling layering is declared on those groups — a
+are dropped from the rule.
+
+**Tags (`tags` / `mustNotImportTags`):** `tags` is a free-form label list on a
+group (`GroupDef.tags` → `GroupNode.tags`; no meaning of its own). Another group's
+`mustNotImportTags` denies importing **any group carrying that tag or nested under
+one that does** — a tag is inherited by descendants exactly like a named target
+matches descendants. It is an extra denylist evaluated after `mustNotImport` and
+before the `mayImport` allowlist; own-subtree imports stay allowed even when the
+rule holder itself carries the tag. A tag no group declares →
+`configError:layer:{group}:{tag}` (`unknown tag …`) and is dropped from the rule.
+
+**Per-facade tags:** a `facades:` entry is either a bare path or
+`{ path, tags }` (`FacadeDef`; `RawFacade` is an untagged serde enum, so both
+forms coexist in one list). An explicit `tags` **replaces** the group's tags for
+imports whose *target is that facade* — `tags: []` exempts it, a non-empty list
+substitutes its own. That is what lets one group expose a blocked and an
+unblocked entry point:
+
+```yaml
+id: db
+tags: [infrastructure]
+facades:
+  - raw.ts                # inherits infrastructure → blocked
+  - path: safe.ts
+    tags: []              # overrides → importable
+```
+
+Resolved in `claim::facades_for` → `ResolvedFacades.tags` →
+`GroupNode.facade_tags` (facade module id → tags; only overriding facades appear).
+A facade tag counts as *declared* for `mustNotImportTags` validation, so a tag may
+live only on a facade. The builder rejects a `facade_tags` key that is not one of
+the group's `facade_module_ids` (`BuildError::ForeignFacade`, invariant 3). Sibling layering is declared on those groups — a
 parent's allowlist does not forbid imports between its children. Enforcement is
 `references::flag_layering`, not grouping.
 

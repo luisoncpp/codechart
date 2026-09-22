@@ -6,6 +6,7 @@ import { clickSymbolOnCanvas } from "../helpers/click-symbol-on-canvas";
 import { ReviewNotesStore } from "../../src/state/review-notes";
 import type { ReviewNote } from "../../src/ipc/review-notes-client";
 import type { ProjectGraph } from "../../src/domain/graph";
+import { FRAME_HEIGHT } from "../../src/features/graph_canvas/Private/preview_frames/frame-list";
 
 const reviewNote: ReviewNote = {
   id: "review-store",
@@ -63,7 +64,9 @@ describe("flow: preview-symbol", () => {
       expect(document.querySelector(".symbol-widget")).toBeTruthy();
     });
     const widget = document.querySelector(".symbol-widget")!;
-    expect((widget as HTMLElement).style.height).toBe("");
+    // The default box, not the taller document one asserted above; React
+    // renders it from the model now that the stylesheet declares no size.
+    expect((widget as HTMLElement).style.height).toBe(`${FRAME_HEIGHT}px`);
     expect(widget.querySelector(".symbol-widget__title")?.textContent).toBe("TodoStore");
     expect(widget.querySelector(".symbol-widget__path")?.textContent).toBe(
       "src/core/store.ts",

@@ -91,6 +91,75 @@ fn flags_a_layering_violation_through_a_public_facade() {
     assert!(diag.message.contains("db must not import ui"));
 }
 
+#[test]
+fn flags_a_layering_violation_against_a_group_tag() {
+    let source = memory(&[
+        (
+            "src/db/db.group.md",
+            "---\nid: db\ntags:\n  - infrastructure\n---\n",
+        ),
+        (
+            "src/ui/ui.group.md",
+            "---\nid: ui\nmustNotImportTags:\n  - infrastructure\n---\n",
+        ),
+        ("src/ui/view.ts", "import { repo } from \"../db/repo\";\n"),
+        ("src/db/repo.ts", "export const repo = 1;\n"),
+    ]);
+    let graph = analyze_project(&source, "mem").expect("builds");
+    let edge = graph
+        .edges
+        .iter()
+        .find(|e| e.source == "src/ui/view.ts" && e.target == "src/db/repo.ts")
+        .expect("import edge");
+    assert!(edge.is_violation, "tag denylist flags the import");
+    let diag = graph
+        .diagnostics
+        .iter()
+        .find(|d| d.id.contains("architectureViolation:layer:"))
+        .expect("layering diagnostic");
+    assert!(diag
+        .message
+        .contains("ui must not import tag infrastructure"));
+    assert_eq!(
+        graph.groups.iter().find(|g| g.id == "db").unwrap().tags,
+        vec!["infrastructure".to_string()]
+    );
+}
+
+#[test]
+fn a_facade_tag_override_splits_one_group_into_two_export_surfaces() {
+    let source = memory(&[
+        (
+            "src/db/db.group.md",
+            "---\nid: db\ntags:\n  - infrastructure\nfacades:\n  - raw.ts\n  - path: safe.ts\n    tags: []\n---\n",
+        ),
+        (
+            "src/ui/ui.group.md",
+            "---\nid: ui\nmustNotImportTags:\n  - infrastructure\n---\n",
+        ),
+        (
+            "src/ui/view.ts",
+            "import { raw } from \"../db/raw\";\nimport { safe } from \"../db/safe\";\n",
+        ),
+        ("src/db/raw.ts", "export const raw = 1;\n"),
+        ("src/db/safe.ts", "export const safe = 1;\n"),
+    ]);
+    let graph = analyze_project(&source, "mem").expect("builds");
+    let violating: Vec<&str> = graph
+        .edges
+        .iter()
+        .filter(|e| e.is_violation)
+        .map(|e| e.target.as_str())
+        .collect();
+    assert_eq!(
+        violating,
+        ["src/db/raw.ts"],
+        "only the facade that inherits the group tag is blocked"
+    );
+    let db = graph.groups.iter().find(|g| g.id == "db").unwrap();
+    assert_eq!(db.facade_tags.get("src/db/safe.ts"), Some(&vec![]));
+}
+
 /// Phase 9 + 10: the planted soft edges — one event seam (store→App) and one
 /// interface seam (App→store via ITodoStore).
 #[test]

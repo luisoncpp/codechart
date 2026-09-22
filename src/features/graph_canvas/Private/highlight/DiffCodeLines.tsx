@@ -1,17 +1,17 @@
-import { Fragment, useMemo } from "react";
+import { useMemo } from "react";
 import {
   buildModuleDiffDisplay,
   type DiffDisplayRow,
   type DiffNote,
   type FileLineDiff,
 } from "../../../../domain/diff";
-import type { Token } from "./highlighter";
+import type { Token } from "./highlighter-types";
 import { LineTokenizer } from "./line-tokenizer";
 import type { LineMatchRange } from "./match-highlight";
-import { DiffCodeLine } from "./DiffCodeLine";
+import { DiffRowItem } from "./DiffRowItem";
+import type { RowChrome } from "./row-chrome";
 import { findWikiLinks, isMarkdownPath, type WikiLinkSpan } from "../wiki_links";
-import { InlineReviewNotes, useReviewNotesStore } from "../../../review_notes";
-import { DiffNotesList } from "../../../diff_visualizer";
+import { useReviewNotesStore } from "../../../review_notes";
 
 interface DiffCodeLinesProps {
   source: string;
@@ -33,143 +33,55 @@ interface DiffCodeLinesProps {
 }
 
 /** Code lines with optional unified-diff +/- green/red row styling. */
-export function DiffCodeLines({
-  source,
-  path,
-  fileDiff,
-  diffNotes,
-  zoom = 1,
-  lineClassPrefix = "diff-code",
-  wrapLines,
-  activeLine,
-  activeLineRef,
-  clickableNames,
-  matchesByLine,
-  activeMatchRef,
-}: DiffCodeLinesProps) {
+export function DiffCodeLines(props: DiffCodeLinesProps) {
+  const { source, path, fileDiff, diffNotes } = props;
   const reviewNotes = useReviewNotesStore();
   const notes = reviewNotes?.notesFor(path) ?? [];
   const draft = reviewNotes?.getDraft();
-  const rows = useMemo(
-    () => buildModuleDiffDisplay(source, fileDiff),
-    [source, fileDiff],
-  );
+  const rows = useMemo(() => buildModuleDiffDisplay(source, fileDiff), [source, fileDiff]);
   const tokenized = useMemo(() => tokenizeRows(rows, path), [rows, path]);
   const wikiLinks = useMemo(() => wikiLinksPerRow(rows), [rows]);
-  // Code only links inside comments (a literal `[[a,b]]` in source is not a
-  // link); markdown has no comment syntax, so every token can hold one.
-  const linkEveryToken = isMarkdownPath(path);
-
+  const numberDigits = useMemo(() => gutterDigits(rows), [rows]);
+  const chrome = rowChrome(props, numberDigits);
+  const onLineClick = reviewNotes
+    ? /*start or extend a Review Note draft*/ (line: number, extend: boolean) =>
+        selectReviewLine(reviewNotes, source, path, line, extend)
+    : undefined;
   return (
     <>
       {rows.map((row, idx) => (
         <DiffRowItem
-          key={idx}
-          row={row}
-          tokens={tokenized[idx]!}
-          zoom={zoom}
-          prefix={lineClassPrefix}
-          wrapLines={wrapLines}
-          activeLine={activeLine}
-          activeLineRef={activeLineRef}
-          clickableNames={clickableNames}
-          path={path}
-          links={wikiLinks[idx]!}
-          linkEveryToken={linkEveryToken}
-          matchesByLine={matchesByLine}
-          activeMatchRef={activeMatchRef}
-          notes={notes}
-          draft={draft}
-          diffNotes={diffNotes}
-          onLineClick={reviewNotes ? (line, extend) => selectReviewLine(reviewNotes, source, path, line, extend) : undefined}
+          key={idx} row={row} tokens={tokenized[idx]!} links={wikiLinks[idx]!}
+          chrome={chrome} clickableNames={props.clickableNames}
+          activeLine={props.activeLine} activeLineRef={props.activeLineRef}
+          matchesByLine={props.matchesByLine} activeMatchRef={props.activeMatchRef}
+          notes={notes} draft={draft} diffNotes={diffNotes}
+          onLineClick={onLineClick}
         />
       ))}
     </>
   );
 }
 
-interface DiffRowItemProps {
-  row: DiffDisplayRow;
-  tokens: Token[];
-  zoom: number;
-  prefix: string;
-  wrapLines?: boolean;
-  activeLine?: number;
-  activeLineRef?: React.RefObject<HTMLDivElement | null>;
-  clickableNames?: ReadonlySet<string>;
-  path: string;
-  links: readonly WikiLinkSpan[];
-  linkEveryToken: boolean;
-  matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
-  activeMatchRef?: React.RefObject<HTMLElement | null>;
-  notes: any[];
-  draft: any;
-  diffNotes?: readonly DiffNote[];
-  onLineClick?: (line: number, extend: boolean) => void;
+/** The values every row of this document shares, built once per render. */
+function rowChrome(props: DiffCodeLinesProps, numberDigits: number): RowChrome {
+  return {
+    zoom: props.zoom ?? 1,
+    prefix: props.lineClassPrefix ?? "diff-code",
+    path: props.path,
+    numberDigits,
+    // Code only links inside comments (a literal `[[a,b]]` in source is not a
+    // link); markdown has no comment syntax, so every token can hold one.
+    linkEveryToken: isMarkdownPath(props.path),
+    wrapLines: props.wrapLines,
+  };
 }
 
-function DiffRowItem(props: DiffRowItemProps) {
-  const { row, tokens, zoom, prefix, wrapLines, activeLine, activeLineRef, clickableNames, path, links, linkEveryToken, matchesByLine, activeMatchRef, notes, draft, diffNotes, onLineClick } = props;
-  const isRem = row.kind === "remove" || row.kind === "move-remove";
-  const matchingDiffNotes = matchingDiffNotesForRow(row, diffNotes);
-
-  if (isRem) {
-    return (
-      <Fragment>
-        <DiffCodeLine
-          row={row}
-          tokens={tokens}
-          zoom={zoom}
-          prefix={prefix}
-          wrapLines={wrapLines}
-          clickableNames={clickableNames}
-          path={path}
-          links={links}
-          linkEveryToken={linkEveryToken}
-        />
-        {matchingDiffNotes.length > 0 && <DiffNotesList notes={matchingDiffNotes} zoom={zoom} />}
-      </Fragment>
-    );
-  }
-
-  const line = row.lineNumber;
-  const isActive = line === activeLine;
-  const isDraft = draft?.path === path && draft.endLine === line;
-  const lineNotes = notes.filter((n) => n.endLine === line);
-  const isAnchored = notes.some((n) => line >= n.startLine && line <= n.endLine);
-
-  return (
-    <Fragment>
-      <DiffCodeLine
-        row={row}
-        tokens={tokens}
-        zoom={zoom}
-        prefix={prefix}
-        wrapLines={wrapLines}
-        active={isActive}
-        lineRef={isActive ? activeLineRef : undefined}
-        clickableNames={clickableNames}
-        path={path}
-        links={links}
-        linkEveryToken={linkEveryToken}
-        matchRanges={matchesByLine?.get(line)}
-        activeMatchRef={activeMatchRef}
-        anchored={isAnchored}
-        onLineClick={onLineClick}
-      />
-      {matchingDiffNotes.length > 0 && <DiffNotesList notes={matchingDiffNotes} zoom={zoom} />}
-      <InlineReviewNotes notes={lineNotes} showDraft={isDraft} zoom={zoom} />
-    </Fragment>
-  );
-}
-
-function matchingDiffNotesForRow(
-  row: DiffDisplayRow,
-  diffNotes?: readonly DiffNote[],
-): readonly DiffNote[] {
-  if (!diffNotes || diffNotes.length === 0) return [];
-  const side = row.kind === "remove" || row.kind === "move-remove" ? "before" : "after";
-  return diffNotes.filter((n) => n.side === side && n.endLine === row.lineNumber);
+/** Digits of the widest number in the gutter (`remove` rows count too). */
+function gutterDigits(rows: readonly DiffDisplayRow[]): number {
+  let widest = 1;
+  for (const row of rows) widest = Math.max(widest, row.lineNumber);
+  return String(widest).length;
 }
 
 /** One tokenizer for the whole document so block comments span rows. */

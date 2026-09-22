@@ -1,6 +1,6 @@
 // @Architecture(descriptionShort="Pure floating-edge path geometry for the edge layer")
 import { getBezierPath, Position } from "@xyflow/react";
-import type { RFEdgeT } from "../../../../domain/graph";
+import type { RFEdgeT } from "../../../../domain/projection";
 import {
   borderAnchor,
   bowedPath,

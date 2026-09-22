@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Shared syntax-highlighting rule fragments for highlighter.ts")
-import type { Rule } from "./highlighter";
+import type { Rule } from "./highlighter-types";
 
 export const BASIC_TYPE_RULE: Rule = {
   type: "type",

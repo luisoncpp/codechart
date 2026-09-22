@@ -2,14 +2,8 @@ import { describe, expect, it, beforeAll } from "vitest";
 import goldenGraph from "./fixtures/golden/project-graph.json";
 import { ElkLayoutEngine } from "../src/domain/layout";
 import type { LayoutedGraph } from "../src/domain/layout";
-import {
-  projectGraph,
-  importsOf,
-  importedBy,
-  allGroupIds,
-  projectForZoom,
-  computeHeatProjection,
-} from "../src/domain/graph";
+import { importsOf, importedBy, allGroupIds, projectForZoom, computeHeatProjection } from "../src/domain/graph";
+import { projectGraph } from "../src/domain/projection";
 import type { ProjectGraph } from "../src/domain/graph";
 import { collapsedDescription } from "../src/features/graph_canvas/Private/descriptions/collapsed-description";
 

@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Projects raw graph data into React Flow nodes and edges")
-import type { ProjectGraph } from "../../model/ProjectGraph";
+import type { ProjectGraph } from "../../../graph";
 
 export function projectGraphSummary(graph: ProjectGraph) {
   return {

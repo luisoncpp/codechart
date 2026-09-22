@@ -23,7 +23,7 @@ only through the builder** so no unchecked `ProjectGraph` reaches the contract.
 |--------------|-----------|----------------|
 | `SiblingOverlap` | 1 — containment is a tree | every `parentId` exists; no parent cycle |
 | `MultiGroupMembership` | 2 — module in exactly one group | `groupId` (when set) references an existing group |
-| `ForeignFacade` | 3 — facade belongs to its group | each `facadeModuleIds` entry exists and its `groupId` is that group |
+| `ForeignFacade` | 3 — facade belongs to its group | each `facadeModuleIds` entry exists and its `groupId` is that group; every `facadeTags` key is one of them |
 | `DanglingEdge` | 4 — edge endpoints exist | `source`/`target` reference existing module ids |
 | `NondeterministicId` | 5 — stable, unique ids | no empty ids; no duplicate ids across groups/modules/edges |
 

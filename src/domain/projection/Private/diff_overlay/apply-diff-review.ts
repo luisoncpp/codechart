@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Stamps reviewed-file marks onto diff-stamped React Flow nodes")
-import type { ProjectedGraph, RFNode } from "../../graph";
+import type { ProjectedGraph, RFNode } from "../rf/node-data";
 
 /**
  * Display-only overlay: marks module nodes whose file was reviewed as
