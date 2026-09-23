@@ -12,6 +12,7 @@ export { countLineDiffStats, diffStatsSuffixLength } from "./Private/line-diff-s
 export type { LineDiffStats } from "./Private/line-diff-stats";
 export { overlayFromPastedDiff } from "./Private/overlay-from-paths";
 export { attachLineDiff } from "./Private/attach-line-diff";
+export { anchorPasteDiff } from "./Private/anchor-paste-diff";
 export { attachDeletedBeforeSources } from "./Private/attach-deleted-sources";
 export { attachRenames } from "./Private/attach-renames";
 export { mergeCommitOverlay } from "./Private/merge-commit-overlay";

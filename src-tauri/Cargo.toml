@@ -44,3 +44,6 @@ debug = "line-tables-only"
 [profile.test]
 debug = 0
 incremental = false
+
+[profile.dev.package."*"]
+debug = false                # no debug info for dependencies

@@ -2,6 +2,7 @@ import {
   compareGraphs,
   overlayFromPastedDiff,
   attachLineDiff,
+  anchorPasteDiff,
   attachDeletedBeforeSources,
   attachSymbolDiff,
   attachRenames,
@@ -46,12 +47,23 @@ export async function buildCommitDiffOverlay(
   });
 }
 
-export function buildPasteDiffOverlay(
-  text: string,
-  graph: ProjectGraph,
-): GraphDiffOverlay {
+interface PasteDiffInput {
+  text: string;
+  graph: ProjectGraph;
+  client: AnalysisClient;
+  root: string | null;
+}
+
+export async function buildPasteDiffOverlay(input: PasteDiffInput): Promise<GraphDiffOverlay> {
+  const { text, graph, client, root } = input;
   const partial = overlayFromPastedDiff(text, graph);
-  const overlay = attachLineDiff({ ...partial, beforeLayout: null }, text);
+  const lineOverlay = attachLineDiff({ ...partial, beforeLayout: null }, text);
+  const paths = [...lineOverlay.lineDiffByPath.keys()];
+  // Best-effort like the rest of paste mode: an unreadable file just keeps the live view.
+  const live = root
+    ? await readWorkingSources({ graph, client, root, paths }).catch(/*keepLiveView*/ () => new Map<string, string>())
+    : new Map<string, string>();
+  const overlay = anchorPasteDiff(lineOverlay, live);
   return attachDeletedBeforeSources(
     attachRenames({ overlay, afterModules: graph.modules }),
   );

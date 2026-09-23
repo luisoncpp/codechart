@@ -32,7 +32,7 @@ async function renderWithStoreDiff(
   if (zoomLevel !== undefined) {
     store.setZoomLevel(zoomLevel);
   }
-  store.applyDiffFromPaste(diffLines.join("\n"));
+  await store.applyDiffFromPaste(diffLines.join("\n"));
   const { container } = renderGraphCanvas(store);
   await waitFor(() =>
     expect(container.querySelector(`[data-id="src/core/store.ts"]`)).toBeTruthy(),

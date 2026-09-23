@@ -166,7 +166,11 @@ The deep modules organize their implementation into subfolders, each a config su
   **L2 source panels and the symbol preview widget** show unified-diff rows:
   green `+` lines for additions, red `-` lines for deletions (`DiffCodeLines`), plus inline **Diff Notes**
   (read-only explanations consumed from `#` marker lines in pasted diffs, stacked above Review Notes) and a floating warning
-  for unbound dropped markers (`DroppedMarkersWarning`). A deleted file's
+  for unbound dropped markers (`DroppedMarkersWarning`). Rows index the diff's after side, so the
+  store renders `afterSourceByPath` instead of the live file; for pastes, `anchorPasteDiff` builds it by
+  locating each hunk in the live file by content and remaps the row coordinates to match.
+  `buildModuleDiffDisplay` refuses a `+` row whose text differs from the diff's added text
+  (renders context + one console warning), so misaligned coordinates can never paint wrong lines. A deleted file's
   **Open file preview** uses empty after-text plus `lineDiffByPath` (or a synthesized all-removed
   diff from `beforeSourceByPath`) so the frame is all red; editor/explorer menu items are disabled.
   Diff styling wins over

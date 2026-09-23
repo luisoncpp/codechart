@@ -343,7 +343,7 @@ describe("GraphSessionStore semantic zoom", () => {
   it("refuses L0 while a diff overlay is active", async () => {
     const store = newStore(clientReturning(graph));
     await store.loadProject("/x");
-    store.applyDiffFromPaste("diff --git a/src/core/store.ts b/src/core/store.ts\n");
+    await store.applyDiffFromPaste("diff --git a/src/core/store.ts b/src/core/store.ts\n");
     store.setZoomLevel(0);
     expect(store.getZoomLevel()).toBe(1);
     expect(store.getCollapsedGroupIds().size).toBe(0);

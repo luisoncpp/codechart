@@ -286,7 +286,13 @@ export class GraphSessionStore extends EventEmitter {
     if (!this.graph) return;
     this.diffError = null;
     this.diffNotesWarningClosed = false;
-    this.diffOverlay = buildPasteDiffOverlay(text, this.graph);
+    this.diffOverlay = await buildPasteDiffOverlay({
+      text,
+      graph: this.graph,
+      client: this.client,
+      root: this.root,
+    });
+    this.applyDiffSources(this.diffOverlay);
     await this.activateDiffReview(pasteDiffId(text));
     this.pauseHeatForDiff();
     this.ensureDiffZoomFloor();
