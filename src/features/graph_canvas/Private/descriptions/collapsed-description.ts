@@ -3,7 +3,8 @@ import type { GroupNodeData } from "../../../../domain/projection";
 import { PRESETS } from "../../../../domain/layout";
 import { iconFontSize, iconGlyph } from "../nodes/icon-map";
 import { descriptionRegion, type DescRegion } from "./collapsed-description-region";
-export const L0_DESC_FONT = 14;
+import { hasOverlongSegment, wrappedLineCount } from "./wrap-estimate";
+const L0_DESC_FONT = 14;
 const L0_DESC_MAX_FONT = 28;
 const L0_DESC_MIN_FONT = 8;
 export const L0_LABEL_FONT = 15;
@@ -24,7 +25,8 @@ export type CardLabelLayout = {
 };
 
 /** Largest label font (base…floor, counter-scaled) whose word-wrapped title
- *  fits the card; at the floor the title force-wraps instead of overflowing. */
+ *  fits the card — one line first, then word-wrapped; at the floor an
+ *  unwrappable title ellipsizes instead of overflowing. */
 export function collapsedLabelLayout(
   data: GroupNodeData,
   scale: number,
@@ -40,18 +42,24 @@ export function collapsedLabelLayout(
   return forcedLabelLayout(font, width);
 }
 
+/** One horizontal line at any readable size beats a larger wrapped title;
+ *  wrapping is the fallback before the floor ellipsis. */
 function fittedLabel(
   data: GroupNodeData,
   scale: number,
   region: { width: number; height: number },
 ): CardLabelLayout | null {
-  for (let px = L0_LABEL_FONT; px >= L0_LABEL_MIN_FONT; px--) {
-    const font = px * scale;
-    const height = labelLayout(font, region.width).height;
-    const width = childFreeLabelWidth(data, region.width, height);
-    const layout = labelLayoutAt(data, font, width);
-    if (!layout || !fitsCardHeight(layout, region.height)) continue;
-    return layout;
+  for (const layoutAt of [labelLayoutAt, wrappedLabelLayoutAt]) {
+    for (let px = L0_LABEL_FONT; px >= L0_LABEL_MIN_FONT; px--) {
+      const font = px * scale;
+      const height = labelLayout(font, region.width).height;
+      const width = childFreeLabelWidth(data, region.width, height);
+      const layout = layoutAt(data, font, width);
+      if (!layout || !fitsCardHeight(layout, region.height)) continue;
+      // A taller wrapped title can reach a subgroup the one-line row cleared.
+      if (childFreeLabelWidth(data, region.width, layout.height) < width) continue;
+      return layout;
+    }
   }
   return null;
 }
@@ -89,6 +97,19 @@ function labelLayoutAt(
   return labelLayout(font, width);
 }
 
+/** Word-wraps the title in the column beside the header chrome; null when a
+ *  single word cannot fit a line (CSS would overflow it, not wrap it). */
+function wrappedLabelLayoutAt(
+  data: GroupNodeData,
+  font: number,
+  width: number,
+): CardLabelLayout | null {
+  const column = width - labelChromeWidth(data, font);
+  const charsPerLine = Math.floor(column / (font * LABEL_CHAR_RATIO + 0.5));
+  if (charsPerLine < 1 || hasOverlongSegment(data.label, charsPerLine)) return null;
+  return labelLayout(font, width, wrappedLineCount(data.label, charsPerLine));
+}
+
 function forcedLabelLayout(
   font: number,
   width: number,
@@ -96,14 +117,14 @@ function forcedLabelLayout(
   return labelLayout(font, width);
 }
 
-function labelLayout(font: number, width: number): CardLabelLayout {
+function labelLayout(font: number, width: number, lines = 1): CardLabelLayout {
   const chromeScale = font / L0_LABEL_FONT;
   return {
     font,
-    lines: 1,
+    lines,
     chromeScale,
     width,
-    height: Math.max(24 * chromeScale, font * LABEL_LINE_RATIO),
+    height: Math.max(24 * chromeScale, lines * font * LABEL_LINE_RATIO),
   };
 }
 
@@ -154,29 +175,6 @@ function pickDescriptionText(data: GroupNodeData, region: DescRegion, font: numb
 function fitsBox(text: string, region: DescRegion, font: number): boolean {
   const charsPerLine = Math.max(1, Math.floor(region.width / (font * 0.52)));
   const availableLines = Math.floor(region.height / (font * 1.35));
-  if (wrapSegments(text).some((segment) => segment.length > charsPerLine)) return false;
+  if (hasOverlongSegment(text, charsPerLine)) return false;
   return wrappedLineCount(text, charsPerLine) <= availableLines;
-}
-
-function wrappedLineCount(text: string, charsPerLine: number): number {
-  const segments = wrapSegments(text);
-  let lines = 1;
-  let used = 0;
-  let afterHyphen = false;
-  for (const segment of segments) {
-    const gap = used > 0 && !afterHyphen ? 1 : 0;
-    if (used + gap + segment.length <= charsPerLine) {
-      used += gap + segment.length;
-    } else {
-      if (used > 0) lines++;
-      lines += Math.max(0, Math.ceil(segment.length / charsPerLine) - 1);
-      used = segment.length % charsPerLine || charsPerLine;
-    }
-    afterHyphen = segment.endsWith("-");
-  }
-  return lines;
-}
-
-function wrapSegments(text: string): string[] {
-  return text.trim().replace(/-/g, "- ").split(/\s+/).filter(Boolean);
 }

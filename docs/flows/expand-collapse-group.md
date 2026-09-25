@@ -21,7 +21,7 @@ Click a group's upper-left chevron (`data-group-toggle`), double-click a group b
 | 5 | `emit("zoom-changed")` → `useGraphSession` re-render | `use-graph-session.ts` |
 | 6 | `recomputeLayout()` lays out `reduceForLayout` (full graph at L0), republishes `reduceForView` | `graph-session-store.ts` |
 | 7 | `projectGraph` drops modules/symbols whose group chain is still collapsed (`isModuleExpanded`) | `rf-projection.ts` |
-| 8 | `GroupNodeView` renders `CollapsedCard` or `ExpandedHeader` from `data.collapsed` | `GroupNodeView.tsx` |
+| 8 | `GroupNodeView` renders `CollapsedGroupCard` or `ExpandedHeader` from `data.collapsed` | `GroupNodeView.tsx`, `CollapsedGroupCard.tsx` |
 
 ## Reads / Writes
 

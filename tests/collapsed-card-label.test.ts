@@ -83,6 +83,22 @@ describe("L0 collapsed-card title fits its card (regression)", () => {
     expect(layout.lines).toBe(1);
   });
 
+  it("wraps a multi-word title onto several lines when no single line fits", () => {
+    const data = { label: "Data layer", color: "#0ea5e9" };
+    const layout = collapsedLabelLayout(data, /*scale=*/ 1, { width: 90, height: 150 });
+    // Even the 8px floor cannot hold "DATA LAYER" beside the toggle in a 58px
+    // row, but the card has vertical room for "DATA" over "LAYER".
+    expect(layout.lines).toBe(2);
+    expect(layout.font).toBeGreaterThanOrEqual(8);
+    expect(layout.height).toBeGreaterThanOrEqual(2 * layout.font);
+  });
+
+  it("renders a wrapped title without the single-line ellipsis", async () => {
+    const span = await renderCardTitle("Pane local revision list coordination");
+    expect(span.style.whiteSpace).toBe("normal");
+    expect(Number(span.style.webkitLineClamp)).toBeGreaterThan(1);
+  });
+
   it("keeps the description clear of the fitted title", () => {
     const data = {
       label: "Revisions rail",
@@ -166,19 +182,7 @@ describe("L0 collapsed-card title fits its card (regression)", () => {
   });
 
   it("renders the collapsed card title at the fitted font, not the base 15px", async () => {
-    const label = "PaneLocalRevisionListCoordination";
-    const store = testGraphSessionStore({
-      analyzeProject: async () => longTitledGroupGraph(label),
-      readModuleSource: async () => "",
-    });
-    await store.loadProject("/x");
-    store.setZoomLevel(0);
-    renderGraphCanvas(store);
-    const span = await waitFor(/*findCardTitle=*/ () => {
-      const el = screen.getByTitle(label);
-      expect(el).toBeTruthy();
-      return el;
-    });
+    const span = await renderCardTitle("PaneLocalRevisionListCoordination");
     // The wrapping div carries the fitted fontSize; the base counter-scaled
     // font (15px at jsdom's zoom 1) cannot fit this title in its small card.
     const font = parseFloat(span.parentElement!.style.fontSize);
@@ -237,4 +241,16 @@ function longTitledGroupGraph(label: string): ProjectGraph {
     edges: [],
     diagnostics: [],
   } as unknown as ProjectGraph;
+}
+
+/** Renders a one-group graph at L0 and returns its collapsed card title span. */
+async function renderCardTitle(label: string): Promise<HTMLElement> {
+  const store = testGraphSessionStore({
+    analyzeProject: async () => longTitledGroupGraph(label),
+    readModuleSource: async () => "",
+  });
+  await store.loadProject("/x");
+  store.setZoomLevel(0);
+  renderGraphCanvas(store);
+  return waitFor(/*findCardTitle=*/ () => screen.getByTitle(label));
 }

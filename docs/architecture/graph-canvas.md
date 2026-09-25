@@ -282,7 +282,7 @@ hidden by zoom collapse.
     tokens such as `ParsedModule` must fit the measured width instead of being treated as hard-wrapped.
     A spacious card reads large while a tight one stays clear of its subgroup. All geometry stays in world units
     consistent with the scaled font — never an unscaled px cap, which would shrink to a sliver on
-    screen at L0. `CollapsedCard` paints that text with `renderInlineMarkdown` (same as L1):
+    screen at L0. `CollapsedGroupCard` paints that text with `renderInlineMarkdown` (same as L1):
     backticks, emphasis, and `[[wiki-links]]` become HTML; the card `<p>` stays block layout so
     inline tags wrap as prose (see `flexbox-breaks-inline-markdown-flow.md`). The text uses the **darkened group color** (`darken(data.color)`), and its line
     clamp is derived from the region height at the chosen font and applied only
@@ -336,14 +336,16 @@ hidden by zoom collapse.
     group's `descriptionBox` and emits **no** node for it. Collapsed groups get no box (they render their
     own card).
 - **Metadata rendering:** A
-  collapsed group renders a **readable card** (`GroupNodeView` → `CollapsedCard`): a large uppercase
+  collapsed group renders a **readable card** (`GroupNodeView` → `CollapsedGroupCard.tsx`): a large uppercase
   label + icon over a wrapped description (see Group descriptions above). Both font sizes **counter-scale with the live camera
   zoom** (`useStore(s => s.transform[2])`, clamped 1–`MAX_COUNTER_SCALE` = 1/minZoom) so the text stays legible as you zoom out
   to L0 instead of dwindling — a *read* of the camera, which the scroll-zoom oscillation lesson permits
   (it only forbids programmatic camera *writes*). The card **title fits its card**
   (`collapsedLabelLayout`, `collapsed-description.ts`, pure): starting at the counter-scaled 15px
-  base it shrinks to keep the title on one horizontal line; at the 8px screen floor it ellipsizes
-  instead of wrapping vertically. The
+  base it shrinks to keep the title on one horizontal line; only when no size down to the 8px screen
+  floor fits one line does it **word-wrap** (largest font whose wrapped title fits the card height,
+  no word split — `wrap-estimate.ts`; render clamps to `lines`). A single unbreakable word that
+  cannot fit ellipsizes at the floor. The
   header chrome (toggle, gaps, icon) scales **by `font/base`, not the raw camera scale** — otherwise
   a fixed `24 × scale` toggle eats a small card before the text gets any width. When a visible nested
   subgroup is present, projection supplies every visible child rectangle (`childObstacles`). At each
@@ -365,7 +367,7 @@ hidden by zoom collapse.
   headers grow and dominate, module labels shrink with their boxes and always fit. `InspectionPanel` gains a
   `MetadataSection` (`This module` + `Group` annotation: type / short / long), rendering nothing when
   neither side is annotated (graceful fallback, TDD §10). `icon-map` covers the fixture's icon names.
-- **Collapse/expand affordance:** every group renders a real `ToggleButton` (chevron `▾`/`▸`) tagged
+- **Collapse/expand affordance:** every group renders a real `GroupToggleButton` (`GroupToggleButton.tsx`) (chevron `▾`/`▸`) tagged
   `data-group-toggle`. `GraphCanvasController.onNodeClick` inspects the click target (`closest("[data-group-toggle]")`)
   and calls `store.toggleGroup` on a single click; double-clicking anywhere on the group still toggles via
   `onNodeDoubleClick`. Keep the `data-group-toggle` attribute — it's how the controller distinguishes a
