@@ -1,0 +1,4 @@
+{
+  "name": "regex-permissions",
+  "description": "Auto-approves tool commands matching configurable regex patterns (focused tests, linting, git status, etc.)."
+}

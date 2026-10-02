@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-29T00:00:00.000Z",
+  "title": "Design System: CodeChart",
+  "extensions": {
+    "colorMeta": {
+      "canvas-bg": {
+        "role": "neutral",
+        "displayName": "Canvas White",
+        "canonical": "oklch(100% 0 0)",
+        "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#ffffff"]
+      },
+      "chrome-bg": {
+        "role": "neutral",
+        "displayName": "Chrome Mist",
+        "canonical": "oklch(98.4% 0.003 247)",
+        "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#e2e8f0", "#f8fafc"]
+      },
+      "selection": {
+        "role": "primary",
+        "displayName": "Selection Blue",
+        "canonical": "oklch(54.6% 0.215 262)",
+        "tonalRamp": ["#172554", "#1e3a8a", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"]
+      },
+      "edge-import": {
+        "role": "secondary",
+        "displayName": "Import Orange",
+        "canonical": "oklch(57.7% 0.215 41)",
+        "tonalRamp": ["#431407", "#7c2d12", "#c2410c", "#ea580c", "#f97316", "#fb923c", "#fdba74", "#ffedd5"]
+      },
+      "state-violation": {
+        "role": "tertiary",
+        "displayName": "Violation Red",
+        "canonical": "oklch(57.7% 0.215 27)",
+        "tonalRamp": ["#450a0a", "#7f1d1d", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fca5a5", "#fee2e2"]
+      },
+      "state-success": {
+        "role": "tertiary",
+        "displayName": "Diff Green",
+        "canonical": "oklch(62.7% 0.194 149)",
+        "tonalRamp": ["#052e16", "#14532d", "#15803d", "#16a34a", "#22c55e", "#4ade80", "#86efac", "#dcfce7"]
+      }
+    },
+    "typographyMeta": {
+      "body": { "displayName": "Body", "purpose": "Inspector values, descriptions, overlay labels." },
+      "label": { "displayName": "Label", "purpose": "Uppercase section kickers in panels." },
+      "mono": { "displayName": "Mono", "purpose": "Filenames, symbols, L2 source code." }
+    },
+    "shadows": [
+      {
+        "name": "modal",
+        "value": "0 12px 40px #0f172a33",
+        "purpose": "Diff modal and violation dialog only."
+      },
+      {
+        "name": "dropdown",
+        "value": "0 10px 30px #0f172a22",
+        "purpose": "Commit search dropdown list."
+      },
+      {
+        "name": "widget",
+        "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "purpose": "Symbol source preview floating widget."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-soft",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Widget fade-in (disable when prefers-reduced-motion)."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Overlay Chip",
+      "kind": "chip",
+      "refersTo": "overlay-chip",
+      "description": "Canvas overlay badge for zoom level and filters.",
+      "html": "<div class=\"ds-overlay-chip\">L1 · modules</div>",
+      "css": ".ds-overlay-chip { display: inline-block; padding: 3px 8px; font-size: 11px; font-weight: 600; font-family: ui-sans-serif, system-ui, sans-serif; color: #475569; background: #ffffffcc; border: 1px solid #e2e8f0; border-radius: 6px; pointer-events: none; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Inspector and panel secondary control.",
+      "html": "<button type=\"button\" class=\"ds-btn-ghost\">Hide</button>",
+      "css": ".ds-btn-ghost { padding: 2px 6px; font-size: 11px; line-height: 1; color: #475569; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; cursor: pointer; font-family: ui-sans-serif, system-ui, sans-serif; transition: background-color 0.1s; } .ds-btn-ghost:hover { background: #f8fafc; } .ds-btn-ghost:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }"
+    },
+    {
+      "name": "Action Success Button",
+      "kind": "button",
+      "refersTo": "button-action-success",
+      "description": "Primary canvas action (e.g. Visualize diff).",
+      "html": "<button type=\"button\" class=\"ds-btn-action-success\">Visualize diff…</button>",
+      "css": ".ds-btn-action-success { padding: 3px 8px; font-size: 11px; font-family: ui-sans-serif, system-ui, sans-serif; color: #166534; background: #ffffffcc; border: 1px solid #86efac; border-radius: 6px; cursor: pointer; transition: background-color 0.1s; } .ds-btn-action-success:hover { background: #f0fdf4; } .ds-btn-action-success:focus-visible { outline: 2px solid #16a34a; outline-offset: 1px; }"
+    },
+    {
+      "name": "Inspector Panel",
+      "kind": "custom",
+      "refersTo": "inspector-panel",
+      "description": "Right-hand selection detail aside.",
+      "html": "<aside class=\"ds-inspector\"><header class=\"ds-inspector__head\"><span class=\"ds-inspector__label\">Inspector</span></header><p class=\"ds-inspector__body\">Module path and metadata rows.</p></aside>",
+      "css": ".ds-inspector { box-sizing: border-box; padding: 16px; background: #f8fafc; border-left: 1px solid #e2e8f0; font-family: ui-sans-serif, system-ui, sans-serif; color: #334155; min-width: 200px; } .ds-inspector__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; } .ds-inspector__label { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; } .ds-inspector__body { font-size: 12px; color: #64748b; margin: 0; }"
+    },
+    {
+      "name": "Modal Dialog",
+      "kind": "custom",
+      "description": "Diff and violation overlays.",
+      "html": "<div class=\"ds-modal-scrim\"><div class=\"ds-modal\" role=\"dialog\" aria-modal=\"true\"><h2 class=\"ds-modal__title\">Visualize diff</h2><p class=\"ds-modal__body\">Paste unified diff or pick commits.</p></div></div>",
+      "css": ".ds-modal-scrim { position: fixed; inset: 0; background: #0f172a66; display: flex; align-items: center; justify-content: center; padding: 24px; } .ds-modal { background: #fff; border-radius: 8px; padding: 20px 24px; max-width: 560px; width: 100%; box-shadow: 0 12px 40px #0f172a33; font-family: ui-sans-serif, system-ui, sans-serif; } .ds-modal__title { margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #0f172a; } .ds-modal__body { margin: 0; font-size: 13px; color: #475569; line-height: 1.5; }"
+    },
+    {
+      "name": "Symbol Box",
+      "kind": "custom",
+      "description": "L1.5 symbol node on canvas (function variant).",
+      "html": "<div class=\"ds-symbol-box ds-symbol-box--function\"><span class=\"ds-symbol-box__badge\">ƒ</span><span class=\"ds-symbol-box__label\">handleClick</span></div>",
+      "css": ".ds-symbol-box { display: flex; width: 100%; height: 100%; box-sizing: border-box; font-size: 9px; font-family: ui-monospace, \"SF Mono\", Menlo, Consolas, monospace; color: #1e293b; background: #ffffff; border: 1px solid #64748b; border-radius: 3px; overflow: hidden; } .ds-symbol-box--function { background: #f8fbff; border-color: #2563eb; } .ds-symbol-box__badge { flex: 0 0 13px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; background: #dbeafe; color: #1d4ed8; border-right: 1px solid color-mix(in srgb, #2563eb 35%, transparent); } .ds-symbol-box__label { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 0 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Architecture Whiteboard",
+    "overview": "CodeChart looks like a well-lit whiteboard session: white canvas, colored group boundaries, crisp monospace labels on modules, and quiet slate chrome that never competes with the graph. The system teaches structure through spatial layout—groups as regions, edges as drawn relationships, zoom tiers as stepping closer to the board—not through dashboards or decorative UI.",
+    "keyCharacteristics": [
+      "Light, border-defined surfaces; depth from group tint and layout, not shadows.",
+      "System UI sans-serif in chrome; monospace on code identities.",
+      "Semantic color on edges and diagnostics only.",
+      "Small semi-transparent overlay controls over the canvas.",
+      "Symbol kind badges use whisper tints."
+    ],
+    "rules": [
+      { "name": "The Semantic Color Rule", "body": "Accent hues on chrome are rare. Orange, blue, red, and green on the canvas encode edge type, selection, violation, or diff state—never decoration.", "section": "colors" },
+      { "name": "The Group Tint Rule", "body": "Group containers use their configured hue at ~8% opacity fill with a 2px solid border in the full group color.", "section": "colors" },
+      { "name": "The Mono-on-Code Rule", "body": "Anything that names a file, symbol, or line of source uses the monospace stack. Chrome labels stay sans-serif.", "section": "typography" },
+      { "name": "The Flat Canvas Rule", "body": "Module and group nodes on the graph have no box-shadow at rest. Selection uses outline, not elevation.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the canvas white and maximally legible; group color carries identity on the graph.",
+      "Do encode edge and diagnostic meaning with hue plus stroke weight or dash pattern.",
+      "Do use monospace for paths, symbols, and source; sans-serif for explanatory chrome.",
+      "Do respect prefers-reduced-motion for widget animations.",
+      "Do maintain ≥4.5:1 contrast for inspector body text."
+    ],
+    "donts": [
+      "Don't use neon cyber / hacker-terminal aesthetics (glow, matrix green, CRT chrome).",
+      "Don't build over-dense dashboards that compete with the graph.",
+      "Don't rely on color alone for violations or diff states.",
+      "Don't add side-stripe accent borders on inspector rows or alerts.",
+      "Don't pair 1px borders with wide soft shadows on resting buttons or cards.",
+      "Don't round graph containers beyond 10px (groups) or 3px (symbols)."
+    ]
+  }
+}

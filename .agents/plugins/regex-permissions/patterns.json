@@ -1,0 +1,11 @@
+{
+  "allow": [
+    "^npm(\\s+.*)?$",
+    "^npx(\\s+.*)?$",
+    "^cargo(\\s+.*)?$",
+    "^git\\s+(status|diff|log|branch)(\\s+.*)?$",
+    "^pytest(\\s+.*)?$",
+    "^python\\s+-m\\s+pytest(\\s+.*)?$"
+  ],
+  "deny": []
+}
