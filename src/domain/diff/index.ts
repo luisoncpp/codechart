@@ -4,6 +4,7 @@ export { UNCHANGED_MODULE_DIFF_OPACITY } from "./Private/line-diff-types";
 export { compareGraphs } from "./Private/compare-graphs";
 export { pathsFromUnifiedDiff, normalizeDiffPath } from "./Private/parse-unified-diff";
 export { lineDiffsFromUnified } from "./Private/parse-line-diff";
+export { realignHunks } from "./Private/realign-hunks";
 export { parseDiffNotes } from "./Private/parse-diff-notes";
 export { computeLineDiff } from "./Private/compute-line-diff";
 export { detectMovedLines } from "./Private/detect-moved-lines";

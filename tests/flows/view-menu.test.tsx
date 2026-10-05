@@ -177,7 +177,7 @@ describe("flow: view-menu", () => {
 
   it("hides Visualize diff… while a diff overlay is active", async () => {
     const store = await readyGraphStore();
-    store.applyDiffFromPaste(
+    await store.applyDiffFromPaste(
       [
         "diff --git a/src/core/store.ts b/src/core/store.ts",
         "--- a/src/core/store.ts",

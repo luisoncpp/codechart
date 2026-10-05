@@ -6,7 +6,7 @@ import {
 } from "../../../ipc/analysis-client";
 import { GitClient } from "../../../ipc/git-client";
 import type { DiffReviewClient } from "../../../ipc/diff-review-client";
-import type { GraphDiffOverlay } from "../../../domain/diff";
+import { pathsFromUnifiedDiff, realignHunks, type GraphDiffOverlay } from "../../../domain/diff";
 import {
   ProjectGraph,
   projectForZoom,
@@ -286,11 +286,24 @@ export class GraphSessionStore extends EventEmitter {
     if (!this.graph) return;
     this.diffError = null;
     this.diffNotesWarningClosed = false;
-    this.diffOverlay = buildPasteDiffOverlay(text, this.graph);
+    const aligned = realignHunks(text, await this.readPastedDiffSources(text));
+    this.diffOverlay = buildPasteDiffOverlay(aligned, this.graph);
     await this.activateDiffReview(pasteDiffId(text));
     this.pauseHeatForDiff();
     this.ensureDiffZoomFloor();
     this.emit("diff-changed");
+  }
+
+  /** Current sources of the pasted diff's modified files, to correct stale hunk headers. */
+  private async readPastedDiffSources(text: string): Promise<Map<string, string>> {
+    const known = new Set(this.graph?.modules.map((m) => m.path));
+    const paths = pathsFromUnifiedDiff(text).modified.filter((path) => known.has(path));
+    const reads = paths.map(async (path) => {
+      const source = await this.client.readModuleSource(this.root ?? "", path).catch(() => null);
+      return [path, source] as const;
+    });
+    const entries = await Promise.all(reads);
+    return new Map(entries.filter((e): e is [string, string] => e[1] !== null));
   }
 
   select(id: string | null) {
