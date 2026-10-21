@@ -48,6 +48,7 @@ export interface FlushFixtureOpts {
   height?: number;
   nodes?: RFNode[];
   edges?: RFEdgeT[];
+  hideOffscreenArrows?: boolean;
 }
 
 export function setupFlushController(opts: FlushFixtureOpts = {}) {
@@ -92,6 +93,7 @@ export function setupFlushController(opts: FlushFixtureOpts = {}) {
     onEdgesRoot: vi.fn(),
     getEdges: () => edges,
     getNodes: () => nodes,
+    getHideOffscreenArrows: () => opts.hideOffscreenArrows ?? false,
   });
   controller.rebuildFromGeometry();
   onViewportModel.mockClear();

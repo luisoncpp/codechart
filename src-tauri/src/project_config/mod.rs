@@ -56,6 +56,8 @@ pub struct GroupDef {
     pub label: String,
     /// Repo-relative POSIX folder of the `*.group.md` file (`""` = root).
     pub dir: String,
+    /// Repo-relative POSIX path of the `*.group.md` file itself.
+    pub config_path: String,
     pub color: Option<String>,
     pub icon: Option<String>,
     /// `None` = default to `index.ts`/`index.tsx` in `dir`; `Some` = explicit list.

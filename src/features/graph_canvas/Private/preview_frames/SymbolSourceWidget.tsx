@@ -12,6 +12,8 @@ import { FrameContent } from "./FrameBody";
 import { FrameHeader } from "./FrameHeader";
 import { FrameFindBar } from "./FrameFindBar";
 import { useFrameSearch } from "./use-frame-search";
+import { useChangeNavigation } from "./use-change-navigation";
+import { hasLineChanges } from "./change-blocks";
 import { codeMatchesByLine, descriptionRanges, matchCounter } from "./frame-search";
 import { wikiLinkFromEvent, type WikiLinkClick } from "../wiki_links";
 import { FrameContextMenu } from "./FrameContextMenu";
@@ -67,6 +69,8 @@ export function SymbolSourceWidget({
     initialQuery: frame.initialFindQuery,
     enabled: !renderMarkdown,
   });
+  // Rendered markdown has no diff rows to step through.
+  const changes = useChangeNavigation(frameRef, /*enabled=*/ !renderMarkdown && hasLineChanges(fileDiff));
 
   useCenterTargetLine(lineRef, /*line=*/ reviewLine ?? targetLine, frame.sourceText);
   useCenterMarkdownSection({
@@ -142,6 +146,7 @@ export function SymbolSourceWidget({
               }
         }
         diffReview={diffReview}
+        changes={changes}
         actions={{
           onTogglePin: () => handlers.onTogglePin(frame.id),
           onClose: () => handlers.onClose(frame.id),

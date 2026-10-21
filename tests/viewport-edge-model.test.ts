@@ -1,18 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { EdgeDrawStyle, EdgeSegment } from "../src/features/graph_canvas/Private/edges/edge-path";
+import type { EdgeDrawStyle } from "../src/features/graph_canvas/Private/edges/edge-path";
 import { buildStaticEdgeModel } from "../src/features/graph_canvas/Private/edges/viewport-edge-model";
-
-function segment(
-  bounds: Pick<EdgeSegment, "minX" | "minY" | "maxX" | "maxY">,
-  path = "M0,0 L10,10",
-): EdgeSegment {
-  return {
-    path,
-    arrowTip: { x: 10, y: 10, side: "right" },
-    arrowAngle: 0,
-    ...bounds,
-  };
-}
+import { segmentWithBounds as segment } from "./helpers/edge-segment";
 
 const arrowStyle: EdgeDrawStyle = {
   stroke: "#94a3b8",

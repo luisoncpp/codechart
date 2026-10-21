@@ -36,6 +36,9 @@ export interface EdgeSegment {
   minY: number;
   maxX: number;
   maxY: number;
+  /** Endpoint boxes the anchors sit on (target is the group box for a facade retarget). */
+  sourceBox: Box;
+  targetBox: Box;
 }
 
 export function drawStyleFromEdge(edge: RFEdgeT): EdgeDrawStyle {
@@ -115,7 +118,7 @@ export function segmentForEdge(
   const path = floatingPathBetween(from, to, isSoft);
   const arrowAngle = Math.atan2(to.y - from.y, to.x - from.x);
   const bounds = segmentBounds(from, to, isSoft);
-  return { path, arrowTip: to, arrowAngle, ...bounds };
+  return { path, arrowTip: to, arrowAngle, ...bounds, sourceBox, targetBox };
 }
 
 function parseDash(value: unknown): number[] | null {

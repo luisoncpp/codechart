@@ -3,8 +3,6 @@ import { arrowHeadPath } from "./edge-arrow-zoom";
 import { crossHeadPath } from "./edge-cross-head";
 import type { EdgeDrawStyle, EdgeSegment } from "./edge-path";
 import { mergePathD } from "./edge-path-merge";
-import type { WorldRect } from "./edge-viewport";
-import { filterVisibleSegments } from "./edge-viewport";
 import type { ViewportEdgeBucket } from "./viewport-edge-types";
 
 function mergeArrowHeadD(segments: EdgeSegment[]): string {
@@ -17,7 +15,8 @@ function mergeCrossHeadD(segments: EdgeSegment[]): string {
   return segments.map((s) => crossHeadPath(s.arrowTip, s.arrowAngle)).join(" ");
 }
 
-function bucketFromAllSegments(
+/** `segments` are already culled to the clip rect. */
+export function bucketFromSegments(
   style: EdgeDrawStyle,
   segments: EdgeSegment[],
 ): ViewportEdgeBucket {
@@ -35,13 +34,4 @@ function bucketFromAllSegments(
     arrowSegments,
     crossSegments,
   };
-}
-
-export function bucketFromVisibleSegments(
-  style: EdgeDrawStyle,
-  segments: EdgeSegment[],
-  clipRect: WorldRect,
-): ViewportEdgeBucket {
-  const visible = filterVisibleSegments(segments, clipRect);
-  return bucketFromAllSegments(style, visible);
 }

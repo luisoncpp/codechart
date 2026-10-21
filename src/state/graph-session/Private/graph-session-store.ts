@@ -10,7 +10,6 @@ import type { GraphDiffOverlay } from "../../../domain/diff";
 import {
   ProjectGraph,
   projectForZoom,
-  allGroupIds,
   filterTestModules,
   isTestModule,
   defaultDisconnectedSets,
@@ -34,6 +33,7 @@ import {
   expandCollapsedGroupAncestors,
   uncollapseGroupAndAncestors,
 } from "./ensure-node-visible";
+import { l0CollapseSet } from "./l0-collapse-set";
 import { SelectionHistory } from "./selection-history";
 import { FileSourceCache } from "./file-source-cache";
 import { DiffReviewTracker } from "./diff-review-tracker";
@@ -159,6 +159,7 @@ export class GraphSessionStore extends EventEmitter {
     this.diffReview.clear();
     this.restoreDiffSources();
     this.restoreHeatAfterDiff();
+    this.reseedL0Collapse();
     this.emit("diff-changed");
   }
 
@@ -249,7 +250,7 @@ export class GraphSessionStore extends EventEmitter {
       this.applyDiffSources(this.diffOverlay);
       await this.activateDiffReview(commitDiffId(baseRef, headRef));
       this.pauseHeatForDiff();
-      this.ensureDiffZoomFloor();
+      this.reseedL0Collapse();
       this.emit("diff-changed");
     } catch (e) {
       this.diffError = e instanceof Error ? e.message : String(e);
@@ -274,7 +275,7 @@ export class GraphSessionStore extends EventEmitter {
       this.applyDiffSources(this.diffOverlay);
       await this.activateDiffReview(workingTreeDiffId(baseRef));
       this.pauseHeatForDiff();
-      this.ensureDiffZoomFloor();
+      this.reseedL0Collapse();
       this.emit("diff-changed");
     } catch (e) {
       this.diffError = e instanceof Error ? e.message : String(e);
@@ -295,7 +296,7 @@ export class GraphSessionStore extends EventEmitter {
     this.applyDiffSources(this.diffOverlay);
     await this.activateDiffReview(pasteDiffId(text));
     this.pauseHeatForDiff();
-    this.ensureDiffZoomFloor();
+    this.reseedL0Collapse();
     this.emit("diff-changed");
   }
 
@@ -403,13 +404,12 @@ export class GraphSessionStore extends EventEmitter {
 
   /** Switch detail level. Collapse state updates for L0; layout stays fixed (projection-only). */
   setZoomLevel(level: ZoomLevel) {
-    if (this.diffOverlay && level === 0) level = 1;
     if (level === this.zoomLevel) return;
     const prev = this.zoomLevel;
     this.zoomLevel = level;
     const isL0 = level === 0;
     this.collapsedGroupIds =
-      isL0 && this.graph ? new Set(allGroupIds(this.graph)) : new Set();
+      isL0 && this.graph ? l0CollapseSet(this.graph, this.diffOverlay) : new Set();
     this.syncReduced();
     this.emit("zoom-changed");
     if (level === 2 && prev !== 2) {
@@ -635,9 +635,13 @@ export class GraphSessionStore extends EventEmitter {
     this.emit("layout-changed");
   }
 
-  /** Diff mode needs module boxes visible — never stay at L0 bird's-eye. */
-  private ensureDiffZoomFloor() {
-    if (this.zoomLevel === 0) this.setZoomLevel(1);
+  /** The L0 collapse set depends on the diff (diffed groups stay expanded) —
+   *  re-seed it whenever the overlay is applied or cleared. */
+  private reseedL0Collapse() {
+    if (this.zoomLevel !== 0 || !this.graph) return;
+    this.collapsedGroupIds = l0CollapseSet(this.graph, this.diffOverlay);
+    this.syncReduced();
+    this.emit("zoom-changed");
   }
 
   /** L2 source/doc fetch without a full re-layout (footprint is zoom-independent). */

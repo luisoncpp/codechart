@@ -118,6 +118,17 @@ function ArrowVisibilitySubmenu({ ui, current }: ArrowVisibilitySubmenuProps) {
         checked={current === "hide-non-selected-arrows"}
         onSelect={() => ui.setArrowVisibility("hide-non-selected-arrows")}
       />
+      <MenuSeparator />
+      <MenuCheckboxItem
+        label="Hide arrows between off-screen modules"
+        checked={ui.getHideOffscreenArrows()}
+        onChange={(hide) => ui.setHideOffscreenArrows(hide)}
+      />
+      <MenuCheckboxItem
+        label="Show violation arrows (red)"
+        checked={ui.getShowViolationArrows()}
+        onChange={(show) => ui.setShowViolationArrows(show)}
+      />
     </MenuSubmenu>
   );
 }

@@ -12,4 +12,9 @@ tags: Array<string>,
  * target that facade, so one group can export a tagged and an untagged
  * entry point. Only facades with an explicit `tags:` appear here.
  */
-facadeTags: { [key in string]?: Array<string> }, disconnectedByDefault: boolean, disconnectedModuleIds: Array<string>, annotation?: Annotation, architectureDoc?: string, };
+facadeTags: { [key in string]?: Array<string> }, disconnectedByDefault: boolean, disconnectedModuleIds: Array<string>, annotation?: Annotation, architectureDoc?: string, 
+/**
+ * Repo-relative path of the declaring `*.group.md` (absent for inferred
+ * groups) — the base for relative links in the group's description.
+ */
+configPath?: string, };

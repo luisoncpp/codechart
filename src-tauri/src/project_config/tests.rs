@@ -217,3 +217,10 @@ fn root_ignore_excludes_paths_from_group_discovery() {
     assert_eq!(defs[0].id, "root");
     assert!(diagnostics.is_empty());
 }
+
+#[test]
+fn records_the_group_file_path() {
+    // Relative markdown links in a group description resolve against this file.
+    let def = parse_group_def("scripts/sim/sim.group.md", "---\n{}\n---\n").expect("valid");
+    assert_eq!(def.config_path, "scripts/sim/sim.group.md");
+}

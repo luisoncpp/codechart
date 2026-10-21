@@ -5,9 +5,10 @@ import {
   type FrameHandlers,
 } from "../../src/features/graph_canvas/Private/preview_frames/SymbolSourceWidget";
 import type { PreviewFrame } from "../../src/features/graph_canvas/Private/preview_frames/frame-list";
+import type { FileLineDiff } from "../../src/domain/diff";
 
-/** Renders one preview frame; `overrides` replaces any frame field. */
-export function renderPreviewFrame(overrides: Partial<PreviewFrame> = {}) {
+/** Renders one preview frame; `overrides` replaces any frame field, `fileDiff` adds diff rows. */
+export function renderPreviewFrame(overrides: Partial<PreviewFrame> = {}, fileDiff?: FileLineDiff) {
   const frame: PreviewFrame = {
     id: 1,
     moduleId: "m1",
@@ -32,7 +33,7 @@ export function renderPreviewFrame(overrides: Partial<PreviewFrame> = {}) {
     onOpenWikiLink: vi.fn(),
   };
   const utils = render(
-    <SymbolSourceWidget frame={frame} clickableSymbols={new Set()} handlers={handlers} />,
+    <SymbolSourceWidget frame={frame} clickableSymbols={new Set()} fileDiff={fileDiff} handlers={handlers} />,
   );
   return {
     ...utils,

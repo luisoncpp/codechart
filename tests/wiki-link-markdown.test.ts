@@ -41,7 +41,8 @@ describe("wikiLinkExtension", () => {
     expect(html).not.toContain("data-wiki-target");
   });
 
-  it("does not affect ordinary markdown links", () => {
+  it("does not turn ordinary markdown links into wiki links by itself", () => {
+    // `markdownLinkRenderer` does that; this instance only registers the extension.
     const html = render("[label](docs/x.md)");
     expect(html).toContain('href="docs/x.md"');
     expect(html).not.toContain("data-wiki-target");

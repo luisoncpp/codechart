@@ -9,5 +9,5 @@ export {
 } from "./wiki-link-target";
 export { wikiLinkFromEvent, type WikiLinkClick } from "./wiki-link-dom";
 export { findWikiLinks, type WikiLinkSpan } from "./wiki-link-parser";
-export { wikiLinkExtension } from "./wiki-link-markdown";
+export { wikiLinkExtension, markdownLinkRenderer } from "./wiki-link-markdown";
 export { segmentByLinks } from "./wiki-link-segments";

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { stepIndex } from "../highlight/match-stepper";
 import { centerElementInBody } from "./center-in-body";
 import { findFrameMatches, type FrameMatch } from "./frame-search";
+import { targetFrame } from "./frame-target";
 
 interface UseFrameSearchArgs {
   frameRef: React.RefObject<HTMLDivElement | null>;
@@ -14,13 +15,6 @@ interface UseFrameSearchArgs {
   enabled?: boolean;
 }
 
-/** The frame the Ctrl+F press targets: focused frame first, hovered frame else. */
-function targetFrame(): Element | null {
-  return (
-    document.activeElement?.closest(".symbol-widget") ??
-    document.querySelector(".symbol-widget:hover")
-  );
-}
 
 function useOpenShortcut(
   frameRef: React.RefObject<HTMLDivElement | null>,

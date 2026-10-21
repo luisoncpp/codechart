@@ -152,11 +152,10 @@ export function GraphCanvas({
     return reviewNotes ? withReviewCounts(diffed, heatGraph, reviewNotes) : diffed;
   }, [projected, diffOverlay, diffReviewedIds, reviewNotes, reviewNotesDocument, heatGraph]);
 
-  const styledEdges = useStyledEdges(
-    displayProjected,
-    edgeFocus,
-    uiState.getArrowVisibility(),
-  );
+  const styledEdges = useStyledEdges(displayProjected, edgeFocus, {
+    arrowVisibility: uiState.getArrowVisibility(),
+    showViolationArrows: uiState.getShowViolationArrows(),
+  });
 
   if (!displayProjected) return null;
 
@@ -210,7 +209,11 @@ export function GraphCanvas({
         >
           <FitView options={fitOptions} />
           <FocusNode store={store} />
-          <EdgeLayer edges={styledEdges} nodes={nodes} />
+          <EdgeLayer
+            edges={styledEdges}
+            nodes={nodes}
+            hideOffscreenArrows={uiState.getHideOffscreenArrows()}
+          />
           <Background color="#e2e8f0" gap={20} />
           <Controls showInteractive={false} />
         </ReactFlow>

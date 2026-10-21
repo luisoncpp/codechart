@@ -123,6 +123,7 @@ fn build_node(def: &GroupDef, parent_of: &BTreeMap<String, String>, facets: Face
         disconnected_module_ids: facets.disconnected_module_ids,
         annotation: annotation_from(def),
         architecture_doc: def.architecture_doc.clone(),
+        config_path: (!def.config_path.is_empty()).then(|| def.config_path.clone()),
     }
 }
 

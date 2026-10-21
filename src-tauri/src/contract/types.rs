@@ -140,6 +140,11 @@ pub struct GroupNode {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub architecture_doc: Option<String>,
+    /// Repo-relative path of the declaring `*.group.md` (absent for inferred
+    /// groups) — the base for relative links in the group's description.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub config_path: Option<String>,
 }
 
 fn is_false(v: &bool) -> bool {

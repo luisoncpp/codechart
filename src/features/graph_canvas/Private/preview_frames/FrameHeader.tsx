@@ -1,4 +1,4 @@
-// @Architecture(descriptionShort="Preview frame header: title, path, and the pin / raw / find / close actions")
+// @Architecture(descriptionShort="Preview frame header: title, path, and the pin / raw / change / find / close actions")
 import type { PreviewFrame } from "./frame-list";
 
 interface FrameHeaderProps {
@@ -9,6 +9,8 @@ interface FrameHeaderProps {
   find: { open: boolean; toggle: () => void } | null;
   /** Null hides the diff review toggle (shown only when part of an active diff). */
   diffReview?: { reviewed: boolean; toggle: () => void } | null;
+  /** Null hides the previous/next change buttons (file has no diff rows). */
+  changes?: { onStep: (delta: 1 | -1) => void } | null;
   actions: { onTogglePin: () => void; onClose: () => void; onPointerDown: (e: React.PointerEvent) => void };
 }
 
@@ -17,7 +19,30 @@ const toggleClass = (active: boolean) =>
     ? "symbol-widget__find-toggle symbol-widget__find-toggle--active"
     : "symbol-widget__find-toggle";
 
-export function FrameHeader({ frame, rawSource, find, diffReview, actions }: FrameHeaderProps) {
+function ChangeButtons({ onStep }: { onStep: (delta: 1 | -1) => void }) {
+  return (
+    <>
+      <button
+        className={toggleClass(/*active=*/ false)}
+        onClick={() => onStep(-1)}
+        aria-label="Previous change"
+        title="Previous change (Alt+↑)"
+      >
+        ▲
+      </button>
+      <button
+        className={toggleClass(/*active=*/ false)}
+        onClick={() => onStep(1)}
+        aria-label="Next change"
+        title="Next change (Alt+↓)"
+      >
+        ▼
+      </button>
+    </>
+  );
+}
+
+export function FrameHeader({ frame, rawSource, find, diffReview, changes, actions }: FrameHeaderProps) {
   const pinLabel = frame.pinned ? "Unpin frame" : "Pin frame";
   const rawLabel = rawSource?.on ? "Show rendered markdown" : "Show raw source";
 
@@ -62,6 +87,7 @@ export function FrameHeader({ frame, rawSource, find, diffReview, actions }: Fra
             &lt;/&gt;
           </button>
         )}
+        {changes && <ChangeButtons onStep={changes.onStep} />}
         {find && (
           <button
             className={toggleClass(find.open)}

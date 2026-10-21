@@ -70,6 +70,7 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
       ref={lineRef}
       className={`${prefix}__line ${prefix}__line--${row.kind}${active ? ` ${prefix}__line--active` : ""}`}
       data-line={row.lineNumber}
+      data-kind={row.kind}
       title={row.tooltip}
       style={rowStyle(chrome, fontSize)}
     >

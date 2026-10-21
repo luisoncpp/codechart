@@ -3,7 +3,8 @@
 ## Trigger
 
 Click a group's upper-left chevron (`data-group-toggle`), double-click a group box, or a store call
-(`focusOn`, `expandGroup`, `collapseGroup`). At L0 every group starts collapsed.
+(`focusOn`, `expandGroup`, `collapseGroup`). At L0 every group starts collapsed — except, while a diff
+is active, groups holding changed files (`l0CollapseSet`).
 
 ## Entry point
 

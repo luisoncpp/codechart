@@ -12,7 +12,8 @@
         "descriptionShort": "Todo application",
         "descriptionLong": "Top-level container composed from the core, services, and ui groups via group references (not folder ownership), so it claims no leaf module directly — src/main.ts stays ungrouped. Demonstrates membership-by-group-reference and explicit nesting.",
         "icon": "app-window"
-      }
+      },
+      "configPath": "app.group.md"
     },
     {
       "id": "core",
@@ -26,7 +27,8 @@
         "descriptionShort": "Domain types & state",
         "descriptionLong": "Domain model and in-memory state for todos. Pure logic with no I/O or UI. Code outside this group must go through the facade (index.ts); store, todo, and validate are private.",
         "icon": "cube"
-      }
+      },
+      "configPath": "src/core/core.group.md"
     },
     {
       "id": "services",
@@ -40,7 +42,8 @@
         "descriptionShort": "Data access",
         "descriptionLong": "Data access layer. Wraps network calls behind http.ts so the rest of the app never calls fetch directly. Exposes fetchTitles through the facade (index.ts).",
         "icon": "plug"
-      }
+      },
+      "configPath": "src/services/services.group.md"
     },
     {
       "id": "shared",
@@ -53,7 +56,8 @@
         "descriptionShort": "Cross-cutting types",
         "descriptionLong": "Cross-cutting type modules pulled from multiple folders: services/types.ts via a glob (`match`) and core/todo.ts via an explicit `files` entry. The core and services groups cede these files via `exclude`, so claims stay disjoint (no overlap). Declares no facade, so its members are public to every group (drift detection never flags imports into it).",
         "icon": "share"
-      }
+      },
+      "configPath": "shared.group.md"
     },
     {
       "id": "ui",
@@ -67,7 +71,8 @@
         "descriptionShort": "React components",
         "descriptionLong": "React components that render todos. Depends on core and services through their facades. The TodoList component intentionally bypasses the core facade to demonstrate drift detection.",
         "icon": "layout"
-      }
+      },
+      "configPath": "src/ui/ui.group.md"
     }
   ],
   "modules": [

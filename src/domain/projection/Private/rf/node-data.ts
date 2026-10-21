@@ -16,6 +16,8 @@ export interface GroupNodeData extends Record<string, unknown> {
   architectureDoc?: string;
   /** Lazily fetched markdown body for `architectureDoc` (L2 only). */
   architectureDocContent?: string;
+  /** The declaring `*.group.md` — base for relative links in the description. */
+  configPath?: string;
   /** True when this group is rendered collapsed (semantic zoom). */
   collapsed?: boolean;
   /** True when this group's connections are hidden (treated as external). */

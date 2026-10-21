@@ -340,24 +340,35 @@ describe("GraphSessionStore semantic zoom", () => {
     expect(store.getReducedGraph()?.modules.length).toBe(graph.modules.length);
   });
 
-  it("refuses L0 while a diff overlay is active", async () => {
+  it("at L0 during a diff, expands only groups holding changed files", async () => {
     const store = newStore(clientReturning(graph));
     await store.loadProject("/x");
     await store.applyDiffFromPaste("diff --git a/src/core/store.ts b/src/core/store.ts\n");
-    store.setZoomLevel(0);
-    expect(store.getZoomLevel()).toBe(1);
-    expect(store.getCollapsedGroupIds().size).toBe(0);
-    expect(store.getReducedGraph()?.modules.length).toBe(graph.modules.length);
-  });
-
-  it("bumps L0 to L1 when entering diff mode", async () => {
-    const store = newStore(clientReturning(graph));
-    await store.loadProject("/x");
     store.setZoomLevel(0);
     expect(store.getZoomLevel()).toBe(0);
-    await store.applyDiffFromPaste("diff --git a/src/core/store.ts b/src/core/store.ts\n");
-    expect(store.getZoomLevel()).toBe(1);
-    expect(store.getReducedGraph()?.modules.length).toBe(graph.modules.length);
+    expect([...store.getCollapsedGroupIds()].sort()).toEqual(["services", "shared", "ui"]);
+  });
+
+  it("entering diff mode at L0 expands the diffed groups; clearing collapses all", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.setZoomLevel(0);
+    await store.applyDiffFromPaste("diff --git a/src/services/api.ts b/src/services/api.ts\n");
+    expect(store.getZoomLevel()).toBe(0);
+    expect([...store.getCollapsedGroupIds()].sort()).toEqual(["core", "shared", "ui"]);
+    store.clearDiffOverlay();
+    expect(store.getCollapsedGroupIds().size).toBe(graph.groups.length);
+  });
+
+  it("at L0 during a diff, expands the group of a deleted ghost module", async () => {
+    const store = newStore(clientReturning(graph));
+    await store.loadProject("/x");
+    store.setZoomLevel(0);
+    await store.applyDiffFromPaste(
+      "--- a/src/ui/Gone.tsx\n+++ /dev/null\n@@ -1 +0,0 @@\n-x\n",
+    );
+    expect(store.getCollapsedGroupIds().has("ui")).toBe(false);
+    expect(store.getCollapsedGroupIds().has("app")).toBe(false);
   });
 });
 

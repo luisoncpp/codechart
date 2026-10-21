@@ -5,6 +5,7 @@ interface ReviewChecklistProps {
   deletedIds: readonly string[];
   reviewedIds: ReadonlySet<string>;
   onToggle: (moduleId: string) => void;
+  onFocus: (moduleId: string) => void;
   onUnmarkAll: () => void;
 }
 
@@ -14,6 +15,7 @@ export function ReviewChecklist({
   deletedIds,
   reviewedIds,
   onToggle,
+  onFocus,
   onUnmarkAll,
 }: ReviewChecklistProps) {
   const nothingReviewed = reviewedIds.size === 0;
@@ -34,6 +36,7 @@ export function ReviewChecklist({
           moduleId={id}
           reviewed={reviewedIds.has(id)}
           onToggle={onToggle}
+          onFocus={onFocus}
         />
       ))}
       {deletedIds.map((id) => (
@@ -43,6 +46,7 @@ export function ReviewChecklist({
           reviewed={reviewedIds.has(id)}
           deleted
           onToggle={onToggle}
+          onFocus={onFocus}
         />
       ))}
     </div>
@@ -54,23 +58,33 @@ function ChecklistRow({
   reviewed,
   deleted,
   onToggle,
+  onFocus,
 }: {
   moduleId: string;
   reviewed: boolean;
   deleted?: boolean;
   onToggle: (moduleId: string) => void;
+  onFocus: (moduleId: string) => void;
 }) {
   return (
-    <label style={rowStyle} title={moduleId}>
+    <div style={rowStyle}>
       <input
         type="checkbox"
         checked={reviewed}
+        aria-label={`Mark ${moduleId} as reviewed`}
         onChange={() => onToggle(moduleId)}
-        style={{ accentColor: "#16a34a", margin: 0 }}
+        style={{ accentColor: "#16a34a", margin: 0, cursor: "pointer" }}
       />
-      <span style={{ ...pathStyle, opacity: reviewed ? 0.55 : 1 }}>{moduleId}</span>
+      <button
+        type="button"
+        title={`Center on ${moduleId}`}
+        onClick={() => onFocus(moduleId)}
+        style={{ ...pathStyle, opacity: reviewed ? 0.55 : 1 }}
+      >
+        {moduleId}
+      </button>
       {deleted && <span style={{ color: "#dc2626", fontSize: 10 }}>(deleted)</span>}
-    </label>
+    </div>
   );
 }
 
@@ -113,11 +127,18 @@ const rowStyle: React.CSSProperties = {
   padding: "3px 6px",
   borderRadius: 4,
   fontSize: 11,
-  cursor: "pointer",
 };
 
 const pathStyle: React.CSSProperties = {
   flex: 1,
+  minWidth: 0,
+  padding: 0,
+  textAlign: "left",
+  fontSize: 11,
+  color: "inherit",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",

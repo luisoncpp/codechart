@@ -1,12 +1,12 @@
 // @Architecture(descriptionShort="Cached Markdown parsing for descriptions with wiki-link support")
 import { Marked } from "marked";
-import { wikiLinkExtension } from "../wiki_links";
+import { markdownLinkRenderer, wikiLinkExtension } from "../wiki_links";
 
 const inlineMarkdown = new Marked({ async: false })
-  .use({ extensions: [wikiLinkExtension] });
+  .use({ extensions: [wikiLinkExtension], renderer: markdownLinkRenderer });
 
 const blockMarkdown = new Marked({ async: false })
-  .use({ extensions: [wikiLinkExtension] });
+  .use({ extensions: [wikiLinkExtension], renderer: markdownLinkRenderer });
 
 const inlineCache = new Map<string, string>();
 const blockCache = new Map<string, string>();

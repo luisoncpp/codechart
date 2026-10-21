@@ -47,6 +47,7 @@ export function DiffOverlayBar({ store, onStop }: DiffOverlayBarProps) {
           deletedIds={deleted}
           reviewedIds={reviewedIds}
           onToggle={(moduleId: string) => store.toggleDiffReviewed(moduleId)}
+          onFocus={(moduleId: string) => void store.focusOn(moduleId)}
           onUnmarkAll={() => store.unmarkAllDiffReviewed()}
         />
       )}

@@ -23,6 +23,8 @@ export class CanvasUiState {
   private diffModalOpen = false;
   private lineCountsVisible = false;
   private arrowVisibility: ArrowVisibility = "all";
+  private hideOffscreenArrows = true;
+  private showViolationArrows = true;
   private listeners: Listener[] = [];
 
 
@@ -89,6 +91,28 @@ export class CanvasUiState {
   setArrowVisibility(visibility: ArrowVisibility) {
     if (this.arrowVisibility === visibility) return;
     this.arrowVisibility = visibility;
+    this.emit();
+  }
+
+  /** On by default: edges whose two endpoints are off-screen are clutter. */
+  getHideOffscreenArrows(): boolean {
+    return this.hideOffscreenArrows;
+  }
+
+  setHideOffscreenArrows(hide: boolean) {
+    if (this.hideOffscreenArrows === hide) return;
+    this.hideOffscreenArrows = hide;
+    this.emit();
+  }
+
+  /** On by default: red edges flag layering violations / circular includes. */
+  getShowViolationArrows(): boolean {
+    return this.showViolationArrows;
+  }
+
+  setShowViolationArrows(show: boolean) {
+    if (this.showViolationArrows === show) return;
+    this.showViolationArrows = show;
     this.emit();
   }
 

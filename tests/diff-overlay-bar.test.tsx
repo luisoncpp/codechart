@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { DiffOverlayBar } from "../src/features/diff_visualizer";
 import { GraphSessionStore } from "../src/state/graph-session";
 import { createMockAnalysisClient } from "../src/ipc/analysis-client";
@@ -31,6 +31,19 @@ describe("DiffOverlayBar review checklist", () => {
 
     expect(store.getDiffReviewedIds().has("src/core/store.ts")).toBe(true);
     expect(screen.getByRole("button", { name: /Reviewed 1\/1/ })).toBeTruthy();
+  });
+
+  it("centers on a file when its checklist path is clicked, keeping the list open", async () => {
+    const store = await storeWithDiff();
+    render(<DiffOverlayBar store={store} onStop={() => {}} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Reviewed 0\/1/ }));
+    fireEvent.click(screen.getByRole("button", { name: "src/core/store.ts" }));
+    await waitFor(() => expect(store.getFocusRequest()?.id).toBe("src/core/store.ts"));
+
+    expect(store.getSelectedId()).toBe("src/core/store.ts");
+    expect(store.getDiffReviewedIds().size).toBe(0);
+    expect(screen.getByRole("group", { name: /diff review checklist/i })).toBeTruthy();
   });
 
   it("unmarks all files from the top of the checklist", async () => {

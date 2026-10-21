@@ -77,11 +77,11 @@ describe("GraphCanvasController.onViewportZoom", () => {
     expect(store.setZoomLevel).toHaveBeenCalledWith(0);
   });
 
-  it("floors at L1 when diff overlay is active", () => {
+  it("still reaches L0 when diff overlay is active", () => {
     const store = spyGraphCanvasStore();
     store.getDiffOverlay.mockReturnValue({ moduleStates: new Map() });
     new GraphCanvasController(store as unknown as GraphSessionStore).onViewportZoom(0.3);
-    expect(store.setZoomLevel).toHaveBeenCalledWith(1);
+    expect(store.setZoomLevel).toHaveBeenCalledWith(0);
   });
 
   it("uses the current level to stabilize live viewport updates", () => {
