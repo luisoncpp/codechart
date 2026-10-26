@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
   buildModuleDiffDisplay,
   type DiffDisplayRow,
@@ -7,7 +7,7 @@ import {
 } from "../../../../domain/diff";
 import type { Token } from "./highlighter-types";
 import { LineTokenizer } from "./line-tokenizer";
-import type { LineMatchRange } from "./match-highlight";
+import type { ActiveMatch, LineMatchRange } from "./match-highlight";
 import { DiffRowItem } from "./DiffRowItem";
 import type { RowChrome } from "./row-chrome";
 import { findWikiLinks, isMarkdownPath, type WikiLinkSpan } from "../wiki_links";
@@ -28,6 +28,8 @@ interface DiffCodeLinesProps {
   clickableNames?: ReadonlySet<string>;
   /** Find-in-frame match ranges keyed by 1-based line number. */
   matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
+  /** Which match in `matchesByLine` is active (`--active`, `activeMatchRef`). */
+  activeMatch?: ActiveMatch;
   /** Attached to the currently active find-in-frame match span. */
   activeMatchRef?: React.RefObject<HTMLElement | null>;
 }
@@ -42,11 +44,19 @@ export function DiffCodeLines(props: DiffCodeLinesProps) {
   const tokenized = useMemo(() => tokenizeRows(rows, path), [rows, path]);
   const wikiLinks = useMemo(() => wikiLinksPerRow(rows), [rows]);
   const numberDigits = useMemo(() => gutterDigits(rows), [rows]);
-  const chrome = rowChrome(props, numberDigits);
-  const onLineClick = reviewNotes
-    ? /*start or extend a Review Note draft*/ (line: number, extend: boolean) =>
-        selectReviewLine(reviewNotes, source, path, line, extend)
-    : undefined;
+  // Stable `chrome` / `onLineClick` let memoized `DiffCodeLine` rows skip re-rendering.
+  const { zoom, lineClassPrefix, wrapLines } = props;
+  const chrome = useMemo(
+    /*buildRowChrome*/ () => rowChrome({ path, zoom, lineClassPrefix, wrapLines }, numberDigits),
+    [path, zoom, lineClassPrefix, wrapLines, numberDigits],
+  );
+  const selectLine = useCallback(
+    /*startOrExtendReviewNoteDraft*/ (line: number, extend: boolean) => {
+      if (reviewNotes) selectReviewLine(reviewNotes, source, path, line, extend);
+    },
+    [reviewNotes, source, path],
+  );
+  const onLineClick = reviewNotes ? selectLine : undefined;
   return (
     <>
       {rows.map((row, idx) => (
@@ -54,7 +64,8 @@ export function DiffCodeLines(props: DiffCodeLinesProps) {
           key={idx} row={row} tokens={tokenized[idx]!} links={wikiLinks[idx]!}
           chrome={chrome} clickableNames={props.clickableNames}
           activeLine={props.activeLine} activeLineRef={props.activeLineRef}
-          matchesByLine={props.matchesByLine} activeMatchRef={props.activeMatchRef}
+          matchesByLine={props.matchesByLine} activeMatch={props.activeMatch}
+          activeMatchRef={props.activeMatchRef}
           notes={notes} draft={draft} diffNotes={diffNotes}
           onLineClick={onLineClick}
         />
@@ -64,7 +75,10 @@ export function DiffCodeLines(props: DiffCodeLinesProps) {
 }
 
 /** The values every row of this document shares, built once per render. */
-function rowChrome(props: DiffCodeLinesProps, numberDigits: number): RowChrome {
+function rowChrome(
+  props: Pick<DiffCodeLinesProps, "path" | "zoom" | "lineClassPrefix" | "wrapLines">,
+  numberDigits: number,
+): RowChrome {
   return {
     zoom: props.zoom ?? 1,
     prefix: props.lineClassPrefix ?? "diff-code",

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import type { DiffNote, FileLineDiff } from "../../../../domain/diff";
 import { DiffCodeLines } from "../highlight/DiffCodeLines";
-import { segmentTokenText, type LineMatchRange } from "../highlight/match-highlight";
+import { segmentTokenText, type ActiveMatch, type LineMatchRange } from "../highlight/match-highlight";
 import { renderBlockMarkdown } from "../descriptions/render-markdown";
 
 interface DescriptionProps {
@@ -112,6 +112,7 @@ interface CodeBlockProps {
   /** Soft-wrap long rows instead of scrolling sideways (preview frames). */
   wrapLines?: boolean;
   matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
+  activeMatch?: ActiveMatch;
   activeMatchRef?: React.RefObject<HTMLElement | null>;
   activeLine?: number;
   activeLineRef?: React.RefObject<HTMLDivElement | null>;
@@ -127,6 +128,7 @@ export const L2CodeBlock = memo(function L2CodeBlock({
   lineClassPrefix,
   wrapLines,
   matchesByLine,
+  activeMatch,
   activeMatchRef,
   activeLine,
   activeLineRef,
@@ -176,6 +178,7 @@ export const L2CodeBlock = memo(function L2CodeBlock({
             wrapLines={wrapLines}
             clickableNames={clickableNames}
             matchesByLine={matchesByLine}
+            activeMatch={activeMatch}
             activeMatchRef={activeMatchRef}
             activeLine={activeLine}
             activeLineRef={activeLineRef}

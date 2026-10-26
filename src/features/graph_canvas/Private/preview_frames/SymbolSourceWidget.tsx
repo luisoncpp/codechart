@@ -14,7 +14,7 @@ import { FrameFindBar } from "./FrameFindBar";
 import { useFrameSearch } from "./use-frame-search";
 import { useChangeNavigation } from "./use-change-navigation";
 import { hasLineChanges } from "./change-blocks";
-import { codeMatchesByLine, descriptionRanges, matchCounter } from "./frame-search";
+import { matchCounter } from "./frame-search";
 import { wikiLinkFromEvent, type WikiLinkClick } from "../wiki_links";
 import { FrameContextMenu } from "./FrameContextMenu";
 import { useFrameCopyMenu } from "./use-frame-copy-menu";
@@ -177,11 +177,7 @@ export function SymbolSourceWidget({
           renderMarkdown={renderMarkdown}
           targetLine={targetLine}
           lineRef={lineRef}
-          matchProps={{
-            matchesByLine: codeMatchesByLine(search.matches, search.activeIndex),
-            descriptionRanges: descriptionRanges(search.matches, search.activeIndex),
-            activeMatchRef: search.activeMatchRef,
-          }}
+          matchProps={search.matchProps}
         />
       </div>
       <FrameContextMenu menu={copyMenu.menu} onClose={copyMenu.closeMenu} />

@@ -1,12 +1,13 @@
 // @Architecture(descriptionShort="One rendered code row: gutter, line number, and syntax tokens")
+import { memo } from "react";
 import type { DiffDisplayRow } from "../../../../domain/diff";
 import type { Token } from "./highlighter-types";
-import type { LineMatchRange } from "./match-highlight";
+import { flagActiveRange, type LineMatchRange } from "./match-highlight";
 import { TokenText } from "./TokenText";
 import type { RowChrome } from "./row-chrome";
 import type { WikiLinkSpan } from "../wiki_links";
 
-export interface DiffCodeLineProps {
+interface DiffCodeLineProps {
   row: DiffDisplayRow;
   tokens: Token[];
   /** Everything that is the same for every row of this document. */
@@ -18,6 +19,8 @@ export interface DiffCodeLineProps {
   anchored?: boolean;
   onLineClick?: (line: number, extend: boolean) => void;
   matchRanges?: readonly LineMatchRange[];
+  /** Start column of the active find match when it is on this row. */
+  activeMatchCol?: number;
   activeMatchRef?: React.RefObject<HTMLElement | null>;
 }
 
@@ -61,7 +64,11 @@ function lineNumberStyle(chrome: RowChrome, fontSize: number): React.CSSProperti
   };
 }
 
-export function DiffCodeLine(props: DiffCodeLineProps) {
+/**
+ * Memoized: a preview frame re-renders on every find keystroke, and only rows
+ * whose own props changed (match ranges, active match) should redo tokens.
+ */
+export const DiffCodeLine = memo(function DiffCodeLine(props: DiffCodeLineProps) {
   const { row, chrome, active, lineRef, anchored, onLineClick } = props;
   const { prefix } = chrome;
   const fontSize = 12.5 / chrome.zoom;
@@ -87,7 +94,7 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
       </span>
     </div>
   );
-}
+});
 
 /** The `+` / `-` / blank column left of the line number. */
 function GutterMark({ kind, chrome }: { kind: DiffDisplayRow["kind"]; chrome: RowChrome }) {
@@ -134,8 +141,9 @@ function LineNumber({ prefix, kind, lineNumber, style, onLineClick }: LineNumber
 }
 
 /** The row's tokens, each wrapping its own link/match sub-spans. */
-function LineTokens({ tokens, chrome, clickableNames, links, matchRanges, activeMatchRef }: DiffCodeLineProps) {
+function LineTokens({ tokens, chrome, clickableNames, links, matchRanges, activeMatchCol, activeMatchRef }: DiffCodeLineProps) {
   if (tokens.length === 0) return <> </>;
+  const ranges = flagActiveRange(matchRanges, activeMatchCol);
   let tokenStart = 0;
   return (
     <>
@@ -150,7 +158,7 @@ function LineTokens({ tokens, chrome, clickableNames, links, matchRanges, active
               tokenStart={start}
               path={chrome.path}
               links={linkable ? links : undefined}
-              matchRanges={matchRanges}
+              matchRanges={ranges}
               activeMatchRef={activeMatchRef}
             />
           </span>

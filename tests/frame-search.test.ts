@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { flagActiveRange } from "../src/features/graph_canvas/Private/highlight/match-highlight";
 import {
+  activeCodeMatch,
   codeMatchesByLine,
   descriptionRanges,
   findFrameMatches,
@@ -40,19 +42,43 @@ describe("findFrameMatches", () => {
 });
 
 describe("codeMatchesByLine", () => {
-  it("groups by line and flags only the active match", () => {
+  it("groups by line without flagging any match active", () => {
     const matches = findFrameMatches({ sourceText: SOURCE, query: "foo" });
-    const byLine = codeMatchesByLine(matches, /*activeIndex=*/2);
+    const byLine = codeMatchesByLine(matches);
     expect(byLine.get(1)).toEqual([{ startCol: 6, endCol: 9, active: false }]);
     expect(byLine.get(2)).toEqual([
       { startCol: 0, endCol: 3, active: false },
-      { startCol: 4, endCol: 7, active: true },
+      { startCol: 4, endCol: 7, active: false },
     ]);
   });
 
   it("skips description matches", () => {
     const matches = findFrameMatches({ description: "foo", sourceText: "bar", query: "foo" });
-    expect(codeMatchesByLine(matches, 0).size).toBe(0);
+    expect(codeMatchesByLine(matches).size).toBe(0);
+  });
+});
+
+describe("activeCodeMatch", () => {
+  it("locates the active code match", () => {
+    const matches = findFrameMatches({ sourceText: SOURCE, query: "foo" });
+    expect(activeCodeMatch(matches, /*activeIndex=*/2)).toEqual({ line: 2, startCol: 4 });
+  });
+
+  it("is undefined for a description match or no match", () => {
+    const matches = findFrameMatches({ description: "foo", sourceText: "foo", query: "foo" });
+    expect(activeCodeMatch(matches, /*activeIndex=*/0)).toBeUndefined();
+    expect(activeCodeMatch([], /*activeIndex=*/0)).toBeUndefined();
+  });
+});
+
+describe("flagActiveRange", () => {
+  it("flags only the range starting at the active column", () => {
+    const ranges = [
+      { startCol: 0, endCol: 3, active: false },
+      { startCol: 4, endCol: 7, active: false },
+    ];
+    expect(flagActiveRange(ranges, /*activeCol=*/4)!.map((r) => r.active)).toEqual([false, true]);
+    expect(flagActiveRange(ranges, /*activeCol=*/undefined)).toBe(ranges);
   });
 });
 

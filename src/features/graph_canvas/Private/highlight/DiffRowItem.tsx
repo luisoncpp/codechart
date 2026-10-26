@@ -2,7 +2,7 @@
 import { Fragment } from "react";
 import type { DiffDisplayRow, DiffNote } from "../../../../domain/diff";
 import type { Token } from "./highlighter-types";
-import type { LineMatchRange } from "./match-highlight";
+import type { ActiveMatch, LineMatchRange } from "./match-highlight";
 import { DiffCodeLine } from "./DiffCodeLine";
 import type { RowChrome } from "./row-chrome";
 import type { WikiLinkSpan } from "../wiki_links";
@@ -19,6 +19,7 @@ export interface DiffRowItemProps {
   activeLineRef?: React.RefObject<HTMLDivElement | null>;
   clickableNames?: ReadonlySet<string>;
   matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
+  activeMatch?: ActiveMatch;
   activeMatchRef?: React.RefObject<HTMLElement | null>;
   notes: any[];
   draft: any;
@@ -61,7 +62,10 @@ function CurrentRowItem(props: DiffRowItemProps) {
         row={row} tokens={tokens} chrome={chrome} links={links}
         active={isActive} lineRef={isActive ? props.activeLineRef : undefined}
         clickableNames={clickableNames}
+        // Row-local slices only: `DiffCodeLine` is memoized, so a whole-document
+        // value here would re-render every row on every find keystroke.
         matchRanges={props.matchesByLine?.get(line)} activeMatchRef={props.activeMatchRef}
+        activeMatchCol={props.activeMatch?.line === line ? props.activeMatch.startCol : undefined}
         anchored={isAnchored}
         onLineClick={props.onLineClick}
       />

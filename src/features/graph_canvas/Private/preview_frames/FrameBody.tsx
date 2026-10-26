@@ -3,11 +3,12 @@ import type { DiffNote, FileLineDiff } from "../../../../domain/diff";
 import { DiffCodeLines } from "../highlight/DiffCodeLines";
 import { L2CodeBlock, L2Description } from "../l2/L2Content";
 import { MarkdownBody, markdownBodyStyles } from "../l2/MarkdownBody";
-import type { LineMatchRange } from "../highlight/match-highlight";
+import type { ActiveMatch, LineMatchRange } from "../highlight/match-highlight";
 import type { PreviewFrame } from "./frame-list";
 
-interface FrameMatchProps {
+export interface FrameMatchProps {
   matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
+  activeMatch?: ActiveMatch;
   descriptionRanges?: readonly LineMatchRange[];
   activeMatchRef?: React.RefObject<HTMLElement | null>;
 }
@@ -59,6 +60,7 @@ function SymbolCode(
         activeLineRef={props.lineRef}
         clickableNames={props.clickableSymbols}
         matchesByLine={props.matchProps.matchesByLine}
+        activeMatch={props.matchProps.activeMatch}
         activeMatchRef={props.matchProps.activeMatchRef}
       />
     </pre>
@@ -93,6 +95,7 @@ function DocumentContent({
         lineClassPrefix="symbol-widget"
         wrapLines
         matchesByLine={matchProps.matchesByLine}
+        activeMatch={matchProps.activeMatch}
         activeMatchRef={matchProps.activeMatchRef}
         activeLine={highlightLine}
         activeLineRef={lineRef}

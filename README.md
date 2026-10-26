@@ -190,6 +190,7 @@ npm install
 - `npm run check` — ESLint, typecheck, Vitest, and Rust `cargo test` (regenerates `ProjectGraph` TypeScript bindings via `ts-rs`).
 - `npm run build` — compiles TypeScript and builds the Vite production bundle.
 - `npm run dist:win` — builds Windows `.msi` and `.nsis` installers.
+- `npm run clean:target` — caps `src-tauri/target` at 2.5 GB with `cargo sweep` (install once: `cargo install cargo-sweep`). It runs automatically after `npm run check:rust` and `npm run tauri …`; `npm run dist:win` also deletes release build intermediates and keeps the installers. See [cargo-target-never-shrinks-on-its-own](docs/lessons-learned/cargo-target-never-shrinks-on-its-own.md).
 - `npm test` — runs the Vitest suite.
 
 ### CLI (Rust)

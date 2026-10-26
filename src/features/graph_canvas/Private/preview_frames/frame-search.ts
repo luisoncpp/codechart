@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="Pure find-in-frame matching over a frame's description and source text")
-import type { LineMatchRange } from "../highlight/match-highlight";
+import type { ActiveMatch, LineMatchRange } from "../highlight/match-highlight";
 
 /** One in-frame match. `line` is 1-based for code, always 0 for description. */
 export interface FrameMatch {
@@ -47,19 +47,31 @@ function collectLineMatches(text: string, needle: string, onMatch: (start: numbe
   }
 }
 
-/** Code matches grouped by 1-based line, with the active match flagged. */
+/**
+ * Code matches grouped by 1-based line, none flagged active: the result only
+ * depends on `matches`, so it stays the same while the active match moves.
+ */
 export function codeMatchesByLine(
   matches: readonly FrameMatch[],
-  activeIndex: number,
 ): ReadonlyMap<number, readonly LineMatchRange[]> {
   const byLine = new Map<number, LineMatchRange[]>();
-  matches.forEach((match, idx) => {
-    if (match.region !== "code") return;
+  for (const match of matches) {
+    if (match.region !== "code") continue;
     const ranges = byLine.get(match.line) ?? [];
-    ranges.push({ startCol: match.startCol, endCol: match.endCol, active: idx === activeIndex });
+    ranges.push({ startCol: match.startCol, endCol: match.endCol, active: false });
     byLine.set(match.line, ranges);
-  });
+  }
   return byLine;
+}
+
+/** The active match's code position, or none when it is in the description. */
+export function activeCodeMatch(
+  matches: readonly FrameMatch[],
+  activeIndex: number,
+): ActiveMatch | undefined {
+  const match = matches[activeIndex];
+  if (match?.region !== "code") return undefined;
+  return { line: match.line, startCol: match.startCol };
 }
 
 /** Description-region ranges (columns index the description string). */

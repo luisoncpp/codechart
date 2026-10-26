@@ -24,6 +24,11 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "windows": {
+      "wix": {
+        "version": "26.9.21"
+      }
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

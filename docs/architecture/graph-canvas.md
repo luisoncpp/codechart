@@ -456,7 +456,11 @@ hidden by zoom collapse.
 - **Find in frame (Ctrl/Cmd+F):** each frame has its own find bar (header `⌕` icon, or Ctrl/Cmd+F
   targeting the focused frame first, else the hovered one; unclaimed presses fall through to the
   browser — the global project search stays on Ctrl+Shift+F). All find state is component-local in
-  `use-frame-search.ts` (never the store or `usePreviewFrames`) — synchronous, no debounce/IPC.
+  `use-frame-search.ts` (never the store or `usePreviewFrames`) — no debounce/IPC; matches follow
+  `useDeferredValue(query)` so the input never waits on highlighting. **`DiffCodeLine` is `memo`ized**
+  and must receive only per-row props (its own `matchRanges`, `activeMatchCol`, stable `chrome` /
+  `onLineClick`); the active match travels separately (`ActiveMatch`) from the per-line ranges so
+  stepping re-renders two rows, not every matched row.
   Matching is pure (`frame-search.ts`): case-insensitive non-overlapping substrings over the frame's
   `sourceText` plus, on document frames, the description (description matches come first in
   navigation order). Highlights render by **nesting** `hl-match`/`hl-match--active` spans *inside*
