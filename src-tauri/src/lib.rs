@@ -30,12 +30,18 @@ pub use unreal_config::{
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let startup_path =
-        startup_args::parse_startup_project_path(&std::env::args().collect::<Vec<String>>());
+    let args: Vec<String> = std::env::args().collect();
+    let env_project = std::env::var("CODECHART_STARTUP_PROJECT").ok();
+    let startup_path = startup_args::resolve_startup_project_path(&args, env_project.as_deref());
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(startup_args::StartupProjectPath(startup_path))
+        .setup(|_app| {
+            #[cfg(debug_assertions)]
+            apply_debug_window_size(_app);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             tauri_api::get_startup_project_path,
             tauri_api::analyze_project,
@@ -55,7 +61,22 @@ pub fn run() {
             tauri_api::save_diff_review,
             tauri_api::clear_diff_reviews,
             tauri_api::toggle_devtools,
+            tauri_api::set_window_size,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(debug_assertions)]
+fn apply_debug_window_size(app: &tauri::App) {
+    use tauri::Manager;
+    let Ok(raw) = std::env::var("CODECHART_WINDOW_SIZE") else {
+        return;
+    };
+    let Some((width, height)) = startup_args::parse_window_size(&raw) else {
+        return;
+    };
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_size(tauri::LogicalSize::new(width, height));
+    }
 }

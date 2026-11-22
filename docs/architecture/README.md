@@ -22,4 +22,5 @@ Covers only what's already implemented. For architecture docs of not implemented
 | [diff-notes.md](./diff-notes.md) | Diff Notes | Read-only markdown explanations consumed from `#` marker lines in pasted diffs |
 | [project-search.md](./project-search.md) | `search` (Rust) + `project_search` find bar | Ctrl+Shift+F content search, Ctrl+P file search, and Search ▾ exported-symbol search; match navigation via `focusOn` |
 | [help-menu.md](./help-menu.md) | `help_menu` | Toolbar Help dropdown menu and rendered Markdown documentation modals with Copy for LLMs |
+| [playtest-mcp.md](./playtest-mcp.md) | `playtest_mcp` + dev playtest bridge | Node 24 MCP server driving the real Tauri WebView2 app over CDP for assistant playtesting and screenshots |
 

@@ -23,6 +23,10 @@ import { useStyledEdges } from "./edges/use-styled-edges";
 import { FitView } from "./navigation/FitView";
 import { fitOptionsForLevel } from "./navigation/fit-options";
 import { FocusNode } from "./navigation/FocusNode";
+import {
+  ViewportBridge,
+  type CanvasViewportHandle,
+} from "./navigation/ViewportBridge";
 import { CANVAS_MIN_ZOOM } from "./nodes/use-zoom-counter-scale";
 import { GraphCanvasController } from "./controller/graph-canvas-controller";
 import { usePreviewFrames } from "./preview_frames";
@@ -43,6 +47,7 @@ interface GraphCanvasProps {
   ui: CanvasUiState;
   reviewNotes?: ReviewNotesStore;
   onShowReviewNotes?: () => void;
+  onViewportReady?: (handle: CanvasViewportHandle | null) => void;
 }
 
 export function GraphCanvas({
@@ -53,6 +58,7 @@ export function GraphCanvas({
   ui,
   reviewNotes,
   onShowReviewNotes,
+  onViewportReady,
 }: GraphCanvasProps) {
   const session = useGraphSession(store);
   const uiState = useCanvasUiState(ui);
@@ -209,6 +215,7 @@ export function GraphCanvas({
         >
           <FitView options={fitOptions} />
           <FocusNode store={store} />
+          <ViewportBridge onReady={onViewportReady} />
           <EdgeLayer
             edges={styledEdges}
             nodes={nodes}

@@ -67,4 +67,5 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [change-metrics-timeframe.md](./change-metrics-timeframe.md) | Click the heatmap's timeframe label → choose days → recompute Git activity/risk metrics |
 | [toggle-arrow-visibility.md](./toggle-arrow-visibility.md) | View ▾ menu → toggle arrow visibility: show all, hide non-selected arrowheads, or hide non-selected arrows; plus the default-on "hide arrows between off-screen modules" (idle clip rebuild) and "show violation arrows (red)" checkboxes |
 | [open-help-topic.md](./open-help-topic.md) | Help ▾ menu → choose topic → open rendered Markdown doc modal + copy to clipboard for LLMs |
+| [playtest-via-mcp.md](./playtest-via-mcp.md) | Assistant MCP `launch_app` → WebView2 CDP inputs/bridge → `screenshot` → `close_app` |
 

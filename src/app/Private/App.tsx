@@ -26,6 +26,7 @@ import {
 import { useOpenStartupProject } from "./use-open-startup-project";
 import { useHidePlugins } from "./use-hide-plugins";
 import { useDevtoolsShortcut } from "./use-devtools-shortcut";
+import { usePlaytestBridge } from "./use-playtest-bridge";
 
 export function App() {
   const devtools = useMemo(/*build devtools client*/ () => createTauriDevtoolsClient(), []);
@@ -80,6 +81,12 @@ export function App() {
   const [inspectorOpen, setInspectorOpen] = useState(/*defaultOpen=*/true);
   const [inspectorWidth, setInspectorWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
   const [activeTab, setActiveTab] = useState<"inspector" | "review-notes">("inspector");
+  const onViewportReady = usePlaytestBridge({
+    store,
+    ui: canvasUi,
+    devtools,
+    inspector: { open: inspectorOpen, width: inspectorWidth, activeTab },
+  });
 
   useEffect(() => {
     const graph = session.getGraph();
@@ -135,7 +142,7 @@ export function App() {
         <ReviewNotesProvider store={reviewNotes}>
         <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
           <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
-            <GraphCanvas store={store} git={git} shell={shell} editor={editor} ui={canvasUi} reviewNotes={reviewNotes} onShowReviewNotes={() => { setInspectorOpen(true); setActiveTab("review-notes"); }} />
+            <GraphCanvas store={store} git={git} shell={shell} editor={editor} ui={canvasUi} reviewNotes={reviewNotes} onShowReviewNotes={() => { setInspectorOpen(true); setActiveTab("review-notes"); }} onViewportReady={onViewportReady} />
           </div>
           {inspectorOpen ? (
             <InspectionPanel

@@ -224,5 +224,16 @@ pub fn toggle_devtools(window: tauri::WebviewWindow) {
     }
 }
 
+/// Resize the main window in logical pixels (used by dev playtesting).
+#[tauri::command]
+pub fn set_window_size(window: tauri::WebviewWindow, width: f64, height: f64) -> Result<(), String> {
+    if !width.is_finite() || !height.is_finite() || width < 320.0 || height < 240.0 || width > 7680.0 || height > 4320.0 {
+        return Err("Window size must be between 320x240 and 7680x4320.".to_string());
+    }
+    window
+        .set_size(tauri::LogicalSize::new(width, height))
+        .map_err(|e| format!("Failed to resize window: {e}"))
+}
+
 #[cfg(test)]
 mod tests;
