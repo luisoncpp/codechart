@@ -22,6 +22,8 @@ interface DiffCodeLineProps {
   /** Start column of the active find match when it is on this row. */
   activeMatchCol?: number;
   activeMatchRef?: React.RefObject<HTMLElement | null>;
+  /** Split view's left column: line numbers are before-file, so never clickable. */
+  beforeSide?: boolean;
 }
 
 /** Token types whose text can never be a navigable identifier. */
@@ -85,6 +87,7 @@ export const DiffCodeLine = memo(function DiffCodeLine(props: DiffCodeLineProps)
       <LineNumber
         prefix={prefix} kind={row.kind} lineNumber={row.lineNumber}
         style={lineNumberStyle(chrome, fontSize)} onLineClick={onLineClick}
+        beforeSide={props.beforeSide}
       />
       <span
         className={`${prefix}__text${anchored ? ` ${prefix}__text--review-note` : ""}`}
@@ -118,13 +121,16 @@ interface LineNumberProps {
   lineNumber: number;
   style: React.CSSProperties;
   onLineClick?: (line: number, extend: boolean) => void;
+  beforeSide?: boolean;
 }
 
-function LineNumber({ prefix, kind, lineNumber, style, onLineClick }: LineNumberProps) {
-  if (kind === "remove" || kind === "move-remove") {
+function LineNumber({ prefix, kind, lineNumber, style, onLineClick, beforeSide }: LineNumberProps) {
+  // Unified `remove` rows show no number: it would read as an after-file line.
+  const isRemove = kind === "remove" || kind === "move-remove";
+  if (isRemove || beforeSide) {
     return (
       <span className={`${prefix}__ln`} style={{ ...style, userSelect: "none" }}>
-        {""}
+        {beforeSide ? lineNumber : ""}
       </span>
     );
   }

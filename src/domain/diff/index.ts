@@ -8,6 +8,8 @@ export { parseDiffNotes } from "./Private/parse-diff-notes";
 export { computeLineDiff } from "./Private/compute-line-diff";
 export { detectMovedLines } from "./Private/detect-moved-lines";
 export { buildModuleDiffDisplay } from "./Private/module-diff-display";
+export { afterOnlyRows, pairSplitRows } from "./Private/diff-view-rows";
+export type { DiffViewMode, SplitCell } from "./Private/diff-view-rows";
 export { countLineDiffStats, diffStatsSuffixLength } from "./Private/line-diff-stats";
 export type { LineDiffStats } from "./Private/line-diff-stats";
 export { overlayFromPastedDiff } from "./Private/overlay-from-paths";

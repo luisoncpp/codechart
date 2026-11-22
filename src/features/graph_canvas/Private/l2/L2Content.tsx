@@ -1,5 +1,5 @@
 import { memo } from "react";
-import type { DiffNote, FileLineDiff } from "../../../../domain/diff";
+import type { DiffNote, DiffViewMode, FileLineDiff } from "../../../../domain/diff";
 import { DiffCodeLines } from "../highlight/DiffCodeLines";
 import { segmentTokenText, type ActiveMatch, type LineMatchRange } from "../highlight/match-highlight";
 import { renderBlockMarkdown } from "../descriptions/render-markdown";
@@ -116,6 +116,7 @@ interface CodeBlockProps {
   activeMatchRef?: React.RefObject<HTMLElement | null>;
   activeLine?: number;
   activeLineRef?: React.RefObject<HTMLDivElement | null>;
+  viewMode?: DiffViewMode;
 }
 
 export const L2CodeBlock = memo(function L2CodeBlock({
@@ -132,6 +133,7 @@ export const L2CodeBlock = memo(function L2CodeBlock({
   activeMatchRef,
   activeLine,
   activeLineRef,
+  viewMode,
 }: CodeBlockProps) {
   const codePadding = `${6 / zoom}px 0`;
 
@@ -182,6 +184,7 @@ export const L2CodeBlock = memo(function L2CodeBlock({
             activeMatchRef={activeMatchRef}
             activeLine={activeLine}
             activeLineRef={activeLineRef}
+            viewMode={viewMode}
           />
         ) : null}
       </pre></div>

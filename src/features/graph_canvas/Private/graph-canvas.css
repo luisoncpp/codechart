@@ -705,6 +705,24 @@
   background: #ffedd5;
 }
 
+/* Split diff view (preview frames): before | after columns. */
+.symbol-widget__split-cell--before {
+  border-right: 1px solid #e2e8f0;
+}
+
+.symbol-widget__split-filler {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f1f5f9 0 4px,
+    #f8fafc 4px 8px
+  );
+}
+
+.symbol-widget__view-modes {
+  display: inline-flex;
+  gap: 1px;
+}
+
 .diff-code__gutter--add,
 .symbol-widget__gutter--add {
   color: #16a34a;

@@ -6,7 +6,7 @@ import type { ModuleRFNode } from "../../../../domain/projection";
 
 import { diffStatsSuffixLength, countLineDiffStats } from "../../../../domain/diff";
 
-import { fitModuleHeaderFontSize, MODULE_BOX, symbolsFitOnScreen } from "../../../../domain/layout";
+import { fitModuleHeaderFontSize, MODULE_BOX } from "../../../../domain/layout";
 
 import { ConnectionToggle } from "./ConnectionToggle";
 
@@ -150,7 +150,7 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
         />
       )}
 
-      {data.showSymbols && data.symbols && symbolsFitOnScreen(boxW, boxH, zoom) && (
+      {data.showSymbols && data.symbols && (
         <ModuleSymbolBoxes symbols={data.symbols} moduleData={data} color={color} />
       )}
 

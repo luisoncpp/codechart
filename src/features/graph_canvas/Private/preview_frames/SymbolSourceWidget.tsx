@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Displays a draggable, resizable panel with the source code of a symbol")
 import { useMemo, useRef, useState } from "react";
 import type { DiffNote, FileLineDiff } from "../../../../domain/diff";
+import { useFrameDiffViewMode } from "./diff-view-mode-preference";
 import { findSymbolLine } from "./symbol-source-utils";
 import type { PreviewFrame } from "./frame-list";
 import type { Position, Size } from "./frame-placement";
@@ -69,8 +70,10 @@ export function SymbolSourceWidget({
     initialQuery: frame.initialFindQuery,
     enabled: !renderMarkdown,
   });
-  // Rendered markdown has no diff rows to step through.
-  const changes = useChangeNavigation(frameRef, /*enabled=*/ !renderMarkdown && hasLineChanges(fileDiff));
+  // Rendered markdown has no diff rows to step through or re-arrange.
+  const showsDiffRows = !renderMarkdown && hasLineChanges(fileDiff);
+  const changes = useChangeNavigation(frameRef, /*enabled=*/ showsDiffRows);
+  const viewMode = useFrameDiffViewMode(showsDiffRows);
 
   useCenterTargetLine(lineRef, /*line=*/ reviewLine ?? targetLine, frame.sourceText);
   useCenterMarkdownSection({
@@ -147,6 +150,7 @@ export function SymbolSourceWidget({
         }
         diffReview={diffReview}
         changes={changes}
+        viewMode={viewMode.toggle}
         actions={{
           onTogglePin: () => handlers.onTogglePin(frame.id),
           onClose: () => handlers.onClose(frame.id),
@@ -174,6 +178,7 @@ export function SymbolSourceWidget({
           fileDiff={fileDiff}
           diffNotes={diffNotes}
           clickableSymbols={clickableSymbols}
+          viewMode={viewMode.bodyMode}
           renderMarkdown={renderMarkdown}
           targetLine={targetLine}
           lineRef={lineRef}

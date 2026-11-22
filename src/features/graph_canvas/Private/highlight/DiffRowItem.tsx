@@ -25,15 +25,19 @@ export interface DiffRowItemProps {
   draft: any;
   diffNotes?: readonly DiffNote[];
   onLineClick?: (line: number, extend: boolean) => void;
+  /** Left column of the split view: even context rows show the before-file. */
+  beforeSide?: boolean;
 }
 
-export function DiffRowItem(props: DiffRowItemProps) {
-  const { row, tokens, chrome, clickableNames, links, diffNotes } = props;
-  const isRem = row.kind === "remove" || row.kind === "move-remove";
-  if (!isRem) return <CurrentRowItem {...props} />;
+const isBeforeRow = (row: DiffDisplayRow, beforeSide?: boolean) =>
+  beforeSide || row.kind === "remove" || row.kind === "move-remove";
 
-  // `remove` rows come from the before-snapshot: no clickable line number, no
-  // find matches and no Review Notes anchored to them.
+export function DiffRowItem(props: DiffRowItemProps) {
+  const { row, tokens, chrome, clickableNames, links, diffNotes, beforeSide } = props;
+  if (!isBeforeRow(row, beforeSide)) return <CurrentRowItem {...props} />;
+
+  // Before-snapshot rows: no clickable line number, no find matches and no
+  // Review Notes anchored to them.
   return (
     <Fragment>
       <DiffCodeLine
@@ -42,14 +46,15 @@ export function DiffRowItem(props: DiffRowItemProps) {
         chrome={chrome}
         clickableNames={clickableNames}
         links={links}
+        beforeSide={beforeSide}
       />
-      <RowDiffNotes row={row} diffNotes={diffNotes} zoom={chrome.zoom} />
+      <RowDiffNotes row={row} diffNotes={diffNotes} zoom={chrome.zoom} beforeSide={beforeSide} />
     </Fragment>
   );
 }
 
 /** A row of the current file: clickable number, find matches, Review Notes. */
-function CurrentRowItem(props: DiffRowItemProps) {
+function CurrentRowItem(props: Omit<DiffRowItemProps, "beforeSide">) {
   const { row, tokens, chrome, clickableNames, links, notes, draft } = props;
   const line = row.lineNumber;
   const isActive = line === props.activeLine;
@@ -80,12 +85,13 @@ interface RowDiffNotesProps {
   row: DiffDisplayRow;
   diffNotes?: readonly DiffNote[];
   zoom: number;
+  beforeSide?: boolean;
 }
 
 /** Diff Notes bound to this row's line number, on its own side of the diff. */
-function RowDiffNotes({ row, diffNotes, zoom }: RowDiffNotesProps) {
+function RowDiffNotes({ row, diffNotes, zoom, beforeSide }: RowDiffNotesProps) {
   if (!diffNotes || diffNotes.length === 0) return null;
-  const side = row.kind === "remove" || row.kind === "move-remove" ? "before" : "after";
+  const side = isBeforeRow(row, beforeSide) ? "before" : "after";
   const matching = diffNotes.filter((n) => n.side === side && n.endLine === row.lineNumber);
   if (matching.length === 0) return null;
   return <DiffNotesList notes={matching} zoom={zoom} />;

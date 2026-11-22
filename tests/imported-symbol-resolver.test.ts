@@ -104,6 +104,36 @@ describe("combinedSymbolTargets", () => {
   });
 });
 
+describe("C++ header → same-stem implementation", () => {
+  const graph = makeGraph(
+    [
+      makeModule("Public/Foo.h", ["AFoo"]),
+      makeModule("Private/Foo.cpp", []),
+      makeModule("Private/Bar.cpp", []),
+    ],
+    [makeImport("Private/Foo.cpp", "Public/Foo.h"), makeImport("Private/Bar.cpp", "Public/Foo.h")],
+  );
+  const sources = new Map([
+    ["Public/Foo.h", "class AFoo\n{\n  void Tick(float DeltaTime) override;\n  void Other();\n};"],
+    ["Private/Foo.cpp", "#include \"Foo.h\"\nvoid AFoo::Tick(float DeltaTime)\n{\n}"],
+    ["Private/Bar.cpp", "void Other()\n{\n}"],
+  ]);
+
+  it("resolves a header member declaration to its implementation file", () => {
+    const targets = combinedSymbolTargets(graph, "Public/Foo.h", sources);
+    expect(targets.get("Tick")?.moduleId).toBe("Private/Foo.cpp");
+  });
+
+  it("ignores importers with a different stem", () => {
+    const targets = combinedSymbolTargets(graph, "Public/Foo.h", sources);
+    expect(targets.has("Other")).toBe(false);
+  });
+
+  it("prefetches the implementation file of a header", () => {
+    expect(sourcePrefetchIds(graph, "Public/Foo.h")).toEqual(["Public/Foo.h", "Private/Foo.cpp"]);
+  });
+});
+
 describe("sourcePrefetchIds", () => {
   it("lists the module itself plus its import targets", () => {
     const graph = makeGraph(

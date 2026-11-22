@@ -1,4 +1,5 @@
 // @Architecture(descriptionShort="Preview frame header: title, path, and the pin / raw / change / find / close actions")
+import type { DiffViewMode } from "../../../../domain/diff";
 import type { PreviewFrame } from "./frame-list";
 
 interface FrameHeaderProps {
@@ -11,6 +12,8 @@ interface FrameHeaderProps {
   diffReview?: { reviewed: boolean; toggle: () => void } | null;
   /** Null hides the previous/next change buttons (file has no diff rows). */
   changes?: { onStep: (delta: 1 | -1) => void } | null;
+  /** Null hides the Unified / Split / After-only toggle (file has no diff rows). */
+  viewMode?: { mode: DiffViewMode; onChange: (mode: DiffViewMode) => void } | null;
   actions: { onTogglePin: () => void; onClose: () => void; onPointerDown: (e: React.PointerEvent) => void };
 }
 
@@ -42,7 +45,32 @@ function ChangeButtons({ onStep }: { onStep: (delta: 1 | -1) => void }) {
   );
 }
 
-export function FrameHeader({ frame, rawSource, find, diffReview, changes, actions }: FrameHeaderProps) {
+const VIEW_MODES: ReadonlyArray<{ mode: DiffViewMode; glyph: string; label: string }> = [
+  { mode: "unified", glyph: "≡", label: "Unified diff view" },
+  { mode: "split", glyph: "◫", label: "Split diff view (before | after)" },
+  { mode: "after", glyph: "+", label: "After-only view (hide deleted lines)" },
+];
+
+function ViewModeButtons({ mode, onChange }: NonNullable<FrameHeaderProps["viewMode"]>) {
+  return (
+    <span className="symbol-widget__view-modes" role="group" aria-label="Diff view mode">
+      {VIEW_MODES.map((option) => (
+        <button
+          key={option.mode}
+          className={toggleClass(option.mode === mode)}
+          onClick={() => onChange(option.mode)}
+          aria-label={option.label}
+          aria-pressed={option.mode === mode}
+          title={option.label}
+        >
+          {option.glyph}
+        </button>
+      ))}
+    </span>
+  );
+}
+
+export function FrameHeader({ frame, rawSource, find, diffReview, changes, viewMode, actions }: FrameHeaderProps) {
   const pinLabel = frame.pinned ? "Unpin frame" : "Pin frame";
   const rawLabel = rawSource?.on ? "Show rendered markdown" : "Show raw source";
 
@@ -87,6 +115,7 @@ export function FrameHeader({ frame, rawSource, find, diffReview, changes, actio
             &lt;/&gt;
           </button>
         )}
+        {viewMode && <ViewModeButtons {...viewMode} />}
         {changes && <ChangeButtons onStep={changes.onStep} />}
         {find && (
           <button

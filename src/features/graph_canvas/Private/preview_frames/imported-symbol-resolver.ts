@@ -29,8 +29,10 @@ export function importedSymbolTargets(
 /**
  * Full clickable-name map for a preview frame. Priority on collisions:
  * own-module function/method definitions (a locally defined name cannot
- * also be imported) > imported exported symbols > functions/methods scanned
- * from imported modules' sources (methods of imported classes).
+ * also be imported) > definitions in a C/C++ header's same-stem
+ * implementation file (declaration → body) > imported exported symbols >
+ * functions/methods scanned from imported modules' sources (methods of
+ * imported classes).
  */
 export function combinedSymbolTargets(
   graph: ProjectGraph,
@@ -40,6 +42,9 @@ export function combinedSymbolTargets(
   const targets = new Map<string, SymbolTarget>();
   const own = graph.modules.find((m) => m.id === moduleId);
   if (own) addScannedDefinitions(targets, own, sources.get(own.id));
+  for (const module of implementationModules(graph, moduleId)) {
+    addScannedDefinitions(targets, module, sources.get(module.id));
+  }
   for (const [name, target] of importedSymbolTargets(graph, moduleId)) {
     if (!targets.has(name)) targets.set(name, target);
   }
@@ -49,9 +54,37 @@ export function combinedSymbolTargets(
   return targets;
 }
 
-/** The frame's own module plus its import targets — the sources worth prefetching. */
+/** The frame's own module, a header's implementation files, and its import targets. */
 export function sourcePrefetchIds(graph: ProjectGraph, moduleId: string): string[] {
-  return [moduleId, ...importedModules(graph, moduleId).map((m) => m.id)];
+  const related = [...implementationModules(graph, moduleId), ...importedModules(graph, moduleId)];
+  return [moduleId, ...related.map((m) => m.id)];
+}
+
+const HEADER_EXTENSIONS = new Set(["h", "hh", "hpp", "hxx", "inl"]);
+
+/**
+ * Same-stem files that include a C/C++ header (`Private/Foo.cpp` → `Public/Foo.h`):
+ * the edge points impl → header, so a header frame must look backwards to
+ * reach its member definitions. Mirrors the backend's header/impl pairing.
+ */
+function implementationModules(graph: ProjectGraph, moduleId: string): ModuleNode[] {
+  const header = splitFileName(moduleId);
+  if (!HEADER_EXTENSIONS.has(header.extension)) return [];
+  const modules: ModuleNode[] = [];
+  for (const edge of graph.edges) {
+    if (edge.target !== moduleId || edge.kind !== "import") continue;
+    if (splitFileName(edge.source).stem !== header.stem) continue;
+    const module = graph.modules.find((m) => m.id === edge.source);
+    if (module) modules.push(module);
+  }
+  return modules;
+}
+
+function splitFileName(path: string): { stem: string; extension: string } {
+  const fileName = path.slice(path.lastIndexOf("/") + 1);
+  const dot = fileName.lastIndexOf(".");
+  if (dot <= 0) return { stem: fileName, extension: "" };
+  return { stem: fileName.slice(0, dot), extension: fileName.slice(dot + 1).toLowerCase() };
 }
 
 function addScannedDefinitions(

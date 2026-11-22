@@ -10,3 +10,9 @@ definition shape before tuning token colors or member-access operators. Unreal
 style definitions often put qualifiers after the parameter list, for example
 `Class::Method(...) const` with the body brace on the next line; those trailing
 qualifiers must still count as a definition.
+
+Import edges point impl → header (`Foo.cpp` includes `Foo.h`), so a header
+frame's "imports" never contain its own implementation, and the scanner skips
+declarations (`void Tick();`). Header → body navigation therefore needs the
+reverse edge filtered to the same stem (`implementationModules` in
+`imported-symbol-resolver.ts`), the same pairing rule the backend uses.
