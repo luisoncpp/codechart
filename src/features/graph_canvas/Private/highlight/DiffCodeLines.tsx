@@ -15,6 +15,7 @@ import { DiffRowItem } from "./DiffRowItem";
 import type { RowChrome } from "./row-chrome";
 import { findWikiLinks, isMarkdownPath, type WikiLinkSpan } from "../wiki_links";
 import { useReviewNotesStore } from "../../../review_notes";
+import { useReviewStackStore } from "../../../review_stack";
 
 interface DiffCodeLinesProps {
   source: string;
@@ -43,7 +44,9 @@ interface DiffCodeLinesProps {
 export function DiffCodeLines(props: DiffCodeLinesProps) {
   const { source, path, fileDiff, diffNotes } = props;
   const reviewNotes = useReviewNotesStore();
+  const reviewStack = useReviewStackStore();
   const notes = reviewNotes?.notesFor(path) ?? [];
+  const findings = reviewStack?.findingsFor(path) ?? [];
   const draft = reviewNotes?.getDraft();
   const viewMode = props.viewMode ?? "unified";
   const rows = useMemo(() => displayRows(source, fileDiff, viewMode), [source, fileDiff, viewMode]);
@@ -67,7 +70,7 @@ export function DiffCodeLines(props: DiffCodeLinesProps) {
     activeLine: props.activeLine, activeLineRef: props.activeLineRef,
     matchesByLine: props.matchesByLine, activeMatch: props.activeMatch,
     activeMatchRef: props.activeMatchRef,
-    notes, draft, diffNotes,
+    notes, draft, diffNotes, findings,
     onLineClick: reviewNotes ? selectLine : undefined,
   };
   return <DiffRows viewMode={viewMode} rows={rows} tokens={tokenized} links={wikiLinks} shared={shared} />;

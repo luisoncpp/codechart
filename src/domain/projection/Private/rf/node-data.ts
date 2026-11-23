@@ -72,6 +72,10 @@ export interface ModuleNodeData extends Record<string, unknown> {
   diffNotes?: ReadonlyArray<DiffNote>;
   /** Diff review progress — user marked this file as reviewed (checkmark + dimmed). */
   diffReviewed?: boolean;
+  /** Review Stack cohort spotlight state ("active" keeps full focus; "dimmed" recedes). */
+  spotlightState?: "active" | "dimmed";
+  /** Transitive blast radius hop depth from a changed module (0 = root, 1+ = downstream). */
+  blastDepth?: number;
   /** Normalized heat score in [0, 1] when heatmap overlay is active. */
   heatScore?: number;
   /** False when score is at or below the cold percentile. */

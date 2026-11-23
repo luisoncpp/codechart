@@ -26,6 +26,14 @@ export function HelpMenu() {
           label="Wiki links..."
           onSelect={() => setActiveTopic(HELP_TOPICS["wiki-links"])}
         />
+        <MenuActionItem
+          label="MCP server..."
+          onSelect={() => setActiveTopic(HELP_TOPICS["mcp-server"])}
+        />
+        <MenuActionItem
+          label="Code review skill / prompt..."
+          onSelect={() => setActiveTopic(HELP_TOPICS["code-review-prompt"])}
+        />
       </DropdownMenu>
       <HelpModal
         topic={activeTopic}

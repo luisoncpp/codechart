@@ -14,6 +14,7 @@ Commands:
   groups <dir>      Resolved group tree
   analyze <dir>     Full ProjectGraph as pretty JSON (debug dump)
   check <dir>       Architecture CI gate: diagnostics only
+  impact <dir>      Diff impact JSON: topo layers, blast radius, delta diagnostics
   help [command]    This text, or help for one command
   version           Print the CLI version
 
@@ -82,7 +83,24 @@ This is an architecture gate, not a compiler. Group layering rules
 bypasses both report as architectureViolation.
 ";
 
-const TOPICS: &str = "usage: codechart-cli help [parse|groups|analyze|check]";
+const IMPACT: &str = "\
+codechart-cli impact — headless diff impact report
+
+Usage:
+  codechart-cli impact <project-dir> [options]
+
+Outputs DiffImpactReport JSON (topological layers, transitive blast radius,
+affected groups, and newly introduced diagnostics).
+
+Options:
+  --changed=a,b,...    Explicit repo-relative changed module paths (no git required)
+  --base=<ref>         Git base ref (defaults to HEAD in working-tree mode)
+  --head=<ref>         Git head ref (requires --base for commit-to-commit mode)
+  --max-depth=<n>      Max reverse-BFS blast radius hops (default 3)
+  -h, --help           Show this help
+";
+
+const TOPICS: &str = "usage: codechart-cli help [parse|groups|analyze|check|impact]";
 
 pub fn wants_help(args: &[String]) -> bool {
     args.iter().any(|arg| arg == "--help" || arg == "-h")
@@ -108,6 +126,7 @@ pub(crate) fn help_text(topic: Option<&str>) -> Result<&'static str, String> {
         Some("groups") => Ok(GROUPS),
         Some("analyze") => Ok(ANALYZE),
         Some("check") => Ok(CHECK),
+        Some("impact") => Ok(IMPACT),
         Some(other) => Err(format!("unknown help topic: {other}\n{TOPICS}")),
     }
 }
@@ -125,7 +144,7 @@ mod tests {
 
     #[test]
     fn each_command_has_help() {
-        for topic in ["parse", "groups", "analyze", "check"] {
+        for topic in ["parse", "groups", "analyze", "check", "impact"] {
             assert!(
                 help_text(Some(topic)).is_ok(),
                 "{topic} should have a help page"
@@ -136,7 +155,7 @@ mod tests {
     #[test]
     fn root_help_lists_every_command() {
         let text = help_text(None).unwrap();
-        for name in ["parse", "groups", "analyze", "check", "help", "--version"] {
+        for name in ["parse", "groups", "analyze", "check", "impact", "help", "--version"] {
             assert!(text.contains(name), "root help should mention {name}");
         }
     }

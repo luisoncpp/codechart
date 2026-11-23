@@ -28,6 +28,8 @@ describe("HelpMenu dropdown and modals", () => {
     expect(screen.getByRole("menuitem", { name: "Architecture tags..." })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Diff notes..." })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Wiki links..." })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "MCP server..." })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Code review skill / prompt..." })).toBeInTheDocument();
   });
 
   it("opens the Groups format documentation modal and renders content", () => {
@@ -73,6 +75,51 @@ describe("HelpMenu dropdown and modals", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Help: Wiki links" })).toBeInTheDocument();
     expect(screen.getByText(/Wiki links allow instant navigation/)).toBeInTheDocument();
+  });
+
+  it("opens the MCP server and Code review skill/prompt modals", () => {
+    renderHelpMenu();
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "MCP server..." }));
+    expect(screen.getByRole("heading", { name: "Help: MCP server" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Tools (14)" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Troubleshooting" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Close" })[0]);
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Code review skill / prompt..." }));
+    expect(screen.getByRole("heading", { name: "Help: Code review skill / prompt" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Workflow" })).toBeInTheDocument();
+  });
+
+  // The skill starts with SKILL.md frontmatter; marked would render it as an
+  // <hr> plus a setext heading, so the modal shows it as a YAML code block.
+  it("renders the code review skill frontmatter as a code block, not a heading", () => {
+    renderHelpMenu();
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Code review skill / prompt..." }));
+
+    const dialog = screen.getByRole("dialog");
+    const code = [...dialog.querySelectorAll("pre code")].map((el) => el.textContent ?? "");
+    expect(code.some((text) => text.startsWith("name: codechart-review"))).toBe(true);
+    expect(dialog.querySelector("hr")).toBeNull();
+  });
+
+  it("copies the code review skill without the human-only intro", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderHelpMenu();
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Code review skill / prompt..." }));
+    expect(screen.getByText(/How to use:/)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", { name: "Copy markdown explanation" })[0]);
+    });
+
+    const copied = writeText.mock.calls[0][0] as string;
+    expect(copied.startsWith("---\nname: codechart-review\n")).toBe(true);
+    expect(copied).not.toContain("How to use:");
   });
 
   it("copies markdown to clipboard and updates button state", async () => {

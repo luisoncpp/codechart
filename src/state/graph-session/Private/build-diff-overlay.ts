@@ -16,6 +16,14 @@ import type { LayoutEngine } from "../../../domain/layout";
 import type { AnalysisClient } from "../../../ipc/analysis-client";
 import type { GitClient } from "../../../ipc/git-client";
 
+/** The graphs an overlay was computed against (kept for impact/diagnostic deltas). */
+export interface DiffGraphs {
+  before: ProjectGraph;
+  after: ProjectGraph;
+}
+
+type DiffBuild = { overlay: GraphDiffOverlay; graphs: DiffGraphs };
+
 interface CommitDiffInput {
   git: GitClient;
   layoutEngine: LayoutEngine;
@@ -25,9 +33,7 @@ interface CommitDiffInput {
   hideTopLevelDotDirs: boolean;
 }
 
-export async function buildCommitDiffOverlay(
-  input: CommitDiffInput,
-): Promise<GraphDiffOverlay> {
+export async function buildCommitDiffOverlay(input: CommitDiffInput): Promise<DiffBuild> {
   const { git, layoutEngine, root, baseRef, headRef, hideTopLevelDotDirs } = input;
   const unifiedDiff = await git.diffRefs(root, baseRef, headRef);
   const modulePaths = changedPaths(unifiedDiff);
@@ -35,16 +41,15 @@ export async function buildCommitDiffOverlay(
     git.loadProjectSnapshot({ path: root, gitRef: baseRef, modulePaths, hideTopLevelDotDirs }),
     git.loadProjectSnapshot({ path: root, gitRef: headRef, modulePaths, hideTopLevelDotDirs }),
   ]);
-  const before = beforeSnapshot.graph;
-  const after = afterSnapshot.graph;
-  const overlay = await coreOverlay({ unifiedDiff, before, after, layoutEngine });
-  return attachSymbolsAndRenames({
+  const graphs = { before: beforeSnapshot.graph, after: afterSnapshot.graph };
+  const overlay = await coreOverlay({ unifiedDiff, ...graphs, layoutEngine });
+  const full = attachSymbolsAndRenames({
     overlay,
-    before,
-    after,
+    ...graphs,
     beforeSources: new Map(Object.entries(beforeSnapshot.sources)),
     afterSources: new Map(Object.entries(afterSnapshot.sources)),
   });
+  return { overlay: full, graphs };
 }
 
 interface PasteDiffInput {
@@ -79,9 +84,7 @@ interface WorkingTreeDiffInput {
   ignoreSubmodules: boolean;
 }
 
-export async function buildWorkingTreeDiffOverlay(
-  input: WorkingTreeDiffInput,
-): Promise<GraphDiffOverlay> {
+export async function buildWorkingTreeDiffOverlay(input: WorkingTreeDiffInput): Promise<DiffBuild> {
   const { unifiedDiff, before, after, snapshot } = await workingTreeGraphs(input);
   const overlay = await coreOverlay({ unifiedDiff, before, after });
   const afterSources = await readWorkingSources({
@@ -90,13 +93,10 @@ export async function buildWorkingTreeDiffOverlay(
     root: input.root,
     paths: [...overlay.lineDiffByPath.keys()],
   });
-  return attachSymbolsAndRenames({
-    overlay,
-    before,
-    after,
-    beforeSources: new Map(Object.entries(snapshot.sources)),
-    afterSources,
-  });
+  const graphs = { before, after };
+  const beforeSources = new Map(Object.entries(snapshot.sources));
+  const full = attachSymbolsAndRenames({ overlay, ...graphs, beforeSources, afterSources });
+  return { overlay: full, graphs };
 }
 
 async function workingTreeGraphs(input: WorkingTreeDiffInput) {

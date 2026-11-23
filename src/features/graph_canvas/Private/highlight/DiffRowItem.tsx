@@ -8,6 +8,8 @@ import type { RowChrome } from "./row-chrome";
 import type { WikiLinkSpan } from "../wiki_links";
 import { InlineReviewNotes } from "../../../review_notes";
 import { DiffNotesList } from "../../../diff_visualizer";
+import { InlineFindings } from "../../../review_stack";
+import type { ReviewFinding } from "../../../../ipc/review-stack-client";
 
 export interface DiffRowItemProps {
   row: DiffDisplayRow;
@@ -24,6 +26,7 @@ export interface DiffRowItemProps {
   notes: any[];
   draft: any;
   diffNotes?: readonly DiffNote[];
+  findings?: readonly ReviewFinding[];
   onLineClick?: (line: number, extend: boolean) => void;
   /** Left column of the split view: even context rows show the before-file. */
   beforeSide?: boolean;
@@ -49,6 +52,7 @@ export function DiffRowItem(props: DiffRowItemProps) {
         beforeSide={beforeSide}
       />
       <RowDiffNotes row={row} diffNotes={diffNotes} zoom={chrome.zoom} beforeSide={beforeSide} />
+      <RowFindings row={row} findings={props.findings} zoom={chrome.zoom} beforeSide={beforeSide} />
     </Fragment>
   );
 }
@@ -74,8 +78,9 @@ function CurrentRowItem(props: Omit<DiffRowItemProps, "beforeSide">) {
         anchored={isAnchored}
         onLineClick={props.onLineClick}
       />
-      {/* Diff Notes stack above Review Notes on the same line. */}
+      {/* Diff Notes and Agent Findings stack above Review Notes on the same line. */}
       <RowDiffNotes row={row} diffNotes={props.diffNotes} zoom={chrome.zoom} />
+      <RowFindings row={row} findings={props.findings} zoom={chrome.zoom} />
       <InlineReviewNotes notes={lineNotes} showDraft={isDraft} zoom={chrome.zoom} />
     </Fragment>
   );
@@ -95,4 +100,19 @@ function RowDiffNotes({ row, diffNotes, zoom, beforeSide }: RowDiffNotesProps) {
   const matching = diffNotes.filter((n) => n.side === side && n.endLine === row.lineNumber);
   if (matching.length === 0) return null;
   return <DiffNotesList notes={matching} zoom={zoom} />;
+}
+
+interface RowFindingsProps {
+  row: DiffDisplayRow;
+  findings?: readonly ReviewFinding[];
+  zoom: number;
+  beforeSide?: boolean;
+}
+
+function RowFindings({ row, findings, zoom, beforeSide }: RowFindingsProps) {
+  if (!findings || findings.length === 0) return null;
+  const side = isBeforeRow(row, beforeSide) ? "before" : "after";
+  const matching = findings.filter((f) => f.side === side && f.endLine === row.lineNumber);
+  if (matching.length === 0) return null;
+  return <InlineFindings findings={matching} zoom={zoom} />;
 }

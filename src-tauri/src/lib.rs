@@ -4,14 +4,17 @@ pub mod analysis;
 pub mod cli;
 pub mod contract;
 pub mod diagnostics;
+pub mod diff_impact;
 pub mod diff_reviews;
 pub mod git;
 pub mod grouping;
 pub mod language_adapter;
+pub mod mcp_bridge;
 pub mod project_config;
 pub mod project_source;
 pub mod references;
 pub mod review_notes;
+pub mod review_stacks;
 pub mod search;
 pub mod semantic_comments;
 pub mod startup_args;
@@ -33,14 +36,24 @@ pub fn run() {
     let args: Vec<String> = std::env::args().collect();
     let env_project = std::env::var("CODECHART_STARTUP_PROJECT").ok();
     let startup_path = startup_args::resolve_startup_project_path(&args, env_project.as_deref());
+    let bridge_state = std::sync::Arc::new(mcp_bridge::McpBridgeState::new());
+    let bridge_for_setup = std::sync::Arc::clone(&bridge_state);
+    let bridge_for_exit = std::sync::Arc::clone(&bridge_state);
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(startup_args::StartupProjectPath(startup_path))
-        .setup(|_app| {
+        .manage(bridge_state)
+        .setup(move |app| {
             #[cfg(debug_assertions)]
-            apply_debug_window_size(_app);
+            apply_debug_window_size(app);
+            let _ = mcp_bridge::start_tauri_bridge(app.handle().clone(), bridge_for_setup);
             Ok(())
+        })
+        .on_window_event(move |_window, event| {
+            if matches!(event, tauri::WindowEvent::Destroyed) {
+                bridge_for_exit.cleanup_registry();
+            }
         })
         .invoke_handler(tauri::generate_handler![
             tauri_api::get_startup_project_path,
@@ -60,6 +73,13 @@ pub fn run() {
             tauri_api::load_diff_review,
             tauri_api::save_diff_review,
             tauri_api::clear_diff_reviews,
+            tauri_api::load_review_stack,
+            tauri_api::save_review_stack,
+            tauri_api::delete_review_stack,
+            tauri_api::clear_review_stacks,
+            tauri_api::analyze_diff_impact,
+            tauri_api::compute_module_blast_radius,
+            tauri_api::mcp_bridge_respond,
             tauri_api::toggle_devtools,
             tauri_api::set_window_size,
         ])

@@ -17,7 +17,7 @@ Clicking **Help ▾** in the top toolbar and selecting one of:
 1. **User clicks Help ▾**: `DropdownMenu` opens showing the list of documentation topics.
 2. **User selects a topic**: `onSelect` sets `activeTopic` to the selected `HelpTopic` (`groups-format`, `architecture-tags`, `diff-notes`, or `wiki-links`) and closes the dropdown menu.
 3. **Modal opens**: `HelpModal` renders as a centered dialog with a backdrop overlay, displaying the topic title and rendered Markdown via `HelpMarkdownView`.
-4. **Copy Markdown**: Clicking **Copy as Markdown** calls `navigator.clipboard.writeText(topic.markdown)` and transitions button text to "✓ Copied!" for 2 seconds.
+4. **Copy Markdown**: Clicking **Copy as Markdown** calls `navigator.clipboard.writeText(topic.markdown)` (never the human-only `topic.intro` rendered above it) and transitions button text to "✓ Copied!" for 2 seconds.
 5. **Dismissal**: Modal closes when clicking the header close button (✕), footer Close button, pressing Escape, or clicking the backdrop overlay.
 
 ## Reads

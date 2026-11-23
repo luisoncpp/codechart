@@ -68,4 +68,5 @@ Keep these docs operational. Prefer short tables, explicit file names, and seque
 | [toggle-arrow-visibility.md](./toggle-arrow-visibility.md) | View ▾ menu → toggle arrow visibility: show all, hide non-selected arrowheads, or hide non-selected arrows; plus the default-on "hide arrows between off-screen modules" (idle clip rebuild) and "show violation arrows (red)" checkboxes |
 | [open-help-topic.md](./open-help-topic.md) | Help ▾ menu → choose topic → open rendered Markdown doc modal + copy to clipboard for LLMs |
 | [playtest-via-mcp.md](./playtest-via-mcp.md) | Assistant MCP `launch_app` → WebView2 CDP inputs/bridge → `screenshot` → `close_app` |
+| [review-mr-via-mcp.md](./review-mr-via-mcp.md) | Assistant MCP `load_diff` → `analyze_diff_impact` → `set_review_stack` / `upsert_findings` → interactive spotlight & review-state sync |
 

@@ -4,7 +4,7 @@ import { ReactFlow, ReactFlowProvider, Background, Controls } from "@xyflow/reac
 import "@xyflow/react/dist/style.css";
 import "./graph-canvas.css";
 import { projectGraph } from "../../../domain/projection";
-import { applyDiffOverlay, withDiffReview } from "../../../domain/projection";
+import { applyDiffOverlay, withDiffReview, withReviewStackOverlay } from "../../../domain/projection";
 import type { RFNode, RenderOptions } from "../../../domain/projection";
 import {
   edgeFocusForSelection,
@@ -37,7 +37,9 @@ import { HeatmapLegend } from "./toolbar/HeatmapLegend";
 import { CanvasUiState, useCanvasUiState } from "./controller/canvas-ui-state";
 import { SelectionNavigation } from "./toolbar/SelectionNavigation";
 import type { ReviewNotesStore } from "../../../state/review-notes";
+import type { ReviewStackStore } from "../../../state/review-stack";
 import { useReviewNoteNavigation, withReviewCounts } from "./review-note-canvas";
+import { useReviewStackNavigation } from "./review-stack-canvas";
 
 interface GraphCanvasProps {
   store: GraphSessionStore;
@@ -46,6 +48,7 @@ interface GraphCanvasProps {
   editor: string;
   ui: CanvasUiState;
   reviewNotes?: ReviewNotesStore;
+  reviewStack?: ReviewStackStore;
   onShowReviewNotes?: () => void;
   onViewportReady?: (handle: CanvasViewportHandle | null) => void;
 }
@@ -57,6 +60,7 @@ export function GraphCanvas({
   editor,
   ui,
   reviewNotes,
+  reviewStack,
   onShowReviewNotes,
   onViewportReady,
 }: GraphCanvasProps) {
@@ -87,6 +91,9 @@ export function GraphCanvas({
   const moveGuard = useRef(new ProgrammaticMoveGuard()).current;
   useReviewNoteNavigation({
     store, notes: reviewNotes, openPreview: previews.openReviewNotePreview, guard: moveGuard,
+  });
+  useReviewStackNavigation({
+    store, reviewStack, openPreview: previews.openReviewNotePreview, guard: moveGuard,
   });
 
   const controller = useMemo(
@@ -148,15 +155,23 @@ export function GraphCanvas({
     [graph, layout, level, session, cacheVersion, groupDocCacheVersion, heatOptions, locTotals],
   );
 
+  const reviewStackVersion = reviewStack?.getVersion() ?? 0;
   const displayProjected = useMemo(() => {
     if (!projected) return null;
     const diffed = diffOverlay
       ? withDiffReview(applyDiffOverlay(projected, diffOverlay), diffReviewedIds)
       : projected;
+    void reviewStackVersion;
+    const stacked = reviewStack
+      ? withReviewStackOverlay(diffed, {
+          spotlightModuleIds: reviewStack.getSpotlightModuleIds(),
+          blastDepths: reviewStack.getBlastRadius()?.depths ?? null,
+        })
+      : diffed;
     // The store identity is stable; its immutable document invalidates badge counts.
     void reviewNotesDocument;
-    return reviewNotes ? withReviewCounts(diffed, heatGraph, reviewNotes) : diffed;
-  }, [projected, diffOverlay, diffReviewedIds, reviewNotes, reviewNotesDocument, heatGraph]);
+    return reviewNotes ? withReviewCounts(stacked, heatGraph, reviewNotes) : stacked;
+  }, [projected, diffOverlay, diffReviewedIds, reviewStack, reviewStackVersion, reviewNotes, reviewNotesDocument, heatGraph]);
 
   const styledEdges = useStyledEdges(displayProjected, edgeFocus, {
     arrowVisibility: uiState.getArrowVisibility(),

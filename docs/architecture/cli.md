@@ -14,6 +14,7 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- <parse|gro
 | `groups <dir>` | resolved group tree | 0 on success |
 | `analyze <dir>` | pretty `ProjectGraph` JSON (debug dump) | 0 when analysis succeeds |
 | `check <dir>` | diagnostics only; no graph | **non-zero** when a fail-on kind is present |
+| `impact <dir>` | `DiffImpactReport` JSON (`--changed` / `--base` / `--head` / `--max-depth`) | 0 on success |
 | `help [command]` | usage for the CLI or one command | 0 (`--help` / `-h` are aliases) |
 | `version` | `codechart-cli <CARGO_PKG_VERSION>` | 0 (`--version` / `-V` are aliases) |
 
