@@ -235,7 +235,9 @@ pub fn set_window_size(window: tauri::WebviewWindow, width: f64, height: f64) ->
         .map_err(|e| format!("Failed to resize window: {e}"))
 }
 
+mod app_info_api;
 mod review_stack_api;
+pub use app_info_api::*;
 pub use review_stack_api::*;
 
 #[cfg(test)]

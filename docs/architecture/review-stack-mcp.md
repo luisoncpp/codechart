@@ -1,6 +1,6 @@
 # Review Stack & MR Review MCP
 
-**Status: implemented.** Enables any coding assistant (Claude Code, Antigravity, Cursor, Codex) to drive CodeChart as an interactive **Change Stack** MR review cockpit over a production stdio MCP server (`tools/codechart-mcp`).
+**Status: implemented.** Enables any coding assistant (Claude Code, Antigravity, Cursor, Codex) to drive CodeChart as an interactive **Change Stack** MR review cockpit over a production stdio MCP server built into the app binary (`codechart.exe --mcp`, Rust `mcp_server`). No Node.js or source checkout is needed.
 
 ## Boundaries & Components
 
@@ -13,14 +13,17 @@
 | Canvas Projection | `src/domain/projection/Private/diff_overlay/apply-review-stack.ts` | Display-only `withReviewStackOverlay` post-pass after `withDiffReview`: stamps `spotlightState` (`active` / `dimmed`) and `blastDepth` (`SRC` / `R+N` badges) on module nodes |
 | Review Stack UI | `src/features/review_stack` | Collapsible left `ReviewStackDrawer`, resizable from its right edge (`DrawerResizeHandle`, 240–720 px; session-only width kept while collapsed). Overview, Merge Blockers, Cohort stepper with `DEPENDS ON`, reviewed progress, per-hunk file list and **Read explanation ↗**, Findings severity filter, Impact/Blast Radius tab. `StackMarkdown` renders the summary and rationale. `InlineFindings` cards render in `DiffRowItem` |
 | Frontend RPC Handler | `src/app/Private/mcp-bridge-handler.ts` (+ `mcp-bridge-review.ts` for stack authoring/state), `use-mcp-bridge.ts` | Listens for `mcp-bridge-request` and dispatches all 14 RPC methods against `GraphSessionStore`, `ReviewNotesStore`, and `ReviewStackStore` |
-| Stdio MCP Server | `tools/codechart-mcp` | Node 24 native-TS (`erasableSyntaxOnly`) stdio MCP server (`npm run mcp`) exposing 15 tools (including `export_review_comments` for Markdown/GitHub/GitLab and headless `codechart-cli` fallback for `get_architecture_summary` / `analyze_diff_impact` / `export_review_comments`) and 2 resources (`codechart://session/active`, `codechart://review/notes`) |
+| Stdio MCP Server | `src-tauri/src/mcp_server` | `main.rs` checks `--mcp` before the Tauri builder (no window; also `codechart-cli mcp`). Hand-rolled newline-delimited JSON-RPC (`protocol.rs`: `initialize`, `ping`, `tools/list`, `tools/call`, `resources/list|read`), 15 tools in `tool_{context,stack,canvas,review}.rs`, 2 resources (`codechart://session/active`, `codechart://review/notes`). `BridgeClient` speaks raw HTTP/1.1 over `TcpStream` to the loopback bridge. Headless fallback (`headless.rs`) runs `cli::analyze_fs` / `cli::compute_impact` in-process and reads `.codechart/*.json`; `export.rs` + `diff_shas.rs` format MR comments |
 
 ## Key Invariants
 
 - **Pure `ProjectGraph`:** Review Stacks, findings, spotlight, and blast radius never mutate `ProjectGraph` or `GraphDiffOverlay`.
 - **Per-`diffId` persistence:** Stacks and findings survive app restarts via `.codechart/review-stacks.json` and are wiped alongside Review Notes and Diff Reviews by Settings **Clear review info**.
 - **Loopback-only authenticated bridge:** Only `127.0.0.1` is bound, and `/rpc` requires `Authorization: Bearer <token>` from `~/.codechart/instances.json`.
-- **Clean separation from `playtest-mcp`:** `playtest-mcp` remains a dev-only WebView2 CDP harness; `codechart-mcp` runs in production builds via the typed Rust/Tauri bridge.
+- **Clean separation from `playtest-mcp`:** `playtest-mcp` remains a dev-only Node WebView2 CDP harness; the MCP server ships inside the production binary.
+- **Tool schemas are the argument contract:** `schema::normalize` fills each `inputSchema`'s `default`s, drops unknown keys and `null` on non-nullable optionals, and validates required/type/enum/bounds before forwarding. The frontend handlers (`mcp-bridge-review.ts`) cast arrays without defaulting them, so a schema default removed here breaks the window, not the server.
+- **Stdout is the protocol:** nothing in `codechart_lib` may `println!` (a stray line corrupts the JSON-RPC stream); diagnostics go to stderr. Tool failures return `isError` results, not JSON-RPC errors, so the assistant reads the message.
+- **Windows-subsystem stdio:** the release `codechart.exe` has no console, but handles piped by the MCP client still reach it.
 
 ## Cohorts, Explanations & Agent Diff Notes
 
@@ -35,7 +38,7 @@
 
 - **Before-graph retention:** `GraphSessionStore.getDiffGraphs()` keeps the `{ before, after }` graphs the overlay was built from (commits: both ref snapshots; working tree: base snapshot + live graph, submodules excluded). Cleared with the overlay. `analyze_diff_impact` and the drawer's refresh both go through `src/app/Private/request-diff-impact.ts`, which passes them as `before`/`after`, so `newDiagnostics` is real. Paste diffs have no before-graph → `diffGraphs = null` and the report carries `newDiagnosticsAvailable: false` (Impact tab says "Not computed"); never read `[]` as clean there.
 - **Topological layering (`topo_layers.rs` + `layer_depth.rs`):** deps between changed modules skip `references::is_paired_rust_parent_child` edges (same exemption as `flag_cycles`; `mod child;` + `use super::` would make every Rust crate one cycle). Remaining cycles are Tarjan SCCs (`references::find_cycle_sccs`) condensed to one node; each node is layered at its longest-path depth. A cycle is never split, layer K depends only on layers < K, and `TopoLayer.cyclic` marks layers holding a multi-module SCC. Output sorted/deterministic.
-- **GitLab export SHAs (`tools/codechart-mcp/Private/diff-shas.ts`):** every `position` needs `base_sha`/`start_sha`/`head_sha`. Caller args `baseSha`/`startSha`/`headSha` win; otherwise git resolves them from the `diffId` against `projectRoot` (live `get_active_context`, arg, or `CODECHART_PROJECT_ROOT`): `commits:B..H` → start=`B`, head=`H`, base=`merge-base B H`; `working-tree:B` → all three = `B` + top-level `warning` (GitLab can't comment on uncommitted code). Paste/unresolvable → positions without SHAs + `missingShas: true` + `warning`. Multi-line ranges anchor at `endLine` with "_(lines a–b)_" in the body (`line_range` needs per-line `line_code`s we can't derive). `formatGitLab` stays pure; SHAs arrive via `ExportInput.diffShas`.
+- **GitLab export SHAs (`src-tauri/src/mcp_server/diff_shas.rs`):** every `position` needs `base_sha`/`start_sha`/`head_sha`. Caller args `baseSha`/`startSha`/`headSha` win; otherwise git resolves them from the `diffId` against `projectRoot` (live `get_active_context`, arg, or `CODECHART_PROJECT_ROOT`): `commits:B..H` → start=`B`, head=`H`, base=`merge-base B H`; `working-tree:B` → all three = `B` + top-level `warning` (GitLab can't comment on uncommitted code). Paste/unresolvable → positions without SHAs + `missingShas: true` + `warning`. Multi-line ranges anchor at `endLine` with "_(lines a–b)_" in the body (`line_range` needs per-line `line_code`s we can't derive). `format_gitlab` stays pure; SHAs arrive via `ExportInput.diff_shas`.
 
 ## Assistant MCP Registration
 
@@ -43,12 +46,14 @@
 {
   "mcpServers": {
     "codechart": {
-      "command": "node",
-      "args": ["C:/Proyectos/codechart/tools/codechart-mcp/index.ts"]
+      "command": "C:/Users/<you>/AppData/Local/codechart/codechart.exe",
+      "args": ["--mcp"]
     }
   }
 }
 ```
+
+Help → **MCP server...** prints these snippets with the running executable's path filled in (`get_executable_path`).
 
 ## Flow
 

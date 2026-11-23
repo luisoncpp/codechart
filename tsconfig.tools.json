@@ -15,5 +15,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["tools/playtest-mcp/**/*.ts", "tools/codechart-mcp/**/*.ts"]
+  "include": ["tools/playtest-mcp/**/*.ts"]
 }

@@ -112,8 +112,8 @@ export function ReviewStackDrawer({
             />
           ) : (
             <div className="rs-empty">
-              No Review Stack loaded for this diff yet. Ask your coding agent over{" "}
-              <code>codechart-mcp</code> to analyze this MR and populate a Change Stack.
+              No Review Stack loaded for this diff yet. Ask your coding agent over the{" "}
+              CodeChart MCP server (<code>codechart --mcp</code>) to analyze this MR and populate a Change Stack.
             </div>
           )
         )}

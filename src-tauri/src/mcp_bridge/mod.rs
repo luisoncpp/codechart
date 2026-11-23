@@ -3,7 +3,8 @@ mod http;
 pub mod registry;
 
 use http::{read_http_request, write_json_response};
-use registry::{default_registry_path, generate_token, now_ms, register_instance, unregister_instance, InstanceEntry};
+pub use registry::{default_registry_path, read_registry, InstanceEntry};
+use registry::{generate_token, now_ms, register_instance, unregister_instance};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;

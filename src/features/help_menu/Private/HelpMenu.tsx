@@ -2,10 +2,22 @@
 import { useState } from "react";
 import { DropdownMenu, MenuActionItem } from "../../../ui/dropdown_menu";
 import { HELP_TOPICS, type HelpTopic } from "./help-docs";
+import { withExecutablePath } from "./help-mcp-server";
 import { HelpModal } from "./HelpModal";
 
-export function HelpMenu() {
+interface HelpMenuProps {
+  /** Path of the running executable, printed into the MCP server registration snippets. */
+  getExecutablePath: () => Promise<string | null>;
+}
+
+export function HelpMenu({ getExecutablePath }: HelpMenuProps) {
   const [activeTopic, setActiveTopic] = useState<HelpTopic | null>(null);
+
+  const openMcpTopic = async () => {
+    const topic = HELP_TOPICS["mcp-server"];
+    const executablePath = await getExecutablePath().catch(/*pathUnknown*/ () => null);
+    setActiveTopic({ ...topic, markdown: withExecutablePath(topic.markdown, executablePath) });
+  };
 
   return (
     <>
@@ -28,7 +40,7 @@ export function HelpMenu() {
         />
         <MenuActionItem
           label="MCP server..."
-          onSelect={() => setActiveTopic(HELP_TOPICS["mcp-server"])}
+          onSelect={() => void openMcpTopic()}
         />
         <MenuActionItem
           label="Code review skill / prompt..."

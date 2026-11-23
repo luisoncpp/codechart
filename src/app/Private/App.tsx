@@ -150,7 +150,7 @@ export function App() {
                 />
               </>
             )}
-            <HelpMenu />
+            <HelpMenu getExecutablePath={startup.getExecutablePath} />
           </>
         }
       />

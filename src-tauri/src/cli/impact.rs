@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="Headless CLI impact subcommand: topo layers, blast radius, and delta diagnostics as JSON")
 use crate::analysis::{analyze_project_with_options, opens_file, AnalyzeOptions};
 use crate::contract::ProjectGraph;
-use crate::diff_impact::{analyze_diff_impact, DiffImpactInput, DEFAULT_BLAST_DEPTH};
+use crate::diff_impact::{analyze_diff_impact, DiffImpactInput, DiffImpactReport, DEFAULT_BLAST_DEPTH};
 use crate::git::{self, WorkingTreeDiffInput};
 use crate::{analysis_fs_source, should_skip_plugins_walk};
 use std::collections::BTreeSet;
@@ -81,6 +81,12 @@ fn take_flag(arg: &str, next: Option<&String>, name: &str, index: &mut usize) ->
 }
 
 fn execute_impact(parsed: &ImpactArgs) -> Result<String, String> {
+    let report = compute_impact(parsed)?;
+    serde_json::to_string_pretty(&report).map_err(|e| format!("serialization failed: {e}"))
+}
+
+/// Analyze `parsed.path` (fs, refs, or working tree) and compute the impact report.
+pub fn compute_impact(parsed: &ImpactArgs) -> Result<DiffImpactReport, String> {
     let (before, after, changed) = if !parsed.changed.is_empty() {
         let after = analyze_fs(&parsed.path)?;
         (None, after, parsed.changed.clone())
@@ -107,16 +113,15 @@ fn execute_impact(parsed: &ImpactArgs) -> Result<String, String> {
         (before, after, extract_diff_paths(&diff))
     };
 
-    let report = analyze_diff_impact(DiffImpactInput {
+    Ok(analyze_diff_impact(DiffImpactInput {
         before: before.as_ref(),
         after: &after,
         changed_module_ids: &changed,
         max_depth: parsed.max_depth,
-    });
-    serde_json::to_string_pretty(&report).map_err(|e| format!("serialization failed: {e}"))
+    }))
 }
 
-fn analyze_fs(path: &str) -> Result<ProjectGraph, String> {
+pub fn analyze_fs(path: &str) -> Result<ProjectGraph, String> {
     let source = analysis_fs_source(path);
     analyze_project_with_options(
         &source,
@@ -142,7 +147,7 @@ fn analyze_git_ref(path: &str, git_ref: &str) -> Result<ProjectGraph, String> {
     .map_err(|e| e.to_string())
 }
 
-pub(crate) fn extract_diff_paths(diff_text: &str) -> Vec<String> {
+pub fn extract_diff_paths(diff_text: &str) -> Vec<String> {
     let mut paths = BTreeSet::new();
     for line in diff_text.lines() {
         let candidate = line

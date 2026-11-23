@@ -1,25 +1,30 @@
 // @Architecture(descriptionShort="Markdown documentation content for the MCP Server help topic")
 
-export const MCP_SERVER_MARKDOWN = `# CodeChart MCP Server (\`codechart-mcp\`)
+/** Stands for the installed executable in the snippets; `withExecutablePath` fills it in. */
+const EXECUTABLE_PLACEHOLDER = "<codechart.exe>";
+const UNKNOWN_PATH_NOTE =
+  "Replace `<codechart.exe>` with the absolute path of the installed executable (by default `%LOCALAPPDATA%/codechart/codechart.exe`), using forward slashes.";
+const KNOWN_PATH_NOTE = "The snippets below already point at this installation's executable.";
 
-\`codechart-mcp\` is a stdio **Model Context Protocol (MCP)** server that lets a coding assistant (Claude Code, Codex, Cursor, Antigravity, …) read your architecture graph, compute a diff's blast radius, populate the **Review Stack** drawer, and drive the live CodeChart canvas.
+export const MCP_SERVER_MARKDOWN = `# CodeChart MCP Server (\`codechart --mcp\`)
+
+The CodeChart executable is also a stdio **Model Context Protocol (MCP)** server. Started with \`--mcp\`, it opens no window and lets a coding assistant (Claude Code, Codex, Cursor, Antigravity, …) read your architecture graph, compute a diff's blast radius, populate the **Review Stack** drawer, and drive the live CodeChart canvas.
 
 For a ready-made review workflow built on these tools, see **Help → Code review skill / prompt**.
 
 ## Requirements
 
-- **Node.js 24+** (runs the TypeScript entry point directly, no build step).
-- **A CodeChart source checkout** with \`npm install\` already run — the server lives at \`tools/codechart-mcp/index.ts\` and imports \`@modelcontextprotocol/sdk\` and \`zod\` from that checkout's \`node_modules\`.
-- **CodeChart Desktop running with a project open** for live tools. Headless mode (below) additionally needs a built \`codechart-cli\` (or \`cargo\` on \`PATH\`).
+- **CodeChart Desktop installed.** Nothing else: no Node.js, no source checkout.
+- **CodeChart Desktop running with a project open** for live tools. Headless mode (below) works with the app closed.
 
 ## Registering the server
 
-Replace \`<codechart>\` with the absolute path of your checkout.
+${UNKNOWN_PATH_NOTE}
 
 **Claude Code** (CLI):
 
 \`\`\`
-claude mcp add codechart -- node <codechart>/tools/codechart-mcp/index.ts
+claude mcp add codechart -- "${EXECUTABLE_PLACEHOLDER}" --mcp
 \`\`\`
 
 **JSON config** (Claude Code \`.mcp.json\`, Cursor \`.cursor/mcp.json\`, Antigravity, Claude Desktop):
@@ -28,8 +33,8 @@ claude mcp add codechart -- node <codechart>/tools/codechart-mcp/index.ts
 {
   "mcpServers": {
     "codechart": {
-      "command": "node",
-      "args": ["<codechart>/tools/codechart-mcp/index.ts"]
+      "command": "${EXECUTABLE_PLACEHOLDER}",
+      "args": ["--mcp"]
     }
   }
 }
@@ -39,9 +44,11 @@ claude mcp add codechart -- node <codechart>/tools/codechart-mcp/index.ts
 
 \`\`\`toml
 [mcp_servers.codechart]
-command = "node"
-args = ["<codechart>/tools/codechart-mcp/index.ts"]
+command = "${EXECUTABLE_PLACEHOLDER}"
+args = ["--mcp"]
 \`\`\`
+
+From a source checkout, \`codechart-cli mcp\` (\`cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- mcp\`) runs the same server.
 
 ## How it connects
 
@@ -82,14 +89,13 @@ Review Stacks, findings and agent Diff Notes are saved per diff in \`<project>/.
 
 ## Headless mode
 
-If no desktop instance answers, \`get_architecture_summary\`, \`analyze_diff_impact\` and \`export_review_comments\` fall back to \`codechart-cli\` and the \`.codechart/\` files, provided you pass \`projectRoot\` (or set \`CODECHART_PROJECT_ROOT\`). Headless \`export_review_comments\` uses the most recent stack unless you pass \`diffId\`. Every other tool needs the app.
+If no desktop instance answers, \`get_architecture_summary\`, \`analyze_diff_impact\` and \`export_review_comments\` analyze the project inside the MCP server process and read the \`.codechart/\` files, provided you pass \`projectRoot\` (or set \`CODECHART_PROJECT_ROOT\`). Headless \`export_review_comments\` uses the most recent stack unless you pass \`diffId\`. Every other tool needs the app.
 
 ## Environment variables
 
 | Variable | Effect |
 |---|---|
 | \`CODECHART_PROJECT_ROOT\` | Default \`projectRoot\` for headless mode |
-| \`CODECHART_CLI_BIN\` | Path to the \`codechart-cli\` binary. Default: newest of \`src-tauri/target/{release,debug}\`, else \`cargo run\` |
 | \`CODECHART_MCP_REGISTRY\` | Alternative path to \`instances.json\` |
 
 ## Troubleshooting
@@ -101,5 +107,14 @@ If no desktop instance answers, \`get_architecture_summary\`, \`analyze_diff_imp
 | \`No project loaded\` | Open a project folder in the window the server connected to |
 | \`No active diff overlay in CodeChart\` | Call \`load_diff\` (or \`analyze_diff_impact\` with \`mode\`) before stack, finding or reviewed-file tools |
 | Tools act on the wrong window | Close the other CodeChart windows; the newest instance is used |
-| Server fails to start (\`Cannot find module\`) | Run \`npm install\` in the CodeChart checkout and check \`node --version\` ≥ 24 |
+| The assistant lists no CodeChart tools | Check that the configured command is the installed \`codechart.exe\` (forward slashes, quoted if it has spaces) and that \`--mcp\` is its first argument |
 `;
+
+/** The MCP topic's markdown with `<codechart.exe>` replaced by the running executable's path. */
+export function withExecutablePath(markdown: string, executablePath: string | null): string {
+  if (!executablePath) return markdown;
+  return markdown
+    .replace(UNKNOWN_PATH_NOTE, KNOWN_PATH_NOTE)
+    .split(EXECUTABLE_PLACEHOLDER)
+    .join(executablePath.replace(/\\/g, "/"));
+}

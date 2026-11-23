@@ -18,7 +18,7 @@ The `help_menu` feature provides the toolbar **Help** dropdown menu and document
   - `architecture-tags`: `@Architecture(...)` comment annotations on the first line of source files, supported keys (`descriptionShort`, `descriptionLong`, `type`, `icon`, `group`), length rules, and multi-language examples.
   - `diff-notes`: `#` column-0 markers in pasted diffs, before/after target binding, and review preservation.
   - `wiki-links`: `[[path#Section|label]]` syntax, comment token parsing, and `@Section`/ATX anchors.
-  - `mcp-server`: requirements (Node 24 + source checkout with `npm install`), registration for Claude Code / JSON configs / Codex TOML, instance discovery, 14-tool table with key arguments and preconditions, resources, persistence, headless fallback, env vars, troubleshooting.
+  - `mcp-server`: requirements (installed app only), registration of `codechart.exe --mcp` for Claude Code / JSON configs / Codex TOML, instance discovery, 15-tool table with key arguments and preconditions, resources, persistence, headless fallback, env vars, troubleshooting.
   - `code-review-prompt`: a ready-to-save `SKILL.md` (frontmatter `name`/`description`) for dependency-ordered Review Stack reviews over the MCP tools. Its human-only usage note lives in the topic's `intro`.
 
 ## Invariants
@@ -27,4 +27,5 @@ The `help_menu` feature provides the toolbar **Help** dropdown menu and document
 - Modals are dismissed via backdrop click, Escape key, or Close buttons without side effects on project state.
 - Copy action uses `navigator.clipboard.writeText` with transient visual feedback ("✓ Copied!").
 - Copy writes `topic.markdown` only; the optional `topic.intro` is rendered above it but never copied, so copied skills/prompts contain no human-facing instructions.
-- The MCP help tables mirror `tools/codechart-mcp/Private/register-*.ts`; update both when a tool's name, arguments or preconditions change.
+- The MCP help tables mirror `src-tauri/src/mcp_server/tool_*.rs`; update both when a tool's name, arguments or preconditions change.
+- The MCP snippets use a `<codechart.exe>` placeholder. `HelpMenu` asks its `getExecutablePath` prop (`StartupClient.getExecutablePath` → Tauri `get_executable_path`) and `withExecutablePath` fills in the running executable's path (forward slashes) before the modal opens, so the copied Markdown is ready to paste. A null path keeps the placeholder and its replace-me note.

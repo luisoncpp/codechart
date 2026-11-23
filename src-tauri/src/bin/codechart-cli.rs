@@ -6,6 +6,7 @@
 //   codechart-cli analyze <project-dir>   — print the full ProjectGraph as JSON
 //   codechart-cli check   <project-dir> [--fail-on=kind,...] [--format=json|text] [--quiet]
 //   codechart-cli help [command]        — usage; also --help / -h
+//   codechart-cli mcp                   — stdio MCP server (same as `codechart --mcp`)
 //   codechart-cli version               — print the version; also --version / -V
 
 use std::process::ExitCode;
@@ -32,6 +33,7 @@ fn main() -> ExitCode {
         Some("analyze") => cmd("analyze", &args[2..], run_analyze),
         Some("check") => run_check(&args[2..]),
         Some("impact") => run_impact(&args[2..]),
+        Some("mcp") => codechart_lib::mcp_server::run_stdio_process(),
         Some(other) => fail(&format!(
             "unknown subcommand: {other}\ntry: codechart-cli help"
         )),

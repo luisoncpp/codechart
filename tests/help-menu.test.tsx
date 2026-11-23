@@ -2,8 +2,8 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { HelpMenu } from "../src/features/help_menu";
 
-function renderHelpMenu() {
-  render(<HelpMenu />);
+function renderHelpMenu(executablePath: string | null = null) {
+  render(<HelpMenu getExecutablePath={async () => executablePath} />);
 }
 
 function openHelpMenu() {
@@ -77,11 +77,12 @@ describe("HelpMenu dropdown and modals", () => {
     expect(screen.getByText(/Wiki links allow instant navigation/)).toBeInTheDocument();
   });
 
-  it("opens the MCP server and Code review skill/prompt modals", () => {
+  it("opens the MCP server and Code review skill/prompt modals", async () => {
     renderHelpMenu();
     openHelpMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: "MCP server..." }));
-    expect(screen.getByRole("heading", { name: "Help: MCP server" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Help: MCP server" })).toBeInTheDocument();
+    expect(screen.getByText(/Replace .*with the absolute path of the installed executable/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Tools (15)" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Troubleshooting" })).toBeInTheDocument();
 
@@ -90,6 +91,18 @@ describe("HelpMenu dropdown and modals", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Code review skill / prompt..." }));
     expect(screen.getByRole("heading", { name: "Help: Code review skill / prompt" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Workflow" })).toBeInTheDocument();
+  });
+
+  // The registration snippets must name the installed executable, so no source checkout is needed.
+  it("fills the MCP registration snippets with the running executable's path", async () => {
+    renderHelpMenu(String.raw`C:\Users\me\AppData\Local\codechart\codechart.exe`);
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "MCP server..." }));
+
+    const exe = "C:/Users/me/AppData/Local/codechart/codechart.exe";
+    expect(await screen.findByText(new RegExp(`"command": "${exe}"`))).toBeInTheDocument();
+    expect(screen.queryByText(/<codechart\.exe>/)).toBeNull();
+    expect(screen.getByText(/already point at this installation's executable/)).toBeInTheDocument();
   });
 
   // The skill starts with SKILL.md frontmatter; marked would render it as an

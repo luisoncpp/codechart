@@ -10,6 +10,7 @@ pub mod git;
 pub mod grouping;
 pub mod language_adapter;
 pub mod mcp_bridge;
+pub mod mcp_server;
 pub mod project_config;
 pub mod project_source;
 pub mod references;
@@ -57,6 +58,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             tauri_api::get_startup_project_path,
+            tauri_api::get_executable_path,
             tauri_api::analyze_project,
             tauri_api::load_project_snapshot,
             tauri_api::read_module_source,

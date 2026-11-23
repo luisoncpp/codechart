@@ -7,5 +7,8 @@ export function createTauriStartupClient(): StartupClient {
     async getStartupProjectPath(): Promise<string | null> {
       return invoke<string | null>("get_startup_project_path");
     },
+    async getExecutablePath(): Promise<string | null> {
+      return invoke<string | null>("get_executable_path");
+    },
   };
 }

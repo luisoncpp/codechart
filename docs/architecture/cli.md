@@ -5,7 +5,7 @@
 Headless entry to the analysis pipeline. `analyze` dumps the full `ProjectGraph`; `check` is the CI quality gate.
 
 ```bash
-cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- <parse|groups|analyze|check|help|version> [path]
+cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- <parse|groups|analyze|check|impact|mcp|help|version> [path]
 ```
 
 | Subcommand | Output | Exit |
@@ -15,6 +15,7 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin codechart-cli -- <parse|gro
 | `analyze <dir>` | pretty `ProjectGraph` JSON (debug dump) | 0 when analysis succeeds |
 | `check <dir>` | diagnostics only; no graph | **non-zero** when a fail-on kind is present |
 | `impact <dir>` | `DiffImpactReport` JSON (`--changed` / `--base` / `--head` / `--max-depth`) | 0 on success |
+| `mcp` | stdio MCP server, same as `codechart --mcp` (see [review-stack-mcp](./review-stack-mcp.md)) | 0 when stdin closes |
 | `help [command]` | usage for the CLI or one command | 0 (`--help` / `-h` are aliases) |
 | `version` | `codechart-cli <CARGO_PKG_VERSION>` | 0 (`--version` / `-V` are aliases) |
 
