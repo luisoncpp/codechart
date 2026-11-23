@@ -15,6 +15,7 @@ import { useClosePreviewFrames } from "./use-close-preview-frames";
 import { PreviewFramesView } from "./PreviewFramesView";
 import { withNewSources } from "./source-cache";
 import { createReviewNotePreview } from "./review-note-preview";
+import { createMarkdownFramePreview } from "./markdown-frame-preview";
 import { createWikiLinkPreview } from "./wiki-link-preview";
 import { createDocumentPreview } from "./document-preview";
 import { useClickableSymbols } from "./use-clickable-symbols";
@@ -94,9 +95,13 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     [containerRef, store, graph, diffOverlay, open, prefetchSources],
   );
 
-  const openReviewNotePreview = useMemo(
-    () => createReviewNotePreview({ containerRef, store, nextId, setFrames }),
-    [containerRef, store],
+  /** Openers driven by one-shot requests from the sidebars (Review Notes, Review Stack). */
+  const requestOpeners = useMemo(
+    () => ({
+      reviewNote: createReviewNotePreview({ containerRef, store, nextId, setFrames, armGrace: armOpenGrace }),
+      markdown: createMarkdownFramePreview({ containerRef, nextId, setFrames }),
+    }),
+    [containerRef, store, armOpenGrace],
   );
 
   /** Both link entry points: inside a frame, and on the canvas itself. */
@@ -150,7 +155,8 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
   return {
     openFromSymbolNode,
     openDocumentPreview,
-    openReviewNotePreview,
+    openReviewNotePreview: requestOpeners.reviewNote,
+    openMarkdownFrame: requestOpeners.markdown,
     openWikiLinkFromEvent: wikiLink.openFromEvent,
     closeTransient: closeIfAllowed,
     framesView: (
@@ -164,5 +170,3 @@ export function usePreviewFrames(deps: PreviewFramesDeps) {
     ),
   };
 }
-
-

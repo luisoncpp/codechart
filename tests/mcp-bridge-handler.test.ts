@@ -133,6 +133,43 @@ describe("McpBridgeHandler", () => {
     expect(reviewStack.getNavigationRequest()?.path).toBe("src/a.ts");
   });
 
+  it("upserts agent Diff Notes and opens a cohort's explanation on focus_layer", async () => {
+    const session = new GraphSessionStore(analysisClient, gitClient, layoutEngine);
+    await session.loadProject("/repo");
+    const client = createMemoryReviewStackClient();
+    const reviewStack = new ReviewStackStore(client);
+    const reviewNotes = new ReviewNotesStore(createMemoryReviewNotesClient());
+    const handler = new McpBridgeHandler({ session, reviewNotes, reviewStack, client });
+    const call = (method: string, params: Record<string, unknown>) => handler.handle({ id: method, method, params });
+
+    await call("load_diff", { mode: "paste", diffText: SAMPLE_DIFF });
+    await call("set_review_stack", {
+      title: "T",
+      cohorts: [{
+        id: "c1", title: "Core", rationale: "", dependsOn: [], moduleIds: [],
+        explanation: "# Why", hunks: [{ path: "src/a.ts", side: "after", startLine: 1, endLine: 1 }],
+      }],
+    });
+    const saved = (await call("upsert_diff_notes", {
+      notes: [{ id: "n1", path: "src/a.ts", side: "after", startLine: 1, endLine: 1, body: "Because" }],
+    })) as { count: number };
+    expect(saved.count).toBe(1);
+
+    const quiet = (await call("focus_layer", { cohortId: "c1", openExplanation: false })) as {
+      moduleIds: string[]; explanationOpened: boolean;
+    };
+    expect(quiet.moduleIds).toEqual(["src/a.ts"]);
+    expect(quiet.explanationOpened).toBe(false);
+    expect(reviewStack.getExplanationRequest()).toBeNull();
+
+    const opened = (await call("focus_layer", { cohortId: "c1" })) as { explanationOpened: boolean };
+    expect(opened.explanationOpened).toBe(true);
+    expect(reviewStack.getExplanationRequest()?.markdown).toBe("# Why");
+
+    const state = (await call("get_review_state", {})) as { diffNotes: unknown[] };
+    expect(state.diffNotes).toHaveLength(1);
+  });
+
   it("passes the diff's before-graph so live analyze_diff_impact reports new diagnostics", async () => {
     const cycle: Diagnostic = {
       id: "circularDependency:src/a.ts,src/b.ts:src/a.ts",

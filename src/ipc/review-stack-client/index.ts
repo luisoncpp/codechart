@@ -3,7 +3,9 @@ export {
   createMemoryReviewStackClient,
 } from "./Private/tauri-client";
 export type {
+  AgentDiffNote,
   BridgeRpcRequest,
+  CohortHunk,
   DiffImpactReport,
   FindingSeverity,
   FindingStatus,

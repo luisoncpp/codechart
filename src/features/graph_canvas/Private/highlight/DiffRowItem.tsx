@@ -9,7 +9,7 @@ import type { WikiLinkSpan } from "../wiki_links";
 import { InlineReviewNotes } from "../../../review_notes";
 import { DiffNotesList } from "../../../diff_visualizer";
 import { InlineFindings } from "../../../review_stack";
-import type { ReviewFinding } from "../../../../ipc/review-stack-client";
+import type { CohortHunk, ReviewFinding } from "../../../../ipc/review-stack-client";
 
 export interface DiffRowItemProps {
   row: DiffDisplayRow;
@@ -27,6 +27,8 @@ export interface DiffRowItemProps {
   draft: any;
   diffNotes?: readonly DiffNote[];
   findings?: readonly ReviewFinding[];
+  /** The spotlighted cohort's hunks in this file; rows inside one get the cohort band. */
+  cohortRanges?: readonly CohortHunk[];
   onLineClick?: (line: number, extend: boolean) => void;
   /** Left column of the split view: even context rows show the before-file. */
   beforeSide?: boolean;
@@ -34,6 +36,14 @@ export interface DiffRowItemProps {
 
 const isBeforeRow = (row: DiffDisplayRow, beforeSide?: boolean) =>
   beforeSide || row.kind === "remove" || row.kind === "move-remove";
+
+/** Row-local boolean so the memoized `DiffCodeLine` never sees the range list. */
+function inCohortRange(row: DiffDisplayRow, ranges?: readonly CohortHunk[], beforeSide?: boolean) {
+  if (!ranges || ranges.length === 0) return false;
+  const side = isBeforeRow(row, beforeSide) ? "before" : "after";
+  const line = row.lineNumber;
+  return ranges.some((h) => (h.side ?? "after") === side && line >= h.startLine && line <= h.endLine);
+}
 
 export function DiffRowItem(props: DiffRowItemProps) {
   const { row, tokens, chrome, clickableNames, links, diffNotes, beforeSide } = props;
@@ -50,6 +60,7 @@ export function DiffRowItem(props: DiffRowItemProps) {
         clickableNames={clickableNames}
         links={links}
         beforeSide={beforeSide}
+        inCohort={inCohortRange(row, props.cohortRanges, beforeSide)}
       />
       <RowDiffNotes row={row} diffNotes={diffNotes} zoom={chrome.zoom} beforeSide={beforeSide} />
       <RowFindings row={row} findings={props.findings} zoom={chrome.zoom} beforeSide={beforeSide} />
@@ -76,6 +87,7 @@ function CurrentRowItem(props: Omit<DiffRowItemProps, "beforeSide">) {
         matchRanges={props.matchesByLine?.get(line)} activeMatchRef={props.activeMatchRef}
         activeMatchCol={props.activeMatch?.line === line ? props.activeMatch.startCol : undefined}
         anchored={isAnchored}
+        inCohort={inCohortRange(row, props.cohortRanges)}
         onLineClick={props.onLineClick}
       />
       {/* Diff Notes and Agent Findings stack above Review Notes on the same line. */}

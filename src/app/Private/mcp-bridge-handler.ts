@@ -1,23 +1,10 @@
 // @Architecture(descriptionShort="Dispatches incoming MCP bridge RPC methods against live CodeChart stores")
-import type {
-  BridgeRpcRequest,
-  FindingStatus,
-  ReviewBlocker,
-  ReviewCohort,
-  ReviewFinding,
-  ReviewStackClient,
-} from "../../ipc/review-stack-client";
-import type { GraphSessionStore } from "../../state/graph-session";
-import type { ReviewNotesStore } from "../../state/review-notes";
-import type { ReviewStackStore, SpotlightMode } from "../../state/review-stack";
+import type { BridgeRpcRequest } from "../../ipc/review-stack-client";
 import { requestDiffImpact } from "./request-diff-impact";
+import * as review from "./mcp-bridge-review";
+import type { McpBridgeDeps } from "./mcp-bridge-review";
 
-export interface McpBridgeDeps {
-  session: GraphSessionStore;
-  reviewNotes: ReviewNotesStore;
-  reviewStack: ReviewStackStore;
-  client: ReviewStackClient;
-}
+export type { McpBridgeDeps };
 
 export class McpBridgeHandler {
   constructor(private readonly deps: McpBridgeDeps) {}
@@ -34,24 +21,26 @@ export class McpBridgeHandler {
       case "analyze_diff_impact":
         return this.analyzeDiffImpact(p);
       case "set_review_stack":
-        return this.setReviewStack(p);
+        return review.setReviewStack(this.deps, p);
       case "upsert_findings":
-        return this.upsertFindings(p);
+        return review.upsertFindings(this.deps, p);
+      case "upsert_diff_notes":
+        return review.upsertDiffNotes(this.deps, p);
       case "clear_review_stack":
         await this.deps.reviewStack.clearStack();
         return { cleared: true };
       case "focus_layer":
-        return this.focusLayer(p);
+        return review.focusLayer(this.deps, p);
       case "show_blast_radius":
         return this.showBlastRadius(p);
       case "navigate_to":
         return this.navigateTo(p);
       case "get_review_state":
-        return this.getReviewState(Boolean(p.includeResolved));
+        return review.getReviewState(this.deps, Boolean(p.includeResolved));
       case "set_files_reviewed":
-        return this.setFilesReviewed(p);
+        return review.setFilesReviewed(this.deps, p);
       case "resolve_finding":
-        return this.resolveFinding(p);
+        return review.resolveFinding(this.deps, p);
       default:
         throw new Error(`Unknown MCP bridge method: ${req.method}`);
     }
@@ -131,30 +120,6 @@ export class McpBridgeHandler {
     return report;
   }
 
-  private async setReviewStack(p: Record<string, unknown>) {
-    return this.deps.reviewStack.setStack({
-      title: String(p.title ?? "MR Review"),
-      summary: String(p.summary ?? ""),
-      cohorts: Array.isArray(p.cohorts) ? (p.cohorts as ReviewCohort[]) : [],
-      blockers: Array.isArray(p.blockers) ? (p.blockers as ReviewBlocker[]) : [],
-    });
-  }
-
-  private async upsertFindings(p: Record<string, unknown>) {
-    const findings = Array.isArray(p.findings) ? (p.findings as ReviewFinding[]) : [];
-    const saved = await this.deps.reviewStack.upsertFindings(findings);
-    return { count: saved.length, findings: saved };
-  }
-
-  private async focusLayer(p: Record<string, unknown>) {
-    const cohortId = asOptionalString(p.cohortId) ?? null;
-    const mode = (asOptionalString(p.spotlight) as SpotlightMode | undefined) ?? "dim-others";
-    this.deps.reviewStack.focusCohort(cohortId, mode);
-    const cohort = this.deps.reviewStack.getStack()?.cohorts.find((c) => c.id === cohortId);
-    if (cohort?.moduleIds[0]) await this.deps.session.focusOn(cohort.moduleIds[0]);
-    return { activeCohortId: cohortId, spotlight: mode, moduleIds: cohort?.moduleIds ?? [] };
-  }
-
   private async showBlastRadius(p: Record<string, unknown>) {
     const { session, reviewStack, client } = this.deps;
     const graph = session.getGraph();
@@ -187,39 +152,6 @@ export class McpBridgeHandler {
     const openPreview = p.openPreview !== false;
     this.deps.reviewStack.requestNavigate({ path, line, symbol, openPreview });
     return { navigated: true, path, line, openPreview };
-  }
-
-  private getReviewState(includeResolved: boolean) {
-    const { session, reviewNotes, reviewStack } = this.deps;
-    const overlay = session.getDiffOverlay();
-    const allDiffPaths = overlay
-      ? [...new Set([...overlay.affectedModuleIds, ...overlay.deletedModuleIds])]
-      : [];
-    const reviewed = session.getDiffReviewedIds();
-    const stack = reviewStack.getStack();
-    const findings = (stack?.findings ?? []).filter((f) => includeResolved || f.status === "open");
-    return {
-      diffId: session.getActiveDiffId(),
-      reviewedPaths: [...reviewed],
-      unreviewedPaths: allDiffPaths.filter((p) => !reviewed.has(p)),
-      reviewNotes: reviewNotes.getDocument()?.notes ?? [],
-      findings,
-      cohorts: stack?.cohorts ?? [],
-    };
-  }
-
-  private setFilesReviewed(p: Record<string, unknown>) {
-    const paths = Array.isArray(p.paths) ? p.paths.map(String) : [];
-    const reviewed = Boolean(p.reviewed);
-    this.deps.session.setDiffReviewed(paths, reviewed);
-    return { reviewedPaths: [...this.deps.session.getDiffReviewedIds()] };
-  }
-
-  private async resolveFinding(p: Record<string, unknown>) {
-    const id = String(p.findingId ?? "");
-    const status = String(p.status ?? "resolved") as FindingStatus;
-    const updated = await this.deps.reviewStack.resolveFinding(id, status);
-    return { updated, findingId: id, status };
   }
 }
 

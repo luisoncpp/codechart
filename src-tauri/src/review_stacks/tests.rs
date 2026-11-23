@@ -12,6 +12,14 @@ fn sample_stack(diff_id: &str) -> ReviewStackRecord {
             rationale: "Foundation layer".to_string(),
             depends_on: vec![],
             module_ids: vec!["src/model/invite.ts".to_string()],
+            explanation: "## Why
+Invites need an owner.".to_string(),
+            hunks: vec![CohortHunk {
+                path: "src/model/invite.ts".to_string(),
+                side: FindingSide::After,
+                start_line: 1,
+                end_line: 20,
+            }],
         }],
         blockers: vec![ReviewBlocker {
             id: "b1".to_string(),
@@ -34,6 +42,14 @@ fn sample_stack(diff_id: &str) -> ReviewStackRecord {
             blocker: true,
             suggested_fix: Some("if (invite.expiresAt < Date.now()) throw ...".to_string()),
             status: FindingStatus::Open,
+        }],
+        diff_notes: vec![AgentDiffNote {
+            id: "n1".to_string(),
+            path: "src/model/invite.ts".to_string(),
+            side: FindingSide::After,
+            start_line: 3,
+            end_line: 5,
+            body: "Explains the **owner** field.".to_string(),
         }],
     }
 }
@@ -70,4 +86,37 @@ fn rejects_escaping_paths_and_invalid_line_ranges() {
     bad_lines.findings[0].start_line = 20;
     bad_lines.findings[0].end_line = 10;
     assert!(save_review_stack(root, bad_lines).is_err());
+}
+
+#[test]
+fn rejects_bad_hunk_and_diff_note_anchors() {
+    let dir = TempDir::new().unwrap();
+    let root = dir.path().to_str().unwrap();
+
+    let mut bad_hunk = sample_stack("commits:a..b");
+    bad_hunk.cohorts[0].hunks[0].path = "/abs/invite.ts".to_string();
+    assert!(save_review_stack(root, bad_hunk).is_err());
+
+    let mut bad_note_lines = sample_stack("commits:a..b");
+    bad_note_lines.diff_notes[0].start_line = 0;
+    assert!(save_review_stack(root, bad_note_lines).is_err());
+
+    let mut blank_note_id = sample_stack("commits:a..b");
+    blank_note_id.diff_notes[0].id = " ".to_string();
+    assert!(save_review_stack(root, blank_note_id).is_err());
+}
+
+#[test]
+fn loads_documents_written_before_hunks_and_diff_notes_existed() {
+    let dir = TempDir::new().unwrap();
+    let root = dir.path().to_str().unwrap();
+    let legacy = r#"{"version":1,"stacks":[{"diffId":"paste:1","title":"T",
+        "cohorts":[{"id":"c1","title":"C","moduleIds":["src/a.ts"]}]}]}"#;
+    std::fs::create_dir_all(dir.path().join(".codechart")).unwrap();
+    std::fs::write(dir.path().join(".codechart/review-stacks.json"), legacy).unwrap();
+
+    let stack = load_review_stack(root, "paste:1").unwrap().unwrap();
+    assert!(stack.diff_notes.is_empty());
+    assert!(stack.cohorts[0].hunks.is_empty());
+    assert_eq!(stack.cohorts[0].explanation, "");
 }

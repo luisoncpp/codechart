@@ -93,7 +93,8 @@ export function GraphCanvas({
     store, notes: reviewNotes, openPreview: previews.openReviewNotePreview, guard: moveGuard,
   });
   useReviewStackNavigation({
-    store, reviewStack, openPreview: previews.openReviewNotePreview, guard: moveGuard,
+    store, reviewStack, openPreview: previews.openReviewNotePreview,
+    openMarkdown: previews.openMarkdownFrame, guard: moveGuard,
   });
 
   const controller = useMemo(

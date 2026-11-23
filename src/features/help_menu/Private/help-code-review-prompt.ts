@@ -10,14 +10,18 @@ description: Review a pull/merge request or local diff with the CodeChart MCP se
 
 # CodeChart Review Stack review
 
-Large diffs are hard to review as an alphabetical file list. Help the human understand the change in **dependency order** — foundations first, callers and UI last — so each file is read after the code it relies on. Your job is to explain intent and architectural impact and to surface the few issues that matter, not to produce a long list of comments.
+Large diffs are hard to review as an alphabetical file list. Help the human understand the change as a **story told in dependency order** — foundations first, callers and UI last — so each change is read after the code it relies on. Your job has two halves:
+
+1. **Explain** — intent, non-obvious decisions and how the pieces connect. This is most of the value. Write it generously as Diff Notes and cohort explanations, right next to the code.
+2. **Judge** — surface the issues that matter as Findings. Keep these few and confirmed.
 
 ## Terms
 
 - **Review Stack** — the drawer CodeChart shows: title, summary, cohorts, merge blockers, findings.
-- **Cohort** (also called a *layer*) — a small group of related changed modules reviewed together.
-- **Finding** — one issue anchored to a file and line range.
-- **Review Note** — a comment the *human* wrote in CodeChart. Treat it as their feedback to you.
+- **Cohort** (also called a *layer*) — a group of related **changes** (line-range hunks) that are easiest to explain together. A cohort is not a set of files: one file's changes may be split across several cohorts, and one cohort may touch many files.
+- **Diff Note** — *your* markdown explanation, rendered read-only right under the lines it explains. Use it the way you would use an explanatory code comment, without touching the code.
+- **Finding** — one issue (bug, risk, missing test…) anchored to a file and line range, with a severity.
+- **Review Note** — a comment the *human* wrote in CodeChart. Treat it as their feedback to you; you don't create these.
 - Module ids and paths are repo-relative POSIX paths (e.g. \`src/app/App.tsx\`).
 
 ## Ground rules
@@ -46,22 +50,31 @@ Large diffs are hard to review as an alphabetical file list. Help the human unde
 
 ### 3. Read the change
 
-Read the diff and the changed files, in layer order. Note each module's intent and any problems. Use \`newDiagnostics\` and the blast radius to judge how far a problem reaches.
+Read the diff and the changed files, in layer order. For each hunk note what it does, why, and how it connects to other hunks — this is the raw material for cohorts and Diff Notes. Note any problems too. Use \`newDiagnostics\` and the blast radius to judge how far a problem reaches.
 
 ### 4. Build the Review Stack
 
 Call \`set_review_stack\` once you understand the change (it replaces any earlier stack):
 
 - \`title\`: the change in a few words.
-- \`summary\`: 2–4 sentences on what changed and why.
-- \`cohorts\`: start from the topological layers, splitting or merging so each cohort holds 1–5 cohesive modules. Each cohort needs:
-  - \`id\` (stable, e.g. \`"L01"\`), \`title\`, and a \`rationale\` saying why these modules belong together and what to check
-  - \`moduleIds\` — **required for the canvas spotlight**; use ids from the impact report
+- \`summary\`: 2–4 sentences of markdown on what changed and why.
+- \`cohorts\`: group changes by **what is easiest to explain together** — one idea, one mechanism, one step of the story. The topological layers are a starting hint for the order, not the grouping. Split a file across cohorts when its hunks serve different ideas. Each cohort needs:
+  - \`id\` (stable, e.g. \`"L01"\`) and \`title\`
+  - \`rationale\`: 1–3 lines of markdown — the gist and what to check (shown in the drawer)
+  - \`explanation\`: the full markdown walkthrough, opened in its own frame next to the code: the problem, the approach, how the hunks fit together, what was considered and rejected, and what the reader should verify. Headings, lists and code blocks are welcome; link files as \`[[src/path.ts]]\`.
+  - \`hunks\`: the line ranges in this cohort — \`path\`, \`side\` (\`"after"\`, or \`"before"\` for pure deletions), \`startLine\`, \`endLine\`. They drive the canvas spotlight and the violet band beside the code.
+  - \`moduleIds\` (optional): files that belong to the cohort as a whole, e.g. new files
   - \`dependsOn\`: ids of earlier cohorts it builds on
-- Every changed module belongs to exactly one cohort, and a cohort never depends on a later one.
+- Every changed hunk belongs to exactly one cohort, and a cohort never depends on a later one.
 - \`blockers\`: issues that must be fixed before merging — always include any new cycle, layering violation or facade bypass, and every \`critical\` finding (link it with \`findingId\`).
 
-### 5. Attach findings
+### 5. Annotate with Diff Notes
+
+Call \`upsert_diff_notes\`. Leave a Diff Note wherever a reviewer reading the hunk would ask *"why?"* or *"how does this connect?"* — intent, a non-obvious decision or trade-off, an invariant the code relies on, the other file that calls or is called by this one, a subtle ordering or edge case the code handles on purpose. Aim for roughly one per meaningful hunk group; a typical review has many more Diff Notes than Findings. Don't restate what the code plainly says, and don't put issues here (those are Findings).
+
+Each note needs a stable \`id\` (e.g. \`"why-retry-backoff"\`; re-sending it updates the note), \`path\`, \`side\`, \`startLine\`/\`endLine\` (same rules as findings — the note renders under \`endLine\`) and a markdown \`body\` (short paragraphs, inline code, links).
+
+### 6. Attach findings
 
 Call \`upsert_findings\`. Each finding needs:
 
@@ -71,10 +84,10 @@ Call \`upsert_findings\`. Each finding needs:
   - \`critical\` — must block the merge: security hole, data loss, crash, broken invariant, new cycle or layering violation. Also set \`blocker: true\`.
   - \`major\` — a real bug or missing edge case that should be fixed in this change.
   - \`minor\` — maintainability, clarity or a missing test.
-  - \`trivial\` / \`info\` — optional polish, or an explanation that helps the reader.
+  - \`trivial\` / \`info\` — optional polish or a low-stakes observation. Explanations go in Diff Notes, not here.
 - \`title\` (one line), \`body\` (what is wrong, why it matters, how you know), \`layerId\` (the cohort id), and \`suggestedFix\` when you have a concrete one.
 
-### 6. Walk the human through it
+### 7. Walk the human through it
 
 Give a short overview, then stop and wait:
 
@@ -86,13 +99,13 @@ Start with cohort L01 (<title>)?
 \`\`\`
 
 For each cohort the user wants to see:
-- Call \`focus_layer\` with its id to spotlight it on the canvas, and explain the rationale and its findings.
+- Call \`focus_layer\` with its id: it spotlights the cohort's files, bands its hunks in the code and opens its explanation frame. Then summarize the rationale and its findings.
 - Use \`navigate_to\` with \`openPreview: true\` and \`line\` to show a finding's code, and \`show_blast_radius\` when the user asks what a change could break.
 - Move to the next cohort only when the user asks.
 
 When the user asks about "this" or "here", call \`get_active_context\` first so your answer matches what they have selected.
 
-### 7. Sync and hand off
+### 8. Sync and hand off
 
 - Call \`get_review_state\` to pick up the human's Review Notes, reviewed checkmarks and finding statuses before summarizing or exporting.
 - When the user agrees a finding is fixed or not an issue, call \`resolve_finding\` (\`resolved\` or \`dismissed\`).

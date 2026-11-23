@@ -3,12 +3,33 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { jsonText, type CodechartBridgeClient } from "./bridge-client.ts";
 
+const lineRange = {
+  path: z.string(),
+  side: z.enum(["before", "after"]).default("after"),
+  startLine: z.number().int().min(1),
+  endLine: z.number().int().min(1),
+};
+
 const cohortSchema = z.object({
   id: z.string(),
   title: z.string(),
-  rationale: z.string().default(""),
+  rationale: z.string().default("").describe("1-3 line markdown summary shown in the drawer."),
+  explanation: z
+    .string()
+    .default("")
+    .describe("Markdown walkthrough of the cohort, opened in its own preview frame."),
   dependsOn: z.array(z.string()).default([]),
-  moduleIds: z.array(z.string()).default([]),
+  hunks: z
+    .array(z.object(lineRange))
+    .default([])
+    .describe("Line ranges in this cohort. A file may be split across cohorts."),
+  moduleIds: z.array(z.string()).default([]).describe("Files that belong to this cohort as a whole."),
+});
+
+const diffNoteSchema = z.object({
+  id: z.string().describe("Stable id; re-sending it updates the note."),
+  ...lineRange,
+  body: z.string().describe("Markdown explanation rendered under the range."),
 });
 
 const blockerSchema = z.object({
@@ -21,10 +42,7 @@ const blockerSchema = z.object({
 
 const findingSchema = z.object({
   id: z.string(),
-  path: z.string(),
-  side: z.enum(["before", "after"]).default("after"),
-  startLine: z.number().int().min(1),
-  endLine: z.number().int().min(1),
+  ...lineRange,
   severity: z.enum(["critical", "major", "minor", "trivial", "info"]),
   category: z.string().default("review"),
   title: z.string(),
@@ -54,7 +72,7 @@ export function registerStackTools(server: McpServer, bridge: CodechartBridgeCli
     "set_review_stack",
     {
       description:
-        "Populate and persist the Change Stack drawer for the active diff (summary, dependency-ordered cohorts/layers, and merge blockers).",
+        "Populate and persist the Change Stack drawer for the active diff: summary, merge blockers, and cohorts. A cohort groups related changes (line-range hunks, possibly parts of several files) that are best explained together.",
       inputSchema: {
         title: z.string(),
         summary: z.string().default(""),
@@ -76,6 +94,16 @@ export function registerStackTools(server: McpServer, bridge: CodechartBridgeCli
   );
 
   server.registerTool(
+    "upsert_diff_notes",
+    {
+      description:
+        "Attach or update read-only markdown Diff Notes under changed lines: explain intent, non-obvious decisions, invariants and cross-file connections. Not for issues (use findings).",
+      inputSchema: { notes: z.array(diffNoteSchema) },
+    },
+    async (args) => jsonText(await bridge.call("upsert_diff_notes", args)),
+  );
+
+  server.registerTool(
     "clear_review_stack",
     { description: "Clear the persisted Review Stack and findings for the active diff." },
     async () => jsonText(await bridge.call("clear_review_stack")),
@@ -84,10 +112,15 @@ export function registerStackTools(server: McpServer, bridge: CodechartBridgeCli
   server.registerTool(
     "focus_layer",
     {
-      description: "Spotlight a cohort/layer on the CodeChart canvas and focus its first module.",
+      description:
+        "Spotlight a cohort on the CodeChart canvas, band its line ranges in code, focus its first file, and open its explanation frame.",
       inputSchema: {
         cohortId: z.string().nullable().describe("Cohort id to spotlight, or null to clear spotlight."),
         spotlight: z.enum(["dim-others", "highlight", "off"]).optional(),
+        openExplanation: z
+          .boolean()
+          .optional()
+          .describe("Open the cohort's explanation in a preview frame (default true)."),
       },
     },
     async (args) => jsonText(await bridge.call("focus_layer", args)),

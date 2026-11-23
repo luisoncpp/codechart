@@ -15,14 +15,22 @@ interface ReviewPreviewDeps {
   store: GraphSessionStore;
   nextId: MutableRefObject<number>;
   setFrames: Dispatch<SetStateAction<readonly PreviewFrame[]>>;
+  /**
+   * Called before the awaited read. A sidebar click's open path is all
+   * promises, so it can finish between React's root listener and the
+   * document's outside-click listener of that same click — which would
+   * close the new frame at once.
+   */
+  armGrace: () => void;
 }
 
 export function createReviewNotePreview(deps: ReviewPreviewDeps) {
-  const { containerRef, store, nextId, setFrames } = deps;
+  const { containerRef, store, nextId, setFrames, armGrace } = deps;
   return async (request: ReviewPreviewRequest) => {
     const container = containerRef.current;
     const module = store.getGraph()?.modules.find((item) => item.path === request.path);
     if (!container || !module) return;
+    armGrace();
     const sourceText = await store.fetchModuleSource(module.id);
     const bounds = container.getBoundingClientRect();
     const pos = computePointWidgetPosition(

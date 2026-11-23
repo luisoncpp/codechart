@@ -47,7 +47,7 @@ args = ["<codechart>/tools/codechart-mcp/index.ts"]
 
 When CodeChart Desktop opens a project it starts a loopback bridge on \`127.0.0.1\` (random port, per-instance bearer token) and registers it in \`~/.codechart/instances.json\`. The MCP server reads that file and talks to the **most recently started instance that answers its health check**. With several windows open, the last one launched wins.
 
-## Tools (14)
+## Tools (15)
 
 Ids such as \`moduleId\` and \`path\` are repo-relative POSIX paths (e.g. \`src/app/App.tsx\`).
 
@@ -57,13 +57,14 @@ Ids such as \`moduleId\` and \`path\` are repo-relative POSIX paths (e.g. \`src/
 | \`get_architecture_summary\` | Group tree, facades, tags, module/edge counts, diagnostics | \`groupId?\`, \`projectRoot?\` | App or headless |
 | \`analyze_diff_impact\` | Foundation-first topological \`layers\`, transitive \`blastRadius\`, \`affectedGroupIds\`, \`newDiagnostics\` | \`mode?\` (loads the diff first), \`baseRef\`/\`headRef\`/\`diffText\`, \`maxDepth\` (1–8, default 3), \`projectRoot?\` | App or headless |
 | \`load_diff\` | Apply a diff overlay to the canvas; returns \`diffId\` and affected module ids | \`mode\`: \`commits\` (\`baseRef\`, \`headRef\`), \`working-tree\` (\`baseRef\`), \`paste\` (\`diffText\`) | App |
-| \`set_review_stack\` | Replace the Review Stack: title, summary, cohorts (layers), merge blockers | \`title\`, \`summary\`, \`cohorts[]\` (\`id\`, \`title\`, \`rationale\`, \`dependsOn\`, \`moduleIds\`), \`blockers[]\` | Active diff |
+| \`set_review_stack\` | Replace the Review Stack: title, markdown summary, cohorts, merge blockers. A cohort groups related changes, so one file may be split across cohorts | \`title\`, \`summary\`, \`cohorts[]\` (\`id\`, \`title\`, \`rationale\` (markdown), \`explanation\` (markdown, own frame), \`dependsOn\`, \`hunks[]\` (\`path\`, \`side\`, \`startLine\`, \`endLine\`), \`moduleIds\` (whole files)), \`blockers[]\` | Active diff |
 | \`upsert_findings\` | Add or update findings by \`id\`, shown inline in Preview Frames and in the Findings tab | \`findings[]\` (\`id\`, \`path\`, \`side\`, \`startLine\`, \`endLine\`, \`severity\`, \`title\`, \`body\`, \`layerId?\`, \`blocker?\`, \`suggestedFix?\`) | Active diff |
-| \`clear_review_stack\` | Delete the stack and findings for the active diff | — | Active diff |
-| \`focus_layer\` | Spotlight one cohort's \`moduleIds\` and center its first module | \`cohortId\` (\`null\` clears), \`spotlight?\`: \`dim-others\` / \`highlight\` / \`off\` | Stack |
+| \`upsert_diff_notes\` | Add or update read-only markdown Diff Notes by \`id\`, rendered under their line range in L2 documents and Preview Frames | \`notes[]\` (\`id\`, \`path\`, \`side\`, \`startLine\`, \`endLine\`, \`body\`) | Active diff |
+| \`clear_review_stack\` | Delete the stack, findings and agent Diff Notes for the active diff | — | Active diff |
+| \`focus_layer\` | Spotlight one cohort's files, band its hunks in code, center its first file and open its explanation frame | \`cohortId\` (\`null\` clears), \`spotlight?\`: \`dim-others\` / \`highlight\` / \`off\`, \`openExplanation?\` (default \`true\`) | Stack |
 | \`show_blast_radius\` | Badge downstream dependents \`SRC\` / \`R+1\` / \`R+2\` … | \`moduleId?\` (default: all changed modules), \`maxDepth?\` | App |
 | \`navigate_to\` | Center a module and optionally open its Preview Frame at a line | \`path\`, \`line?\`, \`symbol?\`, \`openPreview?\` | App |
-| \`get_review_state\` | Reviewed/unreviewed paths, human Review Notes, cohorts, finding statuses | \`includeResolved?\` | App |
+| \`get_review_state\` | Reviewed/unreviewed paths, human Review Notes, agent Diff Notes, cohorts, finding statuses | \`includeResolved?\` | App |
 | \`set_files_reviewed\` | Check or uncheck diffed files as reviewed | \`paths[]\`, \`reviewed\` | Active diff |
 | \`resolve_finding\` | Set a finding to \`open\`, \`resolved\`, or \`dismissed\` | \`findingId\`, \`status\` | Stack |
 | \`export_review_comments\` | Format findings + Review Notes as \`markdown\`, \`github\` (PR review JSON) or \`gitlab\` (MR discussions JSON). GitLab positions carry \`base_sha\`/\`start_sha\`/\`head_sha\`, resolved with git from the diff's refs when not passed; otherwise the payload has \`missingShas: true\` + \`warning\`. Formats only — it never posts | \`format\`, \`includeResolved?\`, \`includeReviewNotes?\`, \`projectRoot?\`, \`diffId?\`, \`baseSha?\`/\`startSha?\`/\`headSha?\` (GitLab) | App or headless |
@@ -77,7 +78,7 @@ Finding severities: \`critical\`, \`major\`, \`minor\`, \`trivial\`, \`info\`. C
 
 ## Persistence
 
-Review Stacks and findings are saved per diff in \`<project>/.codechart/review-stacks.json\` (keyed by \`diffId\`), so they survive restarts. **Settings → Clear review info** deletes them together with Review Notes and reviewed checkmarks.
+Review Stacks, findings and agent Diff Notes are saved per diff in \`<project>/.codechart/review-stacks.json\` (keyed by \`diffId\`), so they survive restarts. **Settings → Clear review info** deletes them together with Review Notes and reviewed checkmarks.
 
 ## Headless mode
 

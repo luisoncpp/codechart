@@ -22,8 +22,11 @@
 }
 
 .rs-drawer {
+  /* Width is inline state owned by ReviewStackDrawer + DrawerResizeHandle. */
+  position: relative;
   flex-shrink: 0;
-  width: 310px;
+  /* Same face as the inspector; without it the drawer inherits the UA serif. */
+  font-family: sans-serif;
   border-right: 1px solid #e2e8f0;
   background: #f8fafc;
   color: #0f172a;
@@ -423,4 +426,65 @@
   font-family: ui-monospace, monospace;
   font-size: 10px;
   overflow-x: auto;
+}
+
+.rs-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.rs-resize-handle:hover {
+  background: rgba(124, 58, 237, 0.25);
+}
+
+.rs-cohort-explain {
+  margin-top: 4px;
+}
+
+.rs-file-range {
+  margin-left: auto;
+  padding-left: 6px;
+  color: #7c3aed;
+  font-family: ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+.rs-markdown p {
+  margin: 0 0 6px;
+}
+
+.rs-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.rs-markdown ul,
+.rs-markdown ol {
+  margin: 0 0 6px;
+  padding-left: 18px;
+}
+
+.rs-markdown code {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  background: #eef2f7;
+  border-radius: 3px;
+  padding: 0 3px;
+}
+
+.rs-markdown pre {
+  overflow-x: auto;
+  background: #eef2f7;
+  padding: 6px;
+  border-radius: 4px;
+}
+
+.rs-markdown pre code {
+  background: none;
+  padding: 0;
 }

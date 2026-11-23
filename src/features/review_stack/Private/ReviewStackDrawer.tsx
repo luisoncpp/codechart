@@ -1,10 +1,12 @@
 // @Architecture(descriptionShort="Collapsible left Review Stack drawer integrating Overview, Findings, and Impact")
 import "./review-stack.css";
+import { useState } from "react";
 import { ReviewStackStore, useReviewStack } from "../../../state/review-stack";
 import { GraphSessionStore, useGraphSession } from "../../../state/graph-session";
 import { ReviewStackOverview } from "./ReviewStackOverview";
 import { FindingsList } from "./FindingsList";
 import { ImpactTab } from "./ImpactTab";
+import { DEFAULT_DRAWER_WIDTH, DrawerResizeHandle } from "./DrawerResizeHandle";
 
 interface ReviewStackDrawerProps {
   stackStore: ReviewStackStore;
@@ -19,6 +21,8 @@ export function ReviewStackDrawer({
 }: ReviewStackDrawerProps) {
   const stackState = useReviewStack(stackStore);
   const session = useGraphSession(sessionStore);
+  // Session-only, kept while the drawer is collapsed to its rail.
+  const [width, setWidth] = useState(DEFAULT_DRAWER_WIDTH);
   const diffOverlay = session.getDiffOverlay();
   if (!diffOverlay) return null;
 
@@ -46,7 +50,8 @@ export function ReviewStackDrawer({
   const openFindingCount = stack?.findings.filter((f) => f.status === "open").length ?? 0;
 
   return (
-    <aside className="rs-drawer" aria-label="Review Stack">
+    <aside className="rs-drawer" aria-label="Review Stack" style={{ width }}>
+      <DrawerResizeHandle width={width} onCommit={setWidth} />
       <div className="rs-drawer-header">
         <div className="rs-drawer-title">{stack?.title ?? "Review Stack"}</div>
         <button
@@ -103,6 +108,7 @@ export function ReviewStackDrawer({
               onNavigateModule={(moduleId, line) =>
                 stackStore.requestNavigate({ path: moduleId, line, openPreview: true })
               }
+              onOpenExplanation={(cohortId) => stackStore.requestExplanation(cohortId)}
             />
           ) : (
             <div className="rs-empty">

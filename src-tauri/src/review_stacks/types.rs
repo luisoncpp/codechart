@@ -14,6 +14,39 @@ pub struct ReviewCohort {
     pub depends_on: Vec<String>,
     #[serde(default)]
     pub module_ids: Vec<String>,
+    /// Markdown walkthrough opened in its own preview frame.
+    #[serde(default)]
+    pub explanation: String,
+    /// Line ranges this cohort covers; one file may be split across cohorts.
+    #[serde(default)]
+    pub hunks: Vec<CohortHunk>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CohortHunk {
+    pub path: String,
+    #[serde(default = "default_side")]
+    pub side: FindingSide,
+    pub start_line: u32,
+    pub end_line: u32,
+}
+
+/// Agent-authored Diff Note: read-only markdown rendered under its line range.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentDiffNote {
+    pub id: String,
+    pub path: String,
+    #[serde(default = "default_side")]
+    pub side: FindingSide,
+    pub start_line: u32,
+    pub end_line: u32,
+    pub body: String,
+}
+
+fn default_side() -> FindingSide {
+    FindingSide::After
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -94,6 +127,8 @@ pub struct ReviewStackRecord {
     pub blockers: Vec<ReviewBlocker>,
     #[serde(default)]
     pub findings: Vec<ReviewFinding>,
+    #[serde(default)]
+    pub diff_notes: Vec<AgentDiffNote>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

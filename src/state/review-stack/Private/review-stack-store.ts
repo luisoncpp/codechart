@@ -1,29 +1,32 @@
 // @Architecture(descriptionShort="Event-emitting store for persisted Review Stacks, spotlight, blast radius, and findings")
 import type {
+  AgentDiffNote,
+  CohortHunk,
   DiffImpactReport,
   FindingSeverity,
   FindingStatus,
-  ReviewBlocker,
-  ReviewCohort,
   ReviewFinding,
   ReviewStackClient,
   ReviewStackRecord,
 } from "../../../ipc/review-stack-client";
+import {
+  cohortHunksFor,
+  cohortModuleIds,
+  emptyStack,
+  replaceStack,
+  withDiffNotes,
+  withFindings,
+  withFindingStatus,
+  type StackInput,
+} from "./stack-mutations";
+import { StackRequests } from "./stack-requests";
 
 export type SpotlightMode = "dim-others" | "highlight" | "off";
-export type StackDrawerTab = "overview" | "findings" | "impact";
+type StackDrawerTab = "overview" | "findings" | "impact";
 
 export interface BlastRadiusState {
   rootModuleId: string;
   depths: ReadonlyMap<string, number>;
-}
-
-export interface StackNavigationRequest {
-  seq: number;
-  path: string;
-  line?: number;
-  symbol?: string;
-  openPreview: boolean;
 }
 
 export class ReviewStackStore {
@@ -39,8 +42,7 @@ export class ReviewStackStore {
   private severityFilter: FindingSeverity | "all" = "all";
   private drawerOpen = false;
   private activeTab: StackDrawerTab = "overview";
-  private navSeq = 0;
-  private navRequest: StackNavigationRequest | null = null;
+  private readonly requests = new StackRequests();
 
   constructor(private readonly client: ReviewStackClient) {}
 
@@ -59,17 +61,28 @@ export class ReviewStackStore {
   getSeverityFilter = () => this.severityFilter;
   getDrawerOpen = () => this.drawerOpen;
   getActiveTab = () => this.activeTab;
-  getNavigationRequest = () => this.navRequest;
+  getNavigationRequest = () => this.requests.navigation;
+  getExplanationRequest = () => this.requests.explanation;
 
   getSpotlightModuleIds(): ReadonlySet<string> | null {
-    if (!this.activeCohortId || this.spotlightMode === "off" || !this.stack) return null;
-    const cohort = this.stack.cohorts.find((c) => c.id === this.activeCohortId);
-    return cohort ? new Set(cohort.moduleIds) : null;
+    if (this.spotlightMode === "off") return null;
+    const cohort = this.activeCohort();
+    return cohort ? new Set(cohortModuleIds(cohort)) : null;
+  }
+
+  /** The spotlighted cohort's line ranges in `path` (empty when nothing is spotlighted). */
+  activeCohortRangesFor(path: string): CohortHunk[] {
+    const cohort = this.spotlightMode === "off" ? undefined : this.activeCohort();
+    return cohort ? cohortHunksFor(cohort, path) : [];
   }
 
   findingsFor(path: string): ReviewFinding[] {
     if (!this.stack) return [];
     return this.stack.findings.filter((f) => f.path === path && f.status !== "dismissed");
+  }
+
+  diffNotesFor(path: string): AgentDiffNote[] {
+    return this.stack?.diffNotes?.filter((n) => n.path === path) ?? [];
   }
 
   async activateDiff(root: string, diffId: string): Promise<void> {
@@ -92,59 +105,30 @@ export class ReviewStackStore {
     this.notify();
   }
 
-  async setStack(input: {
-    title: string;
-    summary: string;
-    cohorts: ReviewCohort[];
-    blockers: ReviewBlocker[];
-  }): Promise<ReviewStackRecord> {
-    if (!this.root || !this.diffId) throw new Error("No active diff overlay in CodeChart.");
-    const next: ReviewStackRecord = {
-      diffId: this.diffId,
-      title: input.title,
-      summary: input.summary,
-      cohorts: input.cohorts,
-      blockers: input.blockers,
-      findings: this.stack?.findings ?? [],
-    };
-    await this.client.saveStack(this.root, next);
-    this.stack = next;
-    this.drawerOpen = true;
+  async setStack(input: StackInput): Promise<ReviewStackRecord> {
+    const diffId = this.requireDiff();
+    const next = replaceStack(diffId, this.stack, input);
     this.activeTab = "overview";
-    this.notify();
+    await this.save(next);
     return next;
   }
 
   async upsertFindings(findings: ReviewFinding[]): Promise<ReviewFinding[]> {
-    if (!this.root || !this.diffId) throw new Error("No active diff overlay in CodeChart.");
-    const base: ReviewStackRecord = this.stack ?? {
-      diffId: this.diffId,
-      title: "MR Review",
-      summary: "",
-      cohorts: [],
-      blockers: [],
-      findings: [],
-    };
-    const byId = new Map(base.findings.map((f) => [f.id, f]));
-    for (const f of findings) byId.set(f.id, { ...f, status: f.status ?? "open" });
-    const next: ReviewStackRecord = { ...base, findings: [...byId.values()] };
-    await this.client.saveStack(this.root, next);
-    this.stack = next;
-    this.drawerOpen = true;
-    this.notify();
+    const next = withFindings(this.stack ?? emptyStack(this.requireDiff()), findings);
+    await this.save(next);
     return next.findings;
+  }
+
+  async upsertDiffNotes(notes: AgentDiffNote[]): Promise<AgentDiffNote[]> {
+    const next = withDiffNotes(this.stack ?? emptyStack(this.requireDiff()), notes);
+    await this.save(next);
+    return next.diffNotes ?? [];
   }
 
   async resolveFinding(findingId: string, status: FindingStatus): Promise<boolean> {
     if (!this.root || !this.stack) return false;
-    let found = false;
-    const findings = this.stack.findings.map((f) => {
-      if (f.id !== findingId) return f;
-      found = true;
-      return { ...f, status };
-    });
-    if (!found) return false;
-    const next = { ...this.stack, findings };
+    const next = withFindingStatus(this.stack, findingId, status);
+    if (!next) return false;
     await this.client.saveStack(this.root, next);
     this.stack = next;
     this.notify();
@@ -153,22 +137,18 @@ export class ReviewStackStore {
 
   async clearStack(): Promise<void> {
     if (this.root && this.diffId) await this.client.deleteStack(this.root, this.diffId);
-    this.stack = null;
-    this.resetTransient();
-    this.notify();
+    this.dropStack();
   }
 
   async clearAll(root: string): Promise<void> {
     await this.client.clearStacks(root);
-    this.stack = null;
-    this.resetTransient();
-    this.notify();
+    this.dropStack();
   }
 
-  setImpact(impact: DiffImpactReport | null) {
-    this.impact = impact;
-    this.notify();
-  }
+  setImpact = (impact: DiffImpactReport | null) => this.update(() => (this.impact = impact));
+  setSeverityFilter = (filter: FindingSeverity | "all") => this.update(() => (this.severityFilter = filter));
+  setDrawerOpen = (open: boolean) => this.update(() => (this.drawerOpen = open));
+  setActiveTab = (tab: StackDrawerTab) => this.update(() => (this.activeTab = tab));
 
   focusCohort(cohortId: string | null, mode: SpotlightMode = "dim-others") {
     this.activeCohortId = cohortId;
@@ -177,45 +157,50 @@ export class ReviewStackStore {
   }
 
   setBlastRadius(rootModuleId: string, depths: ReadonlyMap<string, number>) {
-    this.blastRadius = { rootModuleId, depths };
-    this.notify();
+    this.update(() => (this.blastRadius = { rootModuleId, depths }));
   }
 
   clearBlastRadius() {
-    if (!this.blastRadius) return;
-    this.blastRadius = null;
-    this.notify();
-  }
-
-  setSeverityFilter(filter: FindingSeverity | "all") {
-    this.severityFilter = filter;
-    this.notify();
-  }
-
-  setDrawerOpen(open: boolean) {
-    this.drawerOpen = open;
-    this.notify();
-  }
-
-  setActiveTab(tab: StackDrawerTab) {
-    this.activeTab = tab;
-    this.notify();
+    if (this.blastRadius) this.update(() => (this.blastRadius = null));
   }
 
   requestNavigate(req: { path: string; line?: number; symbol?: string; openPreview?: boolean }) {
-    this.navSeq += 1;
-    this.navRequest = {
-      seq: this.navSeq,
-      path: req.path,
-      line: req.line,
-      symbol: req.symbol,
-      openPreview: req.openPreview ?? true,
-    };
+    this.requests.navigate(req);
     this.notify();
   }
 
-  consumeNavigation(seq: number) {
-    if (this.navRequest?.seq === seq) this.navRequest = null;
+  consumeNavigation = (seq: number) => this.requests.consumeNavigation(seq);
+  consumeExplanation = (seq: number) => this.requests.consumeExplanation(seq);
+
+  /** False when the cohort is unknown or has no explanation. */
+  requestExplanation(cohortId: string): boolean {
+    const opened = this.requests.explain(this.stack?.cohorts.find((c) => c.id === cohortId));
+    if (opened) this.notify();
+    return opened;
+  }
+
+  private activeCohort() {
+    if (!this.activeCohortId) return undefined;
+    return this.stack?.cohorts.find((c) => c.id === this.activeCohortId);
+  }
+
+  private requireDiff(): string {
+    if (!this.root || !this.diffId) throw new Error("No active diff overlay in CodeChart.");
+    return this.diffId;
+  }
+
+  /** Persist, then adopt as current, reveal the drawer, and notify. */
+  private async save(next: ReviewStackRecord) {
+    await this.client.saveStack(this.root!, next);
+    this.stack = next;
+    this.drawerOpen = true;
+    this.notify();
+  }
+
+  private dropStack() {
+    this.stack = null;
+    this.resetTransient();
+    this.notify();
   }
 
   private resetTransient() {
@@ -223,7 +208,12 @@ export class ReviewStackStore {
     this.spotlightMode = "off";
     this.blastRadius = null;
     this.severityFilter = "all";
-    this.navRequest = null;
+    this.requests.clear();
+  }
+
+  private update(mutate: () => unknown) {
+    mutate();
+    this.notify();
   }
 
   private notify() {

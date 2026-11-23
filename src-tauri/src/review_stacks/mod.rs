@@ -2,7 +2,7 @@
 mod types;
 
 pub use types::{
-    FindingSeverity, FindingSide, FindingStatus, ReviewBlocker, ReviewCohort, ReviewFinding,
+    AgentDiffNote, CohortHunk, FindingSeverity, FindingSide, FindingStatus, ReviewBlocker, ReviewCohort, ReviewFinding,
     ReviewStackRecord, ReviewStacksDocument, VERSION,
 };
 
@@ -76,9 +76,27 @@ fn validate_stack(stack: &ReviewStackRecord) -> Result<(), String> {
         for module_id in &cohort.module_ids {
             validate_relative_path(module_id)?;
         }
+        for hunk in &cohort.hunks {
+            validate_anchor(&hunk.path, (hunk.start_line, hunk.end_line), &cohort.id)?;
+        }
     }
     for finding in &stack.findings {
         validate_finding(finding)?;
+    }
+    for note in &stack.diff_notes {
+        if note.id.trim().is_empty() {
+            return Err("diff note id cannot be blank".to_string());
+        }
+        validate_anchor(&note.path, (note.start_line, note.end_line), &note.id)?;
+    }
+    Ok(())
+}
+
+/// A path + 1-based inclusive line range; `owner` names the item in errors.
+fn validate_anchor(path: &str, (start, end): (u32, u32), owner: &str) -> Result<(), String> {
+    validate_relative_path(path)?;
+    if start == 0 || end < start {
+        return Err(format!("invalid line range on {owner}"));
     }
     Ok(())
 }
@@ -87,11 +105,7 @@ fn validate_finding(finding: &ReviewFinding) -> Result<(), String> {
     if finding.id.trim().is_empty() {
         return Err("finding id cannot be blank".to_string());
     }
-    validate_relative_path(&finding.path)?;
-    if finding.start_line == 0 || finding.end_line < finding.start_line {
-        return Err(format!("invalid line range on finding {}", finding.id));
-    }
-    Ok(())
+    validate_anchor(&finding.path, (finding.start_line, finding.end_line), &finding.id)
 }
 
 fn validate_relative_path(path: &str) -> Result<(), String> {

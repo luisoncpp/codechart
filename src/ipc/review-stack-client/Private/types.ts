@@ -5,12 +5,35 @@ export type FindingSeverity = "critical" | "major" | "minor" | "trivial" | "info
 export type FindingSide = "before" | "after";
 export type FindingStatus = "open" | "resolved" | "dismissed";
 
+/** A line range a cohort covers; one file may be split across cohorts. */
+export interface CohortHunk {
+  path: string;
+  side: FindingSide;
+  startLine: number;
+  endLine: number;
+}
+
 export interface ReviewCohort {
   id: string;
   title: string;
+  /** Short markdown summary shown in the drawer. */
   rationale: string;
   dependsOn: string[];
+  /** Whole-file members (optional when `hunks` covers them). */
   moduleIds: string[];
+  /** Markdown walkthrough opened in its own preview frame. */
+  explanation?: string;
+  hunks?: CohortHunk[];
+}
+
+/** Agent-authored Diff Note: read-only markdown rendered under its line range. */
+export interface AgentDiffNote {
+  id: string;
+  path: string;
+  side: FindingSide;
+  startLine: number;
+  endLine: number;
+  body: string;
 }
 
 export interface ReviewBlocker {
@@ -44,6 +67,7 @@ export interface ReviewStackRecord {
   cohorts: ReviewCohort[];
   blockers: ReviewBlocker[];
   findings: ReviewFinding[];
+  diffNotes?: AgentDiffNote[];
 }
 
 export interface TopoLayer {

@@ -82,7 +82,7 @@ describe("HelpMenu dropdown and modals", () => {
     openHelpMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: "MCP server..." }));
     expect(screen.getByRole("heading", { name: "Help: MCP server" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Tools (14)" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Tools (15)" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Troubleshooting" })).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Close" })[0]);

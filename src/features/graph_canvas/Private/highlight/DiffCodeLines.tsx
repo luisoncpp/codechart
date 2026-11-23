@@ -47,6 +47,10 @@ export function DiffCodeLines(props: DiffCodeLinesProps) {
   const reviewStack = useReviewStackStore();
   const notes = reviewNotes?.notesFor(path) ?? [];
   const findings = reviewStack?.findingsFor(path) ?? [];
+  const cohortRanges = reviewStack?.activeCohortRangesFor(path);
+  const agentNotes = reviewStack?.diffNotesFor(path) ?? [];
+  // Pasted `#` markers and agent-authored notes render through the same notice.
+  const allDiffNotes = agentNotes.length > 0 ? [...(diffNotes ?? []), ...agentNotes] : diffNotes;
   const draft = reviewNotes?.getDraft();
   const viewMode = props.viewMode ?? "unified";
   const rows = useMemo(() => displayRows(source, fileDiff, viewMode), [source, fileDiff, viewMode]);
@@ -70,7 +74,7 @@ export function DiffCodeLines(props: DiffCodeLinesProps) {
     activeLine: props.activeLine, activeLineRef: props.activeLineRef,
     matchesByLine: props.matchesByLine, activeMatch: props.activeMatch,
     activeMatchRef: props.activeMatchRef,
-    notes, draft, diffNotes, findings,
+    notes, draft, diffNotes: allDiffNotes, findings, cohortRanges,
     onLineClick: reviewNotes ? selectLine : undefined,
   };
   return <DiffRows viewMode={viewMode} rows={rows} tokens={tokenized} links={wikiLinks} shared={shared} />;

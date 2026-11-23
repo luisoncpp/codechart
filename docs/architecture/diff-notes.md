@@ -1,10 +1,10 @@
 # Diff Notes
 
-Diff Notes display read-only explanations consumed from optional marker lines (`#` in column 0) in pasted unified diffs. They provide contextual explanations in source views (L2 module documents and preview frames) without modifying the underlying graph, Review Notes, or `.codechart/` files.
+Diff Notes display read-only markdown explanations from two sources: optional marker lines (`#` in column 0) in pasted unified diffs, and **agent-authored notes** sent over MCP (`upsert_diff_notes`, see [review-stack-mcp](./review-stack-mcp.md)). They provide contextual explanations in source views (L2 module documents and preview frames) without modifying the underlying graph, Review Notes, or `.codechart/` files.
 
 ## Ingest & Marker Grammar
 
-CodeChart strictly consumes Diff Notes from pasted unified diffs (no in-app authoring or editing):
+Pasted Diff Notes are consumed from the diff text (no in-app authoring or editing):
 
 - A line whose first character is `#` (column 0) is a **Diff Note Marker**. `+#` and ` #` remain hunk body comments.
 - Consecutive marker lines form one **Diff Note**. Leading `#` and one optional following space (`/^# ?/`) are stripped from each line and joined with newlines.
@@ -41,6 +41,7 @@ To ensure Diff Review checkmarks survive adding or removing Diff Notes, `pasteDi
 
 ## Invariants
 
-- Diff Notes live on `GraphDiffOverlay` in session state; they are never persisted to disk or merged into `ProjectGraph`.
+- Pasted Diff Notes live on `GraphDiffOverlay` in session state; they are never persisted to disk or merged into `ProjectGraph`.
+- Agent Diff Notes (`AgentDiffNote` = `DiffNote` + `id`) live in `ReviewStackRecord.diffNotes` (`.codechart/review-stacks.json`, per `diffId`). `DiffCodeLines` appends them after the pasted notes, from `ReviewStackStore.diffNotesFor(path)`; they never enter the overlay.
 - Marker lines (`#`) never advance old or new line counters in `lineDiffsFromUnified` or create phantom import edges.
 - Clearing the diff overlay clears all Diff Notes and dropped marker warnings.
