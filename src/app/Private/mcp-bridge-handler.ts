@@ -14,6 +14,8 @@ export class McpBridgeHandler {
     switch (req.method) {
       case "get_active_context":
         return this.getActiveContext();
+      case "open_project":
+        return this.openProject(asOptionalString(p.path));
       case "get_architecture_summary":
         return this.getArchitectureSummary(asOptionalString(p.groupId));
       case "load_diff":
@@ -55,6 +57,7 @@ export class McpBridgeHandler {
     return {
       projectRoot: session.getProjectRoot(),
       phase: session.getPhase(),
+      error: session.getError(),
       zoomLevel: session.getZoomLevel(),
       selectedId: session.getSelectedId(),
       diffActive: Boolean(overlay),
@@ -64,6 +67,15 @@ export class McpBridgeHandler {
       activeCohortId: reviewStack.getActiveCohortId(),
       blastRadiusRoot: reviewStack.getBlastRadius()?.rootModuleId ?? null,
     };
+  }
+
+  /** Starts the load and returns at once; the MCP server polls `get_active_context` (loads outlast the RPC timeout). */
+  private openProject(path?: string) {
+    if (!path) throw new Error("open_project requires a path.");
+    const { session } = this.deps;
+    const alreadyOpen = session.getProjectRoot() === path && session.getPhase() !== "failed";
+    if (!alreadyOpen) void session.loadProject(path);
+    return { projectRoot: path, reloaded: !alreadyOpen };
   }
 
   private getArchitectureSummary(groupId?: string) {

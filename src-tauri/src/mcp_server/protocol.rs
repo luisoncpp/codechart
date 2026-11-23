@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="MCP JSON-RPC method dispatch: initialize, tools/list, tools/call, resources")
 use super::schema::normalize;
 use super::tools::{pretty, ToolContext, ToolDef, INVALID_PARAMS};
-use super::{resources, tool_canvas, tool_context, tool_review, tool_stack};
+use super::{resources, tool_canvas, tool_context, tool_project, tool_review, tool_stack};
 use serde_json::{json, Value};
 
 const PARSE_ERROR: i64 = -32700;
@@ -21,6 +21,7 @@ pub(crate) struct Server {
 impl Server {
     pub fn new(ctx: ToolContext) -> Self {
         let mut tools = tool_context::tools();
+        tools.extend(tool_project::tools());
         tools.extend(tool_stack::tools());
         tools.extend(tool_canvas::tools());
         tools.extend(tool_review::tools());

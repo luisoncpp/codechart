@@ -15,10 +15,14 @@ pub(crate) struct ToolDef {
     pub handler: Handler,
 }
 
+/// Starts CodeChart Desktop on a project folder (`open_project` with no window running).
+pub(crate) type Launcher = Box<dyn Fn(&str) -> Result<(), String>>;
+
 pub(crate) struct ToolContext {
     pub bridge: BridgeClient,
     /// `CODECHART_PROJECT_ROOT`: default `projectRoot` for headless fallbacks.
     pub env_root: Option<String>,
+    pub launch_app: Launcher,
 }
 
 /// Forwards the call verbatim to the live window's RPC method of the same name.

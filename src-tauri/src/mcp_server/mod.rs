@@ -8,6 +8,7 @@ mod resources;
 mod schema;
 mod tool_canvas;
 mod tool_context;
+mod tool_project;
 mod tool_review;
 mod tool_stack;
 mod tools;
@@ -16,6 +17,8 @@ mod tools;
 mod tests;
 #[cfg(test)]
 mod tests_export;
+#[cfg(test)]
+mod tests_project;
 
 use crate::mcp_bridge::default_registry_path;
 use bridge_client::BridgeClient;
@@ -32,6 +35,7 @@ pub fn run_stdio_process() -> ExitCode {
     let ctx = ToolContext {
         bridge: BridgeClient::new(default_registry_path()),
         env_root: std::env::var("CODECHART_PROJECT_ROOT").ok(),
+        launch_app: Box::new(tool_project::launch_gui),
     };
     match serve(std::io::stdin().lock(), std::io::stdout().lock(), ctx) {
         Ok(()) => ExitCode::SUCCESS,

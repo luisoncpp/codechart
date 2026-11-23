@@ -15,7 +15,7 @@ For a ready-made review workflow built on these tools, see **Help → Code revie
 ## Requirements
 
 - **CodeChart Desktop installed.** Nothing else: no Node.js, no source checkout.
-- **CodeChart Desktop running with a project open** for live tools. Headless mode (below) works with the app closed.
+- **CodeChart Desktop running with a project open** for live tools. \`open_project\` gets there on its own: it loads the folder in the running window, or launches CodeChart on it. Headless mode (below) works with the app closed.
 
 ## Registering the server
 
@@ -52,15 +52,16 @@ From a source checkout, \`codechart-cli mcp\` (\`cargo run --manifest-path src-t
 
 ## How it connects
 
-When CodeChart Desktop opens a project it starts a loopback bridge on \`127.0.0.1\` (random port, per-instance bearer token) and registers it in \`~/.codechart/instances.json\`. The MCP server reads that file and talks to the **most recently started instance that answers its health check**. With several windows open, the last one launched wins.
+When CodeChart Desktop starts it opens a loopback bridge on \`127.0.0.1\` (random port, per-instance bearer token) and registers it in \`~/.codechart/instances.json\`. The MCP server reads that file and talks to the **most recently started instance that answers its health check**. With several windows open, the last one launched wins.
 
-## Tools (15)
+## Tools (16)
 
 Ids such as \`moduleId\` and \`path\` are repo-relative POSIX paths (e.g. \`src/app/App.tsx\`).
 
 | Tool | Purpose | Key arguments | Needs |
 |---|---|---|---|
-| \`get_active_context\` | Open project, zoom level, selection, active diff id, review progress, active cohort | — | App |
+| \`get_active_context\` | Open project, load \`phase\` (+ \`error\`), zoom level, selection, active diff id, review progress, active cohort | — | App |
+| \`open_project\` | Open a folder and wait until it is analyzed; returns the context plus \`window\`: \`existing\` / \`launched\`. Replaces the running window's project (like Open folder, dropping its diff overlay); a no-op when that folder is already loaded. With no window running, launches CodeChart on the folder | \`path\`, \`timeoutSeconds?\` (default 300) | Installed app |
 | \`get_architecture_summary\` | Group tree, facades, tags, module/edge counts, diagnostics | \`groupId?\`, \`projectRoot?\` | App or headless |
 | \`analyze_diff_impact\` | Foundation-first topological \`layers\`, transitive \`blastRadius\`, \`affectedGroupIds\`, \`newDiagnostics\` | \`mode?\` (loads the diff first), \`baseRef\`/\`headRef\`/\`diffText\`, \`maxDepth\` (1–8, default 3), \`projectRoot?\` | App or headless |
 | \`load_diff\` | Apply a diff overlay to the canvas; returns \`diffId\` and affected module ids | \`mode\`: \`commits\` (\`baseRef\`, \`headRef\`), \`working-tree\` (\`baseRef\`), \`paste\` (\`diffText\`) | App |
@@ -102,9 +103,10 @@ If no desktop instance answers, \`get_architecture_summary\`, \`analyze_diff_imp
 
 | Error | Fix |
 |---|---|
-| \`No running CodeChart desktop instance found\` | Open CodeChart Desktop with a project, or pass \`projectRoot\` for the headless tools |
+| \`No running CodeChart desktop instance found\` | Call \`open_project\` with the project folder (it launches CodeChart), or pass \`projectRoot\` for the headless tools |
 | \`No live CodeChart desktop instance responded\` | The registry is stale (app crashed). Restart CodeChart |
-| \`No project loaded\` | Open a project folder in the window the server connected to |
+| \`No project loaded\` | Call \`open_project\` with the project folder |
+| \`Timed out waiting for CodeChart\` | The analysis is still running; call \`get_active_context\` until \`phase\` is \`ready\`, or retry with a larger \`timeoutSeconds\` |
 | \`No active diff overlay in CodeChart\` | Call \`load_diff\` (or \`analyze_diff_impact\` with \`mode\`) before stack, finding or reviewed-file tools |
 | Tools act on the wrong window | Close the other CodeChart windows; the newest instance is used |
 | The assistant lists no CodeChart tools | Check that the configured command is the installed \`codechart.exe\` (forward slashes, quoted if it has spaces) and that \`--mcp\` is its first argument |

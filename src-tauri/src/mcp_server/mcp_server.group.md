@@ -9,4 +9,4 @@ descriptionShort: Stdio MCP server (`codechart.exe --mcp`) proxying assistant to
 architectureDoc: docs/architecture/review-stack-mcp.md
 ---
 
-Newline-delimited JSON-RPC over stdin/stdout. Tool arguments are normalized against each tool's JSON Schema (defaults, types, enums, bounds), then forwarded to the desktop window through the loopback `mcp_bridge`. When no window answers, `get_architecture_summary`, `analyze_diff_impact` and `export_review_comments` run in-process against `projectRoot`.
+Newline-delimited JSON-RPC over stdin/stdout. Tool arguments are normalized against each tool's JSON Schema (defaults, types, enums, bounds), then forwarded to the desktop window through the loopback `mcp_bridge`. When no window answers, `get_architecture_summary`, `analyze_diff_impact` and `export_review_comments` run in-process against `projectRoot`. `open_project` loads a folder in the live window, or launches the desktop app on it (`--project`), then waits for the analysis.

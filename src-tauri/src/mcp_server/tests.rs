@@ -9,28 +9,32 @@ use std::sync::Arc;
 
 const FIXTURE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../tests/fixtures/ts-basic-project");
 
-fn ctx_with_registry(registry: &Path) -> ToolContext {
-    ToolContext { bridge: BridgeClient::new(Some(registry.to_path_buf())), env_root: None }
+pub(super) fn ctx_with_registry(registry: &Path) -> ToolContext {
+    ToolContext {
+        bridge: BridgeClient::new(Some(registry.to_path_buf())),
+        env_root: None,
+        launch_app: Box::new(/*refuseLaunch*/ |_| Err("launching is disabled in tests".to_string())),
+    }
 }
 
 /// Feed `requests` through the stdio loop, one per line, and parse every reply line.
-fn run(ctx: ToolContext, requests: &[Value]) -> Vec<Value> {
+pub(super) fn run(ctx: ToolContext, requests: &[Value]) -> Vec<Value> {
     let input: String = requests.iter().map(|r| format!("{r}\n")).collect();
     let mut output = Vec::new();
     serve(input.as_bytes(), &mut output, ctx).unwrap();
     String::from_utf8(output).unwrap().lines().map(|l| serde_json::from_str(l).unwrap()).collect()
 }
 
-fn call(id: u64, name: &str, arguments: Value) -> Value {
+pub(super) fn call(id: u64, name: &str, arguments: Value) -> Value {
     json!({ "jsonrpc": "2.0", "id": id, "method": "tools/call", "params": { "name": name, "arguments": arguments } })
 }
 
-fn tool_json(reply: &Value) -> Value {
+pub(super) fn tool_json(reply: &Value) -> Value {
     assert_ne!(reply["result"]["isError"], json!(true), "tool failed: {reply}");
     serde_json::from_str(reply["result"]["content"][0]["text"].as_str().unwrap()).unwrap()
 }
 
-fn tool_error(reply: &Value) -> String {
+pub(super) fn tool_error(reply: &Value) -> String {
     assert_eq!(reply["result"]["isError"], json!(true), "expected a tool error: {reply}");
     reply["result"]["content"][0]["text"].as_str().unwrap().to_string()
 }
@@ -49,7 +53,7 @@ fn handshake_lists_all_tools_and_answers_nothing_to_notifications() {
     assert_eq!(replies[0]["result"]["protocolVersion"], "2025-03-26");
     assert_eq!(replies[0]["result"]["serverInfo"]["name"], "codechart-review");
     let tools = replies[1]["result"]["tools"].as_array().unwrap();
-    assert_eq!(tools.len(), 15);
+    assert_eq!(tools.len(), 16);
     assert!(tools.iter().all(|t| t["inputSchema"]["type"] == "object"));
     assert_eq!(replies[2]["result"], json!({}));
     assert_eq!(replies[3]["error"]["code"], -32601);
@@ -105,7 +109,7 @@ fn echo_bridge(token: &str) -> u16 {
     spawn_http_server(token.to_string(), dispatch).unwrap()
 }
 
-fn write_registry(path: &Path, port: u16, token: &str) {
+pub(super) fn write_registry(path: &Path, port: u16, token: &str) {
     let registry = json!({ "version": 1, "instances": [{ "pid": 1, "port": port, "token": token, "startedAtMs": 1 }] });
     std::fs::write(path, registry.to_string()).unwrap();
 }

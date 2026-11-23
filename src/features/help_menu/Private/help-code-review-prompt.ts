@@ -1,7 +1,7 @@
 // @Architecture(descriptionShort="Copyable agent skill (SKILL.md) for conducting dependency-ordered Review Stack code reviews via CodeChart MCP")
 
 /** Shown above the skill in the Help modal; not copied, so the skill stays a clean SKILL.md. */
-export const CODE_REVIEW_PROMPT_INTRO = `**How to use:** click **Copy as Markdown** and either save the text as \`.claude/skills/codechart-review/SKILL.md\` (or your assistant's skills folder), or paste it as a prompt. It needs the \`codechart\` MCP server registered (see **Help → MCP server**) and CodeChart Desktop open on the project.`;
+export const CODE_REVIEW_PROMPT_INTRO = `**How to use:** click **Copy as Markdown** and either save the text as \`.claude/skills/codechart-review/SKILL.md\` (or your assistant's skills folder), or paste it as a prompt. It needs the \`codechart\` MCP server registered (see **Help → MCP server**) and CodeChart Desktop installed; the assistant opens the project in it with \`open_project\`.`;
 
 export const CODE_REVIEW_PROMPT_MARKDOWN = `---
 name: codechart-review
@@ -35,7 +35,8 @@ Large diffs are hard to review as an alphabetical file list. Help the human unde
 
 ### 1. Orient
 
-- Call \`get_active_context\`. If it fails because no desktop instance is running, ask the user to open CodeChart on the project; if they can't, continue in headless mode by passing \`projectRoot\` to \`get_architecture_summary\` and \`analyze_diff_impact\`, and skip the canvas steps.
+- Call \`get_active_context\`. If it fails because no desktop instance is running, or its \`projectRoot\` is empty or a different folder from the repository under review, call \`open_project\` with the repository root (absolute path). It loads the folder in the running window or launches CodeChart on it, and returns once the analysis is done — don't ask the user to open it. If it times out on a large project, call \`get_active_context\` until \`phase\` is \`ready\`.
+- Fall back to headless mode only if \`open_project\` fails (for example CodeChart is not installed): pass \`projectRoot\` to \`get_architecture_summary\` and \`analyze_diff_impact\`, and skip the canvas steps.
 - Call \`get_architecture_summary\` to learn the groups (\`*.group.md\`), facades, layering rules and existing diagnostics. Existing diagnostics are not this change's fault; only new ones are.
 
 ### 2. Load the diff and compute impact

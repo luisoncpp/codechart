@@ -44,6 +44,11 @@ impl BridgeClient {
         Err(payload["error"].as_str().map_or_else(|| format!("Bridge HTTP {status}"), str::to_string))
     }
 
+    /// Whether any registered window answers its health check right now.
+    pub fn has_live_instance(&mut self) -> bool {
+        self.resolve_instance().is_ok()
+    }
+
     /// Newest registered instance that answers `/health`; cached while it stays healthy.
     fn resolve_instance(&mut self) -> Result<InstanceEntry, String> {
         if let Some(cached) = self.cached.as_ref().filter(|c| is_healthy(c.port)) {
@@ -52,12 +57,12 @@ impl BridgeClient {
         self.cached = None;
         let path = self.registry_path.clone().filter(|p| p.exists()).ok_or_else(|| {
             let shown = self.registry_path.as_ref().map_or("instances.json".into(), |p| p.display().to_string());
-            format!("No running CodeChart desktop instance found ({shown} missing). Open CodeChart first.")
+            format!("No running CodeChart desktop instance found ({shown} missing). Open CodeChart first, or call open_project.")
         })?;
         let mut instances = read_registry(&path).instances;
         instances.sort_by(|a, b| b.started_at_ms.cmp(&a.started_at_ms));
         let live = instances.into_iter().find(|entry| is_healthy(entry.port)).ok_or_else(|| {
-            "No live CodeChart desktop instance responded on loopback. Open CodeChart first.".to_string()
+            "No live CodeChart desktop instance responded on loopback. Open CodeChart first, or call open_project.".to_string()
         })?;
         self.cached = Some(live.clone());
         Ok(live)

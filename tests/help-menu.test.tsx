@@ -83,7 +83,7 @@ describe("HelpMenu dropdown and modals", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "MCP server..." }));
     expect(await screen.findByRole("heading", { name: "Help: MCP server" })).toBeInTheDocument();
     expect(screen.getByText(/Replace .*with the absolute path of the installed executable/)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Tools (15)" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Tools (16)" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Troubleshooting" })).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole("button", { name: "Close" })[0]);
