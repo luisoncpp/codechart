@@ -6,7 +6,7 @@ import type { ModuleRFNode } from "../../../../domain/projection";
 
 import { diffStatsSuffixLength, countLineDiffStats } from "../../../../domain/diff";
 
-import { fitModuleHeaderFontSize, MODULE_BOX, symbolsFitOnScreen } from "../../../../domain/layout";
+import { fitModuleHeaderFontSize, MODULE_BOX } from "../../../../domain/layout";
 
 import { ConnectionToggle } from "./ConnectionToggle";
 
@@ -120,6 +120,11 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
         <DiffReviewToggle reviewed={!!data.diffReviewed} scale={zoomScale} boxWidth={boxW} boxHeight={boxH} />
       )}
       {!!data.reviewNoteCount && <button type="button" data-review-note-badge style={reviewBadgeStyle(zoomScale)}>{data.reviewNoteCount}</button>}
+      {data.blastDepth !== undefined && (
+        <span data-blast-depth-badge style={blastBadgeStyle(zoomScale, data.blastDepth)}>
+          {data.blastDepth === 0 ? "SRC" : `R+${data.blastDepth}`}
+        </span>
+      )}
 
       {detail && <div style={l15HeatBarStyle(data)} />}
 
@@ -150,7 +155,7 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
         />
       )}
 
-      {data.showSymbols && data.symbols && symbolsFitOnScreen(boxW, boxH, zoom) && (
+      {data.showSymbols && data.symbols && (
         <ModuleSymbolBoxes symbols={data.symbols} moduleData={data} color={color} />
       )}
 
@@ -166,6 +171,25 @@ export function ModuleNodeView({ data, selected, width, height }: NodeProps<Modu
 
 function reviewBadgeStyle(scale: number): React.CSSProperties {
   return { position: "absolute", top: 3 * scale, right: 3 * scale, zIndex: 3, minWidth: 16 * scale, border: "1px solid #7c3aed", borderRadius: 999, background: "#f3e8ff", color: "#5b21b6", fontSize: 9 * scale, cursor: "pointer" };
+}
+
+function blastBadgeStyle(scale: number, depth: number): React.CSSProperties {
+  const bg = depth === 0 ? "#fef3c7" : depth === 1 ? "#ffedd5" : "#fef9c3";
+  const border = depth === 0 ? "#d97706" : depth === 1 ? "#ea580c" : "#ca8a04";
+  return {
+    position: "absolute",
+    bottom: 3 * scale,
+    left: 3 * scale,
+    zIndex: 3,
+    padding: `0 ${4 * scale}px`,
+    border: `1px solid ${border}`,
+    borderRadius: 999,
+    background: bg,
+    color: "#9a3412",
+    fontSize: 8 * scale,
+    fontWeight: 700,
+    pointerEvents: "none",
+  };
 }
 
 
@@ -243,6 +267,20 @@ function cardStyle({
 }: CardStyleOptions) {
   const defaultBorder = moduleCardBorder(data, color, isFacade);
   const diffBorder = moduleDiffBorder(diffState, defaultBorder, counterScale);
+  const baseOpacity = moduleDiffOpacity(diffState, /*reviewed=*/diffReviewed);
+  const opacity =
+    data.spotlightState === "active" || data.blastDepth !== undefined
+      ? 1
+      : data.spotlightState === "dimmed"
+        ? Math.min(baseOpacity, diffState === "unchanged" ? 0.2 : 0.45)
+        : baseOpacity;
+  const outline = selected
+    ? "2px solid #2563eb"
+    : data.spotlightState === "active"
+      ? "2px solid #7c3aed"
+      : data.blastDepth !== undefined
+        ? "2px solid #ea580c"
+        : "none";
 
   return {
     position: "relative" as const,
@@ -255,9 +293,9 @@ function cardStyle({
     background: moduleCardBackground(data, color, detail),
     borderRadius: 6,
     border: diffBorder,
-    outline: selected ? "2px solid #2563eb" : "none",
+    outline,
     overflow: "hidden",
-    opacity: moduleDiffOpacity(diffState, /*reviewed=*/diffReviewed),
+    opacity,
   };
 }
 

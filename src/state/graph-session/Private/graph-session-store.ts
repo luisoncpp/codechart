@@ -6,11 +6,10 @@ import {
 } from "../../../ipc/analysis-client";
 import { GitClient } from "../../../ipc/git-client";
 import type { DiffReviewClient } from "../../../ipc/diff-review-client";
-import { pathsFromUnifiedDiff, realignHunks, type GraphDiffOverlay } from "../../../domain/diff";
+import type { GraphDiffOverlay } from "../../../domain/diff";
 import {
   ProjectGraph,
   projectForZoom,
-  allGroupIds,
   filterTestModules,
   isTestModule,
   defaultDisconnectedSets,
@@ -28,12 +27,14 @@ import {
   buildCommitDiffOverlay,
   buildPasteDiffOverlay,
   buildWorkingTreeDiffOverlay,
+  type DiffGraphs,
 } from "./build-diff-overlay";
 import {
   expandCollapsedAncestors,
   expandCollapsedGroupAncestors,
   uncollapseGroupAndAncestors,
 } from "./ensure-node-visible";
+import { l0CollapseSet } from "./l0-collapse-set";
 import { SelectionHistory } from "./selection-history";
 import { FileSourceCache } from "./file-source-cache";
 import { DiffReviewTracker } from "./diff-review-tracker";
@@ -69,6 +70,9 @@ export class GraphSessionStore extends EventEmitter {
   private expandedGroupSizes = new Map<string, { width: number; height: number }>();
   private layoutSeq = 0;
   private diffOverlay: GraphDiffOverlay | null = null;
+  /** Before/after graphs the overlay was computed against; null for paste diffs (no before-graph). */
+  private diffGraphs: DiffGraphs | null = null;
+  private activeDiffId: string | null = null;
   private diffError: string | null = null;
   private diffNotesWarningClosed = false;
   /** Module ids whose sourceCache was overridden by the active diff snapshot. */
@@ -114,6 +118,8 @@ export class GraphSessionStore extends EventEmitter {
   getGroupDocCacheVersion = () => this.groupDocCacheVersion;
   getProjectRoot = () => this.root;
   getDiffOverlay = () => this.diffOverlay;
+  getDiffGraphs = () => this.diffGraphs;
+  getActiveDiffId = () => this.activeDiffId;
   getDiffError = () => this.diffError;
   getDiffReviewedIds = () => this.diffReview.getReviewed();
   getDiffReviewError = () => this.diffReview.getError();
@@ -129,6 +135,16 @@ export class GraphSessionStore extends EventEmitter {
   toggleDiffReviewed(moduleId: string) {
     if (this.diffReview.toggle(moduleId) === null) return;
     this.emit("diff-changed");
+  }
+
+  /** Set reviewed state for one or more diffed paths (used by MCP). */
+  setDiffReviewed(paths: string[], reviewed: boolean) {
+    let changed = false;
+    for (const path of paths) {
+      const has = this.diffReview.getReviewed().has(path);
+      if (has !== reviewed && this.diffReview.toggle(path) !== null) changed = true;
+    }
+    if (changed) this.emit("diff-changed");
   }
 
   /** Unmark every reviewed file of the active diff (persisted; useful to restart a review). */
@@ -154,16 +170,20 @@ export class GraphSessionStore extends EventEmitter {
   clearDiffOverlay() {
     if (!this.diffOverlay && !this.diffError) return;
     this.diffOverlay = null;
+    this.diffGraphs = null;
+    this.activeDiffId = null;
     this.diffError = null;
     this.diffNotesWarningClosed = false;
     this.diffReview.clear();
     this.restoreDiffSources();
     this.restoreHeatAfterDiff();
+    this.reseedL0Collapse();
     this.emit("diff-changed");
   }
 
   /** Load persisted review marks for the freshly applied diff overlay. */
   private async activateDiffReview(reviewId: string) {
+    this.activeDiffId = reviewId;
     const overlay = this.diffOverlay;
     if (!overlay || !this.root) return;
     const paths = new Set([...overlay.affectedModuleIds, ...overlay.deletedModuleIds]);
@@ -187,6 +207,20 @@ export class GraphSessionStore extends EventEmitter {
       this.diffSourceIds.add(id);
     }
     if (this.diffSourceIds.size > 0) this.sourceCacheVersion++;
+  }
+
+  /** Install a freshly built overlay (+ the graphs it came from) and activate its review marks. */
+  private async installDiff(
+    build: { overlay: GraphDiffOverlay; graphs: DiffGraphs | null },
+    reviewId: string,
+  ) {
+    this.diffOverlay = build.overlay;
+    this.diffGraphs = build.graphs;
+    this.applyDiffSources(build.overlay);
+    await this.activateDiffReview(reviewId);
+    this.pauseHeatForDiff();
+    this.reseedL0Collapse();
+    this.emit("diff-changed");
   }
 
   private restoreDiffSources() {
@@ -238,7 +272,7 @@ export class GraphSessionStore extends EventEmitter {
     this.diffError = null;
     this.diffNotesWarningClosed = false;
     try {
-      this.diffOverlay = await buildCommitDiffOverlay({
+      const build = await buildCommitDiffOverlay({
         git: this.git,
         layoutEngine: this.layoutEngine,
         root: this.root,
@@ -246,11 +280,7 @@ export class GraphSessionStore extends EventEmitter {
         headRef,
         hideTopLevelDotDirs: this.hideDotDirectories,
       });
-      this.applyDiffSources(this.diffOverlay);
-      await this.activateDiffReview(commitDiffId(baseRef, headRef));
-      this.pauseHeatForDiff();
-      this.ensureDiffZoomFloor();
-      this.emit("diff-changed");
+      await this.installDiff(build, commitDiffId(baseRef, headRef));
     } catch (e) {
       this.diffError = e instanceof Error ? e.message : String(e);
       this.emit("diff-changed");
@@ -262,7 +292,7 @@ export class GraphSessionStore extends EventEmitter {
     this.diffError = null;
     this.diffNotesWarningClosed = false;
     try {
-      this.diffOverlay = await buildWorkingTreeDiffOverlay({
+      const build = await buildWorkingTreeDiffOverlay({
         client: this.client,
         git: this.git,
         root: this.root,
@@ -271,11 +301,7 @@ export class GraphSessionStore extends EventEmitter {
         hideTopLevelDotDirs: this.hideDotDirectories,
         ignoreSubmodules,
       });
-      this.applyDiffSources(this.diffOverlay);
-      await this.activateDiffReview(workingTreeDiffId(baseRef));
-      this.pauseHeatForDiff();
-      this.ensureDiffZoomFloor();
-      this.emit("diff-changed");
+      await this.installDiff(build, workingTreeDiffId(baseRef));
     } catch (e) {
       this.diffError = e instanceof Error ? e.message : String(e);
       this.emit("diff-changed");
@@ -286,24 +312,14 @@ export class GraphSessionStore extends EventEmitter {
     if (!this.graph) return;
     this.diffError = null;
     this.diffNotesWarningClosed = false;
-    const aligned = realignHunks(text, await this.readPastedDiffSources(text));
-    this.diffOverlay = buildPasteDiffOverlay(aligned, this.graph);
-    await this.activateDiffReview(pasteDiffId(text));
-    this.pauseHeatForDiff();
-    this.ensureDiffZoomFloor();
-    this.emit("diff-changed");
-  }
-
-  /** Current sources of the pasted diff's modified files, to correct stale hunk headers. */
-  private async readPastedDiffSources(text: string): Promise<Map<string, string>> {
-    const known = new Set(this.graph?.modules.map((m) => m.path));
-    const paths = pathsFromUnifiedDiff(text).modified.filter((path) => known.has(path));
-    const reads = paths.map(async (path) => {
-      const source = await this.client.readModuleSource(this.root ?? "", path).catch(() => null);
-      return [path, source] as const;
+    const overlay = await buildPasteDiffOverlay({
+      text,
+      graph: this.graph,
+      client: this.client,
+      root: this.root,
     });
-    const entries = await Promise.all(reads);
-    return new Map(entries.filter((e): e is [string, string] => e[1] !== null));
+    // Pasted text has no before-graph, so new diagnostics can't be computed.
+    await this.installDiff({ overlay, graphs: null }, pasteDiffId(text));
   }
 
   select(id: string | null) {
@@ -410,13 +426,12 @@ export class GraphSessionStore extends EventEmitter {
 
   /** Switch detail level. Collapse state updates for L0; layout stays fixed (projection-only). */
   setZoomLevel(level: ZoomLevel) {
-    if (this.diffOverlay && level === 0) level = 1;
     if (level === this.zoomLevel) return;
     const prev = this.zoomLevel;
     this.zoomLevel = level;
     const isL0 = level === 0;
     this.collapsedGroupIds =
-      isL0 && this.graph ? new Set(allGroupIds(this.graph)) : new Set();
+      isL0 && this.graph ? l0CollapseSet(this.graph, this.diffOverlay) : new Set();
     this.syncReduced();
     this.emit("zoom-changed");
     if (level === 2 && prev !== 2) {
@@ -508,6 +523,7 @@ export class GraphSessionStore extends EventEmitter {
     this.selectionHistory.clear();
     this.resetZoom();
     this.diffOverlay = null;
+    this.diffGraphs = null;
     this.diffError = null;
     this.diffSourceIds.clear();
     this.diffReview.clear();
@@ -642,9 +658,13 @@ export class GraphSessionStore extends EventEmitter {
     this.emit("layout-changed");
   }
 
-  /** Diff mode needs module boxes visible — never stay at L0 bird's-eye. */
-  private ensureDiffZoomFloor() {
-    if (this.zoomLevel === 0) this.setZoomLevel(1);
+  /** The L0 collapse set depends on the diff (diffed groups stay expanded) —
+   *  re-seed it whenever the overlay is applied or cleared. */
+  private reseedL0Collapse() {
+    if (this.zoomLevel !== 0 || !this.graph) return;
+    this.collapsedGroupIds = l0CollapseSet(this.graph, this.diffOverlay);
+    this.syncReduced();
+    this.emit("zoom-changed");
   }
 
   /** L2 source/doc fetch without a full re-layout (footprint is zoom-independent). */

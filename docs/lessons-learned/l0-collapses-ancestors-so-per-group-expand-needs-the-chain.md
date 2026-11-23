@@ -3,7 +3,7 @@
 At L0 the store seeds `collapsedGroupIds = allGroupIds(graph)` — **every** group, including parents.
 So a per-group override that only deletes its own id is a no-op for anything nested: the group's
 modules are still hidden by `isModuleExpanded` (which walks up to the nearest collapsed ancestor),
-while `GroupNodeView` does flip from `CollapsedCard` to `ExpandedHeader`. The visible result is
+while `GroupNodeView` does flip from `CollapsedGroupCard` to `ExpandedHeader`. The visible result is
 "the title font got smaller and nothing else happened" — which reads as a font bug, not a collapse
 bug. Any action that makes a group's contents visible must expand the ancestor chain, the same way
 `focusOn` does for a module (`expandCollapsedAncestors` / `expandCollapsedGroupAncestors`).

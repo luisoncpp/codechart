@@ -11,7 +11,7 @@ export function attachLineDiff(
   const { notes: diffNotes, droppedMarkerText } = unifiedDiff
     ? parseDiffNotes(unifiedDiff)
     : { notes: [], droppedMarkerText: "" };
-  // After-sources are filled by commit/working-tree builders; paste has none.
+  // After-sources are filled by the builders: git snapshots, or `anchorPasteDiff` for paste.
   // Deleted before-sources are filled by `attachDeletedBeforeSources`.
   return {
     ...partial,

@@ -20,7 +20,7 @@ Re-applying the same diff restores its marks. Marks are per path, not per conten
 - `GraphSessionStore` composes the tracker (optional 4th constructor client; a no-op default keeps tests/constructions unchanged): activates after each overlay build, clears on `clearDiffOverlay`/`loadProject`, emits the existing `diff-changed` on toggle/`unmarkAllDiffReviewed`/`clearAllDiffReviews`. Load/save failures surface as `getDiffReviewError()` without breaking the overlay.
 - `domain/projection` `withDiffReview` is a display-only post-pass after `applyDiffOverlay` stamping `diffReviewed` on reviewed module nodes.
 - `features/graph_canvas` renders a checkmark toggle on diffed module cards (L1/L1.5 and L2; `data-diff-review-toggle` intercepted before selection like the connection toggle) and in the preview frame header (`FrameHeader`) for diffed files; reviewed modules dim to the unchanged-module opacity.
-- `features/diff_visualizer` `DiffOverlayBar` shows `Reviewed X/Y`, an expandable checklist of every changed/deleted file with an **Unmark all** top row (disabled when nothing is marked; the empty-set save removes the persisted entry), and a save-failure hint.
+- `features/diff_visualizer` `DiffOverlayBar` shows `Reviewed X/Y`, an expandable checklist of every changed/deleted file (checkbox toggles reviewed; path button calls `store.focusOn` to center the canvas, list stays open) with an **Unmark all** top row (disabled when nothing is marked; the empty-set save removes the persisted entry), and a save-failure hint.
 
 
 ## Invariants

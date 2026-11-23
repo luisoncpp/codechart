@@ -11,8 +11,8 @@ Ctrl/Cmd+F while a preview frame is focused (or, failing that, hovered), or the 
 ## Step-by-step sequence
 
 1. `useOpenShortcut` sees ctrl/meta+F (no shift/alt). Target frame = `document.activeElement?.closest(".symbol-widget")`, else `document.querySelector(".symbol-widget:hover")`. If the target is this frame → `preventDefault()`, open the bar, focus+select the input. If no frame claims it, the event falls through to the browser (project search keeps Ctrl+**Shift**+F).
-2. Typing updates component-local `query`; `findFrameMatches` (`frame-search.ts`, pure, synchronous — no debounce/IPC) collects case-insensitive non-overlapping matches: description first (document frames only), then code in line/col order. Active index resets to 0.
-3. `codeMatchesByLine` / `descriptionRanges` flag the active match; `DiffCodeLines` (via `matchesByLine`) and `L2Description` (via `matchRanges`) render `hl-match` / `hl-match--active` spans **nested inside** token spans (`segmentTokenText`, `Private/match-highlight.ts`).
+2. Typing updates component-local `query` (the input echoes it at once). `findFrameMatches` (`frame-search.ts`, pure — no debounce/IPC) runs on `useDeferredValue(query)`, so highlighting renders at low priority and a newer keystroke abandons it. It collects case-insensitive non-overlapping matches: description first (document frames only), then code in line/col order. Active index resets to 0.
+3. `useFrameMatchProps` builds memoized body props: `codeMatchesByLine` (per-line ranges, none active, depends on matches only) + `activeCodeMatch` (`{line, startCol}`) + `descriptionRanges` (active flagged). `DiffRowItem` hands each **memoized** `DiffCodeLine` only its own row's ranges and `activeMatchCol` (`flagActiveRange`), so typing re-renders only rows whose matches changed and stepping re-renders only two rows. `DiffCodeLines` and `L2Description` render `hl-match` / `hl-match--active` spans **nested inside** token spans (`segmentTokenText`, `Private/match-highlight.ts`).
 4. Enter / Shift+Enter / ↑↓ buttons call `navigate(delta)` → shared `Private/match-stepper.ts` `stepIndex` (wrap-around).
 5. An effect centers `activeMatchRef` via `centerElementInBody` (`center-in-body.ts`, body-`scrollTop` only — never `scrollIntoView`).
 6. Escape in the input closes the bar (refocuses the frame). Escape on the frame root escalates: copy menu first (if open), then the find bar, then the frame.
@@ -44,6 +44,7 @@ None outside the widget: `barOpen`/`query`/`activeIndex` are local state in `use
 
 ## Common failure modes
 
+- Slow typing on long files: some document-wide value (a fresh Map/object/closure) reached `DiffCodeLine`, defeating its `memo` so every row re-tokenizes per keystroke. Guarded by `tests/diff-code-lines-rerender.test.tsx`.
 - Hover targeting needs a real pointer (`:hover`); in jsdom only the focused path works.
 - Matches are computed over the live source, so `remove` diff rows (which have no after-snapshot line number) never highlight — by design.
 - Sibling-splitting the token spans (instead of nesting) breaks `hl-clickable` navigation, which reads the token span's `textContent`. A match inside a `[[wiki-link]]` nests one level deeper (`hl-wiki-link` > `hl-match`) for the same reason.

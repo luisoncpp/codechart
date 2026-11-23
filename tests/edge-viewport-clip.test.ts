@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { EdgeSegment } from "../src/features/graph_canvas/Private/edges/edge-path";
+import { segmentWithBounds as segment } from "./helpers/edge-segment";
 import {
   CLIP_CELL_VIEWPORT_FRACTION,
   clipCellKey,
@@ -10,16 +10,6 @@ import {
   filterVisibleSegments,
 } from "../src/features/graph_canvas/Private/edges/edge-viewport";
 
-function segment(
-  bounds: Pick<EdgeSegment, "minX" | "minY" | "maxX" | "maxY">,
-): EdgeSegment {
-  return {
-    path: "M0,0 L10,10",
-    arrowTip: { x: 10, y: 10, side: "right" },
-    arrowAngle: 0,
-    ...bounds,
-  };
-}
 
 describe("clipCellSize", () => {
   it("equals max(width, height) times viewport fraction", () => {

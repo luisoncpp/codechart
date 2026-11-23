@@ -9,7 +9,7 @@ function symbolSelector(symbolId: string): string {
   return `[data-id="${symbolId}"]`;
 }
 
-/** Zoom the React Flow camera until an L1.5 symbol box is painted (screen LOD). */
+/** Zoom the React Flow camera until an L1.5 symbol box is painted (store L1.5 level may lag the camera). */
 export async function zoomCanvasUntilSymbolVisible(
   container: HTMLElement,
   symbolId: string,

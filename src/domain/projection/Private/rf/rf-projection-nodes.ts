@@ -29,6 +29,7 @@ export function groupNode(
       descriptionLong: group.annotation?.descriptionLong,
       architectureDoc: group.architectureDoc,
       architectureDocContent: ctx.options?.groupDocs?.get(group.id),
+      configPath: group.configPath,
       collapsed: ctx.options?.collapsedGroupIds?.has(group.id) ?? false,
       disconnected: ctx.groupDisconnected(group.id),
       showLong: ctx.options?.showSymbols ?? false,

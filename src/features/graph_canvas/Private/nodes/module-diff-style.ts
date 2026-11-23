@@ -29,3 +29,8 @@ export function moduleDiffBorder(
   if (diffState === "deleted") return `${px}px solid #dc2626`;
   return fallback;
 }
+
+/** Group titles/descriptions dim like unchanged modules while a diff is shown. */
+export function groupLabelOpacity(data: { diffVisualizing?: boolean }): number {
+  return data.diffVisualizing ? UNCHANGED_MODULE_DIFF_OPACITY : 1;
+}

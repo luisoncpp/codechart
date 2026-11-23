@@ -1,17 +1,21 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
+  afterOnlyRows,
   buildModuleDiffDisplay,
   type DiffDisplayRow,
   type DiffNote,
+  type DiffViewMode,
   type FileLineDiff,
 } from "../../../../domain/diff";
+import { SplitDiffRows, type SharedRowProps, type SplitDiffRowsProps } from "./SplitDiffRows";
 import type { Token } from "./highlighter-types";
 import { LineTokenizer } from "./line-tokenizer";
-import type { LineMatchRange } from "./match-highlight";
+import type { ActiveMatch, LineMatchRange } from "./match-highlight";
 import { DiffRowItem } from "./DiffRowItem";
 import type { RowChrome } from "./row-chrome";
 import { findWikiLinks, isMarkdownPath, type WikiLinkSpan } from "../wiki_links";
 import { useReviewNotesStore } from "../../../review_notes";
+import { useReviewStackStore } from "../../../review_stack";
 
 interface DiffCodeLinesProps {
   source: string;
@@ -28,43 +32,77 @@ interface DiffCodeLinesProps {
   clickableNames?: ReadonlySet<string>;
   /** Find-in-frame match ranges keyed by 1-based line number. */
   matchesByLine?: ReadonlyMap<number, readonly LineMatchRange[]>;
+  /** Which match in `matchesByLine` is active (`--active`, `activeMatchRef`). */
+  activeMatch?: ActiveMatch;
   /** Attached to the currently active find-in-frame match span. */
   activeMatchRef?: React.RefObject<HTMLElement | null>;
+  /** Unified (default), split before | after columns, or the after-file only. */
+  viewMode?: DiffViewMode;
 }
 
-/** Code lines with optional unified-diff +/- green/red row styling. */
+/** Code lines with optional diff +/- green/red row styling. */
 export function DiffCodeLines(props: DiffCodeLinesProps) {
   const { source, path, fileDiff, diffNotes } = props;
   const reviewNotes = useReviewNotesStore();
+  const reviewStack = useReviewStackStore();
   const notes = reviewNotes?.notesFor(path) ?? [];
+  const findings = reviewStack?.findingsFor(path) ?? [];
+  const cohortRanges = reviewStack?.activeCohortRangesFor(path);
+  const agentNotes = reviewStack?.diffNotesFor(path) ?? [];
+  // Pasted `#` markers and agent-authored notes render through the same notice.
+  const allDiffNotes = agentNotes.length > 0 ? [...(diffNotes ?? []), ...agentNotes] : diffNotes;
   const draft = reviewNotes?.getDraft();
-  const rows = useMemo(() => buildModuleDiffDisplay(source, fileDiff), [source, fileDiff]);
+  const viewMode = props.viewMode ?? "unified";
+  const rows = useMemo(() => displayRows(source, fileDiff, viewMode), [source, fileDiff, viewMode]);
   const tokenized = useMemo(() => tokenizeRows(rows, path), [rows, path]);
   const wikiLinks = useMemo(() => wikiLinksPerRow(rows), [rows]);
   const numberDigits = useMemo(() => gutterDigits(rows), [rows]);
-  const chrome = rowChrome(props, numberDigits);
-  const onLineClick = reviewNotes
-    ? /*start or extend a Review Note draft*/ (line: number, extend: boolean) =>
-        selectReviewLine(reviewNotes, source, path, line, extend)
-    : undefined;
+  // Stable `chrome` / `onLineClick` let memoized `DiffCodeLine` rows skip re-rendering.
+  const { zoom, lineClassPrefix, wrapLines } = props;
+  const chrome = useMemo(
+    /*buildRowChrome*/ () => rowChrome({ path, zoom, lineClassPrefix, wrapLines }, numberDigits),
+    [path, zoom, lineClassPrefix, wrapLines, numberDigits],
+  );
+  const selectLine = useCallback(
+    /*startOrExtendReviewNoteDraft*/ (line: number, extend: boolean) => {
+      if (reviewNotes) selectReviewLine(reviewNotes, source, path, line, extend);
+    },
+    [reviewNotes, source, path],
+  );
+  const shared: SharedRowProps = {
+    chrome, clickableNames: props.clickableNames,
+    activeLine: props.activeLine, activeLineRef: props.activeLineRef,
+    matchesByLine: props.matchesByLine, activeMatch: props.activeMatch,
+    activeMatchRef: props.activeMatchRef,
+    notes, draft, diffNotes: allDiffNotes, findings, cohortRanges,
+    onLineClick: reviewNotes ? selectLine : undefined,
+  };
+  return <DiffRows viewMode={viewMode} rows={rows} tokens={tokenized} links={wikiLinks} shared={shared} />;
+}
+
+/** After-only mode drops deleted and moved-away rows before tokenizing. */
+function displayRows(source: string, fileDiff: FileLineDiff | undefined, viewMode: DiffViewMode) {
+  const unified = buildModuleDiffDisplay(source, fileDiff);
+  return viewMode === "after" ? afterOnlyRows(unified) : unified;
+}
+
+function DiffRows(props: SplitDiffRowsProps & { viewMode: DiffViewMode }) {
+  const { rows, tokens, links, shared } = props;
+  if (props.viewMode === "split") return <SplitDiffRows {...props} />;
   return (
     <>
       {rows.map((row, idx) => (
-        <DiffRowItem
-          key={idx} row={row} tokens={tokenized[idx]!} links={wikiLinks[idx]!}
-          chrome={chrome} clickableNames={props.clickableNames}
-          activeLine={props.activeLine} activeLineRef={props.activeLineRef}
-          matchesByLine={props.matchesByLine} activeMatchRef={props.activeMatchRef}
-          notes={notes} draft={draft} diffNotes={diffNotes}
-          onLineClick={onLineClick}
-        />
+        <DiffRowItem key={idx} row={row} tokens={tokens[idx]!} links={links[idx]!} {...shared} />
       ))}
     </>
   );
 }
 
 /** The values every row of this document shares, built once per render. */
-function rowChrome(props: DiffCodeLinesProps, numberDigits: number): RowChrome {
+function rowChrome(
+  props: Pick<DiffCodeLinesProps, "path" | "zoom" | "lineClassPrefix" | "wrapLines">,
+  numberDigits: number,
+): RowChrome {
   return {
     zoom: props.zoom ?? 1,
     prefix: props.lineClassPrefix ?? "diff-code",

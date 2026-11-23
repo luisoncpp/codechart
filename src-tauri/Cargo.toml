@@ -1,6 +1,6 @@
 [package]
 name = "codechart"
-version = "2026.9.22"
+version = "2026.11.23"
 description = "Codechart — interactive architecture maps for code review"
 authors = ["you"]
 edition = "2021"
@@ -44,3 +44,6 @@ debug = "line-tables-only"
 [profile.test]
 debug = 0
 incremental = false
+
+[profile.dev.package."*"]
+debug = false                # no debug info for dependencies

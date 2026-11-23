@@ -8,31 +8,63 @@ export function buildModuleDiffDisplay(
 ): DiffDisplayRow[] {
   if (!fileDiff) return contextRows(source);
   const lines = afterLines(source);
-  const rows: DiffDisplayRow[] = [];
-  let oldLineNumber = 1;
-  let removedIdx = 0;
-
-  for (let i = 0; i < lines.length; i++) {
-    const lineNumber = i + 1;
-    for (const removed of fileDiff.removeBeforeLine.get(lineNumber) ?? []) {
-      const oldLine = getRemovedLine(fileDiff, removedIdx++, oldLineNumber++);
-      rows.push(createRemovedRow(oldLine, removed, fileDiff.movedRemovedLines));
-    }
-    const text = lines[i] ?? "";
-    const isAdd = fileDiff.addedLineNumbers.has(lineNumber);
-    rows.push(isAdd ? createAddedRow(lineNumber, text, fileDiff.movedAddedLines) : { kind: "context", lineNumber, text });
-    if (!isAdd) oldLineNumber++;
-  }
-
+  const state: RowState = { fileDiff, rows: [], misaligned: [], oldLineNumber: 1, removedIdx: 0 };
+  lines.forEach(/*pushRemovalsThenLine*/ (text, i) => {
+    pushRemoved(state, fileDiff.removeBeforeLine.get(i + 1) ?? []);
+    pushLine(state, i + 1, text);
+  });
+  warnMisaligned(state.misaligned);
   for (const [lineNumber, removedLines] of fileDiff.removeBeforeLine) {
-    if (isAfterLine(lineNumber, lines.length)) continue;
-    for (const removed of removedLines) {
-      const oldLine = getRemovedLine(fileDiff, removedIdx++, oldLineNumber++);
-      rows.push(createRemovedRow(oldLine, removed, fileDiff.movedRemovedLines));
-    }
+    if (!isAfterLine(lineNumber, lines.length)) pushRemoved(state, removedLines);
   }
+  return state.rows;
+}
 
-  return rows;
+interface RowState {
+  fileDiff: FileLineDiff;
+  rows: DiffDisplayRow[];
+  misaligned: number[];
+  oldLineNumber: number;
+  removedIdx: number;
+}
+
+function pushRemoved(state: RowState, removedLines: readonly string[]): void {
+  for (const removed of removedLines) {
+    const oldLine = getRemovedLine(state.fileDiff, state.removedIdx++, state.oldLineNumber++);
+    state.rows.push(createRemovedRow(oldLine, removed, state.fileDiff.movedRemovedLines));
+  }
+}
+
+function pushLine(state: RowState, lineNumber: number, text: string): void {
+  const { fileDiff } = state;
+  const claimsAdd = fileDiff.addedLineNumbers.has(lineNumber);
+  const isAdd = claimsAdd && addedTextMatches(fileDiff, lineNumber, text);
+  if (claimsAdd && !isAdd) state.misaligned.push(lineNumber);
+  if (isAdd) {
+    state.rows.push(createAddedRow(lineNumber, text, fileDiff.movedAddedLines));
+    return;
+  }
+  state.rows.push({ kind: "context", lineNumber, text });
+  state.oldLineNumber++;
+}
+
+/**
+ * The regression guard for every "diff paints the wrong lines" bug: an added row must carry
+ * the text the diff added. Parser drift, a stale or unpatched live file, a bad remap — any
+ * of them surfaces here as a mismatch, which renders as context instead of a false `+`.
+ */
+function addedTextMatches(fileDiff: FileLineDiff, lineNumber: number, text: string): boolean {
+  const expected = fileDiff.addedLineTexts?.get(lineNumber);
+  return expected === undefined || expected.trimEnd() === text.trimEnd();
+}
+
+function warnMisaligned(lineNumbers: readonly number[]): void {
+  if (lineNumbers.length === 0) return;
+  console.warn(
+    `[diff] ${lineNumbers.length} added row(s) do not match the rendered source ` +
+      `(first at line ${lineNumbers[0]}); shown as context. The diff coordinates and the ` +
+      `rendered snapshot disagree — see lessons-learned/diff-line-highlights-index-after-snapshot.md.`,
+  );
 }
 
 function getRemovedLine(fileDiff: FileLineDiff, idx: number, fallback: number): number {

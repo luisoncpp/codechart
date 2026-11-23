@@ -7,8 +7,15 @@ interface HelpMarkdownViewProps {
   source: string;
 }
 
+const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
+
+/** marked would turn YAML frontmatter into an `<hr>` plus a setext heading; show it as a YAML block instead. */
+function frontmatterAsCodeBlock(source: string): string {
+  return source.replace(FRONTMATTER, "```yaml\n$1\n```\n");
+}
+
 export function HelpMarkdownView({ source }: HelpMarkdownViewProps) {
-  const html = markdown.parse(source, { async: false }) as string;
+  const html = markdown.parse(frontmatterAsCodeBlock(source), { async: false }) as string;
 
   return (
     <>

@@ -45,6 +45,7 @@ export function HelpModal({ topic, onClose }: HelpModalProps) {
       >
         <HelpModalHeader topic={topic} onClose={onClose} />
         <div style={bodyStyle}>
+          {topic.intro && <HelpMarkdownView source={topic.intro} />}
           <HelpMarkdownView source={topic.markdown} />
         </div>
         <HelpModalFooter topic={topic} onClose={onClose} />

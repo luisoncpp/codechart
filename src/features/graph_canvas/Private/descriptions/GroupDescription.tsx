@@ -22,42 +22,56 @@ export function GroupDescription({
   data: GroupNodeData;
   descColor: string;
 }) {
-  const [anchor, setAnchor] = useState<(TooltipAnchor & { viewport: string }) | null>(null);
-  const rfStore = useStoreApi();
   const showingLong = !!(data.showLong && data.descriptionLong);
   const text = (showingLong ? data.descriptionLong : undefined) ?? data.descriptionShort;
-  // Redundant when the displayed text already is the long one: at L1.5+
-  // (`showingLong`) it's inline, and a long identical to the short adds nothing.
-  // Whitespace-insensitive: the two can differ only in newlines vs spaces
-  // (e.g. a CRLF-authored body) yet render identically.
-  const redundant =
-    showingLong || (!!text && collapseWhitespace(data.descriptionLong ?? "") === collapseWhitespace(text));
-  const tooltipText = redundant ? undefined : data.descriptionLong;
   if (!text || !data.descriptionBox) return null;
   const { width, height } = data.descriptionBox;
   const font = showingLong
     ? DESC_BOX.fontSize
     : fitDescriptionFontSize(text, width, height);
-  const html = renderInlineMarkdown(text);
+  return (
+    <DescriptionBand
+      html={renderInlineMarkdown(text)}
+      tooltipText={showingLong ? undefined : tooltipFor(text, data.descriptionLong)}
+      configPath={data.configPath}
+      style={{
+        ...bandDescriptionStyle(descColor, data.descriptionBox, font),
+        opacity: data.diffVisualizing ? UNCHANGED_MODULE_DIFF_OPACITY : 1,
+      }}
+    />
+  );
+}
+
+/** The long text, unless it would just repeat the displayed one. Whitespace-
+ *  insensitive: the two can differ only in newlines vs spaces (e.g. a
+ *  CRLF-authored body) yet render identically. At L1.5+ the caller passes
+ *  nothing — the long text is already inline. */
+function tooltipFor(shown: string, long: string | undefined): string | undefined {
+  if (!long || collapseWhitespace(long) === collapseWhitespace(shown)) return undefined;
+  return long;
+}
+
+interface DescriptionBandProps {
+  html: string;
+  tooltipText?: string;
+  /** Relative links resolve against the declaring `*.group.md` (`wikiLinkFromEvent`). */
+  configPath?: string;
+  style: React.CSSProperties;
+}
+
+function DescriptionBand({ html, tooltipText, configPath, style }: DescriptionBandProps) {
+  const [anchor, setAnchor] = useState<(TooltipAnchor & { viewport: string }) | null>(null);
+  const rfStore = useStoreApi();
+  const hasLink = html.includes("<a ");
+  const openTooltipAtCursor = (e: React.MouseEvent) =>
+    setAnchor({ x: e.clientX, y: e.clientY, viewport: viewportKey(rfStore.getState().transform) });
   return (
     <>
       <p
-        style={{
-          ...bandDescriptionStyle(descColor, data.descriptionBox, font),
-          // Hoverable only when a tooltip exists; otherwise stay inert as before.
-          pointerEvents: tooltipText ? "auto" : "none",
-          opacity: data.diffVisualizing ? UNCHANGED_MODULE_DIFF_OPACITY : 1,
-        }}
-        onMouseEnter={
-          tooltipText
-            ? /*openTooltipAtCursor*/ (e) =>
-                setAnchor({
-                  x: e.clientX,
-                  y: e.clientY,
-                  viewport: viewportKey(rfStore.getState().transform),
-                })
-            : undefined
-        }
+        data-wiki-from={configPath}
+        // Interactive only for a tooltip or a link; otherwise clicks fall through to the group.
+        style={{ ...style, pointerEvents: tooltipText || hasLink ? "auto" : "none" }}
+        onMouseEnter={tooltipText ? openTooltipAtCursor : undefined}
         onMouseLeave={tooltipText ? /*closeTooltip*/ () => setAnchor(null) : undefined}
         dangerouslySetInnerHTML={{ __html: html }}
       />

@@ -8,5 +8,8 @@ export function createMockStartupClient(
     async getStartupProjectPath(): Promise<string | null> {
       return path;
     },
+    async getExecutablePath(): Promise<string | null> {
+      return null;
+    },
   };
 }

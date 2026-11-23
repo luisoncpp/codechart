@@ -504,3 +504,16 @@ fn fixture_files() -> Vec<String> {
         "src/ui/index.ts",
     ])
 }
+
+#[test]
+fn configured_group_carries_its_config_path_inferred_does_not() {
+    let mut core = def("core", "src/core");
+    core.config_path = "src/core/core.group.md".into();
+    let fs = files(&["src/core/a.ts", "src/ui/b.ts"]);
+    let r = resolve_groups(&fs, &[core]);
+    assert_eq!(
+        group(&r, "core").config_path.as_deref(),
+        Some("src/core/core.group.md")
+    );
+    assert!(r.groups.iter().filter(|g| g.id != "core").all(|g| g.config_path.is_none()));
+}

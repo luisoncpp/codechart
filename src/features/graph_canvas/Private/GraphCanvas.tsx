@@ -4,7 +4,7 @@ import { ReactFlow, ReactFlowProvider, Background, Controls } from "@xyflow/reac
 import "@xyflow/react/dist/style.css";
 import "./graph-canvas.css";
 import { projectGraph } from "../../../domain/projection";
-import { applyDiffOverlay, withDiffReview } from "../../../domain/projection";
+import { applyDiffOverlay, withDiffReview, withReviewStackOverlay } from "../../../domain/projection";
 import type { RFNode, RenderOptions } from "../../../domain/projection";
 import {
   edgeFocusForSelection,
@@ -23,6 +23,10 @@ import { useStyledEdges } from "./edges/use-styled-edges";
 import { FitView } from "./navigation/FitView";
 import { fitOptionsForLevel } from "./navigation/fit-options";
 import { FocusNode } from "./navigation/FocusNode";
+import {
+  ViewportBridge,
+  type CanvasViewportHandle,
+} from "./navigation/ViewportBridge";
 import { CANVAS_MIN_ZOOM } from "./nodes/use-zoom-counter-scale";
 import { GraphCanvasController } from "./controller/graph-canvas-controller";
 import { usePreviewFrames } from "./preview_frames";
@@ -33,7 +37,9 @@ import { HeatmapLegend } from "./toolbar/HeatmapLegend";
 import { CanvasUiState, useCanvasUiState } from "./controller/canvas-ui-state";
 import { SelectionNavigation } from "./toolbar/SelectionNavigation";
 import type { ReviewNotesStore } from "../../../state/review-notes";
+import type { ReviewStackStore } from "../../../state/review-stack";
 import { useReviewNoteNavigation, withReviewCounts } from "./review-note-canvas";
+import { useReviewStackNavigation } from "./review-stack-canvas";
 
 interface GraphCanvasProps {
   store: GraphSessionStore;
@@ -42,7 +48,9 @@ interface GraphCanvasProps {
   editor: string;
   ui: CanvasUiState;
   reviewNotes?: ReviewNotesStore;
+  reviewStack?: ReviewStackStore;
   onShowReviewNotes?: () => void;
+  onViewportReady?: (handle: CanvasViewportHandle | null) => void;
 }
 
 export function GraphCanvas({
@@ -52,7 +60,9 @@ export function GraphCanvas({
   editor,
   ui,
   reviewNotes,
+  reviewStack,
   onShowReviewNotes,
+  onViewportReady,
 }: GraphCanvasProps) {
   const session = useGraphSession(store);
   const uiState = useCanvasUiState(ui);
@@ -81,6 +91,10 @@ export function GraphCanvas({
   const moveGuard = useRef(new ProgrammaticMoveGuard()).current;
   useReviewNoteNavigation({
     store, notes: reviewNotes, openPreview: previews.openReviewNotePreview, guard: moveGuard,
+  });
+  useReviewStackNavigation({
+    store, reviewStack, openPreview: previews.openReviewNotePreview,
+    openMarkdown: previews.openMarkdownFrame, guard: moveGuard,
   });
 
   const controller = useMemo(
@@ -142,21 +156,28 @@ export function GraphCanvas({
     [graph, layout, level, session, cacheVersion, groupDocCacheVersion, heatOptions, locTotals],
   );
 
+  const reviewStackVersion = reviewStack?.getVersion() ?? 0;
   const displayProjected = useMemo(() => {
     if (!projected) return null;
     const diffed = diffOverlay
       ? withDiffReview(applyDiffOverlay(projected, diffOverlay), diffReviewedIds)
       : projected;
+    void reviewStackVersion;
+    const stacked = reviewStack
+      ? withReviewStackOverlay(diffed, {
+          spotlightModuleIds: reviewStack.getSpotlightModuleIds(),
+          blastDepths: reviewStack.getBlastRadius()?.depths ?? null,
+        })
+      : diffed;
     // The store identity is stable; its immutable document invalidates badge counts.
     void reviewNotesDocument;
-    return reviewNotes ? withReviewCounts(diffed, heatGraph, reviewNotes) : diffed;
-  }, [projected, diffOverlay, diffReviewedIds, reviewNotes, reviewNotesDocument, heatGraph]);
+    return reviewNotes ? withReviewCounts(stacked, heatGraph, reviewNotes) : stacked;
+  }, [projected, diffOverlay, diffReviewedIds, reviewStack, reviewStackVersion, reviewNotes, reviewNotesDocument, heatGraph]);
 
-  const styledEdges = useStyledEdges(
-    displayProjected,
-    edgeFocus,
-    uiState.getArrowVisibility(),
-  );
+  const styledEdges = useStyledEdges(displayProjected, edgeFocus, {
+    arrowVisibility: uiState.getArrowVisibility(),
+    showViolationArrows: uiState.getShowViolationArrows(),
+  });
 
   if (!displayProjected) return null;
 
@@ -210,7 +231,12 @@ export function GraphCanvas({
         >
           <FitView options={fitOptions} />
           <FocusNode store={store} />
-          <EdgeLayer edges={styledEdges} nodes={nodes} />
+          <ViewportBridge onReady={onViewportReady} />
+          <EdgeLayer
+            edges={styledEdges}
+            nodes={nodes}
+            hideOffscreenArrows={uiState.getHideOffscreenArrows()}
+          />
           <Background color="#e2e8f0" gap={20} />
           <Controls showInteractive={false} />
         </ReactFlow>

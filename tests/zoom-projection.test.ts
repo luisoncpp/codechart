@@ -26,14 +26,6 @@ describe("levelFromZoom", () => {
     expect(levelFromZoom(10)).toBe(2);
   });
 
-  it("floors at L1 when L0 is disabled (diff mode)", () => {
-    const disableL0 = { disableL0: true };
-    expect(levelFromZoom(0.3, disableL0)).toBe(1);
-    expect(levelFromZoom(0.44, disableL0)).toBe(1);
-    expect(levelFromZoom(0.45, disableL0)).toBe(1);
-    expect(levelFromZoom(0.9, disableL0)).toBe(1.5);
-  });
-
   it("uses hysteresis when leaving L2 so a noisy boundary does not thrash", () => {
     const fromL2 = { currentLevel: 2 as const };
     expect(levelFromZoom(3.45, fromL2)).toBe(2);

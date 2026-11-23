@@ -2,8 +2,8 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { HelpMenu } from "../src/features/help_menu";
 
-function renderHelpMenu() {
-  render(<HelpMenu />);
+function renderHelpMenu(executablePath: string | null = null) {
+  render(<HelpMenu getExecutablePath={async () => executablePath} />);
 }
 
 function openHelpMenu() {
@@ -28,6 +28,8 @@ describe("HelpMenu dropdown and modals", () => {
     expect(screen.getByRole("menuitem", { name: "Architecture tags..." })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Diff notes..." })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Wiki links..." })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "MCP server..." })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Code review skill / prompt..." })).toBeInTheDocument();
   });
 
   it("opens the Groups format documentation modal and renders content", () => {
@@ -73,6 +75,64 @@ describe("HelpMenu dropdown and modals", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Help: Wiki links" })).toBeInTheDocument();
     expect(screen.getByText(/Wiki links allow instant navigation/)).toBeInTheDocument();
+  });
+
+  it("opens the MCP server and Code review skill/prompt modals", async () => {
+    renderHelpMenu();
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "MCP server..." }));
+    expect(await screen.findByRole("heading", { name: "Help: MCP server" })).toBeInTheDocument();
+    expect(screen.getByText(/Replace .*with the absolute path of the installed executable/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Tools (15)" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Troubleshooting" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Close" })[0]);
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Code review skill / prompt..." }));
+    expect(screen.getByRole("heading", { name: "Help: Code review skill / prompt" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Workflow" })).toBeInTheDocument();
+  });
+
+  // The registration snippets must name the installed executable, so no source checkout is needed.
+  it("fills the MCP registration snippets with the running executable's path", async () => {
+    renderHelpMenu(String.raw`C:\Users\me\AppData\Local\codechart\codechart.exe`);
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "MCP server..." }));
+
+    const exe = "C:/Users/me/AppData/Local/codechart/codechart.exe";
+    expect(await screen.findByText(new RegExp(`"command": "${exe}"`))).toBeInTheDocument();
+    expect(screen.queryByText(/<codechart\.exe>/)).toBeNull();
+    expect(screen.getByText(/already point at this installation's executable/)).toBeInTheDocument();
+  });
+
+  // The skill starts with SKILL.md frontmatter; marked would render it as an
+  // <hr> plus a setext heading, so the modal shows it as a YAML code block.
+  it("renders the code review skill frontmatter as a code block, not a heading", () => {
+    renderHelpMenu();
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Code review skill / prompt..." }));
+
+    const dialog = screen.getByRole("dialog");
+    const code = [...dialog.querySelectorAll("pre code")].map((el) => el.textContent ?? "");
+    expect(code.some((text) => text.startsWith("name: codechart-review"))).toBe(true);
+    expect(dialog.querySelector("hr")).toBeNull();
+  });
+
+  it("copies the code review skill without the human-only intro", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderHelpMenu();
+    openHelpMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Code review skill / prompt..." }));
+    expect(screen.getByText(/How to use:/)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole("button", { name: "Copy markdown explanation" })[0]);
+    });
+
+    const copied = writeText.mock.calls[0][0] as string;
+    expect(copied.startsWith("---\nname: codechart-review\n")).toBe(true);
+    expect(copied).not.toContain("How to use:");
   });
 
   it("copies markdown to clipboard and updates button state", async () => {

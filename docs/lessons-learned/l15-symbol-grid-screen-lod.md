@@ -1,5 +1,7 @@
-# L1.5 symbol grids need per-card screen LOD, not just in-module paint
+# L1.5 symbol grids: paint them in the module card, and don't add a card-size gate
 
-Moving exported symbols from React Flow child nodes into `ModuleNodeView` fixed module-grain culling, but a large project at L1.5 still has hundreds of visible module cards — and each card was mounting its full `.symbol-box` grid. Thousands of DOM boxes inside on-screen modules stayed expensive even though the labels are world-sized 9px text (~8px on screen at camera zoom 0.9).
+Moving exported symbols from React Flow child nodes into `ModuleNodeView` fixed module-grain culling (`onlyRenderVisibleElements`). A per-card screen gate followed (`symbolsFitOnScreen`: skip the grid until the card's shorter side reached 100px on screen). It was meant to keep hundreds of visible compact cards from each mounting a `.symbol-box` grid.
 
-**Fix:** keep `data.symbols` on the projected node (level still starts at zoom 0.9) but gate `ModuleSymbolBoxes` with `symbolsFitOnScreen(worldW, worldH, cameraZoom)` — skip the grid until the card's shorter side is ≥100px on screen. Do **not** also require 9px labels to reach 12px on screen: that floor needs zoom ≥ 1.33, so every L1.5 card from 0.9–1.33 shows an empty reserved band (see `l15-font-floor-empties-symbol-bands.md`). Card chrome (bold filename, description) still renders at L1.5 entry zoom.
+**The gate was removed (2026-11-10).** It hid symbols on small cards from zoom 0.9 to about 1.1 while the 8px description on the same card was already readable, so users saw cards with text but no symbols. And it saved little: a card is compact *because* it has few symbols (layout sizes cards to their grid), so the cards it skipped were the cheap ones. Large, symbol-heavy cards passed the gate anyway.
+
+**Rule:** L1.5 symbols paint wherever the card description paints. If L1.5 performance regresses on huge projects, cap total painted boxes (or cull by viewport) rather than hiding symbols that sit next to visible text. See also `l15-font-floor-empties-symbol-bands.md`.

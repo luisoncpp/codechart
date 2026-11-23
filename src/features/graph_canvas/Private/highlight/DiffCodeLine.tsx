@@ -1,12 +1,13 @@
 // @Architecture(descriptionShort="One rendered code row: gutter, line number, and syntax tokens")
+import { memo } from "react";
 import type { DiffDisplayRow } from "../../../../domain/diff";
 import type { Token } from "./highlighter-types";
-import type { LineMatchRange } from "./match-highlight";
+import { flagActiveRange, type LineMatchRange } from "./match-highlight";
 import { TokenText } from "./TokenText";
 import type { RowChrome } from "./row-chrome";
 import type { WikiLinkSpan } from "../wiki_links";
 
-export interface DiffCodeLineProps {
+interface DiffCodeLineProps {
   row: DiffDisplayRow;
   tokens: Token[];
   /** Everything that is the same for every row of this document. */
@@ -18,8 +19,17 @@ export interface DiffCodeLineProps {
   anchored?: boolean;
   onLineClick?: (line: number, extend: boolean) => void;
   matchRanges?: readonly LineMatchRange[];
+  /** Start column of the active find match when it is on this row. */
+  activeMatchCol?: number;
   activeMatchRef?: React.RefObject<HTMLElement | null>;
+  /** Split view's left column: line numbers are before-file, so never clickable. */
+  beforeSide?: boolean;
+  /** Row lies in the spotlighted Review Stack cohort's hunks: draw the cohort band. */
+  inCohort?: boolean;
 }
+
+/** Same violet as the active cohort card in the Review Stack drawer. */
+const COHORT_BAND_COLOR = "#7c3aed";
 
 /** Token types whose text can never be a navigable identifier. */
 const NON_CLICKABLE_TYPES = new Set(["string", "comment", "keyword", "number"]);
@@ -30,9 +40,10 @@ function tokenClass(token: Token, clickableNames?: ReadonlySet<string>): string 
   return `hl-${token.type}${clickable ? " hl-clickable" : ""}`;
 }
 
-function rowStyle(chrome: RowChrome, fontSize: number): React.CSSProperties {
+function rowStyle(chrome: RowChrome, fontSize: number, inCohort?: boolean): React.CSSProperties {
   const { zoom, wrapLines } = chrome;
   return {
+    ...(inCohort ? { boxShadow: `inset ${3 / zoom}px 0 0 ${COHORT_BAND_COLOR}` } : {}),
     display: "flex",
     alignItems: "flex-start",
     padding: `0 ${4 / zoom}px`,
@@ -61,22 +72,29 @@ function lineNumberStyle(chrome: RowChrome, fontSize: number): React.CSSProperti
   };
 }
 
-export function DiffCodeLine(props: DiffCodeLineProps) {
-  const { row, chrome, active, lineRef, anchored, onLineClick } = props;
+/**
+ * Memoized: a preview frame re-renders on every find keystroke, and only rows
+ * whose own props changed (match ranges, active match) should redo tokens.
+ */
+export const DiffCodeLine = memo(function DiffCodeLine(props: DiffCodeLineProps) {
+  const { row, chrome, active, lineRef, anchored, onLineClick, inCohort } = props;
   const { prefix } = chrome;
   const fontSize = 12.5 / chrome.zoom;
+  const modifiers = `${active ? ` ${prefix}__line--active` : ""}${inCohort ? ` ${prefix}__line--cohort` : ""}`;
   return (
     <div
       ref={lineRef}
-      className={`${prefix}__line ${prefix}__line--${row.kind}${active ? ` ${prefix}__line--active` : ""}`}
+      className={`${prefix}__line ${prefix}__line--${row.kind}${modifiers}`}
       data-line={row.lineNumber}
+      data-kind={row.kind}
       title={row.tooltip}
-      style={rowStyle(chrome, fontSize)}
+      style={rowStyle(chrome, fontSize, inCohort)}
     >
       <GutterMark kind={row.kind} chrome={chrome} />
       <LineNumber
         prefix={prefix} kind={row.kind} lineNumber={row.lineNumber}
         style={lineNumberStyle(chrome, fontSize)} onLineClick={onLineClick}
+        beforeSide={props.beforeSide}
       />
       <span
         className={`${prefix}__text${anchored ? ` ${prefix}__text--review-note` : ""}`}
@@ -86,7 +104,7 @@ export function DiffCodeLine(props: DiffCodeLineProps) {
       </span>
     </div>
   );
-}
+});
 
 /** The `+` / `-` / blank column left of the line number. */
 function GutterMark({ kind, chrome }: { kind: DiffDisplayRow["kind"]; chrome: RowChrome }) {
@@ -110,13 +128,16 @@ interface LineNumberProps {
   lineNumber: number;
   style: React.CSSProperties;
   onLineClick?: (line: number, extend: boolean) => void;
+  beforeSide?: boolean;
 }
 
-function LineNumber({ prefix, kind, lineNumber, style, onLineClick }: LineNumberProps) {
-  if (kind === "remove" || kind === "move-remove") {
+function LineNumber({ prefix, kind, lineNumber, style, onLineClick, beforeSide }: LineNumberProps) {
+  // Unified `remove` rows show no number: it would read as an after-file line.
+  const isRemove = kind === "remove" || kind === "move-remove";
+  if (isRemove || beforeSide) {
     return (
       <span className={`${prefix}__ln`} style={{ ...style, userSelect: "none" }}>
-        {""}
+        {beforeSide ? lineNumber : ""}
       </span>
     );
   }
@@ -133,8 +154,9 @@ function LineNumber({ prefix, kind, lineNumber, style, onLineClick }: LineNumber
 }
 
 /** The row's tokens, each wrapping its own link/match sub-spans. */
-function LineTokens({ tokens, chrome, clickableNames, links, matchRanges, activeMatchRef }: DiffCodeLineProps) {
+function LineTokens({ tokens, chrome, clickableNames, links, matchRanges, activeMatchCol, activeMatchRef }: DiffCodeLineProps) {
   if (tokens.length === 0) return <> </>;
+  const ranges = flagActiveRange(matchRanges, activeMatchCol);
   let tokenStart = 0;
   return (
     <>
@@ -149,7 +171,7 @@ function LineTokens({ tokens, chrome, clickableNames, links, matchRanges, active
               tokenStart={start}
               path={chrome.path}
               links={linkable ? links : undefined}
-              matchRanges={matchRanges}
+              matchRanges={ranges}
               activeMatchRef={activeMatchRef}
             />
           </span>

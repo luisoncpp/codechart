@@ -8,13 +8,18 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "dist:win": "tauri build --bundles nsis",
+    "posttauri": "npm run clean:target",
+    "dist:win": "tauri build --bundles nsis,msi",
+    "postdist:win": "node scripts/clean-target.mjs --release",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.tools.json --noEmit",
     "lint": "eslint .",
+    "playtest:mcp": "node tools/playtest-mcp/index.ts",
     "check": "npm run lint && npm run typecheck && npm run test && npm run check:rust && npm run check:arch",
     "check:rust": "cd src-tauri && cross-env TS_RS_EXPORT_DIR=../src/domain/graph/model cargo test",
-    "check:arch": "cd src-tauri && cargo run --quiet --bin codechart-cli -- check .."
+    "postcheck:rust": "npm run clean:target",
+    "check:arch": "cd src-tauri && cargo run --quiet --bin codechart-cli -- check ..",
+    "clean:target": "node scripts/clean-target.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
@@ -28,6 +33,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@tauri-apps/cli": "^2",
     "@testing-library/jest-dom": "^6",
     "@testing-library/react": "^16",
@@ -44,6 +50,7 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8",
     "vite": "^7.0.4",
-    "vitest": "^3"
+    "vitest": "^3",
+    "zod": "^4.6.7"
   }
 }

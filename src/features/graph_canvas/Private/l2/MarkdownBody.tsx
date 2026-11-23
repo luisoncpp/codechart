@@ -1,5 +1,5 @@
 import { Marked, type Tokens } from "marked";
-import { normalizeSectionKey, wikiLinkExtension } from "../wiki_links";
+import { markdownLinkRenderer, normalizeSectionKey, wikiLinkExtension } from "../wiki_links";
 
 function escapeHtml(text: string): string {
   return text
@@ -14,7 +14,7 @@ function escapeHtml(text: string): string {
  * extension globally would change markdown rendering process-wide.
  */
 const markdown = new Marked({ async: false })
-  .use({ extensions: [wikiLinkExtension] })
+  .use({ extensions: [wikiLinkExtension], renderer: markdownLinkRenderer })
   .use({
     renderer: {
       heading({ tokens, depth, text }: Tokens.Heading) {

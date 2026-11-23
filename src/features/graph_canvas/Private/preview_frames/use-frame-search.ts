@@ -1,8 +1,16 @@
 // @Architecture(descriptionShort="Per-frame find state: query, matches, active index, Ctrl+F targeting, centering")
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { stepIndex } from "../highlight/match-stepper";
 import { centerElementInBody } from "./center-in-body";
-import { findFrameMatches, type FrameMatch } from "./frame-search";
+import type { FrameMatchProps } from "./FrameBody";
+import {
+  activeCodeMatch,
+  codeMatchesByLine,
+  descriptionRanges,
+  findFrameMatches,
+  type FrameMatch,
+} from "./frame-search";
+import { targetFrame } from "./frame-target";
 
 interface UseFrameSearchArgs {
   frameRef: React.RefObject<HTMLDivElement | null>;
@@ -14,13 +22,6 @@ interface UseFrameSearchArgs {
   enabled?: boolean;
 }
 
-/** The frame the Ctrl+F press targets: focused frame first, hovered frame else. */
-function targetFrame(): Element | null {
-  return (
-    document.activeElement?.closest(".symbol-widget") ??
-    document.querySelector(".symbol-widget:hover")
-  );
-}
 
 function useOpenShortcut(
   frameRef: React.RefObject<HTMLDivElement | null>,
@@ -48,10 +49,14 @@ export function useFrameSearch({ frameRef, description, sourceText, initialQuery
   const inputRef = useRef<HTMLInputElement>(null);
   const activeMatchRef = useRef<HTMLElement>(null);
 
+  // The input echoes `query` at once; highlighting a long file follows at low
+  // priority and is abandoned when the next keystroke arrives.
+  const deferredQuery = useDeferredValue(query);
   const matches: readonly FrameMatch[] = useMemo(
-    /*searchFrameText*/ () => findFrameMatches({ description, sourceText, query }),
-    [description, sourceText, query],
+    /*searchFrameText*/ () => findFrameMatches({ description, sourceText, query: deferredQuery }),
+    [description, sourceText, deferredQuery],
   );
+  const matchProps = useFrameMatchProps(matches, activeIndex, activeMatchRef);
 
   const openBar = () => {
     setBarOpen(true);
@@ -79,7 +84,28 @@ export function useFrameSearch({ frameRef, description, sourceText, initialQuery
   useOpenShortcut(frameRef, openBar, enabled);
   useCenterActiveMatch(activeMatchRef, matches, activeIndex);
 
-  return { barOpen, openBar, closeBar, query, setQuery, matches, activeIndex, navigate, inputRef, activeMatchRef };
+  return { barOpen, openBar, closeBar, query, setQuery, matches, activeIndex, navigate, inputRef, matchProps };
+}
+
+/**
+ * Stable highlight props for the frame body. Code ranges depend on `matches`
+ * only, so stepping the active match re-renders just the two rows involved.
+ */
+function useFrameMatchProps(
+  matches: readonly FrameMatch[],
+  activeIndex: number,
+  activeMatchRef: React.RefObject<HTMLElement | null>,
+): FrameMatchProps {
+  const matchesByLine = useMemo(/*groupCodeMatchesByLine*/ () => codeMatchesByLine(matches), [matches]);
+  return useMemo(
+    /*buildFrameMatchProps*/ () => ({
+      matchesByLine,
+      activeMatch: activeCodeMatch(matches, activeIndex),
+      descriptionRanges: descriptionRanges(matches, activeIndex),
+      activeMatchRef,
+    }),
+    [matchesByLine, matches, activeIndex, activeMatchRef],
+  );
 }
 
 function useCenterActiveMatch(

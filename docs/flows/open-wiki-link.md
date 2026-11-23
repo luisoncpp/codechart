@@ -26,8 +26,9 @@ both via `wikiLinkFromEvent` (`wiki_links/`) → `usePreviewFrames` →
    regex — see the ReDoS lesson) and passes the row's spans to `TokenText`, which wraps each link
    in `<span class="hl-wiki-link" data-wiki-target data-wiki-from>`. The full target string
    (including any `#Section` fragment) is stored on `data-wiki-target`. In rendered markdown the
-   same attributes come from the `marked` inline extension plus `data-wiki-from` on the
-   `MarkdownBody` wrapper.
+   same attributes come from the `marked` inline extension (and `markdownLinkRenderer` for plain
+   `[label](path)` links — rendered without `href`) plus `data-wiki-from` on the `MarkdownBody`
+   wrapper.
 2. **Click.** `wikiLinkFromEvent` reads the target and linking file (`data-wiki-from`). On the
    canvas the guard runs **before** `GraphCanvasController`, so a link click never changes
    selection.
@@ -90,3 +91,5 @@ One `read_module_source` IPC per newly resolved path (cached).
 - **Find in rendered markdown** — switch to raw source (`</>`).
 - **Canvas click closes unpinned frames** — grace window protects the frame being opened.
 - **L2 links under jsdom** need stubbed rects (lessons-learned).
+- **Click reloads the whole app** — a rendered anchor kept a relative `href`; the webview navigated to it. Route the `marked` instance through `markdownLinkRenderer`.
+- **Group-description link does nothing** — the description `<p>` was `pointer-events: none` (click fell through to the group), or the group had no `configPath` so a `../` target escaped the root.

@@ -8,7 +8,7 @@ describe("flow: open help topic and copy markdown", () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
 
-    render(<HelpMenu />);
+    render(<HelpMenu getExecutablePath={async () => null} />);
 
     // 1. Open Help dropdown menu
     fireEvent.click(screen.getByRole("button", { name: "Help" }));
@@ -40,7 +40,7 @@ describe("flow: open help topic and copy markdown", () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
 
-    render(<HelpMenu />);
+    render(<HelpMenu getExecutablePath={async () => null} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Help" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Architecture tags..." }));

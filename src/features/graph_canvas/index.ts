@@ -5,3 +5,4 @@ export { SearchMenu } from "./Private/toolbar/SearchMenu";
 export { GraphCanvasController } from "./Private/controller/graph-canvas-controller";
 export { edgeRole, styleEdge, type EdgeRole } from "./Private/edges/edge-style";
 export { borderAnchor, bowedPath, centerOf } from "./Private/edges/border-anchor";
+export type { CanvasViewportHandle } from "./Private/navigation/ViewportBridge";

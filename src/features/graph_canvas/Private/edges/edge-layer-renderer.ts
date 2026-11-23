@@ -18,6 +18,12 @@ export class EdgeLayerRenderer {
   private viewportModel: ViewportEdgeModel | null = null;
   private lastViewport: ViewportInput | null = null;
   private lastClipCellKey: string | null = null;
+  private hideOffscreenArrows = false;
+
+  /** Takes effect on the next clipped rebuild. */
+  setHideOffscreenArrows(hide: boolean) {
+    this.hideOffscreenArrows = hide;
+  }
 
   setEdges(edges: RFEdgeT[]) {
     this.edges = edges;
@@ -48,7 +54,11 @@ export class EdgeLayerRenderer {
       this.viewportModel = null;
       return null;
     }
-    this.viewportModel = buildStaticEdgeModel(this.geometry, input);
+    this.viewportModel = buildStaticEdgeModel(
+      this.geometry,
+      input,
+      this.hideOffscreenArrows,
+    );
     return this.viewportModel;
   }
 

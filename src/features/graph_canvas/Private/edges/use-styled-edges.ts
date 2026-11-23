@@ -2,22 +2,15 @@
 import { useMemo } from "react";
 import type { EdgeFocus } from "../../../../domain/graph";
 import type { ProjectedGraph, RFEdgeT } from "../../../../domain/projection";
-import type { ArrowVisibility } from "../controller/canvas-ui-state";
-import { styleEdge } from "./edge-style";
+import { type EdgeDisplayOptions, styleEdges } from "./edge-style";
 
 export function useStyledEdges(
   projected: ProjectedGraph | null,
   focus: EdgeFocus | null,
-  arrowVisibility: ArrowVisibility = "all",
+  { arrowVisibility, showViolationArrows }: EdgeDisplayOptions,
 ): RFEdgeT[] {
-  return useMemo(() => {
+  return useMemo(/*styleVisibleEdges*/ () => {
     if (!projected) return [];
-    const out: RFEdgeT[] = [];
-    for (const e of projected.edges) {
-      const styled = styleEdge(e, focus, arrowVisibility);
-      if (styled) out.push(styled);
-    }
-    return out;
-  }, [projected, focus, arrowVisibility]);
+    return styleEdges(projected.edges, focus, { arrowVisibility, showViolationArrows });
+  }, [projected, focus, arrowVisibility, showViolationArrows]);
 }
-

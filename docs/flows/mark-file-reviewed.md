@@ -4,7 +4,7 @@ End-to-end flow for checkmarking files while a diff visualization is active.
 
 ## Trigger
 
-While a diff overlay is active, user clicks the checkbox on a diffed module card (L1/L1.5 or L2), in the top-right header of a preview frame for a diffed file, or a checkbox row in the **Reviewed X/Y ▾** checklist in `DiffOverlayBar`. The checklist's **Unmark all** top row (disabled when nothing is marked) clears every mark at once — e.g. to start reviewing a new diff.
+While a diff overlay is active, user clicks the checkbox on a diffed module card (L1/L1.5 or L2), in the top-right header of a preview frame for a diffed file, or a checkbox row in the **Reviewed X/Y ▾** checklist in `DiffOverlayBar`. Clicking a checklist row's **path** (not its checkbox) centers the canvas on that file via `store.focusOn(moduleId)` (selects it, expands collapsed ancestors, works for deleted ghosts — same path as [navigate-from-inspector](./navigate-from-inspector.md)); the checklist stays open so files can be stepped through. The checklist's **Unmark all** top row (disabled when nothing is marked) clears every mark at once — e.g. to start reviewing a new diff.
 
 ## Entry point
 

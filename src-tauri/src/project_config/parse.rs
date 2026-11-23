@@ -93,6 +93,7 @@ pub fn parse_group_def(path: &str, content: &str) -> Result<GroupDef, ConfigErro
         id,
         label,
         dir,
+        config_path: path.to_string(),
         color: raw.color,
         icon: raw.icon,
         facades: raw

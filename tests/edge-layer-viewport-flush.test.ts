@@ -79,10 +79,13 @@ describe("viewport rAF flush", () => {
     expect(onViewportModel).toHaveBeenCalledWith(
       expect.objectContaining({ showArrows: true }),
     );
+    expect(setAttributeSpy).not.toHaveBeenCalled();
+
+    vi.runAllTimers();
     expect(setAttributeSpy).toHaveBeenCalledWith("d", expect.any(String));
   });
 
-  it("cell change calls onViewportModel and setAttribute on stroke path", () => {
+  it("cell change defers the clipped rebuild to an idle callback", () => {
     const { controller, rafQueue, onViewportModel, setAttributeSpy } =
       setupFlushController();
 
@@ -93,9 +96,69 @@ describe("viewport rAF flush", () => {
     });
 
     flushRaf(rafQueue);
+    expect(onViewportModel).not.toHaveBeenCalled();
+    expect(setAttributeSpy).not.toHaveBeenCalled();
 
+    vi.runAllTimers();
     expect(onViewportModel).toHaveBeenCalledTimes(1);
     expect(setAttributeSpy).toHaveBeenCalledWith("d", expect.any(String));
+  });
+
+  it("coalesces cell changes pending in the same idle slot into one rebuild", () => {
+    const { controller, rafQueue, onViewportModel } = setupFlushController();
+
+    controller.scheduleViewportFlush({ transform: [600, 0, 0.5], width: 800, height: 600 });
+    flushRaf(rafQueue);
+    rafQueue.length = 0;
+    controller.scheduleViewportFlush({ transform: [1800, 0, 0.5], width: 800, height: 600 });
+    flushRaf(rafQueue);
+
+    vi.runAllTimers();
+    expect(onViewportModel).toHaveBeenCalledTimes(1);
+  });
+
+  it("with hideOffscreenArrows, a same-cell pan rebuilds once after the camera settles", () => {
+    const { controller, rafQueue, onViewportModel } = setupFlushController({
+      width: 100,
+      height: 100,
+      hideOffscreenArrows: true,
+    });
+
+    controller.scheduleViewportFlush({ transform: [10, 0, 0.5], width: 100, height: 100 });
+    flushRaf(rafQueue);
+    rafQueue.length = 0;
+    vi.advanceTimersByTime(100);
+    controller.scheduleViewportFlush({ transform: [20, 0, 0.5], width: 100, height: 100 });
+    flushRaf(rafQueue);
+    vi.advanceTimersByTime(100);
+    expect(onViewportModel).not.toHaveBeenCalled();
+
+    vi.runAllTimers();
+    expect(onViewportModel).toHaveBeenCalledTimes(1);
+  });
+
+  it("without hideOffscreenArrows, a same-cell pan never rebuilds", () => {
+    const { controller, rafQueue, onViewportModel } = setupFlushController({
+      width: 100,
+      height: 100,
+    });
+
+    controller.scheduleViewportFlush({ transform: [10, 0, 0.5], width: 100, height: 100 });
+    flushRaf(rafQueue);
+
+    vi.runAllTimers();
+    expect(onViewportModel).not.toHaveBeenCalled();
+  });
+
+  it("dispose() cancels a pending idle rebuild", () => {
+    const { controller, rafQueue, onViewportModel } = setupFlushController();
+
+    controller.scheduleViewportFlush({ transform: [600, 0, 0.5], width: 800, height: 600 });
+    flushRaf(rafQueue);
+    controller.dispose();
+
+    vi.runAllTimers();
+    expect(onViewportModel).not.toHaveBeenCalled();
   });
 
   it("after dispose(), scheduleViewportFlush queues a new rAF", () => {

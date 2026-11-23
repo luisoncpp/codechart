@@ -15,6 +15,9 @@ import { GraphSessionStore, useGraphSession } from "../../state/graph-session";
 import { ReviewNotesStore, useReviewNotes } from "../../state/review-notes";
 import { createTauriReviewNotesClient } from "../../ipc/review-notes-client";
 import { ReviewNotesProvider } from "../../features/review_notes";
+import { ReviewStackStore, useReviewStack } from "../../state/review-stack";
+import { createTauriReviewStackClient } from "../../ipc/review-stack-client";
+import { ReviewStackDrawer, ReviewStackProvider } from "../../features/review_stack";
 import { ProjectLoaderPanel } from "../../features/project_loader";
 import { SettingsMenu } from "../../features/project_settings";
 import { HelpMenu } from "../../features/help_menu";
@@ -26,6 +29,9 @@ import {
 import { useOpenStartupProject } from "./use-open-startup-project";
 import { useHidePlugins } from "./use-hide-plugins";
 import { useDevtoolsShortcut } from "./use-devtools-shortcut";
+import { usePlaytestBridge } from "./use-playtest-bridge";
+import { useMcpBridge } from "./use-mcp-bridge";
+import { requestDiffImpact } from "./request-diff-impact";
 
 export function App() {
   const devtools = useMemo(/*build devtools client*/ () => createTauriDevtoolsClient(), []);
@@ -48,6 +54,10 @@ export function App() {
   const graph = session.getGraph();
   const reviewNotes = useMemo(/*build review notes store*/ () => new ReviewNotesStore(createTauriReviewNotesClient()), []);
   useReviewNotes(reviewNotes);
+  const reviewStackClient = useMemo(/*build review stack client*/ () => createTauriReviewStackClient(), []);
+  const reviewStack = useMemo(/*build review stack store*/ () => new ReviewStackStore(reviewStackClient), [reviewStackClient]);
+  useReviewStack(reviewStack);
+  useMcpBridge({ session: store, reviewNotes, reviewStack, client: reviewStackClient });
   const canvasUi = useMemo(/*build canvas ui state*/ () => new CanvasUiState(), []);
   const ready = session.getPhase() === "ready";
   const [editor, setEditor] = useState(DEFAULT_EDITOR);
@@ -80,12 +90,24 @@ export function App() {
   const [inspectorOpen, setInspectorOpen] = useState(/*defaultOpen=*/true);
   const [inspectorWidth, setInspectorWidth] = useState(DEFAULT_INSPECTOR_WIDTH);
   const [activeTab, setActiveTab] = useState<"inspector" | "review-notes">("inspector");
+  const onViewportReady = usePlaytestBridge({
+    store,
+    ui: canvasUi,
+    devtools,
+    inspector: { open: inspectorOpen, width: inspectorWidth, activeTab },
+  });
 
   useEffect(() => {
     const graph = session.getGraph();
     const root = session.getProjectRoot();
     if (ready && graph && root) void reviewNotes.loadProject({ root, graph });
   }, [ready, session, reviewNotes]);
+
+  const activeDiffId = session.getActiveDiffId();
+  useEffect(/*syncReviewStackWithActiveDiff*/ () => {
+    if (projectRoot && activeDiffId) void reviewStack.activateDiff(projectRoot, activeDiffId);
+    else reviewStack.clearActiveDiff();
+  }, [projectRoot, activeDiffId, reviewStack]);
 
   return (
     <div style={appShellStyle}>
@@ -120,22 +142,34 @@ export function App() {
                   onEditorSaved={setEditor}
                   onCppConfigSaved={() => store.loadProject(projectRoot)}
                   onIgnoredPathsSaved={() => store.loadProject(projectRoot)}
-                  onClearReviewInfo={/*clear notes and checkmarks*/ async () => {
+                  onClearReviewInfo={/*clear notes, stacks, and checkmarks*/ async () => {
                     reviewNotes.clearAll();
                     await store.clearAllDiffReviews();
+                    await reviewStack.clearAll(projectRoot);
                   }}
                 />
               </>
             )}
-            <HelpMenu />
+            <HelpMenu getExecutablePath={startup.getExecutablePath} />
           </>
         }
       />
       {ready && (
         <ReviewNotesProvider store={reviewNotes}>
+        <ReviewStackProvider store={reviewStack}>
         <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
+          <ReviewStackDrawer
+            stackStore={reviewStack}
+            sessionStore={store}
+            onRefreshImpact={() => {
+              if (!store.getGraph() || !store.getDiffOverlay()) return;
+              void requestDiffImpact(store, reviewStackClient).then(
+                /*storeImpact*/ (report) => reviewStack.setImpact(report),
+              );
+            }}
+          />
           <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
-            <GraphCanvas store={store} git={git} shell={shell} editor={editor} ui={canvasUi} reviewNotes={reviewNotes} onShowReviewNotes={() => { setInspectorOpen(true); setActiveTab("review-notes"); }} />
+            <GraphCanvas store={store} git={git} shell={shell} editor={editor} ui={canvasUi} reviewNotes={reviewNotes} reviewStack={reviewStack} onShowReviewNotes={() => { setInspectorOpen(true); setActiveTab("review-notes"); }} onViewportReady={onViewportReady} />
           </div>
           {inspectorOpen ? (
             <InspectionPanel
@@ -158,7 +192,7 @@ export function App() {
               ◀
             </button>
           )}
-        </div></ReviewNotesProvider>
+        </div></ReviewStackProvider></ReviewNotesProvider>
       )}
     </div>
   );

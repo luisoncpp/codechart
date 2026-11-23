@@ -1,5 +1,5 @@
 // @Architecture(descriptionShort="marked inline extension turning `[[target]]` into a clickable anchor")
-import type { TokenizerAndRendererExtension, Tokens } from "marked";
+import type { RendererObject, TokenizerAndRendererExtension, Tokens } from "marked";
 import { matchWikiLinkPrefix } from "./wiki-link-parser";
 
 interface WikiLinkToken extends Tokens.Generic {
@@ -38,5 +38,29 @@ export const wikiLinkExtension: TokenizerAndRendererExtension = {
   renderer(token: Tokens.Generic) {
     const { target, label } = token as WikiLinkToken;
     return `<a class="hl-wiki-link" data-wiki-target="${escapeHtml(target)}">${escapeHtml(label)}</a>`;
+  },
+};
+
+/** `https:`, `mailto:`, `file:`… — anything the webview would navigate to. */
+const URL_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
+function decodeHref(href: string): string {
+  try {
+    return decodeURI(href);
+  } catch {
+    return href;
+  }
+}
+
+/**
+ * Plain markdown links to project files (`[flow](docs/x.md#Section)`) render as
+ * wiki-link anchors with **no `href`**: a real relative `href` navigates the
+ * whole webview, which reloads the app. External URLs keep the default anchor.
+ */
+export const markdownLinkRenderer: RendererObject = {
+  link({ href, tokens }: Tokens.Link) {
+    if (URL_SCHEME.test(href)) return false;
+    const label = this.parser.parseInline(tokens);
+    return `<a class="hl-wiki-link" data-wiki-target="${escapeHtml(decodeHref(href))}">${label}</a>`;
   },
 };

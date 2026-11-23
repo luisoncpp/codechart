@@ -120,6 +120,15 @@ describe("GraphCanvas", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
+  it("paints L1.5 symbols on small cards without extra camera zoom", async () => {
+    // Regression: a card-size screen gate hid symbols while the description already showed.
+    store.setZoomLevel(1.5);
+    const { container } = renderGraphCanvas(store);
+    await waitFor(() =>
+      expect(container.querySelector(`[data-id="src/core/store.ts::TodoStore"]`)).toBeTruthy(),
+    );
+  });
+
   it("renders exported symbols as child boxes at L1.5", async () => {
     store.setZoomLevel(1.5);
     const { container } = renderGraphCanvas(store);

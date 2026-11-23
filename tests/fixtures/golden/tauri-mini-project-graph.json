@@ -11,7 +11,8 @@
       "annotation": {
         "descriptionShort": "Minimal Tauri fixture for IPC seam detection tests",
         "descriptionLong": "Minimal frontend + backend layout for testing Tauri IPC seam detection."
-      }
+      },
+      "configPath": "app.group.md"
     }
   ],
   "modules": [

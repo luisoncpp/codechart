@@ -105,4 +105,26 @@ export function styleEdge(
   };
 }
 
+/** Canvas-wide edge toggles driven by the View ▸ Arrow visibility submenu. */
+export interface EdgeDisplayOptions {
+  arrowVisibility: ArrowVisibility;
+  showViolationArrows: boolean;
+}
+
+/** Style every edge, dropping hidden ones. With `showViolationArrows` off,
+ *  red violation edges are dropped even when selected; diff edges stay. */
+export function styleEdges(
+  edges: RFEdgeT[],
+  focus: EdgeFocus | null,
+  options: EdgeDisplayOptions,
+): RFEdgeT[] {
+  const out: RFEdgeT[] = [];
+  for (const e of edges) {
+    if (!options.showViolationArrows && edgeRole(e, null) === "violation") continue;
+    const styled = styleEdge(e, focus, options.arrowVisibility);
+    if (styled) out.push(styled);
+  }
+  return out;
+}
+
 

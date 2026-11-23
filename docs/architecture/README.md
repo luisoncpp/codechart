@@ -7,7 +7,7 @@ Covers only what's already implemented. For architecture docs of not implemented
 | File | Subsystem | Notes |
 |------|-----------|-------|
 | [contract.md](./contract.md) | `ProjectGraph` contract + `ProjectGraphBuilder` invariants | The IPC data shape; golden-fixture North Star |
-| [cli.md](./cli.md) | `codechart-cli` (`parse` / `groups` / `analyze` / `check` / `help`) | Debug dump vs CI diagnostic gate |
+| [cli.md](./cli.md) | `codechart-cli` (`parse` / `groups` / `analyze` / `check` / `impact` / `mcp` / `help`) | Debug dump vs CI diagnostic gate |
 | [language-adapter.md](./language-adapter.md) | `LanguageAdapter` seam (TS adapter) + `semantic_comments` | One file → `ParsedModule`; `@Architecture` parsing |
 | [config-grouping.md](./config-grouping.md) | `project_config` (`*.group.md`) + `grouping` (`resolve_groups`) | Files + config → nested group tree, facades, configErrors |
 | [unreal-config.md](./unreal-config.md) | project config + `unreal_config` + Settings/View Unreal filters | Project-local editor, C++ include paths, generated-file hiding, engine exclusion, plugin hiding |
@@ -22,4 +22,6 @@ Covers only what's already implemented. For architecture docs of not implemented
 | [diff-notes.md](./diff-notes.md) | Diff Notes | Read-only markdown explanations consumed from `#` marker lines in pasted diffs |
 | [project-search.md](./project-search.md) | `search` (Rust) + `project_search` find bar | Ctrl+Shift+F content search, Ctrl+P file search, and Search ▾ exported-symbol search; match navigation via `focusOn` |
 | [help-menu.md](./help-menu.md) | `help_menu` | Toolbar Help dropdown menu and rendered Markdown documentation modals with Copy for LLMs |
+| [playtest-mcp.md](./playtest-mcp.md) | `playtest_mcp` + dev playtest bridge | Node 24 MCP server driving the real Tauri WebView2 app over CDP for assistant playtesting and screenshots |
+| [review-stack-mcp.md](./review-stack-mcp.md) | `review_stacks` + `diff_impact` + `mcp_bridge` + `mcp_server` + `review_stack` | Stdio MCP server built into `codechart.exe --mcp`, loopback MCP bridge, persisted Change Stack cohorts/findings, topological layering, and blast radius |
 

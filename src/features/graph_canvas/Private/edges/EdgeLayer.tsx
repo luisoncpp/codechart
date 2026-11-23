@@ -16,6 +16,8 @@ import type { ViewportEdgeModel } from "./viewport-edge-types";
 interface EdgeLayerProps {
   edges: RFEdgeT[];
   nodes: RFNode[];
+  /** Drop edges whose endpoint boxes are both outside the clip rect. */
+  hideOffscreenArrows: boolean;
 }
 
 function EdgeLayerSvg({
@@ -65,12 +67,14 @@ function bindEdgeLayer(
   };
 }
 
-export function EdgeLayer({ edges, nodes }: EdgeLayerProps) {
+export function EdgeLayer({ edges, nodes, hideOffscreenArrows }: EdgeLayerProps) {
   const storeApi = useStoreApi();
   const edgesRef = useRef(edges);
   const nodesRef = useRef(nodes);
+  const hideOffscreenRef = useRef(hideOffscreenArrows);
   edgesRef.current = edges;
   nodesRef.current = nodes;
+  hideOffscreenRef.current = hideOffscreenArrows;
 
   const [edgesRoot, setEdgesRoot] = useState<Element | null>(null);
   const [model, setModel] = useState<ViewportEdgeModel | null>(null);
@@ -80,6 +84,7 @@ export function EdgeLayer({ edges, nodes }: EdgeLayerProps) {
     onEdgesRoot: setEdgesRoot,
     getEdges: () => edgesRef.current,
     getNodes: () => nodesRef.current,
+    getHideOffscreenArrows: () => hideOffscreenRef.current,
   });
 
   const onRefs = useCallback((key: string, refs: BucketDomRefs | null) => {
@@ -89,7 +94,7 @@ export function EdgeLayer({ edges, nodes }: EdgeLayerProps) {
   useEffect(/*bindStore*/ () => bindEdgeLayer(controller, storeApi), [storeApi, controller]);
   useEffect(/*rebuildOnGraphChange*/ () => {
     controller.rebuildFromGeometry();
-  }, [edges, nodes, controller]);
+  }, [edges, nodes, hideOffscreenArrows, controller]);
 
   if (!edgesRoot || !model) return null;
 

@@ -16,6 +16,8 @@ export interface GroupNodeData extends Record<string, unknown> {
   architectureDoc?: string;
   /** Lazily fetched markdown body for `architectureDoc` (L2 only). */
   architectureDocContent?: string;
+  /** The declaring `*.group.md` — base for relative links in the description. */
+  configPath?: string;
   /** True when this group is rendered collapsed (semantic zoom). */
   collapsed?: boolean;
   /** True when this group's connections are hidden (treated as external). */
@@ -70,6 +72,10 @@ export interface ModuleNodeData extends Record<string, unknown> {
   diffNotes?: ReadonlyArray<DiffNote>;
   /** Diff review progress — user marked this file as reviewed (checkmark + dimmed). */
   diffReviewed?: boolean;
+  /** Review Stack cohort spotlight state ("active" keeps full focus; "dimmed" recedes). */
+  spotlightState?: "active" | "dimmed";
+  /** Transitive blast radius hop depth from a changed module (0 = root, 1+ = downstream). */
+  blastDepth?: number;
   /** Normalized heat score in [0, 1] when heatmap overlay is active. */
   heatScore?: number;
   /** False when score is at or below the cold percentile. */

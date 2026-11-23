@@ -1,6 +1,7 @@
 // @Architecture(descriptionShort="Displays a draggable, resizable panel with the source code of a symbol")
 import { useMemo, useRef, useState } from "react";
 import type { DiffNote, FileLineDiff } from "../../../../domain/diff";
+import { useFrameDiffViewMode } from "./diff-view-mode-preference";
 import { findSymbolLine } from "./symbol-source-utils";
 import type { PreviewFrame } from "./frame-list";
 import type { Position, Size } from "./frame-placement";
@@ -12,7 +13,9 @@ import { FrameContent } from "./FrameBody";
 import { FrameHeader } from "./FrameHeader";
 import { FrameFindBar } from "./FrameFindBar";
 import { useFrameSearch } from "./use-frame-search";
-import { codeMatchesByLine, descriptionRanges, matchCounter } from "./frame-search";
+import { useChangeNavigation } from "./use-change-navigation";
+import { hasLineChanges } from "./change-blocks";
+import { matchCounter } from "./frame-search";
 import { wikiLinkFromEvent, type WikiLinkClick } from "../wiki_links";
 import { FrameContextMenu } from "./FrameContextMenu";
 import { useFrameCopyMenu } from "./use-frame-copy-menu";
@@ -67,6 +70,10 @@ export function SymbolSourceWidget({
     initialQuery: frame.initialFindQuery,
     enabled: !renderMarkdown,
   });
+  // Rendered markdown has no diff rows to step through or re-arrange.
+  const showsDiffRows = !renderMarkdown && hasLineChanges(fileDiff);
+  const changes = useChangeNavigation(frameRef, /*enabled=*/ showsDiffRows);
+  const viewMode = useFrameDiffViewMode(showsDiffRows);
 
   useCenterTargetLine(lineRef, /*line=*/ reviewLine ?? targetLine, frame.sourceText);
   useCenterMarkdownSection({
@@ -142,6 +149,8 @@ export function SymbolSourceWidget({
               }
         }
         diffReview={diffReview}
+        changes={changes}
+        viewMode={viewMode.toggle}
         actions={{
           onTogglePin: () => handlers.onTogglePin(frame.id),
           onClose: () => handlers.onClose(frame.id),
@@ -169,14 +178,11 @@ export function SymbolSourceWidget({
           fileDiff={fileDiff}
           diffNotes={diffNotes}
           clickableSymbols={clickableSymbols}
+          viewMode={viewMode.bodyMode}
           renderMarkdown={renderMarkdown}
           targetLine={targetLine}
           lineRef={lineRef}
-          matchProps={{
-            matchesByLine: codeMatchesByLine(search.matches, search.activeIndex),
-            descriptionRanges: descriptionRanges(search.matches, search.activeIndex),
-            activeMatchRef: search.activeMatchRef,
-          }}
+          matchProps={search.matchProps}
         />
       </div>
       <FrameContextMenu menu={copyMenu.menu} onClose={copyMenu.closeMenu} />

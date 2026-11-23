@@ -44,6 +44,27 @@ export function filterVisibleSegments(
   return segments.filter((segment) => rectsIntersect(rect, segment));
 }
 
+function boxesIntersect(a: WorldRect, b: WorldRect): boolean {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  );
+}
+
+/** Keeps edges with at least one endpoint box in `rect`; drops edges merely passing through. */
+export function filterSegmentsWithVisibleEndpoint(
+  segments: EdgeSegment[],
+  rect: WorldRect,
+): EdgeSegment[] {
+  return segments.filter(
+    (segment) =>
+      boxesIntersect(rect, segment.sourceBox) ||
+      boxesIntersect(rect, segment.targetBox),
+  );
+}
+
 export const CLIP_CELL_VIEWPORT_FRACTION = 0.5;
 
 export function clipCellSize(rect: WorldRect): number {

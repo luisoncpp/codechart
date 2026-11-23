@@ -7,6 +7,24 @@ export interface LineMatchRange {
   active: boolean;
 }
 
+/**
+ * Where the active find match sits. Kept apart from the per-line ranges so
+ * stepping between matches only changes the two rows it moves between.
+ */
+export interface ActiveMatch {
+  line: number;
+  startCol: number;
+}
+
+/** The line's ranges with the one starting at `activeCol` flagged active. */
+export function flagActiveRange(
+  ranges: readonly LineMatchRange[] | undefined,
+  activeCol: number | undefined,
+): readonly LineMatchRange[] | undefined {
+  if (!ranges || activeCol === undefined) return ranges;
+  return ranges.map((range) => ({ ...range, active: range.startCol === activeCol }));
+}
+
 /** A slice of a token's text, optionally marked as (active) search match. */
 export interface TextSegment {
   text: string;

@@ -34,10 +34,12 @@ mod tests;
 
 pub use boundaries::GroupBoundaries;
 pub use cpp::is_paired_cpp_header;
+pub use cycle_scc::find_cycle_sccs;
 pub use cycles::flag_cycles;
 pub use drift::flag_drift;
 pub use interface_seams::classify_interface_seams;
 pub use layering::{flag_layering, LayeringRule};
+pub use rust::is_paired_rust_parent_child;
 pub use soft::classify_soft;
 pub use tauri_ipc::classify_tauri_ipc;
 pub use unity::classify_unity_assets;

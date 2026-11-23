@@ -227,6 +227,23 @@ describe("flow: view-menu", () => {
     expect(hideArrows).toHaveAttribute("aria-checked", "true");
     expect(hideHeads).toHaveAttribute("aria-checked", "false");
   });
+
+  it("Arrow visibility submenu toggles 'Hide arrows between off-screen modules' (on by default)", async () => {
+    const store = await readyGraphStore();
+    const { canvasUi } = renderGraphCanvas(store);
+    openViewMenu();
+    const submenuTrigger = screen.getByRole("menuitem", { name: /Arrow visibility/ });
+    fireEvent.mouseEnter(submenuTrigger.parentElement!);
+
+    const item = screen.getByRole("menuitemcheckbox", {
+      name: "Hide arrows between off-screen modules",
+    });
+    expect(item).toHaveAttribute("aria-checked", "true");
+
+    fireEvent.click(item);
+    expect(canvasUi.getHideOffscreenArrows()).toBe(false);
+    expect(item).toHaveAttribute("aria-checked", "false");
+  });
 });
 
 

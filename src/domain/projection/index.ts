@@ -14,3 +14,4 @@ export type {
 } from "./Private/rf/node-data";
 export { applyDiffOverlay } from "./Private/diff_overlay/apply-diff-overlay";
 export { withDiffReview } from "./Private/diff_overlay/apply-diff-review";
+export { withReviewStackOverlay } from "./Private/diff_overlay/apply-review-stack";
